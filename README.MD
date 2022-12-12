@@ -63,15 +63,20 @@ File: *aem.go*
 ```go
 package main
 
+import "fmt"
+import "os"
 import aemc "github.com/wttech/aemc/pkg"
 
 func main() {
 	aem := aemc.NewAem()
 	instance := aem.InstanceManager().NewLocalAuthor()
-	err := instance.PackageManager().Deploy("/tmp/my-package.zip")
+	changed, err := instance.PackageManager().DeployWithChanged("/tmp/my-package.zip")
 	if err != nil {
-		fmt.Printf("cannot deploy package: %w\n", err)
+		fmt.Printf("cannot deploy package: %s\n", err)
 		os.Exit(1)
+    }
+	if changed {
+		aem.InstanceManager().AwaitStartedOne(instance)
     }
 	fmt.Printf("package deployed properly\n")
 	os.Exit(0)

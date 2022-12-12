@@ -1,17 +1,22 @@
 #!/usr/bin/env sh
 
-# Download recent released version
+# Download tool
 
+# use specific one 'vX.Y.Z' or just 'latest'
+VERSION=v0.5.1
 OS="darwin"
 ARCH="arm64"
 
-# TODO make repo public
-EXECUTABLE_URL="https://github.com/wttech/aemc/releases/latest/download/aemc-cli_${OS}_${ARCH}"
-EXECUTABLE_PATH="bin/aemc-cli"
+EXECUTABLE_ZIP_URL="https://github.com/wttech/aemc/releases/$VERSION/download/aemc-cli_${OS}_${ARCH}.tar.gz"
+EXECUTABLE_DIR="bin/aemc-cli/$VERSION"
+EXECUTABLE_ZIP_PATH="$EXECUTABLE_DIR/aemc-cli.tar.gz"
+EXECUTABLE_PATH="$EXECUTABLE_DIR/aemc-cli/aemc-cli"
 
 if [ ! -f "$EXECUTABLE_PATH" ]; then
-  # curl -o "$EXECUTABLE_PATH" -OJL "$EXECUTABLE_URL"
-  make
+  mkdir -p $EXECUTABLE_DIR
+  curl -o "$EXECUTABLE_ZIP_PATH" -OJL "$EXECUTABLE_ZIP_URL"
+  # TODO unpack
+  #chmod +x "$EXECUTABLE_PATH"
 fi
 
 # Declare provisioning API

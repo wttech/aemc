@@ -34,7 +34,6 @@ archives:
   - id: aemc-cli
     builds:
       - aemc-cli
-    format: binary
     name_template: "aemc-cli_{{ .Os }}_{{ .Arch }}"
     replacements:
       386: i386

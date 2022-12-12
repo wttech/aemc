@@ -15,6 +15,8 @@ Universal tool to manage AEM instances everywhere!
 
 ### CLI - Overview
 
+Provides complete set of commands to comfortably work with CRX packages, OSGi configurations, repository nodes and more.
+
 Key assumptions:
 
 - Rich configuration options

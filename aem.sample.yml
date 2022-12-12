@@ -1,0 +1,55 @@
+log:
+  timestamp_format: "2006-01-02 15:04:05"
+  full_timestamp: true
+
+#input:
+#  format: yml
+#  file: STDIN
+#
+#output:
+#  format: text
+#  file: aem.log
+
+java:
+  #home_path: /Library/Java/JavaVirtualMachines/jdk-11.0.15.jdk/Contents/Home
+
+instance:
+
+  # Defined by single value (only remote)
+  config_url: ''
+
+  config:
+    local_author:
+      http_url: http://localhost:4502
+      user: admin
+      password: admin
+      run_modes: [ local, scene7 ]
+    local_publish:
+      http_url: http://localhost:4503
+      user: admin
+      password: admin
+      run_modes: [ local, scene7 ]
+
+  # Filters for defined
+  filter:
+    id: ''
+    author: false
+    publish: false
+
+  # State checking
+  check:
+    interval: 5s
+
+    bundle_stable:
+      symbolic_names_ignored: []
+
+  # Managed locally (set up automatically)
+  local:
+    quickstart:
+      dist_path: '/Users/krystian.panek/Projects/gat/resource/remote/aem/instance/aem-sdk-quickstart-2022.7.8005.jar'
+      license_path: '/Users/krystian.panek/Projects/gat/resource/remote/aem/instance/license.properties'
+    unpack_path: '/Users/krystian.panek/Projects/aemc/out'
+
+package:
+
+  upload_force: true

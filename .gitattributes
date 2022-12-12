@@ -1,0 +1,7 @@
+# Skip following files when packing to archive
+.git* export-ignore
+.idea export-ignore
+.gradle export-ignore
+
+# Force UNIX line-ending to avoid errors on higher environments
+* text=auto eol=lf

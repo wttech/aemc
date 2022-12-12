@@ -1,0 +1,70 @@
+#!/usr/bin/env sh
+
+# Download recent released version
+
+OS="darwin"
+ARCH="arm64"
+
+# TODO make repo public
+EXECUTABLE_URL="https://github.com/wttech/aemc/releases/latest/download/aemc-cli_${OS}_${ARCH}"
+EXECUTABLE_PATH="bin/aemc-cli"
+
+if [ ! -f "$EXECUTABLE_PATH" ]; then
+  # curl -o "$EXECUTABLE_PATH" -OJL "$EXECUTABLE_URL"
+  make
+fi
+
+# Declare provisioning API
+
+# shellcheck disable=SC2139
+alias aem="./$EXECUTABLE_PATH"
+
+# print provisioning step header
+step () {
+  DATE=$(date "+%Y-%m-%d %H:%M:%S")
+  echo "[$DATE] $@"
+}
+
+# check last command
+clc () {
+  if [ "$?" -ne 0 ]; then
+    exit "$?"
+  fi
+}
+
+# format seconds to more nice format
+duration () {
+  T=$1
+  D=$((T/60/60/24))
+  H=$((T/60/60%24))
+  M=$((T/60%60))
+  S=$((T%60))
+  (( $D > 0 )) && printf '%d day(s) ' $D
+  (( $H > 0 )) && printf '%d hour(s) ' $H
+  (( $M > 0 )) && printf '%d minute(s) ' $M
+  (( $D > 0 || $H > 0 || $M > 0 )) && printf 'and '
+  printf '%d second(s)\n' $S
+}
+
+# Include provisioning script that uses API
+
+COMMAND_DEFAULT="setup"
+COMMAND="${1:-$COMMAND_DEFAULT}"
+SCRIPT="aem/$COMMAND.sh"
+
+if [ -f "$SCRIPT" ]; then
+  export AEM_OUTPUT_FORMAT=${AEM_OUTPUT_FORMAT:-none}
+  export AEM_INSTANCE_PROCESSING_MODE=${AEM_INSTANCE_PROCESSING_MODE:-parallel}
+
+  STARTED_TIMESTAMP=$SECONDS
+  step "script '$COMMAND' started"
+
+  # shellcheck source=aem/*.sh
+  . "$SCRIPT"
+
+  ENDED_TIMESTAMP=$SECONDS
+  ELAPSED=$((ENDED_TIMESTAMP - $STARTED_TIMESTAMP))
+  step "script '$COMMAND' ended in $(duration $ELAPSED)"
+else
+  aem "$@"
+fi

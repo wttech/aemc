@@ -1,0 +1,54 @@
+# Make sure to check the documentation at https://goreleaser.com
+before:
+  hooks:
+    - go install github.com/mgechev/revive@latest
+    - go mod tidy
+
+builds:
+  - id: aemc-cli
+    binary: aemc-cli
+    main: './cmd/cli'
+    tags:
+      - aem
+      - cli
+      - provision
+      - config_mgmt
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    ldflags:
+      - "-s -w -X main.appVersion={{ .Version }} -X main.appCommit={{ .Commit }} -X main.appCommitDate={{.CommitDate}}"
+
+dockers:
+  - id: aemc-cli
+    image_templates:
+      - "ghcr.io/wttech/aemc-cli:{{ .Tag }}"
+      - "ghcr.io/wttech/aemc-cli:latest"
+    ids:
+      - aemc-cli
+
+archives:
+  - id: aemc-cli
+    builds:
+      - aemc-cli
+    format: binary
+    name_template: "aemc-cli_{{ .Os }}_{{ .Arch }}"
+    replacements:
+      386: i386
+      amd64: x86_64
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'

@@ -106,7 +106,7 @@ aem config init
 ```
 
 It will produce default configuration file named *aem.yml*. 
-Correct the `dist_path`, `license_path`, `unpack_path` properties.
+Correct the `dist_path`, `license_path`, `unpack_path` properties to provide essential files to be able to launch AEM instances.
 
 ```yml
 log:
@@ -178,6 +178,13 @@ instance:
       start_level: 20
       refresh_packages: true
 
+```
+
+After instructing tool where the AEM instances files are located then, finally, instances may be created and launched:
+
+```shell
+aem instance create
+aem instance start
 ```
 
 ### Configuration precedence

@@ -220,7 +220,7 @@ $RECYCLE.BIN/
 *.iml
 /bin
 /lib
-aem.yml
+/aem.yml
 aem.log
 dist/
 /config.yml

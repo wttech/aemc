@@ -1,0 +1,67 @@
+log:
+  level: info
+  timestamp_format: "2006-01-02 15:04:05"
+  full_timestamp: true
+
+input:
+  format: yml
+  file: STDIN
+
+output:
+  format: text
+  file: aem.log
+
+java:
+  home_path: ""
+
+instance:
+
+  # Processing mode
+  # 'auto'     - for more than 1 local instances - 'serial', otherwise 'parallel'
+  # 'parallel' - for working with remote instances
+  # 'serial'   - for working with local instances
+  processing_mode: auto
+
+  # Defined by single value (only remote)
+  config_url: ''
+
+  # Defined strictly with full details (local or remote)
+  config:
+    local_author:
+      http_url: http://localhost:4502
+      user: admin
+      password: admin
+      run_modes: [ local, scene7 ]
+    local_publish:
+      http_url: http://localhost:4503
+      user: admin
+      password: admin
+      run_modes: [ local, scene7 ]
+
+  # Filters for defined
+  filter:
+    id: ''
+    author: false
+    publish: false
+
+  # State checking
+  check:
+    interval: 5s
+
+  # Managed locally (set up automatically)
+  local:
+    quickstart:
+      dist_path: "aem-sdk-quickstart.jar"
+      license_path: "license.properties"
+    unpack_path: "out"
+
+  package:
+    upload:
+      force: false
+
+  osgi:
+    install:
+      start: true
+      start_level: 20
+      refresh_packages: true
+

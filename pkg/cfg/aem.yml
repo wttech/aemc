@@ -53,7 +53,7 @@ instance:
     quickstart:
       dist_path: "aem-sdk-quickstart.jar"
       license_path: "license.properties"
-    unpack_path: "out"
+    unpack_path: "aem/home/instance"
 
   package:
     upload:

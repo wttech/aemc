@@ -24,6 +24,12 @@ type InstanceManager struct {
 	ProcessingMode instance.ProcessingMode
 }
 
+const (
+	RootPath    = "aem/home/instance"
+	DistPath    = "aem/lib/aem-sdk-quickstart.jar"
+	LicensePath = "aem/lib/license.properties"
+)
+
 func NewInstanceManager(aem *Aem) *InstanceManager {
 	result := new(InstanceManager)
 	result.aem = aem
@@ -376,11 +382,11 @@ type LocalOpts struct {
 func (im *InstanceManager) NewLocalOpts() *LocalOpts {
 	pathCurrent := osx.PathCurrent()
 	return &LocalOpts{
-		RootPath: pathCurrent + "/out/local_instance",
+		RootPath: pathCurrent + "/" + RootPath,
 		JavaOpts: im.aem.javaOpts,
 		QuickstartOpts: QuickstartOpts{
-			DistPath:    pathCurrent + "/lib/aem-sdk-quickstart.jar",
-			LicensePath: pathCurrent + "/lib/license.properties",
+			DistPath:    pathCurrent + "/" + DistPath,
+			LicensePath: pathCurrent + "/" + LicensePath,
 		},
 	}
 }

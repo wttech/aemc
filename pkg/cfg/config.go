@@ -12,13 +12,11 @@ import (
 )
 
 const (
-	// FileName indicates 'aem.yml' to be in CWD when launching app
-	FileName = "aem"
-	FileType = "yml"
-	FilePath = FileName + "." + FileType
-
-	//EnvPrefix is a prefix that need to be added to all env vars to be used by app
-	EnvPrefix = "AEM"
+	FileBaseName = "aem"
+	FileType     = "yml"
+	FileName     = FileBaseName + "." + FileType
+	FilePath     = "./aem/home"
+	EnvPrefix    = "AEM"
 )
 
 // Config defines a place for managing input configuration from various sources (YML file, env vars, etc)
@@ -71,7 +69,7 @@ func readFromEnv(v *viper.Viper) {
 }
 
 func readFromFile(v *viper.Viper) {
-	v.SetConfigName(FileName)
+	v.SetConfigName(FileBaseName)
 	v.SetConfigType(FileType)
 	v.AddConfigPath(filePath())
 
@@ -83,7 +81,7 @@ func readFromFile(v *viper.Viper) {
 func filePath() string {
 	path := os.Getenv("AEM_CONFIG_PATH")
 	if len(path) == 0 {
-		path = "."
+		path = FilePath
 	}
 	return path
 }
@@ -105,19 +103,19 @@ func (c *Config) ConfigureLogger() {
 var configYml string
 
 func (c *Config) Init() error {
-	if osx.PathExists(FilePath) {
-		return fmt.Errorf("config file already exists: '%s'", FilePath)
+	if osx.PathExists(FileName) {
+		return fmt.Errorf("config file already exists: '%s'", FileName)
 	}
-	err := osx.FileWrite(FilePath, configYml)
+	err := osx.FileWrite(FileName, configYml)
 	if err != nil {
-		return fmt.Errorf("cannot create initial config file: '%s'", FilePath)
+		return fmt.Errorf("cannot create initial config file: '%s'", FileName)
 	}
 	return nil
 }
 
 const (
 	InputStdin string = "STDIN"
-	OutputFile string = "aem.log"
+	OutputFile string = "aem/home/aem.log"
 )
 
 func InputFormats() []string {

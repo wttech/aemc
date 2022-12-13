@@ -1,74 +1,51 @@
 #!/usr/bin/env sh
 
+. aem/api.sh
+
 # Download tool
 
-VERSION=0.5.2
-OS="darwin"
-ARCH="arm64"
+VERSION=${AEMC_VERSION:-"0.5.2"}
+COMMAND_DEFAULT=${AEMC_COMMAND_DEFAULT:-"setup"}
 
-TOOL_DOWNLOAD_URL="https://github.com/wttech/aemc/releases/download/v${VERSION}/aemc-cli_${OS}_${ARCH}.tar.gz"
-TOOL_BIN_ROOT="bin/aemw/$VERSION"
-TOOL_BIN_ARCHIVE_FILE="$TOOL_BIN_ROOT/aemc-cli.tar.gz"
-TOOL_BIN_ARCHIVE_DIR="$TOOL_BIN_ROOT/aemc-cli"
-TOOL_BIN_EXEC_FILE="$TOOL_BIN_ARCHIVE_DIR/aemc-cli"
+OS=$(detectOs)
+ARCH=$(detectArch)
+DOWNLOAD_URL="https://github.com/wttech/aemc/releases/download/v${VERSION}/aemc-cli_${OS}_${ARCH}.tar.gz"
+BIN_ROOT="bin/aemw/$VERSION"
+BIN_ARCHIVE_FILE="$BIN_ROOT/aemc-cli.tar.gz"
+BIN_ARCHIVE_DIR="$BIN_ROOT/aemc-cli"
+BIN_EXEC_FILE="$BIN_ARCHIVE_DIR/aemc-cli"
 
-if [ ! -f "$TOOL_BIN_EXEC_FILE" ]; then
-  mkdir -p "$TOOL_BIN_ARCHIVE_DIR"
-  curl -o "$TOOL_BIN_ARCHIVE_FILE" -OJL "$TOOL_DOWNLOAD_URL"
-  tar -xvf "$TOOL_BIN_ARCHIVE_FILE" -C "$TOOL_BIN_ARCHIVE_DIR"
-  chmod +x "$TOOL_BIN_EXEC_FILE"
+if [ "$VERSION" = "dev" ]; then
+  make build
+  BIN_EXEC_FILE="bin/aemc-cli"
+elif [ ! -f "$BIN_EXEC_FILE" ]; then
+  mkdir -p "$BIN_ARCHIVE_DIR"
+  curl -o "$BIN_ARCHIVE_FILE" -OJL "$DOWNLOAD_URL"
+  tar -xvf "$BIN_ARCHIVE_FILE" -C "$BIN_ARCHIVE_DIR"
+  chmod +x "$BIN_EXEC_FILE"
 fi
 
-# Declare provisioning API
-
 # shellcheck disable=SC2139
-alias aem="./$TOOL_BIN_EXEC_FILE"
-
-# print provisioning step header
-step () {
-  DATE=$(date "+%Y-%m-%d %H:%M:%S")
-  echo "[$DATE] $@"
-}
-
-# check last command
-clc () {
-  if [ "$?" -ne 0 ]; then
-    exit "$?"
-  fi
-}
-
-# format seconds to more nice format
-duration () {
-  T=$1
-  D=$((T/60/60/24))
-  H=$((T/60/60%24))
-  M=$((T/60%60))
-  S=$((T%60))
-  (( $D > 0 )) && printf '%d day(s) ' $D
-  (( $H > 0 )) && printf '%d hour(s) ' $H
-  (( $M > 0 )) && printf '%d minute(s) ' $M
-  (( $D > 0 || $H > 0 || $M > 0 )) && printf 'and '
-  printf '%d second(s)\n' $S
-}
+alias aem="./$BIN_EXEC_FILE"
 
 # Include provisioning script that uses API
 
-COMMAND_DEFAULT="setup"
 COMMAND="${1:-$COMMAND_DEFAULT}"
-SCRIPT="aem/$COMMAND.sh"
+SCRIPT="aem/script/$COMMAND.sh"
 
 if [ -f "$SCRIPT" ]; then
   export AEM_OUTPUT_FORMAT=${AEM_OUTPUT_FORMAT:-none}
   export AEM_INSTANCE_PROCESSING_MODE=${AEM_INSTANCE_PROCESSING_MODE:-parallel}
 
-  STARTED_TIMESTAMP=$SECONDS
+  STARTED_TIMESTAMP=$(date +%s)
   step "script '$COMMAND' started"
+  step "check progress using command 'tail -f aem/home/aem.log'"
 
   # shellcheck source=aem/*.sh
   . "$SCRIPT"
 
-  ENDED_TIMESTAMP=$SECONDS
-  ELAPSED=$((ENDED_TIMESTAMP - $STARTED_TIMESTAMP))
+  ENDED_TIMESTAMP=$(date +%s)
+  ELAPSED=$((ENDED_TIMESTAMP - STARTED_TIMESTAMP))
   step "script '$COMMAND' ended in $(duration $ELAPSED)"
 else
   aem "$@"

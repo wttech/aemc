@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-. aem/up.sh
+. aem/script/up.sh
 
 step "configuring replication agent on author instance"
 PROPS="

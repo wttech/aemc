@@ -1,3 +1,5 @@
+# TODO before loaded by viper pre-process by some text/template engine and inject env vars
+
 log:
   timestamp_format: "2006-01-02 15:04:05"
   full_timestamp: true
@@ -8,16 +10,23 @@ log:
 #
 #output:
 #  format: text
-#  file: aem.log
+#  file: aem/home/aem.log
 
 java:
   #home_path: /Library/Java/JavaVirtualMachines/jdk-11.0.15.jdk/Contents/Home
 
 instance:
 
+  # Processing mode
+  # 'auto'     - for more than 1 local instances - 'serial', otherwise 'parallel'
+  # 'parallel' - for working with remote instances
+  # 'serial'   - for working with local instances
+  processing_mode: auto
+
   # Defined by single value (only remote)
   config_url: ''
 
+  # Defined strictly with full details (local or remote)
   config:
     local_author:
       http_url: http://localhost:4502
@@ -50,6 +59,13 @@ instance:
       license_path: '/Users/krystian.panek/Projects/gat/resource/remote/aem/instance/license.properties'
     unpack_path: '/Users/krystian.panek/Projects/aemc/out'
 
-package:
+  package:
+    upload:
+      force: false
 
-  upload_force: true
+  osgi:
+    install:
+      start: true
+      start_level: 20
+      refresh_packages: true
+

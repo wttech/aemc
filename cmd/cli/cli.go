@@ -11,9 +11,11 @@ import (
 	"github.com/wttech/aemc/pkg"
 	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common/fmtx"
+	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"io"
 	"os"
+	"path"
 	"reflect"
 	"sort"
 	"strings"
@@ -104,6 +106,10 @@ func (c *CLI) configureOutput() {
 }
 
 func (c *CLI) openOutputFile() *os.File {
+	err := osx.PathEnsure(path.Dir(c.outputFile))
+	if err != nil {
+		return nil
+	}
 	file, err := os.OpenFile(c.outputFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf(fmt.Sprintf("cannot open/create AEM output file properly at path '%s': %s", c.outputFile, err))

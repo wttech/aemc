@@ -103,14 +103,19 @@ func (c *Config) ConfigureLogger() {
 var configYml string
 
 func (c *Config) Init() error {
-	if osx.PathExists(FileName) {
-		return fmt.Errorf("config file already exists: '%s'", FileName)
+	file := c.File()
+	if osx.PathExists(file) {
+		return fmt.Errorf("config file already exists: '%s'", file)
 	}
-	err := osx.FileWrite(FileName, configYml)
+	err := osx.FileWrite(file, configYml)
 	if err != nil {
-		return fmt.Errorf("cannot create initial config file: '%s'", FileName)
+		return fmt.Errorf("cannot create initial config file '%s': '%w'", file, err)
 	}
 	return nil
+}
+
+func (c *Config) File() string {
+	return filePath() + "/" + FileName
 }
 
 const (

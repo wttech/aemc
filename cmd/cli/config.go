@@ -31,6 +31,7 @@ func (c *CLI) configCmd() *cobra.Command {
 				c.Fail(fmt.Sprintf("cannot initialize config: %s", err))
 				return
 			}
+			c.SetOutput("path", c.config.File())
 			c.Ok("config initialized properly")
 		},
 	})

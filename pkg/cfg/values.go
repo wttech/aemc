@@ -64,7 +64,7 @@ type ConfigValues struct {
 		}
 
 		Local struct {
-			RootPath string `mapstructure:"unpack_path" yaml:"unpack_path"`
+			UnpackPath string `mapstructure:"unpack_path" yaml:"unpack_path"`
 
 			Quickstart struct {
 				DistPath    string `mapstructure:"dist_path" yaml:"dist_path"`

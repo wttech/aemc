@@ -25,7 +25,7 @@ func (c *CLI) instanceCmd() *cobra.Command {
 			}
 			createdInstances, err := c.aem.InstanceManager().Create(localInstances)
 			if err != nil {
-				c.Fail(fmt.Sprintf("cannot create instance(s): %s", err))
+				c.Error(err)
 				return
 			}
 			c.SetOutput("created", createdInstances)
@@ -48,7 +48,7 @@ func (c *CLI) instanceCmd() *cobra.Command {
 			}
 			startedInstances, err := c.aem.InstanceManager().Start(localInstances)
 			if err != nil {
-				c.Fail(fmt.Sprintf("cannot start instance(s): %s", err))
+				c.Error(err)
 				return
 			}
 			c.SetOutput("started", startedInstances)
@@ -71,7 +71,7 @@ func (c *CLI) instanceCmd() *cobra.Command {
 			}
 			stoppedInstances, err := c.aem.InstanceManager().Stop(localInstances)
 			if err != nil {
-				c.Fail(fmt.Sprintf("cannot stop instance(s): %s", err))
+				c.Error(err)
 				return
 			}
 			c.SetOutput("stopped", stoppedInstances)
@@ -93,12 +93,12 @@ func (c *CLI) instanceCmd() *cobra.Command {
 			}
 			stoppedInstances, err := c.aem.InstanceManager().Stop(localInstances)
 			if err != nil {
-				c.Fail(fmt.Sprintf("cannot stop instance(s): %s", err))
+				c.Error(err)
 				return
 			}
 			startedInstances, err := c.aem.InstanceManager().Start(localInstances)
 			if err != nil {
-				c.Fail(fmt.Sprintf("cannot start instance(s): %s", err))
+				c.Error(err)
 				return
 			}
 			c.SetOutput("restarted", localInstances)
@@ -122,7 +122,7 @@ func (c *CLI) instanceCmd() *cobra.Command {
 			}
 			deletedInstances, err := c.aem.InstanceManager().Delete(localInstances)
 			if err != nil {
-				c.Fail(fmt.Sprintf("cannot delete instance(s): %s", err))
+				c.Error(err)
 				return
 			}
 			c.SetOutput("deleted", deletedInstances)

@@ -55,10 +55,10 @@ instance:
   # Managed locally (set up automatically)
   local:
     quickstart:
-      dist_path: '/Users/krystian.panek/Projects/gat/resource/remote/aem/instance/aem-sdk-quickstart-2022.7.8005.jar'
-      license_path: '/Users/krystian.panek/Projects/gat/resource/remote/aem/instance/license.properties'
-    unpack_path: '/Users/krystian.panek/Projects/aemc/out'
-
+      dist_path: './aem/home/lib/aem-sdk-quickstart-2022.7.8005.jar'
+      license_path: './aem/home/lib/license.properties'
+    unpack_path: './aem/home/instance'
+`
   package:
     upload:
       force: false

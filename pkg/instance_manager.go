@@ -374,7 +374,7 @@ func (im *InstanceManager) New(id, url, user, password string) *Instance {
 }
 
 type LocalOpts struct {
-	RootPath       string
+	UnpackPath     string
 	JavaOpts       *java.Opts
 	QuickstartOpts QuickstartOpts
 }
@@ -382,8 +382,8 @@ type LocalOpts struct {
 func (im *InstanceManager) NewLocalOpts() *LocalOpts {
 	pathCurrent := osx.PathCurrent()
 	return &LocalOpts{
-		RootPath: pathCurrent + "/" + RootPath,
-		JavaOpts: im.aem.javaOpts,
+		UnpackPath: pathCurrent + "/" + RootPath,
+		JavaOpts:   im.aem.javaOpts,
 		QuickstartOpts: QuickstartOpts{
 			DistPath:    pathCurrent + "/" + DistPath,
 			LicensePath: pathCurrent + "/" + LicensePath,
@@ -514,8 +514,8 @@ func (im *InstanceManager) configureInstances(config *cfg.Config) {
 		}
 	}
 
-	for _, instance := range filtered {
-		configureInstance(instance, config)
+	for _, inst := range filtered {
+		configureInstance(inst, config)
 	}
 
 	sort.SliceStable(filtered, func(i, j int) bool {
@@ -525,21 +525,21 @@ func (im *InstanceManager) configureInstances(config *cfg.Config) {
 	im.Instances = filtered
 }
 
-func configureInstance(instance Instance, config *cfg.Config) {
+func configureInstance(inst Instance, config *cfg.Config) {
 	packageOpts := config.Values().Instance.Package
-	instance.packageManager.uploadForce = packageOpts.Upload.Force
+	inst.packageManager.uploadForce = packageOpts.Upload.Force
 
 	osgiOpts := config.Values().Instance.OSGi
-	instance.osgi.bundleManager.InstallStart = osgiOpts.Install.Start
-	instance.osgi.bundleManager.InstallStartLevel = osgiOpts.Install.StartLevel
-	instance.osgi.bundleManager.InstallRefreshPackages = osgiOpts.Install.RefreshPackages
+	inst.osgi.bundleManager.InstallStart = osgiOpts.Install.Start
+	inst.osgi.bundleManager.InstallStartLevel = osgiOpts.Install.StartLevel
+	inst.osgi.bundleManager.InstallRefreshPackages = osgiOpts.Install.RefreshPackages
 }
 
 func (im *InstanceManager) configureLocalOpts(config *cfg.Config) {
 	opts := config.Values().Instance.Local
 
-	if len(opts.RootPath) > 0 {
-		im.LocalOpts.RootPath = opts.RootPath
+	if len(opts.UnpackPath) > 0 {
+		im.LocalOpts.UnpackPath = opts.UnpackPath
 	}
 	if len(opts.Quickstart.DistPath) > 0 {
 		im.LocalOpts.QuickstartOpts.DistPath = opts.Quickstart.DistPath

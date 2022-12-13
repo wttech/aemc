@@ -8,6 +8,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/osx"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -55,7 +56,12 @@ func (li *LocalInstance) Opts() *LocalOpts {
 }
 
 func (li *LocalInstance) Dir() string {
-	return fmt.Sprintf("%s/%s", li.Opts().RootPath, li.instance.ID())
+	path := fmt.Sprintf("%s/%s", li.Opts().UnpackPath, li.instance.ID())
+	absolutePath, err := filepath.Abs(path)
+	if err != nil {
+		log.Fatalf("cannot determine instance absolute path for '%s': %s", path, err)
+	}
+	return absolutePath
 }
 
 func (li *LocalInstance) binScript(name string) string {
@@ -111,7 +117,7 @@ func (li *LocalInstance) Start() error {
 	// TODO enforce 'java' to be always from JAVA_PATH (update $PATH var accordingly)
 	cmd := li.verboseCommand("/bin/sh", li.binScript("start"))
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("cannot start instance '%s': %w", li.instance.ID(), err)
+		return fmt.Errorf("cannot execute start script for instance '%s': %w", li.instance.ID(), err)
 	}
 
 	err := li.upLockSave()
@@ -130,7 +136,7 @@ func (li *LocalInstance) Stop() error {
 	// TODO enforce 'java' to be always from JAVA_PATH (update $PATH var accordingly)
 	cmd := li.verboseCommand("/bin/sh", li.binScript("stop"))
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("cannot stop instance '%s': %w", li.instance.ID(), err)
+		return fmt.Errorf("cannot execute stop script for instance '%s': %w", li.instance.ID(), err)
 	}
 
 	err := li.upLockDelete()
@@ -183,16 +189,13 @@ func (li *LocalInstance) AwaitNotRunning() error {
 type LocalStatus int
 
 const (
+	LocalStatusUnknown     LocalStatus = -1
 	LocalStatusRunning     LocalStatus = 0
 	LocalStatusDead        LocalStatus = 1
 	LocalStatusNotRunning  LocalStatus = 3
 	LocalStatusUnreachable LocalStatus = 4
-	LocalStatusUnknown     LocalStatus = -1
+	LocalStatusError       LocalStatus = 127
 )
-
-func (s LocalStatus) String() string {
-	return localStatuses()[s]
-}
 
 func localStatusOf(name string) LocalStatus {
 	for sk, sn := range localStatuses() {
@@ -210,7 +213,16 @@ func localStatuses() map[LocalStatus]string {
 		LocalStatusNotRunning:  "not running",
 		LocalStatusUnreachable: "unreachable",
 		LocalStatusUnknown:     "unknown",
+		LocalStatusError:       "status error",
 	}
+}
+
+func (s LocalStatus) String() string {
+	text, ok := localStatuses()[s]
+	if !ok {
+		return fmt.Sprintf("unknown (%d)", s)
+	}
+	return text
 }
 
 func (li *LocalInstance) Status() (LocalStatus, error) {

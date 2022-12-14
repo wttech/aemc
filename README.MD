@@ -11,9 +11,27 @@ Universal tool to manage AEM instances everywhere!
 - Fast & lightweight
 - No dependencies - usable on all operating systems and architectures
 
-## Distributions
+# Table of Contents
 
-### CLI - Overview
+* [Distributions](#distributions)
+  * [CLI - Overview](#cli---overview)
+  * [CLI - AEM Project Quickstart](#cli---aem-project-quickstart)
+  * [CLI - MacOSX installation](#cli---macosx-installation)
+    * [CLI - Windows installation](#cli---windows-installation)
+  * [CLI - Building &amp; installing from source](#cli---building--installing-from-source)
+  * [Ansible Collection](#ansible-collection)
+  * [Go Scripting](#go-scripting)
+* [Dependencies](#dependencies)
+* [Configuration](#configuration)
+  * [Generating default configuration](#generating-default-configuration)
+  * [Configuration precedence](#configuration-precedence)
+  * [Performance optimization](#performance-optimization)
+* [Contributing](#contributing)
+* [License](#license)
+
+# Distributions
+
+## CLI - Overview
 
 Provides complete set of commands to comfortably work with CRX packages, OSGi configurations, repository nodes and more.
 
@@ -25,7 +43,7 @@ Key assumptions:
 
 ![CLI Screenshot](docs/cli-main.png)
 
-### CLI - AEM Project Quickstart
+## CLI - AEM Project Quickstart
 
 Run command below to initialize AEM Compose tool in your project (e.g generated from [Adobe AEM Project Archetype](https://github.com/adobe/aem-project-archetype#usage)):
 
@@ -45,7 +63,7 @@ For example:
 sh aemw version
 ```
 
-### CLI - MacOSX installation
+## CLI - MacOSX installation
 
 Ensure having installed [Brew](https://brew.sh/) then run command:
 
@@ -62,7 +80,7 @@ Ensure having installed [Chocolatey](https://chocolatey.org/) then run command:
 choco install aem
 ```
 
-### CLI - Building & installing from source
+## CLI - Building & installing from source
 
 Ensure having installed [Go](https://go.dev/dl/) then run command:
 
@@ -70,11 +88,11 @@ Ensure having installed [Go](https://go.dev/dl/) then run command:
 go install github.com/wttech/aemc@latest
 ```
 
-### Ansible Collection
+## Ansible Collection
 
 See a separate project based on AEM Compose: <https://github.com/wttech/aemc-ansible>
 
-### Go Scripting
+## Go Scripting
 
 Consider implementing any application on top of AEM Compose API like using snippet below:
 
@@ -92,11 +110,11 @@ func main() {
 	instance := aem.InstanceManager().NewLocalAuthor()
 	changed, err := instance.PackageManager().DeployWithChanged("/tmp/my-package.zip")
 	if err != nil {
-		fmt.Printf("cannot deploy package: %s\n", err)
+        fmt.Printf("cannot deploy package: %s\n", err)
 		os.Exit(1)
     }
 	if changed {
-		aem.InstanceManager().AwaitStartedOne(instance)
+      aem.InstanceManager().AwaitStartedOne(instance)
     }
 	fmt.Printf("package deployed properly\n")
 	os.Exit(0)
@@ -109,15 +127,15 @@ Then to run application use command:
 go run aem.go
 ```
 
-## Dependencies
+# Dependencies
 
 This tool is written in Go. Go applications are very often self-sufficient which means that they are not relying on platform-specific libraries/dependencies. 
 The only requirement is to use proper tool binary distribution for each operating system and architecture.
 Check out [releases page](https://github.com/wttech/aemc/releases) to review available binary distributions.
 
-## Configuration
+# Configuration
 
-### Generating default configuration
+## Generating default configuration
 
 To start working with tool run command:
 
@@ -207,7 +225,7 @@ aem instance create
 aem instance start
 ```
 
-### Configuration precedence
+## Configuration precedence
 
 All configuration options specified in file *aem.yml* could be overridden by environment variables.
 Simply add prefix `AEM_` then each level of nested YAML object join with `_` and lowercase the name of each object.
@@ -216,7 +234,7 @@ For example: `instance.local.quickstart.dist_path` could be overridden by enviro
 
 Also note that some configuration options may be ultimately overridden by CLI flags, like `--output-format`.
 
-### Performance optimization
+## Performance optimization
 
 By default, fail-safe options are in use. However, to achieve maximum performance of the tool, considering setting these options:
 
@@ -225,7 +243,7 @@ export AEM_OUTPUT_MODE=none
 export AEM_INSTANCE_PROCESSING_MODE=parallel
 ```
 
-## Contributing
+# Contributing
 
 Issues reported or pull requests created will be very appreciated.
 
@@ -233,6 +251,6 @@ Issues reported or pull requests created will be very appreciated.
 2. Do code changes on a feature branch created from *develop* branch.
 3. Create a pull request with a base of *develop* branch.
 
-## License
+# License
 
 **AEM Compose** is licensed under the [Apache License, Version 2.0 (the "License")](https://www.apache.org/licenses/LICENSE-2.0.txt)

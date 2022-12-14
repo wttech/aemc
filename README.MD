@@ -25,6 +25,26 @@ Key assumptions:
 
 ![CLI Screenshot](docs/cli-main.png)
 
+### CLI - AEM Project Quickstart
+
+Run command below to initialize AEM Compose tool in your project (e.g generated from [Adobe AEM Project Archetype](https://github.com/adobe/aem-project-archetype)):
+
+```shell
+curl https://raw.githubusercontent.com/wttech/aemc/main/init.sh | sh
+```
+
+After successful initialization, remember to always use the tool via wrapper script in the following way:
+
+```shell
+sh aemw [command]
+```
+
+For example:
+
+```shell
+sh aemw version
+```
+
 ### CLI - MacOSX installation
 
 Ensure having installed [Brew](https://brew.sh/) then run command:

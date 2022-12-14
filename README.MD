@@ -27,7 +27,7 @@ Key assumptions:
 
 ### CLI - AEM Project Quickstart
 
-Run command below to initialize AEM Compose tool in your project (e.g generated from [Adobe AEM Project Archetype](https://github.com/adobe/aem-project-archetype)):
+Run command below to initialize AEM Compose tool in your project (e.g generated from [Adobe AEM Project Archetype](https://github.com/adobe/aem-project-archetype#usage)):
 
 ```shell
 curl https://raw.githubusercontent.com/wttech/aemc/main/init.sh | sh

@@ -17,7 +17,7 @@ Universal tool to manage AEM instances everywhere!
   * [CLI - Overview](#cli---overview)
   * [CLI - AEM Project Quickstart](#cli---aem-project-quickstart)
   * [CLI - MacOSX installation](#cli---macosx-installation)
-    * [CLI - Windows installation](#cli---windows-installation)
+  * [CLI - Windows installation](#cli---windows-installation)
   * [CLI - Building &amp; installing from source](#cli---building--installing-from-source)
   * [Ansible Collection](#ansible-collection)
   * [Go Scripting](#go-scripting)
@@ -72,7 +72,7 @@ brew tap wttech/aem
 brew install aem
 ```
 
-### CLI - Windows installation
+## CLI - Windows installation
 
 Ensure having installed [Chocolatey](https://chocolatey.org/) then run command:
 

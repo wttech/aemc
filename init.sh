@@ -7,7 +7,6 @@ WRAPPER_SCRIPT=aemw
 CONFIG_FILE=aem/home/config.yml
 
 if [ ! -f "$WRAPPER_SCRIPT" ]; then
-  echo ""
   echo "Downloading AEM Compose Files"
   echo ""
 
@@ -22,27 +21,25 @@ if [ ! -f "$WRAPPER_SCRIPT" ]; then
   curl -s ${SOURCE_URL}/${WRAPPER_SCRIPT} -o ${WRAPPER_SCRIPT}
 fi
 
-echo ""
 echo "Downloading AEM Compose CLI"
 echo ""
 
 chmod +x "${WRAPPER_SCRIPT}"
 ./${WRAPPER_SCRIPT} config init
 
-echo ""
 echo "Initialized AEM Compose"
 echo ""
-echo "The next step is instructing the tool where AEM files are located (JAR or SDK ZIP, license)"
-echo "Do that by adjusting the configuration file '${CONFIG_FILE}' and update properties: 'dist_path', 'license_path'"
-echo "After setting up properties, use control scripts to manage AEM instances:"
+
+echo "The next step is instructing the tool where AEM files are located (JAR or SDK ZIP, license)."
+echo "Adjust the configuration file '${CONFIG_FILE}' by updating properties: 'dist_path', 'license_path'."
+echo "Finally, use control scripts to manage AEM instances:"
 echo ""
 
 echo "sh aemw [setup|resetup|up|down|restart]"
 
 echo ""
-echo "Investigate possible AEM Compose CLI commands by running:"
+echo "It is also possible to run individual AEM Compose CLI commands separately."
+echo "Discover available commands by running:"
 echo ""
 
-echo ""
 echo "sh aemw --help"
-echo ""

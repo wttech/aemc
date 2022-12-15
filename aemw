@@ -10,7 +10,7 @@ COMMAND_DEFAULT=${AEMC_COMMAND_DEFAULT:-"setup"}
 OS=$(detectOs)
 ARCH=$(detectArch)
 DOWNLOAD_URL="https://github.com/wttech/aemc/releases/download/v${VERSION}/${BIN_NAME}_${OS}_${ARCH}.tar.gz"
-BIN_NAME="aem"
+BIN_NAME="aemc-cli"
 BIN_ROOT="aem/home/cli/$VERSION"
 BIN_ARCHIVE_FILE="$BIN_ROOT/$BIN_NAME.tar.gz"
 BIN_ARCHIVE_DIR="$BIN_ROOT/$BIN_NAME"
@@ -18,7 +18,7 @@ BIN_EXEC_FILE="$BIN_ARCHIVE_DIR/$BIN_NAME"
 
 if [ "$VERSION" = "dev" ]; then
   make build
-  BIN_EXEC_FILE="bin/$BIN_NAME"
+  BIN_EXEC_FILE="bin/aem"
 elif [ ! -f "$BIN_EXEC_FILE" ]; then
   mkdir -p "$BIN_ARCHIVE_DIR"
   curl -o "$BIN_ARCHIVE_FILE" -OJL "$DOWNLOAD_URL"

@@ -7,7 +7,10 @@ import (
 	"github.com/spf13/viper"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/osx"
+	"github.com/wttech/aemc/pkg/common/tplx"
+	"io"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -15,7 +18,7 @@ const (
 	FileBaseName = "aem"
 	FileType     = "yml"
 	FileName     = FileBaseName + "." + FileType
-	FilePath     = "./aem/home"
+	FilePath     = "./aem/home/aem.yml"
 	EnvPrefix    = "AEM"
 )
 
@@ -69,12 +72,25 @@ func readFromEnv(v *viper.Viper) {
 }
 
 func readFromFile(v *viper.Viper) {
-	v.SetConfigName(FileBaseName)
-	v.SetConfigType(FileType)
-	v.AddConfigPath(filePath())
-
-	if err := v.ReadInConfig(); err != nil {
-		log.Tracef("cannot load AEM config file properly: %s", err)
+	file := filePath()
+	tpl, err := tplx.New(filepath.Base(file)).ParseFiles(file)
+	if err != nil {
+		log.Fatalf("cannot parse AEM config file '%s': %s", file, err)
+		return
+	}
+	tplReader, tplWriter := io.Pipe()
+	go func() {
+		defer tplWriter.Close()
+		data := map[string]any{}
+		if err = tpl.Execute(tplWriter, data); err != nil {
+			log.Fatalf("cannot render AEM config template properly '%s': %s", file, err)
+		}
+	}()
+	if osx.PathExists(file) {
+		v.SetConfigType(filepath.Ext(file))
+		if err = v.ReadConfig(tplReader); err != nil {
+			log.Fatalf("cannot load AEM config file properly '%s': %s", file, err)
+		}
 	}
 }
 

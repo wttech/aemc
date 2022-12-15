@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/wttech/aemc/pkg/cfg"
 )
 
 func (c *CLI) configCmd() *cobra.Command {
@@ -39,7 +40,7 @@ func (c *CLI) configInitCmd() *cobra.Command {
 				c.Fail(fmt.Sprintf("cannot initialize config: %s", err))
 				return
 			}
-			c.SetOutput("path", c.config.File())
+			c.SetOutput("path", cfg.File())
 			c.Ok("config initialized properly")
 		},
 	}

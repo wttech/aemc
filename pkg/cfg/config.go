@@ -5,6 +5,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/tplx"
@@ -15,13 +16,11 @@ import (
 )
 
 const (
-	FileBaseName = "aem"
-	FileType     = "yml"
-	FileName     = FileBaseName + "." + FileType
-	FilePath     = "./aem/home/aem.yml"
-	EnvPrefix    = "AEM"
-	EnvVar       = "AEM_CONFIG_PATH"
-	InputStdin   = "STDIN"
+	EnvPrefix  = "AEM"
+	InputStdin = "STDIN"
+
+	FilePathDefault = common.HomeDir + "/aem.yml"
+	FilePathEnvVar  = "AEM_CONFIG_PATH"
 )
 
 // Config defines a place for managing input configuration from various sources (YML file, env vars, etc)
@@ -74,7 +73,7 @@ func readFromEnv(v *viper.Viper) {
 }
 
 func readFromFile(v *viper.Viper) {
-	file := filePath()
+	file := File()
 	if !osx.PathExists(file) {
 		log.Debugf("skipping reading AEM config file as it does not exist '%s'", file)
 		return
@@ -98,10 +97,10 @@ func readFromFile(v *viper.Viper) {
 	}()
 }
 
-func filePath() string {
-	path := os.Getenv(EnvVar)
+func File() string {
+	path := os.Getenv(FilePathEnvVar)
 	if len(path) == 0 {
-		path = FilePath
+		path = FilePathDefault
 	}
 	return path
 }
@@ -123,7 +122,7 @@ func (c *Config) ConfigureLogger() {
 var configYml string
 
 func (c *Config) Init() error {
-	file := c.File()
+	file := File()
 	if osx.PathExists(file) {
 		return fmt.Errorf("config file already exists: '%s'", file)
 	}
@@ -132,10 +131,6 @@ func (c *Config) Init() error {
 		return fmt.Errorf("cannot create initial config file '%s': '%w'", file, err)
 	}
 	return nil
-}
-
-func (c *Config) File() string {
-	return filePath() + "/" + FileName
 }
 
 func InputFormats() []string {

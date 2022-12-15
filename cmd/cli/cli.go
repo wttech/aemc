@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg"
 	"github.com/wttech/aemc/pkg/cfg"
+	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
@@ -20,6 +21,10 @@ import (
 	"sort"
 	"strings"
 	"time"
+)
+
+const (
+	OutputFileDefault = common.HomeDir + "/aem.log"
 )
 
 type CLI struct {
@@ -46,7 +51,7 @@ func NewCLI(aem *pkg.Aem, config *cfg.Config) *CLI {
 	result.config = config
 
 	result.outputFormat = fmtx.Text
-	result.outputFile = cfg.OutputFile
+	result.outputFile = OutputFileDefault
 	result.outputBuffer = bytes.NewBufferString("")
 	result.outputResponse = outputResponseDefault()
 	result.cmd = result.rootCmd()

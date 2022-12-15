@@ -1,6 +1,7 @@
 package cfg
 
 import (
+	"bytes"
 	_ "embed"
 	"fmt"
 	log "github.com/sirupsen/logrus"
@@ -9,7 +10,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/tplx"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -83,18 +83,15 @@ func readFromFile(v *viper.Viper) {
 		log.Fatalf("cannot parse AEM config file '%s': %s", file, err)
 		return
 	}
-	tplReader, tplWriter := io.Pipe()
-	go func() {
-		defer tplWriter.Close()
-		data := map[string]any{}
-		if err = tpl.Execute(tplWriter, data); err != nil {
-			log.Fatalf("cannot render AEM config template properly '%s': %s", file, err)
-		}
-		v.SetConfigType(filepath.Ext(file))
-		if err = v.ReadConfig(tplReader); err != nil {
-			log.Fatalf("cannot load AEM config file properly '%s': %s", file, err)
-		}
-	}()
+	data := map[string]any{"Env": osx.EnvVars()}
+	var tplOut bytes.Buffer
+	if err = tpl.Execute(&tplOut, data); err != nil {
+		log.Fatalf("cannot render AEM config template properly '%s': %s", file, err)
+	}
+	v.SetConfigType(filepath.Ext(file)[1:])
+	if err = v.ReadConfig(bytes.NewReader(tplOut.Bytes())); err != nil {
+		log.Fatalf("cannot load AEM config file properly '%s': %s", file, err)
+	}
 }
 
 func File() string {

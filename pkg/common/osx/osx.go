@@ -5,6 +5,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func PathCurrent() string {
@@ -59,4 +60,14 @@ func FileRead(path string) ([]byte, error) {
 		return nil, fmt.Errorf("cannot read file '%s': %w", path, err)
 	}
 	return bytes, nil
+}
+
+func EnvVars() map[string]string {
+	result := make(map[string]string)
+	for _, e := range os.Environ() {
+		if i := strings.Index(e, "="); i >= 0 {
+			result[e[:i]] = e[i+1:]
+		}
+	}
+	return result
 }

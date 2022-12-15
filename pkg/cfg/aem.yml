@@ -58,7 +58,7 @@ instance:
       refresh_packages: true
 
 java:
-  home_path: ""
+  home_path: {{ .Env.JAVA_HOME }}
 
 log:
   level: info

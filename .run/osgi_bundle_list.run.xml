@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="osgi bundle list" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="aemc" />
+    <working_directory value="$PROJECT_DIR$" />
+    <parameters value="osgi bundle list -A" />
+    <kind value="DIRECTORY" />
+    <package value="github.com/wttech/aemc" />
+    <directory value="$PROJECT_DIR$/cmd/cli" />
+    <filePath value="$PROJECT_DIR$/cmd/cli/main.go" />
+    <method v="2" />
+  </configuration>
+</component>

@@ -1,26 +1,4 @@
-log:
-  level: info
-  timestamp_format: "2006-01-02 15:04:05"
-  full_timestamp: true
-
-input:
-  format: yml
-  file: STDIN
-
-output:
-  format: text
-  file: aem.log
-
-java:
-  home_path: ""
-
 instance:
-
-  # Processing mode
-  # 'auto'     - for more than 1 local instances - 'serial', otherwise 'parallel'
-  # 'parallel' - for working with remote instances
-  # 'serial'   - for working with local instances
-  processing_mode: auto
 
   # Defined by single value (only remote)
   config_url: ''
@@ -44,19 +22,33 @@ instance:
     author: false
     publish: false
 
+  # Tuning performance & reliability
+  # 'auto'     - for more than 1 local instances - 'serial', otherwise 'parallel'
+  # 'parallel' - for working with remote instances
+  # 'serial'   - for working with local instances
+  processing_mode: auto
+
   # State checking
   check:
+    # Amount of time to wait for next state checking
     interval: 5s
 
   # Managed locally (set up automatically)
   local:
-    quickstart:
-      dist_path: "aem-sdk-quickstart.jar"
-      license_path: "license.properties"
-    unpack_path: "aem/home/instance"
+    # Data dir (Sling launchpad, JCR repository)
+    unpack_path: "./aem/home/instance"
 
+    # Source files
+    quickstart:
+      # AEM JAR or SDK ZIP
+      dist_path: "./aem/home/lib/aem-sdk-quickstart.jar"
+      # AEM License properties file
+      license_path: "./aem/home/lib/license.properties"
+
+  # Package Manager
   package:
     upload:
+      # Repeat upload even if already available on instance
       force: false
 
   osgi:
@@ -65,3 +57,18 @@ instance:
       start_level: 20
       refresh_packages: true
 
+java:
+  home_path: {{ .Env.JAVA_HOME }}
+
+log:
+  level: info
+  timestamp_format: "2006-01-02 15:04:05"
+  full_timestamp: true
+
+input:
+  format: yml
+  file: STDIN
+
+output:
+  format: text
+  file: aem.log

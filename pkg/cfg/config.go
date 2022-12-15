@@ -1,22 +1,26 @@
 package cfg
 
 import (
+	"bytes"
 	_ "embed"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/osx"
+	"github.com/wttech/aemc/pkg/common/tplx"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
 const (
-	FileBaseName = "aem"
-	FileType     = "yml"
-	FileName     = FileBaseName + "." + FileType
-	FilePath     = "./aem/home"
-	EnvPrefix    = "AEM"
+	EnvPrefix  = "AEM"
+	InputStdin = "STDIN"
+
+	FilePathDefault = common.HomeDir + "/aem.yml"
+	FilePathEnvVar  = "AEM_CONFIG_PATH"
 )
 
 // Config defines a place for managing input configuration from various sources (YML file, env vars, etc)
@@ -69,19 +73,31 @@ func readFromEnv(v *viper.Viper) {
 }
 
 func readFromFile(v *viper.Viper) {
-	v.SetConfigName(FileBaseName)
-	v.SetConfigType(FileType)
-	v.AddConfigPath(filePath())
-
-	if err := v.ReadInConfig(); err != nil {
-		log.Tracef("cannot load AEM config file properly: %s", err)
+	file := File()
+	if !osx.PathExists(file) {
+		log.Debugf("skipping reading AEM config file as it does not exist '%s'", file)
+		return
+	}
+	tpl, err := tplx.New(filepath.Base(file)).ParseFiles(file)
+	if err != nil {
+		log.Fatalf("cannot parse AEM config file '%s': %s", file, err)
+		return
+	}
+	data := map[string]any{"Env": osx.EnvVars()}
+	var tplOut bytes.Buffer
+	if err = tpl.Execute(&tplOut, data); err != nil {
+		log.Fatalf("cannot render AEM config template properly '%s': %s", file, err)
+	}
+	v.SetConfigType(filepath.Ext(file)[1:])
+	if err = v.ReadConfig(bytes.NewReader(tplOut.Bytes())); err != nil {
+		log.Fatalf("cannot load AEM config file properly '%s': %s", file, err)
 	}
 }
 
-func filePath() string {
-	path := os.Getenv("AEM_CONFIG_PATH")
+func File() string {
+	path := os.Getenv(FilePathEnvVar)
 	if len(path) == 0 {
-		path = FilePath
+		path = FilePathDefault
 	}
 	return path
 }
@@ -103,7 +119,7 @@ func (c *Config) ConfigureLogger() {
 var configYml string
 
 func (c *Config) Init() error {
-	file := c.File()
+	file := File()
 	if osx.PathExists(file) {
 		return fmt.Errorf("config file already exists: '%s'", file)
 	}
@@ -113,15 +129,6 @@ func (c *Config) Init() error {
 	}
 	return nil
 }
-
-func (c *Config) File() string {
-	return filePath() + "/" + FileName
-}
-
-const (
-	InputStdin string = "STDIN"
-	OutputFile string = "aem/home/aem.log"
-)
 
 func InputFormats() []string {
 	return []string{fmtx.YML, fmtx.JSON}

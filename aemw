@@ -4,7 +4,7 @@
 
 # Download tool
 
-VERSION=${AEMC_VERSION:-"0.5.3"}
+VERSION=${AEMC_VERSION:-"0.5.5"}
 COMMAND_DEFAULT=${AEMC_COMMAND_DEFAULT:-"setup"}
 
 OS=$(detectOs)
@@ -20,8 +20,8 @@ if [ "$VERSION" = "dev" ]; then
   BIN_EXEC_FILE="bin/aemc-cli"
 elif [ ! -f "$BIN_EXEC_FILE" ]; then
   mkdir -p "$BIN_ARCHIVE_DIR"
-  curl -s -o "$BIN_ARCHIVE_FILE" -OJL "$DOWNLOAD_URL"
-  tar -xvf "$BIN_ARCHIVE_FILE" -C "$BIN_ARCHIVE_DIR"
+  curl -o "$BIN_ARCHIVE_FILE" -OJL "$DOWNLOAD_URL"
+  tar -xf "$BIN_ARCHIVE_FILE" -C "$BIN_ARCHIVE_DIR"
   chmod +x "$BIN_EXEC_FILE"
 fi
 

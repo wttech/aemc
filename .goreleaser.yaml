@@ -6,8 +6,8 @@ before:
 
 builds:
   - id: aemc-cli
-    binary: aemc-cli
-    main: './cmd/cli'
+    binary: aem
+    main: './cmd/aem'
     tags:
       - aem
       - cli

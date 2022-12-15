@@ -5,9 +5,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var appVersion = "unknown"
-var appCommit = "unknown"
-var appCommitDate = "unknown"
+var appVersion = "<unknown>"
+var appCommit = "<unknown>"
+var appCommitDate = "<unknown>"
 
 type AppInfo struct {
 	Version    string `yaml:"version" json:"version"`

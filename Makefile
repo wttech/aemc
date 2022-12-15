@@ -25,12 +25,12 @@ lint:
 	revive -config revive.toml -formatter friendly ./...
 
 build:
-	go build --ldflags "${.LD_FLAGS}" -o bin/aemc-cli ./cmd/cli
+	go build --ldflags "${.LD_FLAGS}" -o bin/aem ./cmd/aem
 
 other_build:
-	GOARCH=amd64 GOOS=darwin go build --ldflags "${.LD_FLAGS}" -o bin/aemc-cli.darwin ./cmd/cli
-	GOARCH=amd64 GOOS=linux go build --ldflags "${.LD_FLAGS}" -o bin/aemc-cli.linux ./cmd/cli
-	GOARCH=amd64 GOOS=windows go build --ldflags "${.LD_FLAGS}" -o bin/aemc-cli.exe ./cmd/cli
+	GOARCH=amd64 GOOS=darwin go build --ldflags "${.LD_FLAGS}" -o bin/aem.darwin ./cmd/aem
+	GOARCH=amd64 GOOS=linux go build --ldflags "${.LD_FLAGS}" -o bin/aem.linux ./cmd/aem
+	GOARCH=amd64 GOOS=windows go build --ldflags "${.LD_FLAGS}" -o bin/aem.exe ./cmd/aem
 
 clean:
 	go clean

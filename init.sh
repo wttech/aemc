@@ -6,7 +6,7 @@ AEM_WRAPPER=aemw
 AEM_DIR=aem
 SCRIPT_DIR=${AEM_DIR}/script
 HOME_DIR=${AEM_DIR}/home
-CONFIG_FILE=${HOME_DIR}/config.yml
+CONFIG_FILE=${HOME_DIR}/aem.yml
 
 if [ -f "$AEM_WRAPPER" ]; then
   echo "The project contains already AEM Compose!"
@@ -30,7 +30,7 @@ echo "Downloading & Running AEM Compose CLI"
 echo ""
 
 chmod +x "${AEM_WRAPPER}"
-./${AEM_WRAPPER} version
+sh ${AEM_WRAPPER} version
 
 echo "Scaffolding AEM Compose configuration file"
 echo ""

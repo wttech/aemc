@@ -21,7 +21,7 @@ if [ "$VERSION" = "dev" ]; then
 elif [ ! -f "$BIN_EXEC_FILE" ]; then
   mkdir -p "$BIN_ARCHIVE_DIR"
   curl -s -o "$BIN_ARCHIVE_FILE" -OJL "$DOWNLOAD_URL"
-  tar -xvf "$BIN_ARCHIVE_FILE" -C "$BIN_ARCHIVE_DIR"
+  tar -xf "$BIN_ARCHIVE_FILE" -C "$BIN_ARCHIVE_DIR"
   chmod +x "$BIN_EXEC_FILE"
 fi
 

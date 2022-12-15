@@ -4,7 +4,7 @@
 
 # Download tool
 
-VERSION=${AEMC_VERSION:-"0.5.5"}
+VERSION=${AEMC_VERSION:-"0.5.7"}
 COMMAND_DEFAULT=${AEMC_COMMAND_DEFAULT:-"setup"}
 
 OS=$(detectOs)

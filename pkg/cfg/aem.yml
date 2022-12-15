@@ -71,4 +71,4 @@ input:
 
 output:
   format: text
-  file: aem.log
+  file: aem/home/aem.log

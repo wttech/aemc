@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-VERSION=${AEMC_VERSION:-"0.5.10"}
+VERSION=${AEMC_VERSION:-"0.5.11"}
 COMMAND_DEFAULT=${AEMC_COMMAND_DEFAULT:-"setup"}
 
 . aem/api.sh

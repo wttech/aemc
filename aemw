@@ -5,50 +5,51 @@ COMMAND_DEFAULT=${AEMC_COMMAND_DEFAULT:-"setup"}
 
 . aem/api.sh
 
-BIN_NAME="aemc-cli"
 OS=$(detectOs)
 ARCH=$(detectArch)
-DOWNLOAD_URL="https://github.com/wttech/aemc/releases/download/v${VERSION}/${BIN_NAME}_${OS}_${ARCH}.tar.gz"
+DOWNLOAD_NAME="aemc-cli"
+DOWNLOAD_URL="https://github.com/wttech/aemc/releases/download/v${VERSION}/${DOWNLOAD_NAME}_${OS}_${ARCH}.tar.gz"
 
 # Download or build tool
 
-BIN_ROOT="aem/home/cli/$VERSION"
-BIN_ARCHIVE_FILE="$BIN_ROOT/$BIN_NAME.tar.gz"
-BIN_ARCHIVE_DIR="$BIN_ROOT/$BIN_NAME"
-BIN_EXEC_FILE="$BIN_ARCHIVE_DIR/$BIN_NAME"
+BIN_NAME="aem"
+BIN_ROOT="aem/home/cli/${VERSION}"
+BIN_ARCHIVE_FILE="${BIN_ROOT}/${DOWNLOAD_NAME}.tar.gz"
+BIN_ARCHIVE_DIR="${BIN_ROOT}/${DOWNLOAD_NAME}"
+BIN_EXEC_FILE="${BIN_ARCHIVE_DIR}/${BIN_NAME}"
 
-if [ "$VERSION" = "dev" ]; then
+if [ "${VERSION}" = "dev" ]; then
   make build
   BIN_EXEC_FILE="bin/aem"
-elif [ ! -f "$BIN_EXEC_FILE" ]; then
-  mkdir -p "$BIN_ARCHIVE_DIR"
-  curl -o "$BIN_ARCHIVE_FILE" -OJL "$DOWNLOAD_URL"
-  tar -xf "$BIN_ARCHIVE_FILE" -C "$BIN_ARCHIVE_DIR"
-  chmod +x "$BIN_EXEC_FILE"
+elif [ ! -f "${BIN_EXEC_FILE}" ]; then
+  mkdir -p "${BIN_ARCHIVE_DIR}"
+  curl -o "${BIN_ARCHIVE_FILE}" -OJL "${DOWNLOAD_URL}"
+  tar -xf "${BIN_ARCHIVE_FILE}" -C "${BIN_ARCHIVE_DIR}"
+  chmod +x "${BIN_EXEC_FILE}"
 fi
 
 # shellcheck disable=SC2139
-alias aem="./$BIN_EXEC_FILE"
+alias aem="./${BIN_EXEC_FILE}"
 
 # Include provisioning script that uses API
 
-COMMAND="${1:-$COMMAND_DEFAULT}"
-SCRIPT="aem/script/$COMMAND.sh"
+COMMAND="${1:-${COMMAND_DEFAULT}}"
+SCRIPT="aem/script/${COMMAND}.sh"
 
 if [ -f "$SCRIPT" ]; then
   export AEM_OUTPUT_FORMAT=${AEM_OUTPUT_FORMAT:-none}
   export AEM_INSTANCE_PROCESSING_MODE=${AEM_INSTANCE_PROCESSING_MODE:-parallel}
 
   STARTED_TIMESTAMP=$(date +%s)
-  step "script '$COMMAND' started"
+  step "script '${COMMAND}' started"
   step "check progress using command 'tail -f aem/home/aem.log'"
 
   # shellcheck source=aem/*.sh
-  . "$SCRIPT"
+  . "${SCRIPT}"
 
   ENDED_TIMESTAMP=$(date +%s)
   ELAPSED=$((ENDED_TIMESTAMP - STARTED_TIMESTAMP))
-  step "script '$COMMAND' ended in $(duration $ELAPSED)"
+  step "script '${COMMAND}' ended in $(duration $ELAPSED)"
 else
   aem "$@"
 fi

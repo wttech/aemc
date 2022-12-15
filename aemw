@@ -1,11 +1,9 @@
 #!/usr/bin/env sh
 
-. aem/api.sh
-
-# Download tool
-
 VERSION=${AEMC_VERSION:-"0.5.7"}
 COMMAND_DEFAULT=${AEMC_COMMAND_DEFAULT:-"setup"}
+
+. aem/api.sh
 
 OS=$(detectOs)
 ARCH=$(detectArch)
@@ -15,6 +13,8 @@ BIN_ROOT="aem/home/cli/$VERSION"
 BIN_ARCHIVE_FILE="$BIN_ROOT/$BIN_NAME.tar.gz"
 BIN_ARCHIVE_DIR="$BIN_ROOT/$BIN_NAME"
 BIN_EXEC_FILE="$BIN_ARCHIVE_DIR/$BIN_NAME"
+
+# Download or build tool
 
 if [ "$VERSION" = "dev" ]; then
   make build

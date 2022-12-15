@@ -66,7 +66,7 @@ sh aemw version
 Ensure having installed [Go](https://go.dev/dl/) then run command:
 
 - latest released version: `go install github.com/wttech/aemc/cmd/aem@latest`,
-- specific released version: `go install github.com/wttech/aemc/cmd/aem@vX.Y.Z` (replace `X.Y.Z` with one of [releases](https://github.com/wttech/aemc/releases)),
+- specific released version: `go install github.com/wttech/aemc/cmd/aem@v0.5.10`,
 - recently committed version: `go install github.com/wttech/aemc/cmd/aem@main`,
 
 ## Ansible Collection
@@ -223,6 +223,15 @@ By default, fail-safe options are in use. However, to achieve maximum performanc
 export AEM_OUTPUT_MODE=none
 export AEM_INSTANCE_PROCESSING_MODE=parallel
 ```
+
+# Releasing
+
+Below process is planned to be automated:
+
+1. Plan next version number (tag name),
+2. Update version to next planned version in `init.sh`, `aemw`,
+3. Commit changes, create a tag then push changes and newly created tag,
+4. Release job will be run automatically.
 
 # Contributing
 

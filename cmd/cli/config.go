@@ -11,8 +11,13 @@ func (c *CLI) configCmd() *cobra.Command {
 		Aliases: []string{"cfg"},
 		Short:   "Manages configuration",
 	}
+	cmd.AddCommand(c.configListCmd())
+	cmd.AddCommand(c.configInitCmd())
+	return cmd
+}
 
-	cmd.AddCommand(&cobra.Command{
+func (c *CLI) configListCmd() *cobra.Command {
+	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls", "print"},
 		Short:   "Print effective configuration",
@@ -20,9 +25,12 @@ func (c *CLI) configCmd() *cobra.Command {
 			c.SetOutput("values", c.config.Values())
 			c.Ok("config values printed")
 		},
-	})
+	}
+	return cmd
+}
 
-	cmd.AddCommand(&cobra.Command{
+func (c *CLI) configInitCmd() *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize configuration",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -34,7 +42,6 @@ func (c *CLI) configCmd() *cobra.Command {
 			c.SetOutput("path", c.config.File())
 			c.Ok("config initialized properly")
 		},
-	})
-
+	}
 	return cmd
 }

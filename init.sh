@@ -1,12 +1,14 @@
 #!/usr/bin/env sh
 
 SOURCE_URL=https://raw.githubusercontent.com/wttech/aemc/main
+
+AEM_WRAPPER=aemw
 AEM_DIR=aem
 SCRIPT_DIR=${AEM_DIR}/script
-WRAPPER_SCRIPT=aemw
-CONFIG_FILE=aem/home/config.yml
+HOME_DIR=${AEM_DIR}/home
+CONFIG_FILE=${HOME_DIR}/config.yml
 
-if [ -f "$WRAPPER_SCRIPT" ]; then
+if [ -f "$AEM_WRAPPER" ]; then
   echo "The project contains already AEM Compose!"
   exit 1
 fi
@@ -14,7 +16,7 @@ fi
 echo "Downloading AEM Compose Files"
 echo ""
 
-mkdir -p "$SCRIPT_DIR"
+mkdir -p "$SCRIPT_DIR" "$HOME_DIR"
 curl -s ${SOURCE_URL}/${SCRIPT_DIR}/destroy.sh -o ${SCRIPT_DIR}/destroy.sh
 curl -s ${SOURCE_URL}/${SCRIPT_DIR}/down.sh -o ${SCRIPT_DIR}/down.sh
 curl -s ${SOURCE_URL}/${SCRIPT_DIR}/resetup.sh -o ${SCRIPT_DIR}/resetup.sh
@@ -22,14 +24,18 @@ curl -s ${SOURCE_URL}/${SCRIPT_DIR}/restart.sh -o ${SCRIPT_DIR}/restart.sh
 curl -s ${SOURCE_URL}/${SCRIPT_DIR}/setup.sh -o ${SCRIPT_DIR}/setup.sh
 curl -s ${SOURCE_URL}/${SCRIPT_DIR}/up.sh -o ${SCRIPT_DIR}/up.sh
 curl -s ${SOURCE_URL}/${AEM_DIR}/api.sh -o ${AEM_DIR}/api.sh
-curl -s ${SOURCE_URL}/${WRAPPER_SCRIPT} -o ${WRAPPER_SCRIPT}
+curl -s ${SOURCE_URL}/${AEM_WRAPPER} -o ${AEM_WRAPPER}
 
-
-echo "Downloading AEM Compose CLI"
+echo "Downloading & Running AEM Compose CLI"
 echo ""
 
-chmod +x "${WRAPPER_SCRIPT}"
-./${WRAPPER_SCRIPT} config init
+chmod +x "${AEM_WRAPPER}"
+./${AEM_WRAPPER} version
+
+echo "Scaffolding AEM Compose configuration file"
+echo ""
+
+./${AEM_WRAPPER} config init
 
 echo "Initialized AEM Compose"
 echo ""

@@ -20,6 +20,8 @@ const (
 	FileName     = FileBaseName + "." + FileType
 	FilePath     = "./aem/home/aem.yml"
 	EnvPrefix    = "AEM"
+	EnvVar       = "AEM_CONFIG_PATH"
+	InputStdin   = "STDIN"
 )
 
 // Config defines a place for managing input configuration from various sources (YML file, env vars, etc)
@@ -73,6 +75,10 @@ func readFromEnv(v *viper.Viper) {
 
 func readFromFile(v *viper.Viper) {
 	file := filePath()
+	if !osx.PathExists(file) {
+		log.Debugf("skipping reading AEM config file as it does not exist '%s'", file)
+		return
+	}
 	tpl, err := tplx.New(filepath.Base(file)).ParseFiles(file)
 	if err != nil {
 		log.Fatalf("cannot parse AEM config file '%s': %s", file, err)
@@ -85,17 +91,15 @@ func readFromFile(v *viper.Viper) {
 		if err = tpl.Execute(tplWriter, data); err != nil {
 			log.Fatalf("cannot render AEM config template properly '%s': %s", file, err)
 		}
-	}()
-	if osx.PathExists(file) {
 		v.SetConfigType(filepath.Ext(file))
 		if err = v.ReadConfig(tplReader); err != nil {
 			log.Fatalf("cannot load AEM config file properly '%s': %s", file, err)
 		}
-	}
+	}()
 }
 
 func filePath() string {
-	path := os.Getenv("AEM_CONFIG_PATH")
+	path := os.Getenv(EnvVar)
 	if len(path) == 0 {
 		path = FilePath
 	}
@@ -133,11 +137,6 @@ func (c *Config) Init() error {
 func (c *Config) File() string {
 	return filePath() + "/" + FileName
 }
-
-const (
-	InputStdin string = "STDIN"
-	OutputFile string = "aem/home/aem.log"
-)
 
 func InputFormats() []string {
 	return []string{fmtx.YML, fmtx.JSON}

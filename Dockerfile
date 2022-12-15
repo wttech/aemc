@@ -1,3 +1,3 @@
 FROM scratch
-ENTRYPOINT ["/aemc-cli"]
+ENTRYPOINT ["/aem"]
 COPY aem /

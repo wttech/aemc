@@ -16,11 +16,11 @@ import (
 )
 
 const (
-	EnvPrefix  = "AEM"
-	InputStdin = "STDIN"
-
-	FilePathDefault = common.HomeDir + "/aem.yml"
-	FilePathEnvVar  = "AEM_CONFIG_PATH"
+	EnvPrefix         = "AEM"
+	InputStdin        = "STDIN"
+	OutputFileDefault = common.HomeDir + "/aem.log"
+	FilePathDefault   = common.HomeDir + "/aem.yml"
+	FilePathEnvVar    = "AEM_CONFIG_PATH"
 )
 
 // Config defines a place for managing input configuration from various sources (YML file, env vars, etc)

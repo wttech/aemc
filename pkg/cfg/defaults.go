@@ -14,7 +14,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("input.format", fmtx.YML)
 	v.SetDefault("input.file", InputStdin)
 	v.SetDefault("output.format", fmtx.Text)
-	v.SetDefault("output.file", FilePathDefault)
+	v.SetDefault("output.file", OutputFileDefault)
 
 	v.SetDefault("instance.processing_mode", instance.ProcessingAuto)
 }

@@ -51,6 +51,7 @@ func (c *CLI) instanceCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			c.aem.InstanceManager().AwaitStarted(localInstances)
 			c.SetOutput("started", startedInstances)
 			if len(startedInstances) > 0 {
 				c.Changed(fmt.Sprintf("started instance(s) (%d)", len(startedInstances)))
@@ -74,6 +75,7 @@ func (c *CLI) instanceCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			c.aem.InstanceManager().AwaitStopped(localInstances)
 			c.SetOutput("stopped", stoppedInstances)
 			if len(stoppedInstances) > 0 {
 				c.Changed(fmt.Sprintf("stopped instance(s) (%d)", len(stoppedInstances)))

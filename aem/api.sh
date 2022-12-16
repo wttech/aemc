@@ -52,3 +52,12 @@ detectOs () {
 detectArch () {
   uname -m
 }
+
+downloadFile () {
+  URL=$1
+  FILE=$2
+  if [ ! -f "${FILE}" ]; then
+      mkdir -p "$(dirname "$FILE")"
+      curl -o "$FILE" -OJL "$URL"
+  fi
+}

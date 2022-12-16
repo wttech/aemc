@@ -18,9 +18,9 @@ func (c *CLI) instanceCmd() *cobra.Command {
 		Short:   "Creates AEM instance(s)",
 		Aliases: []string{"make"},
 		Run: func(cmd *cobra.Command, args []string) {
-			localInstances := c.aem.InstanceManager().Locals()
-			if len(localInstances) == 0 {
-				c.Fail("no local instance(s) defined")
+			localInstances, err := c.aem.InstanceManager().SomeLocals()
+			if err != nil {
+				c.Error(err)
 				return
 			}
 			createdInstances, err := c.aem.InstanceManager().Create(localInstances)
@@ -41,9 +41,9 @@ func (c *CLI) instanceCmd() *cobra.Command {
 		Aliases: []string{"up"},
 		Short:   "Starts AEM instance(s)",
 		Run: func(cmd *cobra.Command, args []string) {
-			localInstances := c.aem.InstanceManager().Locals()
-			if len(localInstances) == 0 {
-				c.Fail("no local instance(s) defined")
+			localInstances, err := c.aem.InstanceManager().SomeLocals()
+			if err != nil {
+				c.Error(err)
 				return
 			}
 			startedInstances, err := c.aem.InstanceManager().Start(localInstances)
@@ -51,7 +51,6 @@ func (c *CLI) instanceCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			c.aem.InstanceManager().AwaitStarted(localInstances)
 			c.SetOutput("started", startedInstances)
 			if len(startedInstances) > 0 {
 				c.Changed(fmt.Sprintf("started instance(s) (%d)", len(startedInstances)))
@@ -65,9 +64,9 @@ func (c *CLI) instanceCmd() *cobra.Command {
 		Aliases: []string{"down"},
 		Short:   "Stops AEM instance(s)",
 		Run: func(cmd *cobra.Command, args []string) {
-			localInstances := c.aem.InstanceManager().Locals()
-			if len(localInstances) == 0 {
-				c.Fail("no local instance(s) defined")
+			localInstances, err := c.aem.InstanceManager().SomeLocals()
+			if err != nil {
+				c.Error(err)
 				return
 			}
 			stoppedInstances, err := c.aem.InstanceManager().Stop(localInstances)
@@ -75,7 +74,6 @@ func (c *CLI) instanceCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			c.aem.InstanceManager().AwaitStopped(localInstances)
 			c.SetOutput("stopped", stoppedInstances)
 			if len(stoppedInstances) > 0 {
 				c.Changed(fmt.Sprintf("stopped instance(s) (%d)", len(stoppedInstances)))
@@ -88,9 +86,9 @@ func (c *CLI) instanceCmd() *cobra.Command {
 		Use:   "restart",
 		Short: "Restarts AEM instance(s)",
 		Run: func(cmd *cobra.Command, args []string) {
-			localInstances := c.aem.InstanceManager().Locals()
-			if len(localInstances) == 0 {
-				c.Fail("no local instance(s) defined")
+			localInstances, err := c.aem.InstanceManager().SomeLocals()
+			if err != nil {
+				c.Error(err)
 				return
 			}
 			stoppedInstances, err := c.aem.InstanceManager().Stop(localInstances)
@@ -117,9 +115,9 @@ func (c *CLI) instanceCmd() *cobra.Command {
 		Aliases: []string{"destroy"},
 		Short:   "Deletes AEM instance(s)",
 		Run: func(cmd *cobra.Command, args []string) {
-			localInstances := c.aem.InstanceManager().Locals()
-			if len(localInstances) == 0 {
-				c.Fail("no local instance(s) defined")
+			localInstances, err := c.aem.InstanceManager().SomeLocals()
+			if err != nil {
+				c.Error(err)
 				return
 			}
 			deletedInstances, err := c.aem.InstanceManager().Delete(localInstances)
@@ -140,9 +138,9 @@ func (c *CLI) instanceCmd() *cobra.Command {
 		Use:   "status",
 		Short: "Checks status of AEM instance(s)",
 		Run: func(cmd *cobra.Command, args []string) {
-			instances := c.aem.InstanceManager().All()
-			if len(instances) == 0 {
-				c.Fail("no instance(s) defined")
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
 				return
 			}
 			c.SetOutput("instances", instances)
@@ -155,9 +153,9 @@ func (c *CLI) instanceCmd() *cobra.Command {
 		Aliases: []string{"wait"},
 		Short:   "Awaits stable AEM instance(s)",
 		Run: func(cmd *cobra.Command, args []string) {
-			instances := c.aem.InstanceManager().All()
-			if len(instances) == 0 {
-				c.Fail("no instance(s) defined")
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
 				return
 			}
 			c.aem.InstanceManager().AwaitStarted(instances)

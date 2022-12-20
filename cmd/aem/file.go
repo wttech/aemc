@@ -6,9 +6,8 @@ import (
 
 func (c *CLI) fileCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "file",
-		Aliases: []string{"cfg"},
-		Short:   "File operation utilities",
+		Use:   "file",
+		Short: "File operation utilities",
 	}
 	cmd.AddCommand(c.fileDownloadCmd())
 	return cmd

@@ -3,6 +3,7 @@ package osx
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -62,6 +63,46 @@ func FileRead(path string) ([]byte, error) {
 	return bytes, nil
 }
 
+var fileCopyBufferSize = 4 * 1024 // 4 kB <https://stackoverflow.com/a/3034155>
+
+func FileCopy(sourcePath, destinationPath string) error {
+	sourceStat, err := os.Stat(sourcePath)
+	if err != nil {
+		return err
+	}
+	if !sourceStat.Mode().IsRegular() {
+		return fmt.Errorf("cannot copy file from '%s' to '%s' as source does not exist (or is not a regular file)", sourcePath, destinationPath)
+	}
+	source, err := os.Open(sourcePath)
+	if err != nil {
+		return err
+	}
+	defer source.Close()
+	_, err = os.Stat(destinationPath)
+	if err == nil {
+		return fmt.Errorf("cannot copy file from '%s' to '%s' as destination already exists", sourcePath, destinationPath)
+	}
+	destination, err := os.Create(destinationPath)
+	if err != nil {
+		return err
+	}
+	defer destination.Close()
+	buf := make([]byte, fileCopyBufferSize)
+	for {
+		n, err := source.Read(buf)
+		if err != nil && err != io.EOF {
+			return err
+		}
+		if n == 0 {
+			break
+		}
+		if _, err := destination.Write(buf[:n]); err != nil {
+			return err
+		}
+	}
+	return err
+}
+
 func EnvVars() map[string]string {
 	result := make(map[string]string)
 	for _, e := range os.Environ() {
@@ -70,4 +111,12 @@ func EnvVars() map[string]string {
 		}
 	}
 	return result
+}
+
+func PathAbs(path string) string {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		log.Fatalf(fmt.Sprintf("cannot determine absolute path for '%s': %s", path, err))
+	}
+	return path
 }

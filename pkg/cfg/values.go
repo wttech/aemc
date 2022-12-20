@@ -46,6 +46,7 @@ type ConfigValues struct {
 		ProcessingMode string `mapstructure:"processing_mode" yaml:"processing_mode"`
 
 		Check struct {
+			Warmup       time.Duration `mapstructure:"warmup" yaml:"warmup"`
 			Interval     time.Duration `mapstructure:"interval" yaml:"interval"`
 			BundleStable struct {
 				SymbolicNamesIgnored []string `mapstructure:"symbolic_names_ignored" yaml:"symbolic_names_ignored"`

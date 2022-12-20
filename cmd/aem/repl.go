@@ -36,7 +36,7 @@ func (c *CLI) replAgentReadCmd() *cobra.Command {
 		Short:   "Read replication agent details",
 		Aliases: []string{"get"},
 		Run: func(cmd *cobra.Command, args []string) {
-			i, err := c.aem.InstanceManager().Some()
+			i, err := c.aem.InstanceManager().One()
 			if err != nil {
 				c.Error(err)
 				return
@@ -56,7 +56,7 @@ func (c *CLI) replAgentDeleteCmd() *cobra.Command {
 		Short:   "Delete replication agent",
 		Aliases: []string{"remove", "rm"},
 		Run: func(cmd *cobra.Command, args []string) {
-			i, err := c.aem.InstanceManager().Some()
+			i, err := c.aem.InstanceManager().One()
 			if err != nil {
 				c.Error(err)
 				return
@@ -85,7 +85,7 @@ func (c *CLI) replAgentSetupCmd() *cobra.Command {
 		Short:   "Setup replication agent",
 		Aliases: []string{"configure"},
 		Run: func(cmd *cobra.Command, args []string) {
-			instance, err := c.aem.InstanceManager().Some()
+			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
 				c.Error(err)
 				return

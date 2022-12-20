@@ -8,7 +8,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/osx"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -56,12 +55,7 @@ func (li *LocalInstance) Opts() *LocalOpts {
 }
 
 func (li *LocalInstance) Dir() string {
-	path := fmt.Sprintf("%s/%s", li.Opts().UnpackPath, li.instance.ID())
-	absolutePath, err := filepath.Abs(path)
-	if err != nil {
-		log.Fatalf("cannot determine instance absolute path for '%s': %s", path, err)
-	}
-	return absolutePath
+	return osx.PathAbs(fmt.Sprintf("%s/%s", li.Opts().UnpackPath, li.instance.ID()))
 }
 
 func (li *LocalInstance) binScript(name string) string {
@@ -76,20 +70,24 @@ func (li *LocalInstance) Create() error {
 	if err := osx.PathEnsure(li.Dir()); err != nil {
 		return fmt.Errorf("cannot create dir for instance '%s': %w", li.instance.ID(), err)
 	}
-
 	cmd := li.verboseCommand(
-		li.Opts().JavaOpts.Executable(), "-jar",
-		li.Opts().QuickstartOpts.DistPath, "-unpack",
+		osx.PathAbs(li.Opts().JavaOpts.Executable()), "-jar",
+		osx.PathAbs(li.Opts().QuickstartOpts.DistPath), "-unpack",
 	)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot unpack files for instance '%s': %w", li.instance.ID(), err)
 	}
-
-	err := li.createLockSave()
+	err := osx.FileCopy(
+		osx.PathAbs(li.Opts().QuickstartOpts.LicensePath),
+		osx.PathAbs(li.Dir()+"/license.properties"),
+	)
+	if err != nil {
+		return fmt.Errorf("cannot copy license file for instance '%s': %s", li.instance.ID(), err)
+	}
+	err = li.createLockSave()
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 

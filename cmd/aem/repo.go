@@ -36,7 +36,7 @@ func (c *CLI) repoNodeRead() *cobra.Command {
 		Short:   "Read node",
 		Aliases: []string{"get"},
 		Run: func(cmd *cobra.Command, args []string) {
-			instance, err := c.aem.InstanceManager().Some()
+			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
 				c.Error(err)
 				return
@@ -56,13 +56,18 @@ func (c *CLI) repoNodeSave() *cobra.Command {
 		Short:   "Create or update node",
 		Aliases: []string{"create", "update"},
 		Run: func(cmd *cobra.Command, args []string) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
 			var props map[string]any
-			err := c.ReadInput(&props)
+			err = c.ReadInput(&props)
 			if err != nil {
 				c.Fail(fmt.Sprintf("cannot save node as input props cannot be parsed: %s", err))
 				return
 			}
-			saved, err := c.aem.InstanceManager().ProcessAll(func(instance pkg.Instance) (map[string]any, error) {
+			saved, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
 				node := repoNodeByFlags(cmd, instance)
 				changed, err := node.SaveWithChanged(props)
 				if err != nil {
@@ -96,7 +101,12 @@ func (c *CLI) repoNodeDelete() *cobra.Command {
 		Short:   "Delete node",
 		Aliases: []string{"del", "remove", "rm"},
 		Run: func(cmd *cobra.Command, args []string) {
-			deleted, err := c.aem.InstanceManager().ProcessAll(func(instance pkg.Instance) (map[string]any, error) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			deleted, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
 				node := repoNodeByFlags(cmd, instance)
 				changed, err := node.DeleteWithChanged()
 				if err != nil {

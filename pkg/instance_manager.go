@@ -41,7 +41,7 @@ func NewInstanceManager(aem *Aem) *InstanceManager {
 	return result
 }
 
-func (im *InstanceManager) Some() (*Instance, error) {
+func (im *InstanceManager) One() (*Instance, error) {
 	instances := im.All()
 	if len(instances) == 0 {
 		return nil, fmt.Errorf("no instance that matches the current filters")
@@ -51,6 +51,14 @@ func (im *InstanceManager) Some() (*Instance, error) {
 	}
 	i := instances[0]
 	return &i, nil
+}
+
+func (im InstanceManager) Some() ([]Instance, error) {
+	result := im.All()
+	if len(result) == 0 {
+		return result, fmt.Errorf("no instances defined")
+	}
+	return result, nil
 }
 
 func (im InstanceManager) All() []Instance {
@@ -63,6 +71,14 @@ func (im InstanceManager) Remotes() []Instance {
 
 func (im InstanceManager) Locals() []Instance {
 	return lo.Filter(im.All(), func(i Instance, _ int) bool { return i.IsLocal() })
+}
+
+func (im InstanceManager) SomeLocals() ([]Instance, error) {
+	result := im.Locals()
+	if len(result) == 0 {
+		return result, fmt.Errorf("no local instances defined")
+	}
+	return result, nil
 }
 
 func (im InstanceManager) Authors() []Instance {
@@ -138,9 +154,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		}
 	}
 
-	if len(outdated) > 0 {
-		im.AwaitStopped(outdated)
-	}
+	im.AwaitStopped(outdated)
 
 	log.Infof("starting instance(s)")
 
@@ -156,9 +170,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		}
 	}
 
-	if len(started) > 0 {
-		im.AwaitStarted(started)
-	}
+	im.AwaitStarted(instances)
 
 	return started, nil
 }
@@ -192,9 +204,7 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 		}
 	}
 
-	if len(stopped) > 0 {
-		im.AwaitStopped(stopped)
-	}
+	im.AwaitStopped(instances)
 
 	return stopped, nil
 }
@@ -235,6 +245,9 @@ func (im *InstanceManager) AwaitStartedAll() {
 
 // TODO add timeout and then return error
 func (im *InstanceManager) AwaitStarted(instances []Instance) {
+	if len(instances) == 0 {
+		return
+	}
 	log.Infof("awaiting up instance(s) '%s'", InstanceIds(instances))
 	im.Check(instances, im.CheckOpts, []Checker{
 		im.CheckOpts.BundleStable,
@@ -253,6 +266,9 @@ func (im *InstanceManager) AwaitStoppedAll() {
 
 // TODO add timeout and then return error
 func (im *InstanceManager) AwaitStopped(instances []Instance) {
+	if len(instances) == 0 {
+		return
+	}
 	log.Infof("awaiting down instance(s) '%s'", InstanceIds(instances))
 	im.Check(instances, im.CheckOpts, []Checker{
 		NewStatusStoppedChecker(),
@@ -301,19 +317,19 @@ func (im *InstanceManager) Check(instances []Instance, opts *CheckOpts, checks [
 
 func (im *InstanceManager) CheckOnce(instances []Instance, checks []Checker) bool {
 	ok := true
-	for _, instance := range instances {
+	for _, i := range instances {
 		for _, check := range checks {
-			result := check.Check(instance)
+			result := check.Check(i)
 			if result.abort {
-				log.Fatalf("%s | %s", instance.ID(), result.message)
+				log.Fatalf("%s | %s", i.ID(), result.message)
 			}
 			if !result.ok {
 				ok = false
 			}
 			if result.err != nil {
-				log.Infof("cannot check instance '%s': %s", instance.ID(), result.err)
+				log.Infof("cannot check instance '%s': %s", i.ID(), result.err)
 			} else if len(result.message) > 0 {
-				log.Infof("%s | %s", instance.ID(), result.message)
+				log.Infof("%s | %s", i.ID(), result.message)
 			}
 		}
 	}
@@ -389,10 +405,6 @@ func (im *InstanceManager) NewLocalOpts() *LocalOpts {
 			LicensePath: pathCurrent + "/" + LicensePath,
 		},
 	}
-}
-
-func (im InstanceManager) ProcessAll(processor func(instance Instance) (map[string]any, error)) ([]map[string]any, error) {
-	return im.Process(im.All(), processor)
 }
 
 func (im InstanceManager) Process(instances []Instance, processor func(instance Instance) (map[string]any, error)) ([]map[string]any, error) {
@@ -552,9 +564,9 @@ func (im *InstanceManager) configureLocalOpts(config *cfg.Config) {
 func (im *InstanceManager) configureCheckOpts(config *cfg.Config) {
 	opts := config.Values().Instance.Check
 
-	if opts.Interval > 0 {
-		im.CheckOpts.Interval = opts.Interval
-	}
+	im.CheckOpts.Warmup = opts.Warmup
+	im.CheckOpts.Interval = opts.Interval
+
 	if opts.BundleStable.SymbolicNamesIgnored != nil {
 		im.CheckOpts.BundleStable.SymbolicNamesIgnored = opts.BundleStable.SymbolicNamesIgnored
 	}

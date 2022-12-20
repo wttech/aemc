@@ -30,7 +30,9 @@ instance:
 
   # State checking
   check:
-    # Amount of time to wait for next state checking
+    # Time to wait before first state checking (to avoid false-positives)
+    warmup: 1s
+    # Time to wait for next state checking
     interval: 5s
 
   # Managed locally (set up automatically)

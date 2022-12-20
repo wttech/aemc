@@ -28,6 +28,7 @@ func (c *CLI) rootCmd() *cobra.Command {
 	cmd.AddCommand(c.pkgCmd())
 	cmd.AddCommand(c.repoCmd())
 	cmd.AddCommand(c.replCmd())
+	cmd.AddCommand(c.fileCmd())
 	c.rootFlags(cmd)
 	return cmd
 }

@@ -38,7 +38,12 @@ func (c *CLI) osgiBundleInstall() *cobra.Command {
 		Short: "Install OSGi bundle(s)",
 		Run: func(cmd *cobra.Command, args []string) {
 			path, _ := cmd.Flags().GetString("file")
-			installed, err := c.aem.InstanceManager().ProcessAll(func(instance pkg.Instance) (map[string]any, error) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			installed, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
 				changed, err := instance.OSGI().BundleManager().InstallWithChanged(path)
 				if err != nil {
 					return nil, err
@@ -80,7 +85,12 @@ func (c *CLI) osgiBundleUninstall() *cobra.Command {
 		Use:   "uninstall",
 		Short: "Uninstall OSGi bundle(s)",
 		Run: func(cmd *cobra.Command, args []string) {
-			uninstalled, err := c.aem.InstanceManager().ProcessAll(func(instance pkg.Instance) (map[string]any, error) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			uninstalled, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
 				bundle, err := osgiBundleByFlags(cmd, instance)
 				if err != nil {
 					return nil, err
@@ -117,7 +127,7 @@ func (c *CLI) osgiBundleListCmd() *cobra.Command {
 		Short:   "List OSGi bundles",
 		Aliases: []string{"ls"},
 		Run: func(cmd *cobra.Command, args []string) {
-			instance, err := c.aem.InstanceManager().Some()
+			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
 				c.Error(err)
 				return
@@ -140,7 +150,7 @@ func (c *CLI) osgiBundleReadCmd() *cobra.Command {
 		Short:   "Read OSGi bundle details",
 		Aliases: []string{"get", "find"},
 		Run: func(cmd *cobra.Command, args []string) {
-			instance, err := c.aem.InstanceManager().Some()
+			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
 				c.Error(err)
 				return
@@ -163,7 +173,12 @@ func (c *CLI) osgiBundleStartCmd() *cobra.Command {
 		Use:   "start",
 		Short: "Start OSGi bundle",
 		Run: func(cmd *cobra.Command, args []string) {
-			started, err := c.aem.InstanceManager().ProcessAll(func(instance pkg.Instance) (map[string]any, error) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			started, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
 				bundle, err := osgiBundleByFlags(cmd, instance)
 				if err != nil {
 					return nil, err
@@ -205,7 +220,12 @@ func (c *CLI) osgiBundleStopCmd() *cobra.Command {
 		Use:   "stop",
 		Short: "Stop OSGi bundle",
 		Run: func(cmd *cobra.Command, args []string) {
-			stopped, err := c.aem.InstanceManager().ProcessAll(func(instance pkg.Instance) (map[string]any, error) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			stopped, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
 				bundle, err := osgiBundleByFlags(cmd, instance)
 				if err != nil {
 					return nil, err
@@ -247,7 +267,12 @@ func (c *CLI) osgiBundleRestartCmd() *cobra.Command {
 		Use:   "restart",
 		Short: "Restart OSGi bundle",
 		Run: func(cmd *cobra.Command, args []string) {
-			restarted, err := c.aem.InstanceManager().ProcessAll(func(instance pkg.Instance) (map[string]any, error) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			restarted, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
 				bundle, err := osgiBundleByFlags(cmd, instance)
 				if err != nil {
 					return nil, err
@@ -322,7 +347,7 @@ func (c *CLI) osgiConfigList() *cobra.Command {
 		Short:   "List OSGi configurations",
 		Aliases: []string{"ls"},
 		Run: func(cmd *cobra.Command, args []string) {
-			instance, err := c.aem.InstanceManager().Some()
+			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
 				c.Error(err)
 				return
@@ -345,7 +370,7 @@ func (c *CLI) osgiConfigRead() *cobra.Command {
 		Short:   "Read OSGi configuration values",
 		Aliases: []string{"get"},
 		Run: func(cmd *cobra.Command, args []string) {
-			instance, err := c.aem.InstanceManager().Some()
+			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
 				c.Error(err)
 				return
@@ -365,13 +390,18 @@ func (c *CLI) osgiConfigSave() *cobra.Command {
 		Short:   "Save OSGi configuration values",
 		Aliases: []string{"set"},
 		Run: func(cmd *cobra.Command, args []string) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
 			var props map[string]any
-			err := c.ReadInput(&props)
+			err = c.ReadInput(&props)
 			if err != nil {
 				c.Fail(fmt.Sprintf("cannot save config as input props cannot be parsed: %s", err))
 				return
 			}
-			saved, err := c.aem.InstanceManager().ProcessAll(func(instance pkg.Instance) (map[string]any, error) {
+			saved, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
 				config := osgiConfigFromFlag(cmd, instance)
 				changed, err := config.SaveWithChanged(props)
 				if err != nil {
@@ -408,7 +438,12 @@ func (c *CLI) osgiConfigDelete() *cobra.Command {
 		Short:   "Delete OSGi configuration",
 		Aliases: []string{"del", "remove", "unset"},
 		Run: func(cmd *cobra.Command, args []string) {
-			deleted, err := c.aem.InstanceManager().ProcessAll(func(instance pkg.Instance) (map[string]any, error) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			deleted, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
 				config := osgiConfigFromFlag(cmd, instance)
 				changed, err := config.DeleteWithChanged()
 				if err != nil {

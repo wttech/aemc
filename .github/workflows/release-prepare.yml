@@ -25,6 +25,7 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "<>" 
 
+      # TODO this should bypass branch protection rule and trigger workflow but it does not
       - name: Bump release version then push tag
         run: |
           sh release.sh ${{ github.event.inputs.version }}

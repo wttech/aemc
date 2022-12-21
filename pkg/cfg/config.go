@@ -20,7 +20,7 @@ const (
 	InputStdin        = "STDIN"
 	OutputFileDefault = common.HomeDir + "/aem.log"
 	FilePathDefault   = common.HomeDir + "/aem.yml"
-	FilePathEnvVar    = "AEM_CONFIG_PATH"
+	FilePathEnvVar    = "AEM_CONFIG_FILE"
 )
 
 // Config defines a place for managing input configuration from various sources (YML file, env vars, etc)

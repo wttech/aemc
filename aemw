@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-VERSION=${AEMC_VERSION:-"0.5.13"}
+VERSION=${AEMC_VERSION:-"0.5.14"}
 COMMAND_DEFAULT=${AEMC_COMMAND_DEFAULT:-"setup"}
 
 AEM_DIR="aem"

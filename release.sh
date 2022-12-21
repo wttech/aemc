@@ -20,10 +20,18 @@ echo "Releasing $VERSION_TAG"
 
 echo "Bumping version in files"
 
-sed -i '' 's/AEMC_VERSION:-"[^\"]*"/AEMC_VERSION:-"'"$VERSION"'"/g' init.sh
-sed -i '' 's/AEMC_VERSION:-"[^\"]*"/AEMC_VERSION:-"'"$VERSION"'"/g' aemw
-# shellcheck disable=SC2016
-sed -i '' 's/aem\@v[^\`]*\`/aem@v'"$VERSION"\`'/g' README.MD
+# <https://stackoverflow.com/a/57766728>
+if [ "$(uname)" = "Darwin" ]; then
+  sed -i '' 's/AEMC_VERSION:-"[^\"]*"/AEMC_VERSION:-"'"$VERSION"'"/g' init.sh
+  sed -i '' 's/AEMC_VERSION:-"[^\"]*"/AEMC_VERSION:-"'"$VERSION"'"/g' aemw
+  # shellcheck disable=SC2016
+  sed -i '' 's/aem\@v[^\`]*\`/aem@v'"$VERSION"\`'/g' README.MD
+else
+    sed -i 's/AEMC_VERSION:-"[^\"]*"/AEMC_VERSION:-"'"$VERSION"'"/g' init.sh
+    sed -i 's/AEMC_VERSION:-"[^\"]*"/AEMC_VERSION:-"'"$VERSION"'"/g' aemw
+    # shellcheck disable=SC2016
+    sed -i 's/aem\@v[^\`]*\`/aem@v'"$VERSION"\`'/g' README.MD
+fi
 
 echo "Pushing version bump"
 git commit -a -m "Release $VERSION_TAG"

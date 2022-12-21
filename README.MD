@@ -226,12 +226,17 @@ export AEM_INSTANCE_PROCESSING_MODE=parallel
 
 # Releasing
 
-Below process is planned to be automated:
+Simply run script:
 
-1. Plan next version number (tag name),
-2. Update version to next planned version in `init.sh`, `aemw`,
-3. Commit changes, create a tag then push changes and newly created tag,
-4. Release job will be run automatically.
+```shell
+sh release.sh <major.minor.patch>
+```
+
+It will:
+
+* bump version is source files automatically,
+* commit changes,
+* push release tag that will initiate [release workflow](.github/workflows/release.yml).
 
 # Contributing
 

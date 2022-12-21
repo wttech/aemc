@@ -21,11 +21,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: setup git config
+      - name: Setup Git Config
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "<>" 
 
-      - name: bump release version and create & push release tag
+      - name: Bump release version then push tag
         run: |
-          sh release.sh
+          sh release.sh ${{ github.event.inputs.version }}

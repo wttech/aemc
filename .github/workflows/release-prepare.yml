@@ -1,0 +1,31 @@
+name: Release Prepare
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version'
+        required: true
+
+permissions:
+  contents: write
+  packages: write
+  # issues: write
+
+jobs:
+  release:
+    name: Release Prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: setup git config
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>" 
+
+      - name: bump release version and create & push release tag
+        run: |
+          sh release.sh

@@ -30,4 +30,5 @@ git commit -a -m "Release $VERSION_TAG"
 git push
 
 echo "Pushing release tag '$VERSION_TAG'"
+git tag "$VERSION_TAG"
 git push origin "$VERSION_TAG"

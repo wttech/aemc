@@ -6,9 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common/lox"
-	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/instance"
-	"github.com/wttech/aemc/pkg/java"
 	nurl "net/url"
 	"sort"
 	"strings"
@@ -23,12 +21,6 @@ type InstanceManager struct {
 	CheckOpts      *CheckOpts
 	ProcessingMode instance.ProcessingMode
 }
-
-const (
-	RootPath    = "aem/home/instance"
-	DistPath    = "aem/lib/aem-sdk-quickstart.jar"
-	LicensePath = "aem/lib/license.properties"
-)
 
 func NewInstanceManager(aem *Aem) *InstanceManager {
 	result := new(InstanceManager)
@@ -87,193 +79,6 @@ func (im InstanceManager) Authors() []Instance {
 
 func (im InstanceManager) Publishes() []Instance {
 	return lo.Filter(im.All(), func(i Instance, _ int) bool { return i.IsPublish() })
-}
-
-// LocalValidate checks prerequisites needed to manage local instances
-func (im InstanceManager) LocalValidate() error {
-	err := im.LocalOpts.Validate()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (im *InstanceManager) CreateAll() ([]Instance, error) {
-	return im.Create(im.Locals())
-}
-
-func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
-	err := im.LocalValidate()
-	if err != nil {
-		return nil, err
-	}
-
-	var created []Instance
-	for _, i := range instances {
-		if !i.local.IsCreated() {
-			log.Infof("creating instance '%s'", i.ID())
-			err := i.local.Create()
-			if err != nil {
-				return nil, fmt.Errorf("cannot create instance '%s': %s", i.ID(), err)
-			}
-			log.Infof("created instance '%s'", i.ID())
-			created = append(created, i)
-		}
-	}
-
-	return created, nil
-}
-
-func (im *InstanceManager) StartOne(instance Instance) (bool, error) {
-	started, err := im.Start([]Instance{instance})
-	return len(started) > 0, err
-}
-
-func (im *InstanceManager) StartAll() ([]Instance, error) {
-	return im.Start(im.Locals())
-}
-
-func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
-	err := im.LocalValidate()
-	if err != nil {
-		return nil, err
-	}
-
-	log.Infof("checking started & out-of-date instance(s)")
-
-	var outdated []Instance
-	for _, i := range instances {
-		if i.local.IsRunning() && i.local.OutOfDate() {
-			outdated = append(outdated, i)
-
-			log.Infof("instance '%s' is already started but out-of-date - stopping", i.ID())
-			err := i.local.Stop()
-			if err != nil {
-				return nil, fmt.Errorf("cannot stop out-of-date instance '%s': %s", i.ID(), err)
-			}
-		}
-	}
-
-	im.AwaitStopped(outdated)
-
-	log.Infof("starting instance(s)")
-
-	var started []Instance
-	for _, i := range instances {
-		if !i.local.IsRunning() {
-			err := i.local.Start()
-			if err != nil {
-				return nil, fmt.Errorf("cannot start instance '%s': %s", i.ID(), err)
-			}
-			log.Infof("started instance '%s'", i.ID())
-			started = append(started, i)
-		}
-	}
-
-	im.AwaitStarted(instances)
-
-	return started, nil
-}
-
-func (im *InstanceManager) StopOne(instance Instance) (bool, error) {
-	stopped, err := im.Stop([]Instance{instance})
-	return len(stopped) > 0, err
-}
-
-func (im *InstanceManager) StopAll() ([]Instance, error) {
-	return im.Stop(im.Locals())
-}
-
-func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
-	err := im.LocalValidate()
-	if err != nil {
-		return nil, err
-	}
-
-	log.Info("stopping instance(s)")
-
-	var stopped []Instance
-	for _, i := range instances {
-		if i.local.IsRunning() {
-			err := i.local.Stop()
-			if err != nil {
-				return nil, fmt.Errorf("cannot stop instance '%s': %s", i.ID(), err)
-			}
-			log.Infof("stopped instance '%s'", i.ID())
-			stopped = append(stopped, i)
-		}
-	}
-
-	im.AwaitStopped(instances)
-
-	return stopped, nil
-}
-
-func (im *InstanceManager) DeleteOne(instance Instance) (bool, error) {
-	deleted, err := im.Delete([]Instance{instance})
-	return len(deleted) > 0, err
-}
-
-func (im *InstanceManager) DeleteAll() ([]Instance, error) {
-	return im.Delete(im.Locals())
-}
-
-func (im *InstanceManager) Delete(instances []Instance) ([]Instance, error) {
-	// im.LocalValidate()
-
-	var deleted []Instance
-	for _, i := range instances {
-		if i.local.IsCreated() {
-			err := i.local.Delete()
-			if err != nil {
-				return nil, fmt.Errorf("cannot delete instance '%s': %s", i.ID(), err)
-			}
-			log.Infof("deleted instance '%s'", i.ID())
-			deleted = append(deleted, i)
-		}
-	}
-	return deleted, nil
-}
-
-func (im *InstanceManager) AwaitStartedOne(instance Instance) {
-	im.AwaitStarted([]Instance{instance})
-}
-
-func (im *InstanceManager) AwaitStartedAll() {
-	im.AwaitStarted(im.All())
-}
-
-// TODO add timeout and then return error
-func (im *InstanceManager) AwaitStarted(instances []Instance) {
-	if len(instances) == 0 {
-		return
-	}
-	log.Infof("awaiting up instance(s) '%s'", InstanceIds(instances))
-	im.Check(instances, im.CheckOpts, []Checker{
-		im.CheckOpts.BundleStable,
-		im.CheckOpts.EventStable,
-		im.CheckOpts.AwaitUpTimeout,
-	})
-}
-
-func (im *InstanceManager) AwaitStoppedOne(instance Instance) {
-	im.AwaitStopped([]Instance{instance})
-}
-
-func (im *InstanceManager) AwaitStoppedAll() {
-	im.AwaitStopped(im.Locals())
-}
-
-// TODO add timeout and then return error
-func (im *InstanceManager) AwaitStopped(instances []Instance) {
-	if len(instances) == 0 {
-		return
-	}
-	log.Infof("awaiting down instance(s) '%s'", InstanceIds(instances))
-	im.Check(instances, im.CheckOpts, []Checker{
-		NewStatusStoppedChecker(),
-		NewTimeoutChecker("down", time.Minute*5),
-	})
 }
 
 type CheckOpts struct {
@@ -389,22 +194,16 @@ func (im *InstanceManager) New(id, url, user, password string) *Instance {
 	return res
 }
 
-type LocalOpts struct {
-	UnpackPath     string
-	JavaOpts       *java.Opts
-	QuickstartOpts QuickstartOpts
+func (im *InstanceManager) AwaitOne(instance Instance) {
+	im.AwaitStartedOne(instance)
 }
 
-func (im *InstanceManager) NewLocalOpts() *LocalOpts {
-	pathCurrent := osx.PathCurrent()
-	return &LocalOpts{
-		UnpackPath: pathCurrent + "/" + RootPath,
-		JavaOpts:   im.aem.javaOpts,
-		QuickstartOpts: QuickstartOpts{
-			DistPath:    pathCurrent + "/" + DistPath,
-			LicensePath: pathCurrent + "/" + LicensePath,
-		},
-	}
+func (im *InstanceManager) AwaitAll() {
+	im.AwaitStartedAll()
+}
+
+func (im *InstanceManager) Await(instances []Instance) {
+	im.AwaitStarted(instances)
 }
 
 func (im InstanceManager) Process(instances []Instance, processor func(instance Instance) (map[string]any, error)) ([]map[string]any, error) {
@@ -415,33 +214,6 @@ func (im InstanceManager) Process(instances []Instance, processor func(instance 
 		parallel = lo.CountBy(instances, func(instance Instance) bool { return instance.IsLocal() }) <= 1
 	}
 	return lox.Map(parallel, instances, processor)
-}
-
-func (o *LocalOpts) Validate() error {
-	err := o.JavaOpts.Validate()
-	if err != nil {
-		return err
-	}
-	err = o.QuickstartOpts.Validate()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type QuickstartOpts struct {
-	DistPath    string
-	LicensePath string
-}
-
-func (o *QuickstartOpts) Validate() error {
-	if !osx.PathExists(o.DistPath) {
-		return fmt.Errorf("quickstart dist file does not exist at path '%s'; consider specifying quickstart dist file via property 'instance.local.quickstart.dist_path'", o.DistPath)
-	}
-	if !osx.PathExists(o.LicensePath) {
-		return fmt.Errorf("quickstart license file does not exist at path '%s'; consider specifying quickstart dist file via property 'instance.local.quickstart.license_path'", o.LicensePath)
-	}
-	return nil
 }
 
 func (im *InstanceManager) Configure(config *cfg.Config) {
@@ -545,20 +317,6 @@ func configureInstance(inst Instance, config *cfg.Config) {
 	inst.osgi.bundleManager.InstallStart = osgiOpts.Install.Start
 	inst.osgi.bundleManager.InstallStartLevel = osgiOpts.Install.StartLevel
 	inst.osgi.bundleManager.InstallRefreshPackages = osgiOpts.Install.RefreshPackages
-}
-
-func (im *InstanceManager) configureLocalOpts(config *cfg.Config) {
-	opts := config.Values().Instance.Local
-
-	if len(opts.UnpackPath) > 0 {
-		im.LocalOpts.UnpackPath = opts.UnpackPath
-	}
-	if len(opts.Quickstart.DistPath) > 0 {
-		im.LocalOpts.QuickstartOpts.DistPath = opts.Quickstart.DistPath
-	}
-	if len(opts.Quickstart.LicensePath) > 0 {
-		im.LocalOpts.QuickstartOpts.LicensePath = opts.Quickstart.LicensePath
-	}
 }
 
 func (im *InstanceManager) configureCheckOpts(config *cfg.Config) {

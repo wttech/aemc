@@ -55,7 +55,7 @@ func (li *LocalInstance) Opts() *LocalOpts {
 }
 
 func (li *LocalInstance) Dir() string {
-	return osx.PathAbs(fmt.Sprintf("%s/%s", li.Opts().UnpackPath, li.instance.ID()))
+	return osx.PathAbs(fmt.Sprintf("%s/%s", li.Opts().UnpackDir, li.instance.ID()))
 }
 
 func (li *LocalInstance) binScript(name string) string {
@@ -66,27 +66,45 @@ func (li *LocalInstance) DebugPort() string {
 	return "1" + li.instance.http.Port()
 }
 
+func (li LocalInstance) LicenseFile() string {
+	return li.Dir() + "/" + LicenseFilename
+}
+
 func (li *LocalInstance) Create() error {
 	if err := osx.PathEnsure(li.Dir()); err != nil {
 		return fmt.Errorf("cannot create dir for instance '%s': %w", li.instance.ID(), err)
 	}
+	if err := li.unpackFiles(); err != nil {
+		return err
+	}
+	if err := li.copyLicenseFile(); err != nil {
+		return err
+	}
+	if err := li.createLockSave(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (li *LocalInstance) unpackFiles() error {
+	log.Infof("unpacking files for instance '%s'", li.instance.ID())
 	cmd := li.verboseCommand(
 		osx.PathAbs(li.Opts().JavaOpts.Executable()), "-jar",
-		osx.PathAbs(li.Opts().QuickstartOpts.DistPath), "-unpack",
+		osx.PathAbs(li.Opts().QuickstartOpts.DistFile), "-unpack",
 	)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot unpack files for instance '%s': %w", li.instance.ID(), err)
 	}
-	err := osx.FileCopy(
-		osx.PathAbs(li.Opts().QuickstartOpts.LicensePath),
-		osx.PathAbs(li.Dir()+"/license.properties"),
-	)
+	return nil
+}
+
+func (li *LocalInstance) copyLicenseFile() error {
+	source := osx.PathAbs(li.Opts().QuickstartOpts.LicenseFile)
+	dest := osx.PathAbs(li.LicenseFile())
+	log.Infof("copying license file from '%s' to '%s' for instance '%s'", source, dest, li.instance.ID())
+	err := osx.FileCopy(source, dest)
 	if err != nil {
 		return fmt.Errorf("cannot copy license file for instance '%s': %s", li.instance.ID(), err)
-	}
-	err = li.createLockSave()
-	if err != nil {
-		return err
 	}
 	return nil
 }
@@ -279,7 +297,7 @@ func (li *LocalInstance) quietCommand(name string, arg ...string) *exec.Cmd {
 	cmd := exec.Command(name, arg...)
 	cmd.Dir = li.Dir()
 	cmd.Env = append(os.Environ(),
-		"JAVA_HOME="+li.Opts().JavaOpts.HomePath,
+		"JAVA_HOME="+osx.PathAbs(li.Opts().JavaOpts.HomePath),
 		"CQ_PORT="+li.instance.http.Port(),
 		"CQ_RUNMODE="+li.instance.local.RunModesString(),
 		"CQ_JVM_OPTS="+li.instance.local.JVMOptsString(),

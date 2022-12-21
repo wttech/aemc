@@ -38,14 +38,14 @@ instance:
   # Managed locally (set up automatically)
   local:
     # Data dir (Sling launchpad, JCR repository)
-    unpack_path: "./aem/home/instance"
+    unpack_dir: "./aem/home/instance"
 
     # Source files
     quickstart:
       # AEM JAR or SDK ZIP
-      dist_path: "./aem/home/lib/aem-sdk-quickstart.jar"
+      dist_file: "./aem/home/lib/aem-sdk-quickstart.jar"
       # AEM License properties file
-      license_path: "./aem/home/lib/license.properties"
+      license_file: "./aem/home/lib/license.properties"
 
   # Package Manager
   package:

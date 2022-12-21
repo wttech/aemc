@@ -65,11 +65,11 @@ type ConfigValues struct {
 		}
 
 		Local struct {
-			UnpackPath string `mapstructure:"unpack_path" yaml:"unpack_path"`
+			UnpackDir string `mapstructure:"unpack_dir" yaml:"unpack_dir"`
 
 			Quickstart struct {
-				DistPath    string `mapstructure:"dist_path" yaml:"dist_path"`
-				LicensePath string `mapstructure:"license_path" yaml:"license_path"`
+				DistFile    string `mapstructure:"dist_file" yaml:"dist_file"`
+				LicenseFile string `mapstructure:"license_file" yaml:"license_file"`
 			} `mapstructure:"quickstart" yaml:"quickstart"`
 		} `mapstructure:"local" yaml:"local"`
 

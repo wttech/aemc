@@ -75,7 +75,7 @@ func (li LocalInstance) Create() error {
 	if err := osx.PathEnsure(li.Dir()); err != nil {
 		return fmt.Errorf("cannot create dir for instance '%s': %w", li.instance.ID(), err)
 	}
-	if err := li.unpackDistFile(); err != nil {
+	if err := li.unpackJarFile(); err != nil {
 		return err
 	}
 	if err := li.copyLicenseFile(); err != nil {
@@ -87,7 +87,7 @@ func (li LocalInstance) Create() error {
 	return nil
 }
 
-func (li LocalInstance) unpackDistFile() error {
+func (li LocalInstance) unpackJarFile() error {
 	log.Infof("unpacking files for instance '%s'", li.instance.ID())
 	jar, err := li.Opts().Jar()
 	if err != nil {

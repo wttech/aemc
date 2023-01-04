@@ -18,10 +18,6 @@ func (s Sdk) Dir() string {
 	return s.localOpts.UnpackDir + "/sdk"
 }
 
-func (s Sdk) DispatcherDir() string {
-	return s.Dir() + "/dispatcher"
-}
-
 func (s Sdk) lockFile() string {
 	return s.Dir() + "/lock/create.yml"
 }
@@ -31,8 +27,7 @@ type Lock struct {
 	Unpacked time.Time
 }
 
-func (s Sdk) Prepare() error {
-	zipFile := s.localOpts.Quickstart.DistFile
+func (s Sdk) Prepare(zipFile string) error {
 	versionNew := osx.FileNameWithoutExt(zipFile)
 	upToDate := false
 	if osx.PathExists(s.lockFile()) {
@@ -96,6 +91,10 @@ func (s Sdk) unpackSdk(zipFile string) error {
 
 func (s Sdk) QuickstartJar() (string, error) {
 	return s.findFile("*-quickstart-*.jar")
+}
+
+func (s Sdk) DispatcherDir() string {
+	return s.Dir() + "/dispatcher"
 }
 
 func (s Sdk) dispatcherToolsUnixSh() (string, error) {

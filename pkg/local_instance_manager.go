@@ -56,7 +56,7 @@ func (o *LocalOpts) Validate() error {
 }
 
 func (o *LocalOpts) Jar() (string, error) {
-	if o.Quickstart.IsSdk() {
+	if o.Quickstart.IsDistFileSdk() {
 		return o.Sdk.QuickstartJar()
 	}
 	return o.Quickstart.DistFile, nil
@@ -77,7 +77,7 @@ func (o *Quickstart) Validate() error {
 	return nil
 }
 
-func (o *Quickstart) IsSdk() bool {
+func (o *Quickstart) IsDistFileSdk() bool {
 	return osx.FileExt(o.DistFile) == "zip"
 }
 
@@ -102,8 +102,8 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 
 	var created []Instance
 
-	if im.LocalOpts.Quickstart.IsSdk() {
-		err := im.LocalOpts.Sdk.Prepare()
+	if im.LocalOpts.Quickstart.IsDistFileSdk() {
+		err := im.LocalOpts.Sdk.Prepare(im.LocalOpts.Quickstart.DistFile)
 		if err != nil {
 			return created, err
 		}

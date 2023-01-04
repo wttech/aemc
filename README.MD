@@ -125,7 +125,7 @@ aem config init
 ```
 
 It will produce default configuration file named *aem.yml*. 
-Correct the `dist_path`, `license_path`, `unpack_path` properties to provide essential files to be able to launch AEM instances.
+Correct the `dist_file`, `license_file`, `unpack_dir` properties to provide essential files to be able to launch AEM instances.
 
 ```yml
 log:
@@ -141,7 +141,7 @@ log:
 #  file: aem.log
 
 java:
-  #home_path: /Library/Java/JavaVirtualMachines/jdk-11.0.15.jdk/Contents/Home
+  #home_dir: /Library/Java/JavaVirtualMachines/jdk-11.0.15.jdk/Contents/Home
 
 instance:
 
@@ -182,10 +182,10 @@ instance:
 
   # Managed locally (set up automatically)
   local:
+    unpack_dir: '/path/to/aem/data/instances'
     quickstart:
-      dist_path: '/path/to/aem/files/aem-sdk-quickstart-2022.7.8005.jar'
-      license_path: '/path/to/aem/files/license.properties'
-    unpack_path: '/path/to/aem/data/instances'
+      dist_file: '/path/to/aem/files/aem-sdk-quickstart-2022.7.8005.jar'
+      license_file: '/path/to/aem/files/license.properties'
 
   package:
     upload:

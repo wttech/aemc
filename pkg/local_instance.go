@@ -2,15 +2,16 @@ package pkg
 
 import (
 	"fmt"
-	"github.com/samber/lo"
-	log "github.com/sirupsen/logrus"
-	"github.com/wttech/aemc/pkg/common/fmtx"
-	"github.com/wttech/aemc/pkg/common/osx"
 	"os"
 	"os/exec"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/samber/lo"
+	log "github.com/sirupsen/logrus"
+	"github.com/wttech/aemc/pkg/common/fmtx"
+	"github.com/wttech/aemc/pkg/common/osx"
 )
 
 type LocalInstance struct {
@@ -28,7 +29,7 @@ type LocalInstanceState struct {
 	Dir        string   `yaml:"dir" json:"dir"`
 }
 
-func (li *LocalInstance) Instance() *Instance {
+func (li LocalInstance) Instance() *Instance {
 	return li.instance
 }
 
@@ -50,19 +51,19 @@ func (li LocalInstance) State() LocalInstanceState {
 	}
 }
 
-func (li *LocalInstance) Opts() *LocalOpts {
+func (li LocalInstance) Opts() *LocalOpts {
 	return li.instance.manager.LocalOpts
 }
 
-func (li *LocalInstance) Dir() string {
+func (li LocalInstance) Dir() string {
 	return osx.PathAbs(fmt.Sprintf("%s/%s", li.Opts().UnpackDir, li.instance.ID()))
 }
 
-func (li *LocalInstance) binScript(name string) string {
+func (li LocalInstance) binScript(name string) string {
 	return fmt.Sprintf("%s/crx-quickstart/bin/%s", li.Dir(), name)
 }
 
-func (li *LocalInstance) DebugPort() string {
+func (li LocalInstance) DebugPort() string {
 	return "1" + li.instance.http.Port()
 }
 
@@ -70,11 +71,11 @@ func (li LocalInstance) LicenseFile() string {
 	return li.Dir() + "/" + LicenseFilename
 }
 
-func (li *LocalInstance) Create() error {
+func (li LocalInstance) Create() error {
 	if err := osx.PathEnsure(li.Dir()); err != nil {
 		return fmt.Errorf("cannot create dir for instance '%s': %w", li.instance.ID(), err)
 	}
-	if err := li.unpackFiles(); err != nil {
+	if err := li.unpackDistFile(); err != nil {
 		return err
 	}
 	if err := li.copyLicenseFile(); err != nil {
@@ -86,11 +87,15 @@ func (li *LocalInstance) Create() error {
 	return nil
 }
 
-func (li *LocalInstance) unpackFiles() error {
+func (li LocalInstance) unpackDistFile() error {
 	log.Infof("unpacking files for instance '%s'", li.instance.ID())
+	jar, err := li.Opts().Jar()
+	if err != nil {
+		return err
+	}
 	cmd := li.verboseCommand(
 		osx.PathAbs(li.Opts().JavaOpts.Executable()), "-jar",
-		osx.PathAbs(li.Opts().QuickstartOpts.DistFile), "-unpack",
+		osx.PathAbs(jar), "-unpack",
 	)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot unpack files for instance '%s': %w", li.instance.ID(), err)
@@ -98,8 +103,8 @@ func (li *LocalInstance) unpackFiles() error {
 	return nil
 }
 
-func (li *LocalInstance) copyLicenseFile() error {
-	source := osx.PathAbs(li.Opts().QuickstartOpts.LicenseFile)
+func (li LocalInstance) copyLicenseFile() error {
+	source := osx.PathAbs(li.Opts().Quickstart.LicenseFile)
 	dest := osx.PathAbs(li.LicenseFile())
 	log.Infof("copying license file from '%s' to '%s' for instance '%s'", source, dest, li.instance.ID())
 	err := osx.FileCopy(source, dest)
@@ -109,23 +114,28 @@ func (li *LocalInstance) copyLicenseFile() error {
 	return nil
 }
 
-func (li *LocalInstance) createLockSave() error {
-	err := osx.FileWrite(li.createLockPath(), time.Now().String())
+type CreateLock struct {
+	Created time.Time
+}
+
+func (li LocalInstance) createLockSave() error {
+	lock := CreateLock{Created: time.Now()}
+	err := fmtx.MarshalToFile(li.createLockPath(), lock)
 	if err != nil {
 		return fmt.Errorf("cannot save lock 'create' for instance '%s': %w", li.instance.ID(), err)
 	}
 	return nil
 }
 
-func (li *LocalInstance) createLockPath() string {
-	return fmt.Sprintf("%s/lock/create.txt", li.Dir())
+func (li LocalInstance) createLockPath() string {
+	return fmt.Sprintf("%s/lock/create.yml", li.Dir())
 }
 
-func (li *LocalInstance) IsCreated() bool {
+func (li LocalInstance) IsCreated() bool {
 	return osx.PathExists(li.createLockPath())
 }
 
-func (li *LocalInstance) Start() error {
+func (li LocalInstance) Start() error {
 	if !li.IsCreated() {
 		return fmt.Errorf("cannot start instance as it is not created")
 	}
@@ -144,7 +154,7 @@ func (li *LocalInstance) Start() error {
 	return nil
 }
 
-func (li *LocalInstance) Stop() error {
+func (li LocalInstance) Stop() error {
 	if !li.IsCreated() {
 		return fmt.Errorf("cannot stop instance as it is not created")
 	}
@@ -163,7 +173,7 @@ func (li *LocalInstance) Stop() error {
 	return nil
 }
 
-func (li *LocalInstance) Restart() error {
+func (li LocalInstance) Restart() error {
 	downErr := li.Stop()
 	if downErr != nil {
 		return downErr
@@ -179,7 +189,7 @@ func (li *LocalInstance) Restart() error {
 	return nil
 }
 
-func (li *LocalInstance) Await(state string, condition func() bool, timeout time.Duration) error {
+func (li LocalInstance) Await(state string, condition func() bool, timeout time.Duration) error {
 	started := time.Now()
 	for {
 		if condition() {
@@ -194,11 +204,11 @@ func (li *LocalInstance) Await(state string, condition func() bool, timeout time
 	return nil
 }
 
-func (li *LocalInstance) AwaitRunning() error {
+func (li LocalInstance) AwaitRunning() error {
 	return li.Await("running", func() bool { return li.IsRunning() }, time.Minute*30)
 }
 
-func (li *LocalInstance) AwaitNotRunning() error {
+func (li LocalInstance) AwaitNotRunning() error {
 	return li.Await("not running", func() bool { return !li.IsRunning() }, time.Minute*10)
 }
 
@@ -241,7 +251,7 @@ func (s LocalStatus) String() string {
 	return text
 }
 
-func (li *LocalInstance) Status() (LocalStatus, error) {
+func (li LocalInstance) Status() (LocalStatus, error) {
 	if !li.IsCreated() {
 		return LocalStatusUnknown, fmt.Errorf("cannot check status of instance as it is not created")
 	}
@@ -258,7 +268,7 @@ func (li *LocalInstance) Status() (LocalStatus, error) {
 	return LocalStatus(exitCode), nil
 }
 
-func (li *LocalInstance) IsRunning() bool {
+func (li LocalInstance) IsRunning() bool {
 	if !li.IsCreated() {
 		return false
 	}
@@ -271,7 +281,7 @@ func (li *LocalInstance) IsRunning() bool {
 	return status == LocalStatusRunning
 }
 
-func (li *LocalInstance) Delete() error {
+func (li LocalInstance) Delete() error {
 	if li.IsRunning() {
 		return fmt.Errorf("cannot delete instance as it is running")
 	}
@@ -283,7 +293,7 @@ func (li *LocalInstance) Delete() error {
 	return nil
 }
 
-func (li *LocalInstance) verboseCommand(name string, arg ...string) *exec.Cmd {
+func (li LocalInstance) verboseCommand(name string, arg ...string) *exec.Cmd {
 	cmd := li.quietCommand(name, arg...)
 
 	out := li.instance.manager.aem.output
@@ -293,11 +303,11 @@ func (li *LocalInstance) verboseCommand(name string, arg ...string) *exec.Cmd {
 	return cmd
 }
 
-func (li *LocalInstance) quietCommand(name string, arg ...string) *exec.Cmd {
+func (li LocalInstance) quietCommand(name string, arg ...string) *exec.Cmd {
 	cmd := exec.Command(name, arg...)
 	cmd.Dir = li.Dir()
 	cmd.Env = append(os.Environ(),
-		"JAVA_HOME="+osx.PathAbs(li.Opts().JavaOpts.HomePath),
+		"JAVA_HOME="+osx.PathAbs(li.Opts().JavaOpts.HomeDir),
 		"CQ_PORT="+li.instance.http.Port(),
 		"CQ_RUNMODE="+li.instance.local.RunModesString(),
 		"CQ_JVM_OPTS="+li.instance.local.JVMOptsString(),
@@ -306,28 +316,28 @@ func (li *LocalInstance) quietCommand(name string, arg ...string) *exec.Cmd {
 	return cmd
 }
 
-func (li *LocalInstance) RunModesString() string {
+func (li LocalInstance) RunModesString() string {
 	result := []string{string(li.instance.IDInfo().Role)}
 	result = append(result, li.RunModes...)
 	sort.Strings(result)
 	return strings.Join(lo.Uniq[string](result), ",")
 }
 
-func (li *LocalInstance) JVMOptsString() string {
+func (li LocalInstance) JVMOptsString() string {
 	result := li.JvmOpts
 	sort.Strings(result)
 	return strings.Join(result, " ")
 }
 
-func (li *LocalInstance) OutOfDate() bool {
+func (li LocalInstance) OutOfDate() bool {
 	return !li.UpToDate()
 }
 
-func (li *LocalInstance) UpToDate() bool {
+func (li LocalInstance) UpToDate() bool {
 	return li.upLockCurrent() == li.upLockSaved()
 }
 
-func (li *LocalInstance) upLockCurrent() upToDateLock {
+func (li LocalInstance) upLockCurrent() upToDateLock {
 	return upToDateLock{
 		Version:  li.Version,
 		HTTPPort: li.instance.HTTP().Port(),
@@ -336,19 +346,15 @@ func (li *LocalInstance) upLockCurrent() upToDateLock {
 	}
 }
 
-func (li *LocalInstance) upLockSave() error {
-	yml, err := fmtx.MarshalYAML(li.upLockCurrent())
-	if err != nil {
-		return fmt.Errorf("cannot serialize up lock of instance '%s' to YML: %w", li.instance.ID(), err)
-	}
-	err = osx.FileWrite(li.upLockPath(), yml)
+func (li LocalInstance) upLockSave() error {
+	err := fmtx.MarshalToFile(li.upLockPath(), li.upLockCurrent())
 	if err != nil {
 		return fmt.Errorf("cannot save instance up lock file '%s': %w", li.upLockPath(), err)
 	}
 	return nil
 }
 
-func (li *LocalInstance) upLockDelete() error {
+func (li LocalInstance) upLockDelete() error {
 	err := osx.PathDelete(li.upLockPath())
 	if err != nil {
 		return fmt.Errorf("cannot delete instance up lock file '%s': %w", li.upLockPath(), err)
@@ -356,10 +362,10 @@ func (li *LocalInstance) upLockDelete() error {
 	return nil
 }
 
-func (li *LocalInstance) upLockSaved() upToDateLock {
+func (li LocalInstance) upLockSaved() upToDateLock {
 	var result = upToDateLock{}
 	if osx.PathExists(li.upLockPath()) {
-		err := fmtx.UnmarshalFileInFormat(fmtx.YML, li.upLockPath(), &result)
+		err := fmtx.UnmarshalFile(li.upLockPath(), &result)
 		if err != nil {
 			log.Warn(fmt.Sprintf("cannot read instance up lock file '%s': %s", li.upLockPath(), err))
 		}
@@ -369,7 +375,7 @@ func (li *LocalInstance) upLockSaved() upToDateLock {
 
 // up lock helps with restarting AEM when it is out-of-date (when changed: run modes, http port, jvm opts)
 // but should not block turning on/off on demand as out-of-date-ness is too complex to diagnose
-func (li *LocalInstance) upLockPath() string {
+func (li LocalInstance) upLockPath() string {
 	return fmt.Sprintf("%s/lock/up.yml", li.Dir())
 }
 

@@ -59,7 +59,7 @@ func newViper() *viper.Viper {
 }
 
 func (c ConfigValues) String() string {
-	yml, err := fmtx.MarshalYAML(c)
+	yml, err := fmtx.MarshalYML(c)
 	if err != nil {
 		log.Errorf("Cannot convert config to YML: %s", err)
 	}

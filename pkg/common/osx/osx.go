@@ -2,6 +2,7 @@ package osx
 
 import (
 	"fmt"
+	"github.com/mholt/archiver/v3"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"os"
@@ -103,6 +104,16 @@ func FileCopy(sourcePath, destinationPath string) error {
 	return err
 }
 
+func FileExt(path string) string {
+	return strings.TrimPrefix(filepath.Ext(path), ".")
+}
+
+func FileNameWithoutExt(path string) string {
+	name := filepath.Base(path)
+	ext := filepath.Ext(name)
+	return name[:len(name)-len(ext)]
+}
+
 func EnvVars() map[string]string {
 	result := make(map[string]string)
 	for _, e := range os.Environ() {
@@ -119,4 +130,16 @@ func PathAbs(path string) string {
 		log.Fatalf(fmt.Sprintf("cannot determine absolute path for '%s': %s", path, err))
 	}
 	return path
+}
+
+func ArchiveExtract(sourceFile string, targetDir string) error {
+	err := PathEnsure(targetDir)
+	if err != nil {
+		return err
+	}
+	err = archiver.Unarchive(sourceFile, targetDir)
+	if err != nil {
+		return err
+	}
+	return nil
 }

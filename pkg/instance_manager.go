@@ -27,7 +27,7 @@ func NewInstanceManager(aem *Aem) *InstanceManager {
 	result.aem = aem
 	result.Instances = result.NewLocalPair()
 	result.CheckOpts = result.NewCheckOpts()
-	result.LocalOpts = result.NewLocalOpts()
+	result.LocalOpts = result.NewLocalOpts(result)
 	result.ProcessingMode = instance.ProcessingParallel
 
 	return result

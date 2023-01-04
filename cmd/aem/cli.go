@@ -197,7 +197,7 @@ func (c *CLI) printOutputMarshaled() {
 		}
 		fmt.Println(json)
 	case fmtx.YML:
-		yml, err := fmtx.MarshalYAML(c.outputResponse)
+		yml, err := fmtx.MarshalYML(c.outputResponse)
 		if err != nil {
 			log.Fatalf("cannot serialize CLI output to to target YML format!")
 		}

@@ -11,27 +11,36 @@ import (
 
 const (
 	UnpackDir       = "aem/home/instance"
-	DistFile        = "aem/lib/aem-sdk-quickstart.jar"
-	LicenseFile     = "aem/lib/" + LicenseFilename
+	LibDir          = "aem/home/lib"
+	DistFile        = LibDir + "/aem-sdk-quickstart.jar"
+	LicenseFile     = LibDir + "/" + LicenseFilename
 	LicenseFilename = "license.properties"
 )
 
 type LocalOpts struct {
-	UnpackDir      string
-	JavaOpts       *java.Opts
-	QuickstartOpts QuickstartOpts
+	manager *InstanceManager
+
+	UnpackDir  string
+	JavaOpts   *java.Opts
+	Quickstart *Quickstart
+	Sdk        *Sdk
 }
 
-func (im InstanceManager) NewLocalOpts() *LocalOpts {
-	dirCurrent := osx.PathCurrent()
-	return &LocalOpts{
-		UnpackDir: dirCurrent + "/" + UnpackDir,
+func (im InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
+	result := &LocalOpts{
+		manager: manager,
+
+		UnpackDir: UnpackDir,
 		JavaOpts:  im.aem.javaOpts,
-		QuickstartOpts: QuickstartOpts{
-			DistFile:    dirCurrent + "/" + DistFile,
-			LicenseFile: dirCurrent + "/" + LicenseFile,
+		Quickstart: &Quickstart{
+			DistFile:    DistFile,
+			LicenseFile: LicenseFile,
 		},
 	}
+	result.Sdk = &Sdk{
+		localOpts: result,
+	}
+	return result
 }
 
 func (o *LocalOpts) Validate() error {
@@ -39,19 +48,26 @@ func (o *LocalOpts) Validate() error {
 	if err != nil {
 		return err
 	}
-	err = o.QuickstartOpts.Validate()
+	err = o.Quickstart.Validate()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-type QuickstartOpts struct {
+func (o *LocalOpts) Jar() (string, error) {
+	if o.Quickstart.IsDistFileSdk() {
+		return o.Sdk.QuickstartJar()
+	}
+	return o.Quickstart.DistFile, nil
+}
+
+type Quickstart struct {
 	DistFile    string
 	LicenseFile string
 }
 
-func (o *QuickstartOpts) Validate() error {
+func (o *Quickstart) Validate() error {
 	if !osx.PathExists(o.DistFile) {
 		return fmt.Errorf("quickstart dist file does not exist at path '%s'; consider specifying it by property 'instance.local.quickstart.dist_file'", o.DistFile)
 	}
@@ -59,6 +75,10 @@ func (o *QuickstartOpts) Validate() error {
 		return fmt.Errorf("quickstart license file does not exist at path '%s'; consider specifying it by property 'instance.local.quickstart.license_file'", o.LicenseFile)
 	}
 	return nil
+}
+
+func (o *Quickstart) IsDistFileSdk() bool {
+	return osx.FileExt(o.DistFile) == "zip"
 }
 
 // LocalValidate checks prerequisites needed to manage local instances
@@ -81,6 +101,13 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 	}
 
 	var created []Instance
+
+	if im.LocalOpts.Quickstart.IsDistFileSdk() {
+		err := im.LocalOpts.Sdk.Prepare(im.LocalOpts.Quickstart.DistFile)
+		if err != nil {
+			return created, err
+		}
+	}
 	for _, i := range instances {
 		if !i.local.IsCreated() {
 			log.Infof("creating instance '%s'", i.ID())
@@ -255,9 +282,9 @@ func (im *InstanceManager) configureLocalOpts(config *cfg.Config) {
 		im.LocalOpts.UnpackDir = opts.UnpackDir
 	}
 	if len(opts.Quickstart.DistFile) > 0 {
-		im.LocalOpts.QuickstartOpts.DistFile = opts.Quickstart.DistFile
+		im.LocalOpts.Quickstart.DistFile = opts.Quickstart.DistFile
 	}
 	if len(opts.Quickstart.LicenseFile) > 0 {
-		im.LocalOpts.QuickstartOpts.LicenseFile = opts.Quickstart.LicenseFile
+		im.LocalOpts.Quickstart.LicenseFile = opts.Quickstart.LicenseFile
 	}
 }

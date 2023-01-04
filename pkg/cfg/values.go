@@ -10,6 +10,10 @@ type ConfigValues struct {
 		FullTimestamp   bool   `mapstructure:"full_timestamp" yaml:"full_timestamp"`
 	} `mapstructure:"log" yaml:"log"`
 
+	Base struct {
+		TmpDir string `mapstructure:"tmp_dir" yaml:"tmp_dir"`
+	}
+
 	Input struct {
 		File   string `mapstructure:"file" yaml:"file"`
 		String string `mapstructure:"string" yaml:"string"`
@@ -22,7 +26,7 @@ type ConfigValues struct {
 	} `mapstructure:"output" yaml:"output"`
 
 	Java struct {
-		HomePath string `mapstructure:"home_path" yaml:"home_path"`
+		HomeDir string `mapstructure:"home_dir" yaml:"home_dir"`
 	}
 
 	Instance struct {

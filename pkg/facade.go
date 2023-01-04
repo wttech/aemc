@@ -2,6 +2,7 @@
 package pkg
 
 import (
+	"github.com/wttech/aemc/pkg/base"
 	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/java"
 	"io"
@@ -11,6 +12,7 @@ import (
 // Aem is a facade to access AEM-related API
 type Aem struct {
 	output          io.Writer
+	baseOpts        *base.Opts
 	javaOpts        *java.Opts
 	instanceManager *InstanceManager
 }
@@ -19,6 +21,7 @@ type Aem struct {
 func NewAem() *Aem {
 	result := new(Aem)
 	result.output = os.Stdout
+	result.baseOpts = base.NewOpts()
 	result.javaOpts = java.NewOpts()
 	result.instanceManager = NewInstanceManager(result)
 	return result

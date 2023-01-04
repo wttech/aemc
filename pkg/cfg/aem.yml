@@ -9,12 +9,12 @@ instance:
       http_url: http://localhost:4502
       user: admin
       password: admin
-      run_modes: [ local, scene7 ]
+      run_modes: [ local ]
     local_publish:
       http_url: http://localhost:4503
       user: admin
       password: admin
-      run_modes: [ local, scene7 ]
+      run_modes: [ local ]
 
   # Filters for defined
   filter:
@@ -43,7 +43,7 @@ instance:
     # Source files
     quickstart:
       # AEM JAR or SDK ZIP
-      dist_file: "./aem/home/lib/aem-sdk-quickstart.jar"
+      dist_file: "./aem/home/lib/aem-sdk.zip"
       # AEM License properties file
       license_file: "./aem/home/lib/license.properties"
 
@@ -60,7 +60,7 @@ instance:
       refresh_packages: true
 
 java:
-  home_path: {{ .Env.JAVA_HOME }}
+  home_dir: {{ .Env.JAVA_HOME }}
 
 log:
   level: info
@@ -74,3 +74,6 @@ input:
 output:
   format: text
   file: aem/home/aem.log
+
+base:
+  tmp_dir: aem/home/tmp

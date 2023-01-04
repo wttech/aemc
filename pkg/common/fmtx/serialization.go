@@ -3,6 +3,7 @@ package fmtx
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/wttech/aemc/pkg/common/osx"
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"
@@ -25,11 +26,22 @@ const (
 func UnmarshalDataInFormat(dataFormat string, reader io.Reader, out any) error {
 	switch dataFormat {
 	case YML:
-		return UnmarshalYAML(reader, out)
+		return UnmarshalYML(reader, out)
 	case JSON:
 		return UnmarshalJSON(reader, out)
 	default:
 		return fmt.Errorf("cannot decode data to struct; unsupported data format '%s'", dataFormat)
+	}
+}
+
+func MarshalDataInFormat(dataFormat string, out any) (string, error) {
+	switch dataFormat {
+	case YML:
+		return MarshalYML(out)
+	case JSON:
+		return MarshalJSON(out)
+	default:
+		return "", fmt.Errorf("cannot marshal data; unsupported format '%s'", dataFormat)
 	}
 }
 
@@ -49,7 +61,7 @@ func UnmarshalJSON(body io.Reader, out any) error {
 	return nil
 }
 
-func MarshalYAML(i any) (string, error) {
+func MarshalYML(i any) (string, error) {
 	bytes, err := yaml.Marshal(i)
 	if err != nil {
 		return "", fmt.Errorf("cannot convert object '%s' to YML: %w", i, err)
@@ -57,7 +69,7 @@ func MarshalYAML(i any) (string, error) {
 	return string(bytes), nil
 }
 
-func UnmarshalYAML(body io.Reader, out any) error {
+func UnmarshalYML(body io.Reader, out any) error {
 	err := yaml.NewDecoder(body).Decode(out)
 	if err != nil {
 		return fmt.Errorf("cannot decode stream as YML: %w", err)
@@ -65,12 +77,32 @@ func UnmarshalYAML(body io.Reader, out any) error {
 	return nil
 }
 
+func MarshalToFile(path string, out any) error {
+	return MarshalToFileInFormat(osx.FileExt(path), path, out)
+}
+
+func MarshalToFileInFormat(format string, path string, out any) error {
+	text, err := MarshalDataInFormat(format, out)
+	if err != nil {
+		return fmt.Errorf("cannot marshal data for file '%s': %w", path, err)
+	}
+	err = osx.FileWrite(path, text)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func UnmarshalFile(path string, out any) error {
+	return UnmarshalFileInFormat(osx.FileExt(path), path, out)
+}
+
 func UnmarshalFileInFormat(format string, path string, out any) error {
 	fileDesc, _ := os.Open(path)
 	defer fileDesc.Close()
 	err := UnmarshalDataInFormat(format, fileDesc, out)
 	if err != nil {
-		return fmt.Errorf("cannot parse file '%s' to struct: %w", path, err)
+		return fmt.Errorf("cannot unmarshal data from file '%s' to struct: %w", path, err)
 	}
 	return nil
 }

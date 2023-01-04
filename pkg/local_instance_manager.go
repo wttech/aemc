@@ -2,10 +2,13 @@ package pkg
 
 import (
 	"fmt"
+	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/java"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -44,13 +47,30 @@ func (im InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
 }
 
 func (o *LocalOpts) Validate() error {
-	err := o.JavaOpts.Validate()
-	if err != nil {
+	if err := o.validateUnpackDir(); err != nil {
 		return err
 	}
-	err = o.Quickstart.Validate()
-	if err != nil {
+	if err := o.JavaOpts.Validate(); err != nil {
 		return err
+	}
+	if err := o.Quickstart.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (o *LocalOpts) validateUnpackDir() error {
+	current := osx.PathAbs(o.UnpackDir)
+	if strings.Contains(current, " ") {
+		return fmt.Errorf("local instance unpack dir '%s' cannot contain spaces (as shell scripts could run improperly)", current)
+	}
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil // intentionally
+	}
+	deniedDirs := lo.Map([]string{homeDir + "/Desktop", homeDir + "/Documents"}, func(p string, _ int) string { return osx.PathAbs(p) })
+	if lo.SomeBy(deniedDirs, func(d string) bool { return strings.HasPrefix(current, d) }) {
+		return fmt.Errorf("local instance unpack dir '%s' cannot be located under dirs: %s", current, strings.Join(deniedDirs, ", "))
 	}
 	return nil
 }

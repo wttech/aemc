@@ -22,13 +22,12 @@ aem osgi config save --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExS
 clc
 
 step "downloading APM"
-# TODO impl this
-#aem file download --url "https://github.com/wttech/APM/releases/download/apm-5.5.1/apm-all-5.5.1.zip" --file "${DOWNLOAD_DIR}/apm-all-5.5.1.zip"
-#clc
-downloadFile "https://github.com/wttech/APM/releases/download/apm-5.5.1/apm-all-5.5.1.zip" "${DOWNLOAD_DIR}/apm-all-5.5.1.zip"
+aem file download --url "https://github.com/wttech/APM/releases/download/apm-5.5.1/apm-all-5.5.1.zip" --file "${DOWNLOAD_DIR}/apm-all-5.5.1.zip"
+clc
 
 step "deploying APM"
-# TODO impl this
-#aem package deploy --url "https://github.com/wttech/APM/releases/download/apm-5.5.1/apm-all-5.5.1.zip"
 aem package deploy --file "${DOWNLOAD_DIR}/apm-all-5.5.1.zip"
 clc
+
+# TODO consider implementing this
+# aem package deploy --url "https://github.com/wttech/APM/releases/download/apm-5.5.1/apm-all-5.5.1.zip"

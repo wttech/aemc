@@ -109,7 +109,29 @@ func (c *CLI) instanceCmd() *cobra.Command {
 			}
 		},
 	})
-
+	cmd.AddCommand(&cobra.Command{
+		Use:     "kill",
+		Aliases: []string{"ko"},
+		Short:   "Kills AEM instance(s)",
+		Run: func(cmd *cobra.Command, args []string) {
+			localInstances, err := c.aem.InstanceManager().SomeLocals()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			killedInstances, err := c.aem.InstanceManager().Kill(localInstances)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("killed", killedInstances)
+			if len(killedInstances) > 0 {
+				c.Changed(fmt.Sprintf("killed instance(s) (%d)", len(killedInstances)))
+			} else {
+				c.Ok("no instance(s) killed")
+			}
+		},
+	})
 	cmd.AddCommand(&cobra.Command{
 		Use:     "delete",
 		Aliases: []string{"destroy"},

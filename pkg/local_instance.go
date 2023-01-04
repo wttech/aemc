@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -185,6 +186,34 @@ func (li LocalInstance) Restart() error {
 	upErr := li.Start()
 	if upErr != nil {
 		return upErr
+	}
+	return nil
+}
+
+func (li LocalInstance) IsKillable() bool {
+	if !li.IsCreated() {
+		return false
+	}
+	pid, err := li.PID()
+	if err != nil {
+		return false
+	}
+	return pid > 0
+}
+
+func (li LocalInstance) Kill() error {
+	pid, err := li.PID()
+	if err != nil {
+		return err
+	}
+	var cmd *exec.Cmd
+	if osx.IsWindows() {
+		cmd = li.verboseCommand("taskkill", "/F", "/PID", fmt.Sprintf("%d", pid))
+	} else {
+		cmd = li.verboseCommand("kill", "-9", fmt.Sprintf("%d", pid))
+	}
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("cannot execute kill command for instance '%s': %w", li.instance.ID(), err)
 	}
 	return nil
 }
@@ -385,4 +414,18 @@ type upToDateLock struct {
 	JVMOpts  string
 	RunModes string
 	HTTPPort string
+}
+
+func (li LocalInstance) PID() (int, error) {
+	file := fmt.Sprintf("%s/crx-quickstart/conf/cq.pid", li.Dir())
+	bytes, err := osx.FileRead(file)
+	if err != nil {
+		return 0, fmt.Errorf("cannot read instance PID file '%s'", file)
+	}
+	str := strings.TrimSpace(string(bytes))
+	num, err := strconv.Atoi(str)
+	if err != nil {
+		return 0, fmt.Errorf("cannot convert value '%s' to integer read from instance PID file '%s'", str, file)
+	}
+	return num, nil
 }

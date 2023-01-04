@@ -2,6 +2,8 @@ package pkg
 
 import (
 	"fmt"
+	"github.com/wttech/aemc/pkg/common/filex"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"os"
 	"os/exec"
 	"sort"
@@ -57,7 +59,7 @@ func (li LocalInstance) Opts() *LocalOpts {
 }
 
 func (li LocalInstance) Dir() string {
-	return osx.PathAbs(fmt.Sprintf("%s/%s", li.Opts().UnpackDir, li.instance.ID()))
+	return pathx.Abs(fmt.Sprintf("%s/%s", li.Opts().UnpackDir, li.instance.ID()))
 }
 
 func (li LocalInstance) binScript(name string) string {
@@ -73,7 +75,7 @@ func (li LocalInstance) LicenseFile() string {
 }
 
 func (li LocalInstance) Create() error {
-	if err := osx.PathEnsure(li.Dir()); err != nil {
+	if err := pathx.Ensure(li.Dir()); err != nil {
 		return fmt.Errorf("cannot create dir for instance '%s': %w", li.instance.ID(), err)
 	}
 	if err := li.unpackJarFile(); err != nil {
@@ -95,8 +97,8 @@ func (li LocalInstance) unpackJarFile() error {
 		return err
 	}
 	cmd := li.verboseCommand(
-		osx.PathAbs(li.Opts().JavaOpts.Executable()), "-jar",
-		osx.PathAbs(jar), "-unpack",
+		pathx.Abs(li.Opts().JavaOpts.Executable()), "-jar",
+		pathx.Abs(jar), "-unpack",
 	)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot unpack files for instance '%s': %w", li.instance.ID(), err)
@@ -105,10 +107,10 @@ func (li LocalInstance) unpackJarFile() error {
 }
 
 func (li LocalInstance) copyLicenseFile() error {
-	source := osx.PathAbs(li.Opts().Quickstart.LicenseFile)
-	dest := osx.PathAbs(li.LicenseFile())
+	source := pathx.Abs(li.Opts().Quickstart.LicenseFile)
+	dest := pathx.Abs(li.LicenseFile())
 	log.Infof("copying license file from '%s' to '%s' for instance '%s'", source, dest, li.instance.ID())
-	err := osx.FileCopy(source, dest)
+	err := filex.Copy(source, dest)
 	if err != nil {
 		return fmt.Errorf("cannot copy license file for instance '%s': %s", li.instance.ID(), err)
 	}
@@ -133,7 +135,7 @@ func (li LocalInstance) createLockPath() string {
 }
 
 func (li LocalInstance) IsCreated() bool {
-	return osx.PathExists(li.createLockPath())
+	return pathx.Exists(li.createLockPath())
 }
 
 func (li LocalInstance) Start() error {
@@ -314,7 +316,7 @@ func (li LocalInstance) Delete() error {
 	if li.IsRunning() {
 		return fmt.Errorf("cannot delete instance as it is running")
 	}
-	err := osx.PathDelete(li.Dir())
+	err := pathx.Delete(li.Dir())
 	if err != nil {
 		return fmt.Errorf("cannot delete instance properly: %w", err)
 
@@ -336,7 +338,7 @@ func (li LocalInstance) quietCommand(name string, arg ...string) *exec.Cmd {
 	cmd := exec.Command(name, arg...)
 	cmd.Dir = li.Dir()
 	cmd.Env = append(os.Environ(),
-		"JAVA_HOME="+osx.PathAbs(li.Opts().JavaOpts.HomeDir),
+		"JAVA_HOME="+pathx.Abs(li.Opts().JavaOpts.HomeDir),
 		"CQ_PORT="+li.instance.http.Port(),
 		"CQ_RUNMODE="+li.instance.local.RunModesString(),
 		"CQ_JVM_OPTS="+li.instance.local.JVMOptsString(),
@@ -384,7 +386,7 @@ func (li LocalInstance) upLockSave() error {
 }
 
 func (li LocalInstance) upLockDelete() error {
-	err := osx.PathDelete(li.upLockPath())
+	err := pathx.Delete(li.upLockPath())
 	if err != nil {
 		return fmt.Errorf("cannot delete instance up lock file '%s': %w", li.upLockPath(), err)
 	}
@@ -393,7 +395,7 @@ func (li LocalInstance) upLockDelete() error {
 
 func (li LocalInstance) upLockSaved() upToDateLock {
 	var result = upToDateLock{}
-	if osx.PathExists(li.upLockPath()) {
+	if pathx.Exists(li.upLockPath()) {
 		err := fmtx.UnmarshalFile(li.upLockPath(), &result)
 		if err != nil {
 			log.Warn(fmt.Sprintf("cannot read instance up lock file '%s': %s", li.upLockPath(), err))
@@ -418,7 +420,7 @@ type upToDateLock struct {
 
 func (li LocalInstance) PID() (int, error) {
 	file := fmt.Sprintf("%s/crx-quickstart/conf/cq.pid", li.Dir())
-	bytes, err := osx.FileRead(file)
+	bytes, err := filex.Read(file)
 	if err != nil {
 		return 0, fmt.Errorf("cannot read instance PID file '%s'", file)
 	}

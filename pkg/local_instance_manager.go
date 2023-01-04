@@ -5,7 +5,8 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/cfg"
-	"github.com/wttech/aemc/pkg/common/osx"
+	"github.com/wttech/aemc/pkg/common/filex"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/java"
 	"os"
 	"strings"
@@ -60,7 +61,7 @@ func (o *LocalOpts) Validate() error {
 }
 
 func (o *LocalOpts) validateUnpackDir() error {
-	current := osx.PathAbs(o.UnpackDir)
+	current := pathx.Abs(o.UnpackDir)
 	if strings.Contains(current, " ") {
 		return fmt.Errorf("local instance unpack dir '%s' cannot contain spaces (as shell scripts could run improperly)", current)
 	}
@@ -68,7 +69,7 @@ func (o *LocalOpts) validateUnpackDir() error {
 	if err != nil {
 		return nil // intentionally
 	}
-	deniedDirs := lo.Map([]string{homeDir + "/Desktop", homeDir + "/Documents"}, func(p string, _ int) string { return osx.PathAbs(p) })
+	deniedDirs := lo.Map([]string{homeDir + "/Desktop", homeDir + "/Documents"}, func(p string, _ int) string { return pathx.Abs(p) })
 	if lo.SomeBy(deniedDirs, func(d string) bool { return strings.HasPrefix(current, d) }) {
 		return fmt.Errorf("local instance unpack dir '%s' cannot be located under dirs: %s", current, strings.Join(deniedDirs, ", "))
 	}
@@ -88,17 +89,17 @@ type Quickstart struct {
 }
 
 func (o *Quickstart) Validate() error {
-	if !osx.PathExists(o.DistFile) {
+	if !pathx.Exists(o.DistFile) {
 		return fmt.Errorf("quickstart dist file does not exist at path '%s'; consider specifying it by property 'instance.local.quickstart.dist_file'", o.DistFile)
 	}
-	if !osx.PathExists(o.LicenseFile) {
+	if !pathx.Exists(o.LicenseFile) {
 		return fmt.Errorf("quickstart license file does not exist at path '%s'; consider specifying it by property 'instance.local.quickstart.license_file'", o.LicenseFile)
 	}
 	return nil
 }
 
 func (o *Quickstart) IsDistFileSdk() bool {
-	return osx.FileExt(o.DistFile) == "zip"
+	return filex.Ext(o.DistFile) == "zip"
 }
 
 // LocalValidate checks prerequisites needed to manage local instances

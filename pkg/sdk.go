@@ -3,8 +3,10 @@ package pkg
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/osx"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"os/exec"
 	"path/filepath"
 	"time"
@@ -28,9 +30,9 @@ type Lock struct {
 }
 
 func (s Sdk) Prepare(zipFile string) error {
-	versionNew := osx.FileNameWithoutExt(zipFile)
+	versionNew := filex.NameWithoutExt(zipFile)
 	upToDate := false
-	if osx.PathExists(s.lockFile()) {
+	if pathx.Exists(s.lockFile()) {
 		var lock Lock
 		err := fmtx.UnmarshalFile(s.lockFile(), &lock)
 		if err != nil {
@@ -64,7 +66,7 @@ func (s Sdk) Prepare(zipFile string) error {
 }
 
 func (s Sdk) prepare(zipFile string) error {
-	err := osx.PathDelete(s.Dir())
+	err := pathx.Delete(s.Dir())
 	if err != nil {
 		return err
 	}
@@ -81,7 +83,7 @@ func (s Sdk) prepare(zipFile string) error {
 
 func (s Sdk) unpackSdk(zipFile string) error {
 	log.Infof("unpacking SDK ZIP '%s' to dir '%s'", zipFile, s.Dir())
-	err := osx.ArchiveExtract(zipFile, s.Dir())
+	err := filex.Unarchive(zipFile, s.Dir())
 	if err != nil {
 		return fmt.Errorf("cannot unpack SDK ZIP '%s' to dir '%s': %w", zipFile, s.Dir(), err)
 	}
@@ -124,7 +126,7 @@ func (s Sdk) unpackDispatcher() error {
 			return err
 		}
 		log.Infof("unpacking SDK dispatcher tools ZIP '%s' to dir '%s'", zip, s.DispatcherDir())
-		err = osx.ArchiveExtract(zip, s.DispatcherDir())
+		err = filex.Unarchive(zip, s.DispatcherDir())
 		log.Infof("unpacked SDK dispatcher tools ZIP '%s' to dir '%s'", zip, s.DispatcherDir())
 		if err != nil {
 			return err
@@ -148,5 +150,5 @@ func (s Sdk) unpackDispatcher() error {
 }
 
 func (s Sdk) Destroy() error {
-	return osx.PathDelete(s.Dir())
+	return pathx.Delete(s.Dir())
 }

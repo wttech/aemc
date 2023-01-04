@@ -3,7 +3,7 @@ package fmtx
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/wttech/aemc/pkg/common/osx"
+	"github.com/wttech/aemc/pkg/common/filex"
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"
@@ -78,7 +78,7 @@ func UnmarshalYML(body io.Reader, out any) error {
 }
 
 func MarshalToFile(path string, out any) error {
-	return MarshalToFileInFormat(osx.FileExt(path), path, out)
+	return MarshalToFileInFormat(filex.Ext(path), path, out)
 }
 
 func MarshalToFileInFormat(format string, path string, out any) error {
@@ -86,7 +86,7 @@ func MarshalToFileInFormat(format string, path string, out any) error {
 	if err != nil {
 		return fmt.Errorf("cannot marshal data for file '%s': %w", path, err)
 	}
-	err = osx.FileWrite(path, text)
+	err = filex.Write(path, text)
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func MarshalToFileInFormat(format string, path string, out any) error {
 }
 
 func UnmarshalFile(path string, out any) error {
-	return UnmarshalFileInFormat(osx.FileExt(path), path, out)
+	return UnmarshalFileInFormat(filex.Ext(path), path, out)
 }
 
 func UnmarshalFileInFormat(format string, path string, out any) error {

@@ -120,7 +120,7 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 		return nil, err
 	}
 
-	var created []Instance
+	created := []Instance{}
 
 	if im.LocalOpts.Quickstart.IsDistFileSdk() {
 		err := im.LocalOpts.Sdk.Prepare(im.LocalOpts.Quickstart.DistFile)
@@ -177,7 +177,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 
 	log.Infof("starting instance(s)")
 
-	var started []Instance
+	started := []Instance{}
 	for _, i := range instances {
 		if !i.local.IsRunning() {
 			err := i.local.Start()
@@ -211,7 +211,7 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 
 	log.Info("stopping instance(s)")
 
-	var stopped []Instance
+	stopped := []Instance{}
 	for _, i := range instances {
 		if i.local.IsRunning() {
 			err := i.local.Stop()
@@ -228,6 +228,39 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 	return stopped, nil
 }
 
+func (im *InstanceManager) KillOne(instance Instance) (bool, error) {
+	killed, err := im.Kill([]Instance{instance})
+	return len(killed) > 0, err
+}
+
+func (im *InstanceManager) KillAll() ([]Instance, error) {
+	return im.Kill(im.Locals())
+}
+
+func (im *InstanceManager) Kill(instances []Instance) ([]Instance, error) {
+	err := im.LocalValidate()
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info("killing instance(s)")
+
+	killed := []Instance{}
+	for _, i := range instances {
+		if i.local.IsKillable() {
+			err := i.local.Kill()
+			if err != nil {
+				log.Warnf("cannot kill instance '%s' (process not running / already killed): %s", i.ID(), err)
+			} else {
+				log.Infof("killed instance '%s'", i.ID())
+				killed = append(killed, i)
+			}
+		}
+	}
+
+	return killed, nil
+}
+
 func (im *InstanceManager) DeleteOne(instance Instance) (bool, error) {
 	deleted, err := im.Delete([]Instance{instance})
 	return len(deleted) > 0, err
@@ -240,7 +273,7 @@ func (im *InstanceManager) DeleteAll() ([]Instance, error) {
 func (im *InstanceManager) Delete(instances []Instance) ([]Instance, error) {
 	// im.LocalValidate()
 
-	var deleted []Instance
+	deleted := []Instance{}
 	for _, i := range instances {
 		if i.local.IsCreated() {
 			err := i.local.Delete()

@@ -168,20 +168,28 @@ func (c *CLI) printOutputTextIndented(writer *textio.PrefixWriter, value any) {
 	rv := reflect.ValueOf(value)
 	switch rv.Type().Kind() {
 	case reflect.Slice, reflect.Array:
-		for i := 0; i < rv.Len(); i++ {
-			iv := rv.Index(i).Interface()
-			c.printOutputTextIndented(writer, iv)
+		if rv.Len() == 0 {
+			c.printOutputTextIndented(writer, "<empty>")
+		} else {
+			for i := 0; i < rv.Len(); i++ {
+				iv := rv.Index(i).Interface()
+				c.printOutputTextIndented(writer, iv)
+			}
 		}
 	case reflect.Map:
-		dw := textio.NewPrefixWriter(writer, "  ")
-		keys := rv.MapKeys()
-		sort.SliceStable(keys, func(k1, k2 int) bool {
-			return strings.Compare(fmt.Sprintf("%v", keys[k1].Interface()), fmt.Sprintf("%v", keys[k2].Interface())) < 0
-		})
-		for _, k := range keys {
-			_, _ = writer.WriteString(fmt.Sprintf("%s\n", k))
-			mv := rv.MapIndex(k).Interface()
-			c.printOutputTextIndented(dw, mv)
+		if rv.Len() == 0 {
+			c.printOutputTextIndented(writer, "<empty>")
+		} else {
+			dw := textio.NewPrefixWriter(writer, "  ")
+			keys := rv.MapKeys()
+			sort.SliceStable(keys, func(k1, k2 int) bool {
+				return strings.Compare(fmt.Sprintf("%v", keys[k1].Interface()), fmt.Sprintf("%v", keys[k2].Interface())) < 0
+			})
+			for _, k := range keys {
+				_, _ = writer.WriteString(fmt.Sprintf("%s\n", k))
+				mv := rv.MapIndex(k).Interface()
+				c.printOutputTextIndented(dw, mv)
+			}
 		}
 	default:
 		_, _ = writer.WriteString(strings.TrimSuffix(fmtx.MarshalText(value), "\n") + "\n")

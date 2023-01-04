@@ -7,7 +7,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+)
+
+const (
+	ShellPath = "/bin/sh"
 )
 
 func PathCurrent() string {
@@ -142,4 +147,16 @@ func ArchiveExtract(sourceFile string, targetDir string) error {
 		return err
 	}
 	return nil
+}
+
+func IsWindows() bool {
+	return runtime.GOOS == "windows"
+}
+
+func IsDarwin() bool {
+	return runtime.GOOS == "darwin"
+}
+
+func isLinux() bool {
+	return !IsWindows() && !IsDarwin()
 }

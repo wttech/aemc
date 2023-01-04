@@ -141,7 +141,7 @@ func (li LocalInstance) Start() error {
 	}
 
 	// TODO enforce 'java' to be always from JAVA_PATH (update $PATH var accordingly)
-	cmd := li.verboseCommand("/bin/sh", li.binScript("start"))
+	cmd := li.verboseCommand(osx.ShellPath, li.binScript("start"))
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute start script for instance '%s': %w", li.instance.ID(), err)
 	}
@@ -160,7 +160,7 @@ func (li LocalInstance) Stop() error {
 	}
 
 	// TODO enforce 'java' to be always from JAVA_PATH (update $PATH var accordingly)
-	cmd := li.verboseCommand("/bin/sh", li.binScript("stop"))
+	cmd := li.verboseCommand(osx.ShellPath, li.binScript("stop"))
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute stop script for instance '%s': %w", li.instance.ID(), err)
 	}
@@ -256,7 +256,7 @@ func (li LocalInstance) Status() (LocalStatus, error) {
 		return LocalStatusUnknown, fmt.Errorf("cannot check status of instance as it is not created")
 	}
 
-	cmd := li.quietCommand("/bin/sh", li.binScript("status"))
+	cmd := li.quietCommand(osx.ShellPath, li.binScript("status"))
 
 	exitCode := 0
 	if err := cmd.Run(); err != nil {

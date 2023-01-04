@@ -5,6 +5,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/osx"
+	"os/exec"
 	"path/filepath"
 	"time"
 )
@@ -15,6 +16,10 @@ type Sdk struct {
 
 func (s Sdk) Dir() string {
 	return s.localOpts.UnpackDir + "/sdk"
+}
+
+func (s Sdk) DispatcherDir() string {
+	return s.Dir() + "/dispatcher"
 }
 
 func (s Sdk) lockFile() string {
@@ -54,7 +59,7 @@ func (s Sdk) Prepare() error {
 	}
 	log.Infof("prepared new instance SDK '%s'", versionNew)
 
-	jar, err := s.Jar()
+	jar, err := s.QuickstartJar()
 	if err != nil {
 		return err
 	}
@@ -72,28 +77,75 @@ func (s Sdk) prepare(zipFile string) error {
 	if err != nil {
 		return err
 	}
+	err = s.unpackDispatcher()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (s Sdk) unpackSdk(zipFile string) error {
-	log.Debugf("unpacking SDK ZIP '%s' to dir '%s'", zipFile, s.Dir())
+	log.Infof("unpacking SDK ZIP '%s' to dir '%s'", zipFile, s.Dir())
 	err := osx.ArchiveExtract(zipFile, s.Dir())
 	if err != nil {
 		return fmt.Errorf("cannot unpack SDK ZIP '%s' to dir '%s': %w", zipFile, s.Dir(), err)
 	}
+	log.Infof("unpacked SDK ZIP '%s' to dir '%s'", zipFile, s.Dir())
 	return nil
 }
 
-func (s Sdk) Jar() (string, error) {
-	paths, err := filepath.Glob(s.Dir() + "/*.jar")
+func (s Sdk) QuickstartJar() (string, error) {
+	return s.findFile("*-quickstart-*.jar")
+}
+
+func (s Sdk) dispatcherToolsUnixSh() (string, error) {
+	return s.findFile("*-dispatcher-tools-*-unix.sh")
+}
+
+func (s Sdk) dispatcherToolsWindowsZip() (string, error) {
+	return s.findFile("*-dispatcher-tools-*-windows.zip")
+}
+
+func (s Sdk) findFile(pattern string) (string, error) {
+	paths, err := filepath.Glob(s.Dir() + "/" + pattern)
 	if err != nil {
-		return "", fmt.Errorf("cannot find JAR in unpacked ZIP dir '%s': %w", s.Dir(), err)
+		return "", fmt.Errorf("cannot find file matching pattern '%s' in unpacked ZIP dir '%s': %w", pattern, s.Dir(), err)
 	}
 	if len(paths) == 0 {
-		return "", fmt.Errorf("cannot find JAR in unpacked ZIP dir '%s'", s.Dir())
+		return "", fmt.Errorf("cannot find file matching pattern '%s' in unpacked ZIP dir '%s'", pattern, s.Dir())
 	}
 	jar := paths[0]
 	return jar, nil
+}
+
+func (s Sdk) unpackDispatcher() error {
+	if osx.IsWindows() {
+		zip, err := s.dispatcherToolsWindowsZip()
+		if err != nil {
+			return err
+		}
+		log.Infof("unpacking SDK dispatcher tools ZIP '%s' to dir '%s'", zip, s.DispatcherDir())
+		err = osx.ArchiveExtract(zip, s.DispatcherDir())
+		log.Infof("unpacked SDK dispatcher tools ZIP '%s' to dir '%s'", zip, s.DispatcherDir())
+		if err != nil {
+			return err
+		}
+	} else {
+		sh, err := s.dispatcherToolsUnixSh()
+		if err != nil {
+			return err
+		}
+		log.Infof("unpacking SDK dispatcher tools using script '%s' to dir '%s'", sh, s.DispatcherDir())
+		out := s.localOpts.manager.aem.output
+		cmd := exec.Command(osx.ShellPath, sh, "--target", s.DispatcherDir())
+		cmd.Stdout = out
+		cmd.Stderr = out
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("cannot run SDK dispatcher tools unpacking script '%s': %w", sh, err)
+		}
+		log.Infof("unpacked SDK dispatcher tools using script '%s' to dir '%s'", sh, s.DispatcherDir())
+	}
+	return nil
 }
 
 func (s Sdk) Destroy() error {

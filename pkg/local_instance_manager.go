@@ -18,14 +18,18 @@ const (
 )
 
 type LocalOpts struct {
+	manager *InstanceManager
+
 	UnpackDir  string
 	JavaOpts   *java.Opts
 	Quickstart *Quickstart
 	Sdk        *Sdk
 }
 
-func (im InstanceManager) NewLocalOpts() *LocalOpts {
+func (im InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
 	result := &LocalOpts{
+		manager: manager,
+
 		UnpackDir: UnpackDir,
 		JavaOpts:  im.aem.javaOpts,
 		Quickstart: &Quickstart{
@@ -53,7 +57,7 @@ func (o *LocalOpts) Validate() error {
 
 func (o *LocalOpts) Jar() (string, error) {
 	if o.Quickstart.IsSdk() {
-		return o.Sdk.Jar()
+		return o.Sdk.QuickstartJar()
 	}
 	return o.Quickstart.DistFile, nil
 }

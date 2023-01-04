@@ -84,11 +84,13 @@ type ConfigValues struct {
 		} `mapstructure:"package" yaml:"package"`
 
 		OSGi struct {
-			Install struct {
-				Start           bool `mapstructure:"start" yaml:"start"`
-				StartLevel      int  `mapstructure:"start_level" yaml:"start_level"`
-				RefreshPackages bool `mapstructure:"refresh_packages" yaml:"refresh_packages"`
-			} `mapstructure:"install" yaml:"install"`
+			Bundle struct {
+				Install struct {
+					Start           bool `mapstructure:"start" yaml:"start"`
+					StartLevel      int  `mapstructure:"start_level" yaml:"start_level"`
+					RefreshPackages bool `mapstructure:"refresh_packages" yaml:"refresh_packages"`
+				} `mapstructure:"install" yaml:"install"`
+			} `mapstructure:"bundle" yaml:"bundle"`
 		} `mapstructure:"osgi" yaml:"osgi"`
 	} `mapstructure:"instance" yaml:"instance"`
 }

@@ -54,10 +54,11 @@ instance:
       force: false
 
   osgi:
-    install:
-      start: true
-      start_level: 20
-      refresh_packages: true
+    bundle:
+      install:
+        start: true
+        start_level: 20
+        refresh_packages: true
 
 java:
   home_dir: {{ .Env.JAVA_HOME }}

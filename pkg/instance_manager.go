@@ -314,9 +314,9 @@ func configureInstance(inst Instance, config *cfg.Config) {
 	inst.packageManager.uploadForce = packageOpts.Upload.Force
 
 	osgiOpts := config.Values().Instance.OSGi
-	inst.osgi.bundleManager.InstallStart = osgiOpts.Install.Start
-	inst.osgi.bundleManager.InstallStartLevel = osgiOpts.Install.StartLevel
-	inst.osgi.bundleManager.InstallRefreshPackages = osgiOpts.Install.RefreshPackages
+	inst.osgi.bundleManager.InstallStart = osgiOpts.Bundle.Install.Start
+	inst.osgi.bundleManager.InstallStartLevel = osgiOpts.Bundle.Install.StartLevel
+	inst.osgi.bundleManager.InstallRefreshPackages = osgiOpts.Bundle.Install.RefreshPackages
 }
 
 func (im *InstanceManager) configureCheckOpts(config *cfg.Config) {

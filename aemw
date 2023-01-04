@@ -5,7 +5,7 @@ COMMAND_DEFAULT=${AEMC_COMMAND_DEFAULT:-"setup"}
 
 AEM_DIR="aem"
 HOME_DIR="${AEM_DIR}/home"
-DOWNLOAD_DIR="${HOME_DIR}/download"
+DOWNLOAD_DIR="${HOME_DIR}/tmp"
 
 . aem/api.sh
 

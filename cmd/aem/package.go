@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg"
+	"github.com/wttech/aemc/pkg/common/httpx"
 	"github.com/wttech/aemc/pkg/common/mapsx"
+	"strings"
 )
 
 func (c *CLI) pkgCmd() *cobra.Command {
@@ -82,8 +84,12 @@ func (c *CLI) pkgUploadCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			path, err := c.pkgPathByFlags(cmd)
+			if err != nil {
+				c.Error(err)
+				return
+			}
 			uploaded, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
-				path := pkgPathByFlag(cmd)
 				changed, err := instance.PackageManager().UploadWithChanged(path)
 				if err != nil {
 					return nil, err
@@ -113,7 +119,7 @@ func (c *CLI) pkgUploadCmd() *cobra.Command {
 			}
 		},
 	}
-	pkgDefineFileFlag(cmd)
+	pkgDefineFileAndUrlFlags(cmd)
 	return cmd
 }
 
@@ -171,8 +177,12 @@ func (c *CLI) pkgDeployCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			path, err := c.pkgPathByFlags(cmd)
+			if err != nil {
+				c.Error(err)
+				return
+			}
 			deployed, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
-				path := pkgPathByFlag(cmd)
 				changed, err := instance.PackageManager().DeployWithChanged(path)
 				if err != nil {
 					return nil, err
@@ -202,7 +212,7 @@ func (c *CLI) pkgDeployCmd() *cobra.Command {
 			}
 		},
 	}
-	pkgDefineFileFlag(cmd)
+	pkgDefineFileAndUrlFlags(cmd)
 	return cmd
 }
 
@@ -350,12 +360,29 @@ func pkgByFlags(cmd *cobra.Command, instance pkg.Instance) (*pkg.Package, error)
 	return nil, fmt.Errorf("flag 'pid' or 'file' or 'path' are required")
 }
 
-func pkgDefineFileFlag(cmd *cobra.Command) {
+func pkgDefineFileAndUrlFlags(cmd *cobra.Command) {
 	cmd.Flags().String("file", "", "Local ZIP path")
-	_ = cmd.MarkFlagRequired("file")
+	cmd.Flags().String("url", "", "URL to ZIP")
+	cmd.MarkFlagsMutuallyExclusive("file", "url")
 }
 
-func pkgPathByFlag(cmd *cobra.Command) string {
+func (c *CLI) pkgPathByFlags(cmd *cobra.Command) (string, error) {
+	url, _ := cmd.Flags().GetString("url")
+	if len(url) > 0 {
+		fileName := httpx.FileNameFromUrl(url)
+		if !strings.HasSuffix(fileName, ".zip") {
+			return "", fmt.Errorf("package URL does not contain file name but it should '%s'", url)
+		}
+		path := c.aem.BaseOpts().TmpDir + "/" + fileName
+		err := httpx.DownloadOnce(url, path)
+		if err != nil {
+			return "", err
+		}
+		return path, nil
+	}
 	path, _ := cmd.Flags().GetString("file")
-	return path
+	if len(path) > 0 {
+		return path, nil
+	}
+	return "", fmt.Errorf("flag 'file' or 'url' are required")
 }

@@ -44,7 +44,7 @@ func (c *CLI) fileDownloadCmd() *cobra.Command {
 			c.SetOutput("url", url)
 			c.SetOutput("file", file)
 
-			changed, err := httpx.DownloadWithOpts(opts)
+			changed, err := httpx.DownloadWithChanged(opts)
 			if err != nil {
 				c.Error(err)
 				return

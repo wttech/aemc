@@ -31,6 +31,10 @@ func (a *Aem) SetOutput(output io.Writer) {
 	a.output = output
 }
 
+func (a *Aem) BaseOpts() *base.Opts {
+	return a.baseOpts
+}
+
 func (a *Aem) JavaOpts() *java.Opts {
 	return a.javaOpts
 }

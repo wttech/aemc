@@ -21,13 +21,6 @@ step "enabling CRX/DE"
 aem osgi config save --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet" --input-string "alias: /crx/server"
 clc
 
-step "downloading APM"
-aem file download --url "https://github.com/wttech/APM/releases/download/apm-5.5.1/apm-all-5.5.1.zip" --file "${DOWNLOAD_DIR}/apm-all-5.5.1.zip"
-clc
-
 step "deploying APM"
-aem package deploy --file "${DOWNLOAD_DIR}/apm-all-5.5.1.zip"
+aem package deploy --url "https://github.com/wttech/APM/releases/download/apm-5.5.1/apm-all-5.5.1.zip"
 clc
-
-# TODO consider implementing this
-# aem package deploy --url "https://github.com/wttech/APM/releases/download/apm-5.5.1/apm-all-5.5.1.zip"

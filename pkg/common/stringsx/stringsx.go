@@ -64,16 +64,15 @@ func Between(value string, a string, b string) string {
 func BeforeLast(value string, a string) string {
 	pos := strings.LastIndex(value, a)
 	if pos == -1 {
-		return ""
+		return value
 	}
 	return value[0:pos]
 }
 
-// AfterLast TODO review AfterLast with "/" as it will not work on Windows
 func AfterLast(value string, a string) string {
 	pos := strings.LastIndex(value, a)
 	if pos == -1 {
-		return ""
+		return value
 	}
 	adjustedPos := pos + len(a)
 	if adjustedPos >= len(value) {

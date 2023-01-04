@@ -12,7 +12,7 @@ import (
 	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/fmtx"
-	"github.com/wttech/aemc/pkg/common/osx"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"io"
 	"os"
@@ -111,7 +111,7 @@ func (c *CLI) configureOutput() {
 }
 
 func (c *CLI) openOutputFile() *os.File {
-	err := osx.PathEnsure(path.Dir(c.outputFile))
+	err := pathx.Ensure(path.Dir(c.outputFile))
 	if err != nil {
 		return nil
 	}

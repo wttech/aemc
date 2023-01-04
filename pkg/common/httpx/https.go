@@ -1,9 +1,9 @@
-package file
+package httpx
 
 import (
 	"fmt"
 	"github.com/go-resty/resty/v2"
-	"github.com/wttech/aemc/pkg/common/osx"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"os"
 )
 
@@ -27,7 +27,7 @@ func DownloadWithOpts(opts DownloadOpts) (bool, error) {
 	if len(opts.File) == 0 {
 		return false, fmt.Errorf("destination for downloaded file is not specified")
 	}
-	if osx.PathExists(opts.File) {
+	if pathx.Exists(opts.File) {
 		return false, nil
 	}
 	client := resty.New()
@@ -38,8 +38,8 @@ func DownloadWithOpts(opts DownloadOpts) (bool, error) {
 		client.SetAuthToken(opts.AuthToken)
 	}
 	fileTmp := opts.File + ".tmp"
-	if osx.PathExists(fileTmp) {
-		err := osx.PathDelete(fileTmp)
+	if pathx.Exists(fileTmp) {
+		err := pathx.Delete(fileTmp)
 		if err != nil {
 			return false, fmt.Errorf("cannot clean temporary file for downloaded from URL '%s' to '%s': %s", opts.Url, opts.File, err)
 		}

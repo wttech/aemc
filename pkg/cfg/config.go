@@ -7,8 +7,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/wttech/aemc/pkg/common"
+	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/osx"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/tplx"
 	"os"
 	"path/filepath"
@@ -74,7 +76,7 @@ func readFromEnv(v *viper.Viper) {
 
 func readFromFile(v *viper.Viper) {
 	file := File()
-	if !osx.PathExists(file) {
+	if !pathx.Exists(file) {
 		log.Debugf("skipping reading AEM config file as it does not exist '%s'", file)
 		return
 	}
@@ -120,10 +122,10 @@ var configYml string
 
 func (c *Config) Init() error {
 	file := File()
-	if osx.PathExists(file) {
+	if pathx.Exists(file) {
 		return fmt.Errorf("config file already exists: '%s'", file)
 	}
-	err := osx.FileWrite(file, configYml)
+	err := filex.Write(file, configYml)
 	if err != nil {
 		return fmt.Errorf("cannot create initial config file '%s': '%w'", file, err)
 	}

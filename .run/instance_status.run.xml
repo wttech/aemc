@@ -3,11 +3,6 @@
     <module name="aemc" />
     <working_directory value="$PROJECT_DIR$" />
     <parameters value="instance status --output-format yaml" />
-    <EXTENSION ID="software.aws.toolkits.jetbrains.core.execution.GoAwsConnectionRunConfigurationExtension">
-      <option name="credential" />
-      <option name="region" />
-      <option name="useCurrentConnection" value="false" />
-    </EXTENSION>
     <kind value="DIRECTORY" />
     <package value="github.com/wttech/aemc" />
     <directory value="$PROJECT_DIR$/cmd/aem" />

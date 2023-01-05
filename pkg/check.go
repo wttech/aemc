@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"github.com/samber/lo"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/osgi"
 	"time"
@@ -132,28 +133,30 @@ func (c EventStableChecker) Check(instance Instance) CheckResult {
 	}
 
 	nowTime := instance.Now()
-	var unstableEvents []osgi.Event
-
-	for _, e := range events.List {
+	unstableEvents := lo.Filter(events.List, func(e osgi.Event, _ int) bool {
 		receivedTime := instance.Time(e.Received)
 		if !receivedTime.Add(c.ReceivedMaxAge).After(nowTime) {
-			continue
+			return false
 		}
-		if !stringsx.MatchAnyPattern(e.Topic, c.TopicsUnstable) {
-			continue
+		if !stringsx.MatchSomePattern(e.Topic, c.TopicsUnstable) {
+			return false
 		}
-		/* TODO implement this
-		if !checkEventDetails(e.Details, c.DetailsIgnored) {
-			continue
+		if stringsx.MatchSomePattern(e.Details(), c.DetailsIgnored) {
+			return false
 		}
-		*/
-		unstableEvents = append(unstableEvents, e)
-	}
+		return true
+	})
+	unstableEventCount := len(unstableEvents)
 
-	if len(unstableEvents) > 0 {
+	if unstableEventCount > 0 {
+		message := fmt.Sprintf("%d event(s) unstable", unstableEventCount)
+		if unstableEventCount == 1 {
+			event := unstableEvents[0]
+			message += fmt.Sprintf(" (%s)", event.Details())
+		}
 		return CheckResult{
 			ok:      false,
-			message: fmt.Sprintf("%d event(s) unstable", len(unstableEvents)),
+			message: message,
 		}
 	}
 

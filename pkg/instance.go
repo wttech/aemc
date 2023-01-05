@@ -10,8 +10,6 @@ import (
 	nurl "net/url"
 	"strings"
 	"time"
-
-	"github.com/wttech/aemc/pkg/common/stringsx"
 )
 
 const (
@@ -137,7 +135,7 @@ func (i *Instance) IsPublish() bool {
 }
 
 func locationByURL(config *nurl.URL) string {
-	if stringsx.Contains(localHosts(), config.Hostname()) {
+	if lo.Contains(localHosts(), config.Hostname()) {
 		return LocationLocal
 	}
 	return LocationRemote

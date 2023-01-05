@@ -39,11 +39,8 @@ func DownloadWithOpts(opts DownloadOpts) error {
 		client.SetAuthToken(opts.AuthToken)
 	}
 	fileTmp := opts.File + ".tmp"
-	if pathx.Exists(fileTmp) {
-		err := pathx.Delete(fileTmp)
-		if err != nil {
-			return fmt.Errorf("cannot clean temporary file for downloaded from URL '%s' to '%s': %s", opts.Url, opts.File, err)
-		}
+	if err := pathx.DeleteIfExists(fileTmp); err != nil {
+		return fmt.Errorf("cannot delete temporary file for downloaded from URL '%s' to '%s': %s", opts.Url, opts.File, err)
 	}
 	_, err := client.NewRequest().SetOutput(fileTmp).Get(opts.Url)
 	if err != nil {
@@ -60,8 +57,7 @@ func DownloadWithChanged(opts DownloadOpts) (bool, error) {
 	if pathx.Exists(opts.File) {
 		return false, nil
 	}
-	err := DownloadWithOpts(opts)
-	if err != nil {
+	if err := DownloadWithOpts(opts); err != nil {
 		return false, err
 	}
 	return true, nil

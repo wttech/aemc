@@ -76,7 +76,12 @@ func readFromEnv(v *viper.Viper) {
 
 func readFromFile(v *viper.Viper) {
 	file := File()
-	if !pathx.Exists(file) {
+	exists, err := pathx.ExistsStrict(file)
+	if err != nil {
+		log.Debugf("skipping reading AEM config file '%s': %s", file, err)
+		return
+	}
+	if !exists {
 		log.Debugf("skipping reading AEM config file as it does not exist '%s'", file)
 		return
 	}

@@ -10,7 +10,7 @@ import (
 func Current() string {
 	path, err := os.Getwd()
 	if err != nil {
-		log.Fatalf(fmt.Sprintf("cannot determine current working directory: %s", err))
+		log.Fatalf("cannot determine current working directory: %s", err)
 	}
 	return path
 }
@@ -18,22 +18,42 @@ func Current() string {
 func Abs(path string) string {
 	path, err := filepath.Abs(path)
 	if err != nil {
-		log.Fatalf(fmt.Sprintf("cannot determine absolute path for '%s': %s", path, err))
+		log.Fatalf("cannot determine absolute path for '%s': %s", path, err)
 	}
 	return path
 }
 
 func Exists(path string) bool {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return false
+	exists, err := ExistsStrict(path)
+	return err == nil && exists
+}
+
+func ExistsStrict(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
 	}
-	return true
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, fmt.Errorf("cannot check path existence '%s': %w", path, err)
 }
 
 func Delete(path string) error {
 	err := os.RemoveAll(path)
 	if err != nil {
 		return fmt.Errorf("cannot delete path '%s': %w", path, err)
+	}
+	return nil
+}
+
+func DeleteIfExists(path string) error {
+	exists, err := ExistsStrict(path)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return Delete(path)
 	}
 	return nil
 }

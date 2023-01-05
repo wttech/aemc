@@ -142,18 +142,14 @@ func (li LocalInstance) Start() error {
 	if !li.IsCreated() {
 		return fmt.Errorf("cannot start instance as it is not created")
 	}
-
 	// TODO enforce 'java' to be always from JAVA_PATH (update $PATH var accordingly)
 	cmd := li.verboseCommand(osx.ShellPath, li.binScript("start"))
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute start script for instance '%s': %w", li.instance.ID(), err)
 	}
-
-	err := li.upLockSave()
-	if err != nil {
+	if err := li.upLockSave(); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -161,18 +157,14 @@ func (li LocalInstance) Stop() error {
 	if !li.IsCreated() {
 		return fmt.Errorf("cannot stop instance as it is not created")
 	}
-
 	// TODO enforce 'java' to be always from JAVA_PATH (update $PATH var accordingly)
 	cmd := li.verboseCommand(osx.ShellPath, li.binScript("stop"))
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute stop script for instance '%s': %w", li.instance.ID(), err)
 	}
-
-	err := li.upLockDelete()
-	if err != nil {
+	if err := li.upLockDelete(); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -286,16 +278,13 @@ func (li LocalInstance) Status() (LocalStatus, error) {
 	if !li.IsCreated() {
 		return LocalStatusUnknown, fmt.Errorf("cannot check status of instance as it is not created")
 	}
-
 	cmd := li.quietCommand(osx.ShellPath, li.binScript("status"))
-
 	exitCode := 0
 	if err := cmd.Run(); err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			exitCode = exitError.ExitCode()
 		}
 	}
-
 	return LocalStatus(exitCode), nil
 }
 
@@ -303,12 +292,10 @@ func (li LocalInstance) IsRunning() bool {
 	if !li.IsCreated() {
 		return false
 	}
-
 	status, err := li.Status()
 	if err != nil {
 		return false
 	}
-
 	return status == LocalStatusRunning
 }
 
@@ -316,8 +303,7 @@ func (li LocalInstance) Delete() error {
 	if li.IsRunning() {
 		return fmt.Errorf("cannot delete instance as it is running")
 	}
-	err := pathx.Delete(li.Dir())
-	if err != nil {
+	if err := pathx.Delete(li.Dir()); err != nil {
 		return fmt.Errorf("cannot delete instance properly: %w", err)
 
 	}
@@ -396,8 +382,7 @@ func (li LocalInstance) upLockDelete() error {
 func (li LocalInstance) upLockSaved() upToDateLock {
 	var result = upToDateLock{}
 	if pathx.Exists(li.upLockPath()) {
-		err := fmtx.UnmarshalFile(li.upLockPath(), &result)
-		if err != nil {
+		if err := fmtx.UnmarshalFile(li.upLockPath(), &result); err != nil {
 			log.Warn(fmt.Sprintf("cannot read instance up lock file '%s': %s", li.upLockPath(), err))
 		}
 	}

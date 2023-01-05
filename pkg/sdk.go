@@ -30,7 +30,7 @@ type Lock struct {
 }
 
 func (s Sdk) Prepare(zipFile string) error {
-	versionNew := filex.NameWithoutExt(zipFile)
+	versionNew := pathx.NameWithoutExt(zipFile)
 	upToDate := false
 	if pathx.Exists(s.lockFile()) {
 		var lock Lock

@@ -3,7 +3,7 @@
 .GIT_VERSION=$(shell git describe --tags 2>/dev/null || echo "$(.GIT_COMMIT)")
 .LD_FLAGS=$(shell echo "-s -w -X main.appVersion=${.GIT_VERSION} -X main.appCommit=${.GIT_COMMIT} -X main.appCommitDate=${.GIT_COMMIT_DATE}")
 
-all: deps test vet fmt lint build
+all: deps test vet fmt lint install
 
 deps:
 	go install github.com/mgechev/revive@latest
@@ -26,6 +26,9 @@ lint:
 
 build:
 	go build --ldflags "${.LD_FLAGS}" -o bin/aem ./cmd/aem
+
+install:
+	go install --ldflags "${.LD_FLAGS}" ./cmd/aem
 
 other_build:
 	GOARCH=amd64 GOOS=darwin go build --ldflags "${.LD_FLAGS}" -o bin/aem.darwin ./cmd/aem

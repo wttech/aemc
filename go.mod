@@ -6,6 +6,7 @@ require (
 	github.com/antchfx/xmlquery v1.3.12
 	github.com/essentialkaos/go-jar v1.0.6
 	github.com/go-resty/resty/v2 v2.7.0
+	github.com/gobwas/glob v0.2.3
 	github.com/google/go-cmp v0.5.9
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/olekukonko/tablewriter v0.0.5

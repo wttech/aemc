@@ -5,7 +5,6 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/cfg"
-	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/java"
 	"os"
@@ -77,10 +76,18 @@ func (o *LocalOpts) validateUnpackDir() error {
 }
 
 func (o *LocalOpts) Jar() (string, error) {
-	if o.Quickstart.IsDistFileSdk() {
+	distFile, err := o.Quickstart.FindDistFile()
+	if err != nil {
+		return "", err
+	}
+	if IsSdkFile(distFile) {
 		return o.Sdk.QuickstartJar()
 	}
-	return o.Quickstart.DistFile, nil
+	return o.Quickstart.FindDistFile()
+}
+
+func IsSdkFile(path string) bool {
+	return pathx.Ext(path) == "zip"
 }
 
 type Quickstart struct {
@@ -89,17 +96,23 @@ type Quickstart struct {
 }
 
 func (o *Quickstart) Validate() error {
-	if !pathx.Exists(o.DistFile) {
-		return fmt.Errorf("quickstart dist file does not exist at path '%s'; consider specifying it by property 'instance.local.quickstart.dist_file'", o.DistFile)
+	_, err := o.FindDistFile()
+	if err != nil {
+		return err
 	}
-	if !pathx.Exists(o.LicenseFile) {
-		return fmt.Errorf("quickstart license file does not exist at path '%s'; consider specifying it by property 'instance.local.quickstart.license_file'", o.LicenseFile)
+	_, err = o.FindLicenseFile()
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
-func (o *Quickstart) IsDistFileSdk() bool {
-	return filex.Ext(o.DistFile) == "zip"
+func (o *Quickstart) FindDistFile() (string, error) {
+	return pathx.GlobOne(o.DistFile)
+}
+
+func (o *Quickstart) FindLicenseFile() (string, error) {
+	return pathx.GlobOne(o.LicenseFile)
 }
 
 // LocalValidate checks prerequisites needed to manage local instances
@@ -123,8 +136,12 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 
 	created := []Instance{}
 
-	if im.LocalOpts.Quickstart.IsDistFileSdk() {
-		err := im.LocalOpts.Sdk.Prepare(im.LocalOpts.Quickstart.DistFile)
+	distFile, err := im.LocalOpts.Quickstart.FindDistFile()
+	if err != nil {
+		return created, err
+	}
+	if IsSdkFile(distFile) {
+		err := im.LocalOpts.Sdk.Prepare(distFile)
 		if err != nil {
 			return created, err
 		}

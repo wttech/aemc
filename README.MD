@@ -24,6 +24,9 @@ Universal tool to manage AEM instances everywhere!
   * [Generating default configuration](#generating-default-configuration)
   * [Configuration precedence](#configuration-precedence)
   * [Performance optimization](#performance-optimization)
+* [Dev setup](#dev-setup)
+  * [Prerequisites](#prerequisites)
+  * [Releasing](#releasing)
 * [Contributing](#contributing)
 * [License](#license)
 
@@ -87,18 +90,18 @@ import "os"
 import aemc "github.com/wttech/aemc/pkg"
 
 func main() {
-	aem := aemc.NewAem()
-	instance := aem.InstanceManager().NewLocalAuthor()
-	changed, err := instance.PackageManager().DeployWithChanged("/tmp/my-package.zip")
-	if err != nil {
+    aem := aemc.NewAem()
+    instance := aem.InstanceManager().NewLocalAuthor()
+    changed, err := instance.PackageManager().DeployWithChanged("/tmp/my-package.zip")
+    if err != nil {
         fmt.Printf("cannot deploy package: %s\n", err)
-		os.Exit(1)
+        os.Exit(1)
     }
-	if changed {
+    if changed {
       aem.InstanceManager().AwaitStartedOne(instance)
     }
-	fmt.Printf("package deployed properly\n")
-	os.Exit(0)
+    fmt.Printf("package deployed properly\n")
+    os.Exit(0)
 }
 ```
 
@@ -211,7 +214,7 @@ aem instance start
 All configuration options specified in file *aem.yml* could be overridden by environment variables.
 Simply add prefix `AEM_` then each level of nested YAML object join with `_` and lowercase the name of each object.
 
-For example: `instance.local.quickstart.dist_path` could be overridden by environment variable `AEM_INSTANCE_LOCAL_QUICKSTART_DIST_PATH`
+For example: `instance.local.quickstart.dist_file` could be overridden by environment variable `AEM_INSTANCE_LOCAL_QUICKSTART_DIST_FILE`
 
 Also note that some configuration options may be ultimately overridden by CLI flags, like `--output-format`.
 
@@ -224,7 +227,19 @@ export AEM_OUTPUT_MODE=none
 export AEM_INSTANCE_PROCESSING_MODE=parallel
 ```
 
-# Releasing
+# Dev setup
+
+## Prerequisites
+
+1. Install Go: <https://go.dev/doc/install>,
+2. Set up shell, append lines *~/.zshrc* with content below then restart IDE/terminals,
+
+```shell
+export GOPATH="$HOME/go"
+export PATH="$GOPATH/bin:$PATH"
+```
+
+## Releasing
 
 Simply run script:
 

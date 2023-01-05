@@ -46,19 +46,27 @@ func MatchAnyPattern(value string, patterns []string) bool {
 }
 
 func Between(value string, a string, b string) string {
-	posFirst := strings.Index(value, a)
-	if posFirst == -1 {
+	return BeforeLast(After(value, a), b)
+}
+
+func Before(value string, a string) string {
+	pos := strings.Index(value, a)
+	if pos == -1 {
+		return value
+	}
+	return value[0:pos]
+}
+
+func After(value string, a string) string {
+	pos := strings.Index(value, a)
+	if pos == -1 {
+		return value
+	}
+	adjustedPos := pos + len(a)
+	if adjustedPos >= len(value) {
 		return ""
 	}
-	posLast := strings.Index(value, b)
-	if posLast == -1 {
-		return ""
-	}
-	posFirstAdjusted := posFirst + len(a)
-	if posFirstAdjusted >= posLast {
-		return ""
-	}
-	return value[posFirstAdjusted:posLast]
+	return value[adjustedPos:]
 }
 
 func BeforeLast(value string, a string) string {

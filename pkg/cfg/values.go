@@ -26,7 +26,8 @@ type ConfigValues struct {
 	} `mapstructure:"output" yaml:"output"`
 
 	Java struct {
-		HomeDir string `mapstructure:"home_dir" yaml:"home_dir"`
+		HomeDir            string `mapstructure:"home_dir" yaml:"home_dir"`
+		VersionConstraints string `mapstructure:"version_constraints" yaml:"version_constraints"`
 	}
 
 	Instance struct {

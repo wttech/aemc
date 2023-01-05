@@ -13,14 +13,14 @@ import (
 )
 
 type Opts struct {
-	HomeDir           string
-	VersionConstraint version.Constraints
+	HomeDir            string
+	VersionConstraints version.Constraints
 }
 
 func NewOpts() *Opts {
 	return &Opts{
-		HomeDir:           os.Getenv("JAVA_HOME"),
-		VersionConstraint: version.MustConstraints(version.NewConstraint(">= 11, < 12")),
+		HomeDir:            os.Getenv("JAVA_HOME"),
+		VersionConstraints: version.MustConstraints(version.NewConstraint(">= 11, < 12")),
 	}
 }
 
@@ -35,8 +35,8 @@ func (o *Opts) Validate() error {
 	if err != nil {
 		return err
 	}
-	if !o.VersionConstraint.Check(currentVersion) {
-		return fmt.Errorf("java current version '%s' does not meet contraints '%s'", currentVersion, o.VersionConstraint)
+	if !o.VersionConstraints.Check(currentVersion) {
+		return fmt.Errorf("java current version '%s' does not meet contraints '%s'", currentVersion, o.VersionConstraints)
 	}
 	return nil
 }
@@ -48,11 +48,11 @@ func (o *Opts) Executable() string {
 func (o *Opts) CurrentVersion() (*version.Version, error) {
 	currentText, err := o.readCurrentVersion()
 	if err != nil {
-		return nil, fmt.Errorf("current java version cannot be read: %w", err)
+		return nil, err
 	}
 	current, err := version.NewVersion(currentText)
 	if err != nil {
-		return nil, fmt.Errorf("current java version cannot be parsed '%s': %w", err)
+		return nil, fmt.Errorf("current java version '%s' cannot be parsed: %w", currentText, err)
 	}
 	return current, nil
 }
@@ -77,5 +77,8 @@ func (o *Opts) Configure(config *cfg.Config) {
 
 	if len(opts.HomeDir) > 0 {
 		o.HomeDir = opts.HomeDir
+	}
+	if len(opts.VersionConstraints) > 0 {
+		o.VersionConstraints = version.MustConstraints(version.NewConstraint(opts.VersionConstraints))
 	}
 }

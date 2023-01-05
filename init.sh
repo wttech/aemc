@@ -42,7 +42,7 @@ echo "Initialized AEM Compose"
 echo ""
 
 echo "The next step is instructing the tool where AEM files are located (JAR or SDK ZIP, license)."
-echo "Adjust the configuration file '${CONFIG_FILE}' by updating properties: 'dist_path', 'license_path'."
+echo "Adjust the configuration file '${CONFIG_FILE}' by updating properties: 'dist_file', 'license_file'."
 echo "Finally, use control scripts to manage AEM instances:"
 echo ""
 

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/wttech/aemc/pkg/common/filex"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"
@@ -78,7 +79,7 @@ func UnmarshalYML(body io.Reader, out any) error {
 }
 
 func MarshalToFile(path string, out any) error {
-	return MarshalToFileInFormat(filex.Ext(path), path, out)
+	return MarshalToFileInFormat(pathx.Ext(path), path, out)
 }
 
 func MarshalToFileInFormat(format string, path string, out any) error {
@@ -94,7 +95,7 @@ func MarshalToFileInFormat(format string, path string, out any) error {
 }
 
 func UnmarshalFile(path string, out any) error {
-	return UnmarshalFileInFormat(filex.Ext(path), path, out)
+	return UnmarshalFileInFormat(pathx.Ext(path), path, out)
 }
 
 func UnmarshalFileInFormat(format string, path string, out any) error {

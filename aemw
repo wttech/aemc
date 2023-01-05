@@ -22,14 +22,13 @@ BIN_ARCHIVE_DIR="${BIN_ROOT}/${BIN_DOWNLOAD_NAME}"
 BIN_NAME="aem"
 BIN_EXEC_FILE="${BIN_ARCHIVE_DIR}/${BIN_NAME}"
 
-if [ "${VERSION}" = "dev" ]; then
-  make build
-  BIN_EXEC_FILE="bin/${BIN_NAME}"
-elif [ ! -f "${BIN_EXEC_FILE}" ]; then
+if [ "${VERSION}" != "installed" ] && [ ! -f "${BIN_EXEC_FILE}" ]; then
   mkdir -p "${BIN_ARCHIVE_DIR}"
   downloadFile "${BIN_DOWNLOAD_URL}" "${BIN_ARCHIVE_FILE}"
   tar -xf "${BIN_ARCHIVE_FILE}" -C "${BIN_ARCHIVE_DIR}"
   chmod +x "${BIN_EXEC_FILE}"
+  # shellcheck disable=SC2139
+  alias aem="./${BIN_EXEC_FILE}"
 fi
 
 # shellcheck disable=SC2139

@@ -2,9 +2,13 @@ package pathx
 
 import (
 	"fmt"
+	"github.com/gobwas/glob"
 	log "github.com/sirupsen/logrus"
+	"github.com/wttech/aemc/pkg/common/stringsx"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 )
 
 func Current() string {
@@ -64,4 +68,58 @@ func Ensure(path string) error {
 		return fmt.Errorf("cannot ensure path '%s': %w", path, err)
 	}
 	return nil
+}
+
+func Ext(path string) string {
+	return strings.TrimPrefix(filepath.Ext(path), ".")
+}
+
+func NameWithoutExt(path string) string {
+	name := filepath.Base(path)
+	ext := filepath.Ext(name)
+	return name[:len(name)-len(ext)]
+}
+
+func GlobOne(pathPattern string) (string, error) {
+	dir := stringsx.BeforeLast(pathPattern, "/")
+	pattern := stringsx.AfterLast(pathPattern, "/")
+	paths, err := GlobDir(dir, pattern)
+	if err != nil {
+		return "", fmt.Errorf("cannot find any file as pattern is invalid '%s': %w", pattern, err)
+	}
+	sort.Strings(paths)
+	if len(paths) == 0 {
+		return "", fmt.Errorf("cannot find any file matching pattern '%s'", pattern)
+	}
+	return paths[len(paths)-1], nil
+}
+
+// GlobDir is a modified version of 'go/1.19.2/libexec/src/path/filepath/match.go'
+func GlobDir(dir string, pattern string) ([]string, error) {
+	m := []string{}
+	patternCompiled, err := glob.Compile(pattern)
+	if err != nil {
+		return m, err
+	}
+	fi, err := os.Stat(dir)
+	if err != nil {
+		return m, err
+	}
+	if !fi.IsDir() {
+		return m, err
+	}
+	d, err := os.Open(dir)
+	if err != nil {
+		return m, err
+	}
+	defer d.Close()
+	names, _ := d.Readdirnames(-1)
+	sort.Strings(names)
+	for _, n := range names {
+		matched := patternCompiled.Match(n)
+		if matched {
+			m = append(m, filepath.Join(dir, n))
+		}
+	}
+	return m, nil
 }

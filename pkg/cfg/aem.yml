@@ -42,8 +42,8 @@ instance:
 
     # Source files
     quickstart:
-      # AEM JAR or SDK ZIP
-      dist_file: "./aem/home/lib/aem-sdk.zip"
+      # AEM SDK ZIP or JAR
+      dist_file: './aem/home/lib/{aem-sdk,cq-quickstart}-*.{zip,jar}'
       # AEM License properties file
       license_file: "./aem/home/lib/license.properties"
 

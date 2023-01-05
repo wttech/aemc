@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 func Write(path string, text string) error {
@@ -70,14 +69,4 @@ func Copy(sourcePath, destinationPath string) error {
 		}
 	}
 	return err
-}
-
-func Ext(path string) string {
-	return strings.TrimPrefix(filepath.Ext(path), ".")
-}
-
-func NameWithoutExt(path string) string {
-	name := filepath.Base(path)
-	ext := filepath.Ext(name)
-	return name[:len(name)-len(ext)]
 }

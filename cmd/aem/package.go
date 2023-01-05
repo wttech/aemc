@@ -6,6 +6,7 @@ import (
 	"github.com/wttech/aemc/pkg"
 	"github.com/wttech/aemc/pkg/common/httpx"
 	"github.com/wttech/aemc/pkg/common/mapsx"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"strings"
 )
 
@@ -349,7 +350,11 @@ func pkgByFlags(cmd *cobra.Command, instance pkg.Instance) (*pkg.Package, error)
 	}
 	file, _ := cmd.Flags().GetString("file")
 	if len(file) > 0 {
-		descriptor, err := instance.PackageManager().ByFile(file)
+		fileGlobbed, err := pathx.GlobOne(file)
+		if err != nil {
+			return nil, err
+		}
+		descriptor, err := instance.PackageManager().ByFile(fileGlobbed)
 		return descriptor, err
 	}
 	path, _ := cmd.Flags().GetString("path")
@@ -380,9 +385,13 @@ func (c *CLI) pkgPathByFlags(cmd *cobra.Command) (string, error) {
 		}
 		return path, nil
 	}
-	path, _ := cmd.Flags().GetString("file")
-	if len(path) > 0 {
-		return path, nil
+	file, _ := cmd.Flags().GetString("file")
+	if len(file) > 0 {
+		fileGlobbed, err := pathx.GlobOne(file)
+		if err != nil {
+			return "", err
+		}
+		return fileGlobbed, nil
 	}
 	return "", fmt.Errorf("flag 'file' or 'url' are required")
 }

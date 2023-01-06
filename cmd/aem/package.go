@@ -22,6 +22,7 @@ func (c *CLI) pkgCmd() *cobra.Command {
 	cmd.AddCommand(c.pkgDeployCmd())
 	cmd.AddCommand(c.pkgUninstallCmd())
 	cmd.AddCommand(c.pkgDeleteCmd())
+	cmd.AddCommand(c.pkgPurgeCmd())
 	cmd.AddCommand(c.pkgBuildCmd())
 	cmd.AddCommand(c.pkgFindCmd())
 	return cmd
@@ -298,6 +299,65 @@ func (c *CLI) pkgDeleteCmd() *cobra.Command {
 				c.Changed("package deleted")
 			} else {
 				c.Ok("package not deleted (does not exist)")
+			}
+		},
+	}
+	pkgDefineFlags(cmd)
+	return cmd
+}
+
+func (c *CLI) pkgPurgeCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "purge",
+		Short: "Purge package (uninstall and delete)",
+		Run: func(cmd *cobra.Command, args []string) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			purged, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
+				p, err := pkgByFlags(cmd, instance)
+				if err != nil {
+					return nil, err
+				}
+				state, err := p.State()
+				if err != nil {
+					return nil, err
+				}
+				changed := false
+				if state.Exists {
+					if state.Data.Installed() {
+						uninstalled, err := p.UninstallWithChanged()
+						if err != nil {
+							return nil, err
+						}
+						if uninstalled {
+							changed = true
+							c.aem.InstanceManager().AwaitStartedOne(instance)
+						}
+					}
+					deleted, err := p.DeleteWithChanged()
+					if err != nil {
+						return nil, err
+					}
+					changed = changed || deleted
+				}
+				return map[string]any{
+					"changed":  changed,
+					"package":  p,
+					"instance": instance,
+				}, nil
+			})
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("purged", purged)
+			if mapsx.HasSome(purged, "changed", true) {
+				c.Changed("package purged")
+			} else {
+				c.Ok("package already purged")
 			}
 		},
 	}

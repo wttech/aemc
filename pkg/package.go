@@ -16,7 +16,7 @@ type Package struct {
 }
 
 type PackageState struct {
-	data *pkg.ListItem
+	Data *pkg.ListItem
 
 	PID     string         `yaml:"pid" json:"pid"`
 	Exists  bool           `yaml:"exists" json:"exists"`
@@ -35,7 +35,7 @@ func (p Package) State() (*PackageState, error) {
 		}, nil
 	}
 	return &PackageState{
-		data: item,
+		Data: item,
 
 		PID:    p.PID.String(),
 		Exists: true,
@@ -56,7 +56,7 @@ func (p Package) Build() error {
 	if !state.Exists {
 		return fmt.Errorf("package '%s' cannot be built as it does not exist on instance '%s'", p.PID.String(), p.manager.instance.ID())
 	}
-	return p.manager.Build(state.data.Path)
+	return p.manager.Build(state.Data.Path)
 }
 
 func (p *Package) Install() error {
@@ -67,7 +67,7 @@ func (p *Package) Install() error {
 	if !state.Exists {
 		return fmt.Errorf("package '%s' cannot be installed as it does not exist on instance '%s'", p.PID.String(), p.manager.instance.ID())
 	}
-	return p.manager.Install(state.data.Path)
+	return p.manager.Install(state.Data.Path)
 }
 
 func (p *Package) InstallWithChanged() (bool, error) {
@@ -78,8 +78,8 @@ func (p *Package) InstallWithChanged() (bool, error) {
 	if !state.Exists {
 		return false, fmt.Errorf("package '%s' cannot be installed as it does not exist on instance '%s'", p.PID.String(), p.manager.instance.ID())
 	}
-	if !state.data.Installed() { // TODO checksum comparison needed here
-		return true, p.manager.Install(state.data.Path)
+	if !state.Data.Installed() { // TODO checksum comparison needed here
+		return true, p.manager.Install(state.Data.Path)
 	}
 	return false, nil
 }
@@ -92,7 +92,7 @@ func (p *Package) Uninstall() error {
 	if !state.Exists {
 		return fmt.Errorf("package '%s' cannot be uninstalled as it does not exist on instance '%s'", p.PID.String(), p.manager.instance.ID())
 	}
-	return p.manager.Uninstall(state.data.Path)
+	return p.manager.Uninstall(state.Data.Path)
 }
 
 func (p *Package) UninstallWithChanged() (bool, error) {
@@ -103,8 +103,8 @@ func (p *Package) UninstallWithChanged() (bool, error) {
 	if !state.Exists {
 		return false, fmt.Errorf("package '%s' cannot be uninstalled as it does not exist on instance '%s'", p.PID.String(), p.manager.instance.ID())
 	}
-	if state.data.Installed() {
-		return true, p.manager.Uninstall(state.data.Path)
+	if state.Data.Installed() {
+		return true, p.manager.Uninstall(state.Data.Path)
 	}
 	return false, nil
 }
@@ -117,7 +117,7 @@ func (p Package) Delete() error {
 	if !state.Exists {
 		return fmt.Errorf("package '%s' cannot be deleted as it does not exist on instance '%s'", p.PID.String(), p.manager.instance.ID())
 	}
-	return p.manager.Delete(state.data.Path)
+	return p.manager.Delete(state.Data.Path)
 }
 
 func (p Package) DeleteWithChanged() (bool, error) {
@@ -128,7 +128,7 @@ func (p Package) DeleteWithChanged() (bool, error) {
 	if !state.Exists {
 		return false, nil
 	}
-	return true, p.manager.Delete(state.data.Path)
+	return true, p.manager.Delete(state.Data.Path)
 }
 
 func (p Package) MarshalJSON() ([]byte, error) {

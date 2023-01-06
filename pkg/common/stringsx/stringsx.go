@@ -33,11 +33,17 @@ func MatchSomePattern(value string, patterns []string) bool {
 	return lo.SomeBy(patterns, func(p string) bool { return glob.MustCompile(p).Match(value) })
 }
 
-func Between(value string, a string, b string) string {
-	if strings.Contains(value, a) && strings.Contains(value, b) {
-		return BeforeLast(After(value, a), b)
+func Between(str string, start string, end string) (result string) {
+	s := strings.Index(str, start)
+	if s == -1 {
+		return
 	}
-	return ""
+	s += len(start)
+	e := strings.Index(str[s:], end)
+	if e == -1 {
+		return
+	}
+	return str[s : s+e]
 }
 
 func Before(value string, a string) string {

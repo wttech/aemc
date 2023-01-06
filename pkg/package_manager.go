@@ -199,7 +199,7 @@ func (pm *PackageManager) DeployWithChanged(localPath string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if !state.Exists || !state.data.Installed() { // TODO checksum checking needed
+	if !state.Exists || !state.Data.Installed() { // TODO checksum checking needed
 		return true, pm.Deploy(localPath)
 	}
 	return false, nil

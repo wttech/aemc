@@ -100,16 +100,21 @@ func (c BundleStableChecker) Check(instance Instance) CheckResult {
 			err:     err,
 		}
 	}
-
 	unstableBundles := bundles.FindUnstable()
+	unstableBundleCount := len(unstableBundles)
 
-	if len(unstableBundles) > 0 {
+	if unstableBundleCount > 0 {
+		var message string
+		if unstableBundleCount <= 10 {
+			message = fmt.Sprintf("some bundles unstable (%d): %s", unstableBundleCount, unstableBundles[0].SymbolicName)
+		} else {
+			message = fmt.Sprintf("many bundles unstable (%s): %s", bundleStablePercent(bundles, unstableBundles), unstableBundles[0].SymbolicName)
+		}
 		return CheckResult{
 			ok:      false,
-			message: fmt.Sprintf("%s bundle(s) stable", bundleStablePercent(bundles, unstableBundles)),
+			message: message,
 		}
 	}
-
 	return CheckResult{
 		ok:      true,
 		message: "all bundles stable",
@@ -149,11 +154,7 @@ func (c EventStableChecker) Check(instance Instance) CheckResult {
 	unstableEventCount := len(unstableEvents)
 
 	if unstableEventCount > 0 {
-		message := fmt.Sprintf("%d event(s) unstable", unstableEventCount)
-		if unstableEventCount == 1 {
-			event := unstableEvents[0]
-			message += fmt.Sprintf(" (%s)", event.Details())
-		}
+		message := fmt.Sprintf("recent event(s) unstable (%d): %s", unstableEventCount, unstableEvents[0].Details())
 		return CheckResult{
 			ok:      false,
 			message: message,

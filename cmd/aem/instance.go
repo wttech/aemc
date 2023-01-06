@@ -182,7 +182,7 @@ func (c *CLI) instanceCmd() *cobra.Command {
 			}
 			c.aem.InstanceManager().Await(instances)
 			c.SetOutput("instances", instances)
-			c.Ok("instance(s) start awaited")
+			c.Ok("instance(s) awaited")
 		},
 	})
 

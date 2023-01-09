@@ -79,9 +79,8 @@ type ConfigValues struct {
 		} `mapstructure:"local" yaml:"local"`
 
 		Package struct {
-			Upload struct {
-				Force bool `mapstructure:"force" yaml:"force"`
-			} `mapstructure:"upload" yaml:"upload"`
+			DeployAvoidance  bool     `mapstructure:"deploy_avoidance" yaml:"deploy_avoidance"`
+			SnapshotPatterns []string `mapstructure:"snapshot_patterns" yaml:"snapshot_patterns"`
 		} `mapstructure:"package" yaml:"package"`
 
 		OSGi struct {

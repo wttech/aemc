@@ -84,6 +84,7 @@ func (im InstanceManager) Publishes() []Instance {
 type CheckOpts struct {
 	Warmup   time.Duration
 	Interval time.Duration
+	Endless  bool
 
 	BundleStable   BundleStableChecker
 	EventStable    EventStableChecker
@@ -106,6 +107,7 @@ func (im *InstanceManager) NewCheckOpts() *CheckOpts {
 	}
 }
 
+// TODO support endless mode; 'aem instance await --endless'
 func (im *InstanceManager) Check(instances []Instance, opts *CheckOpts, checks []Checker) {
 	if len(instances) == 0 {
 		log.Infof("no instances to check")
@@ -114,7 +116,9 @@ func (im *InstanceManager) Check(instances []Instance, opts *CheckOpts, checks [
 	time.Sleep(opts.Warmup)
 	for {
 		if im.CheckOnce(instances, checks) {
-			break
+			if !opts.Endless {
+				break
+			}
 		}
 		time.Sleep(opts.Interval)
 	}
@@ -311,7 +315,10 @@ func (im *InstanceManager) configureInstances(config *cfg.Config) {
 
 func configureInstance(inst Instance, config *cfg.Config) {
 	packageOpts := config.Values().Instance.Package
-	inst.packageManager.uploadForce = packageOpts.Upload.Force
+	inst.packageManager.DeployAvoidance = packageOpts.DeployAvoidance
+	if packageOpts.SnapshotPatterns != nil {
+		inst.packageManager.SnapshotPatterns = packageOpts.SnapshotPatterns
+	}
 
 	osgiOpts := config.Values().Instance.OSGi
 	inst.osgi.bundleManager.InstallStart = osgiOpts.Bundle.Install.Start

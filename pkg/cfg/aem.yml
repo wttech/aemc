@@ -49,9 +49,10 @@ instance:
 
   # Package Manager
   package:
-    upload:
-      # Repeat upload even if already available on instance
-      force: false
+    # Calculate and store checksums on AEM instances to avoid re-deployments when packages are unchanged
+    deploy_avoidance: false
+    # Force re-uploading/installing of just built AEM packages (needed when deploy avoidance is off)
+    snapshot_patterns: ["**/*-SNAPSHOT.zip"]
 
   osgi:
     bundle:

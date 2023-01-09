@@ -12,8 +12,19 @@ func (c *CLI) instanceCmd() *cobra.Command {
 		Aliases: []string{"inst"},
 		Short:   "Manages AEM instance(s)",
 	}
+	cmd.AddCommand(c.instanceCreateCmd())
+	cmd.AddCommand(c.instanceStartCmd())
+	cmd.AddCommand(c.instanceStopCmd())
+	cmd.AddCommand(c.instanceRestartCmd())
+	cmd.AddCommand(c.instanceKillCmd())
+	cmd.AddCommand(c.instanceDeleteCmd())
+	cmd.AddCommand(c.instanceListCmd())
+	cmd.AddCommand(c.instanceAwaitCmd())
+	return cmd
+}
 
-	cmd.AddCommand(&cobra.Command{
+func (c *CLI) instanceCreateCmd() *cobra.Command {
+	return &cobra.Command{
 		Use:     "create",
 		Short:   "Creates AEM instance(s)",
 		Aliases: []string{"make"},
@@ -35,8 +46,11 @@ func (c *CLI) instanceCmd() *cobra.Command {
 				c.Ok("no instance(s) to create")
 			}
 		},
-	})
-	cmd.AddCommand(&cobra.Command{
+	}
+}
+
+func (c *CLI) instanceStartCmd() *cobra.Command {
+	return &cobra.Command{
 		Use:     "start",
 		Aliases: []string{"up"},
 		Short:   "Starts AEM instance(s)",
@@ -58,8 +72,11 @@ func (c *CLI) instanceCmd() *cobra.Command {
 				c.Ok("no instance(s) to start")
 			}
 		},
-	})
-	cmd.AddCommand(&cobra.Command{
+	}
+}
+
+func (c *CLI) instanceStopCmd() *cobra.Command {
+	return &cobra.Command{
 		Use:     "stop",
 		Aliases: []string{"down"},
 		Short:   "Stops AEM instance(s)",
@@ -81,8 +98,11 @@ func (c *CLI) instanceCmd() *cobra.Command {
 				c.Ok("no instance(s) to stop")
 			}
 		},
-	})
-	cmd.AddCommand(&cobra.Command{
+	}
+}
+
+func (c *CLI) instanceRestartCmd() *cobra.Command {
+	return &cobra.Command{
 		Use:   "restart",
 		Short: "Restarts AEM instance(s)",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -108,8 +128,11 @@ func (c *CLI) instanceCmd() *cobra.Command {
 				c.Ok("no instance(s) to restart")
 			}
 		},
-	})
-	cmd.AddCommand(&cobra.Command{
+	}
+}
+
+func (c *CLI) instanceKillCmd() *cobra.Command {
+	return &cobra.Command{
 		Use:     "kill",
 		Aliases: []string{"ko"},
 		Short:   "Kills AEM instance(s)",
@@ -131,8 +154,11 @@ func (c *CLI) instanceCmd() *cobra.Command {
 				c.Ok("no instance(s) killed")
 			}
 		},
-	})
-	cmd.AddCommand(&cobra.Command{
+	}
+}
+
+func (c *CLI) instanceDeleteCmd() *cobra.Command {
+	return &cobra.Command{
 		Use:     "delete",
 		Aliases: []string{"destroy"},
 		Short:   "Deletes AEM instance(s)",
@@ -154,37 +180,45 @@ func (c *CLI) instanceCmd() *cobra.Command {
 				c.Ok("no instance(s) to delete")
 			}
 		},
-	})
+	}
+}
 
-	cmd.AddCommand(&cobra.Command{
-		Use:   "status",
-		Short: "Checks status of AEM instance(s)",
-		Run: func(cmd *cobra.Command, args []string) {
-			instances, err := c.aem.InstanceManager().Some()
-			if err != nil {
-				c.Error(err)
-				return
-			}
-			c.SetOutput("instances", instances)
-			c.Ok("instance(s) status returned")
-		},
-	})
-
-	cmd.AddCommand(&cobra.Command{
+func (c *CLI) instanceAwaitCmd() *cobra.Command {
+	cmd := &cobra.Command{
 		Use:     "await",
 		Aliases: []string{"wait"},
 		Short:   "Awaits stable AEM instance(s)",
 		Run: func(cmd *cobra.Command, args []string) {
+			endless, _ := cmd.Flags().GetBool("endless")
 			instances, err := c.aem.InstanceManager().Some()
 			if err != nil {
 				c.Error(err)
 				return
 			}
-			c.aem.InstanceManager().Await(instances)
+			manager := c.aem.InstanceManager()
+			manager.CheckOpts.Endless = endless
+			manager.Await(instances)
 			c.SetOutput("instances", instances)
-			c.Ok("instance(s) start awaited")
+			c.Ok("instance(s) awaited")
 		},
-	})
-
+	}
+	cmd.Flags().Bool("endless", false, "Repeat checks endlessly")
 	return cmd
+}
+
+func (c *CLI) instanceListCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:     "list",
+		Aliases: []string{"ls", "status"},
+		Short:   "Lists all AEM instance(s)",
+		Run: func(cmd *cobra.Command, args []string) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("instances", instances)
+			c.Ok("instance(s) listed")
+		},
+	}
 }

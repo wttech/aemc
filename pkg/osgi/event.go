@@ -1,5 +1,9 @@
 package osgi
 
+import (
+	"github.com/wttech/aemc/pkg/common/stringsx"
+)
+
 type EventList struct {
 	Status string  `json:"status"`
 	List   []Event `json:"data"`
@@ -16,4 +20,19 @@ type Event struct {
 
 func (el *EventList) StatusUnknown() bool {
 	return len(el.List) == 0
+}
+
+func (e Event) Service() string {
+	return stringsx.Between(e.Info, ", objectClass=", ", bundle=")
+}
+
+func (e Event) Details() string {
+	service := e.Service()
+	if len(service) > 0 {
+		return service
+	}
+	if len(e.Info) > 0 {
+		return e.Info
+	}
+	return e.Topic
 }

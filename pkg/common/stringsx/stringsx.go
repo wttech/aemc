@@ -2,20 +2,13 @@ package stringsx
 
 import (
 	"fmt"
+	"github.com/gobwas/glob"
+	"github.com/samber/lo"
 	"path"
 	"regexp"
 	"strconv"
 	"strings"
 )
-
-func Contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
 
 func Percent(num, total, decimals int) string {
 	value := 0.0
@@ -36,17 +29,21 @@ func MatchPattern(value, pattern string) bool {
 	return matched
 }
 
-func MatchAnyPattern(value string, patterns []string) bool {
-	for _, pattern := range patterns {
-		if matched, _ := path.Match(pattern, value); matched {
-			return true
-		}
-	}
-	return false
+func MatchSomePattern(value string, patterns []string) bool {
+	return lo.SomeBy(patterns, func(p string) bool { return glob.MustCompile(p).Match(value) })
 }
 
-func Between(value string, a string, b string) string {
-	return BeforeLast(After(value, a), b)
+func Between(str string, start string, end string) (result string) {
+	s := strings.Index(str, start)
+	if s == -1 {
+		return
+	}
+	s += len(start)
+	e := strings.Index(str[s:], end)
+	if e == -1 {
+		return
+	}
+	return str[s : s+e]
 }
 
 func Before(value string, a string) string {

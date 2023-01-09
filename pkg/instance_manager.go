@@ -86,10 +86,10 @@ type CheckOpts struct {
 	Interval time.Duration
 	Endless  bool
 
-	BundleStable   BundleStableChecker
-	EventStable    EventStableChecker
-	AwaitUpTimeout TimeoutChecker
-
+	BundleStable     BundleStableChecker
+	EventStable      EventStableChecker
+	Installer        InstallerChecker
+	AwaitUpTimeout   TimeoutChecker
 	StatusStopped    StatusStoppedChecker
 	AwaitDownTimeout TimeoutChecker
 }
@@ -102,6 +102,7 @@ func (im *InstanceManager) NewCheckOpts() *CheckOpts {
 		BundleStable:     NewBundleStableChecker(),
 		EventStable:      NewEventStableChecker(),
 		AwaitUpTimeout:   NewTimeoutChecker("up", time.Minute*10),
+		Installer:        NewInstallerChecker(),
 		StatusStopped:    NewStatusStoppedChecker(),
 		AwaitDownTimeout: NewTimeoutChecker("down", time.Minute*5),
 	}
@@ -190,6 +191,7 @@ func (im *InstanceManager) New(id, url, user, password string) *Instance {
 	res.repository = NewRepo(res)
 	res.packageManager = NewPackageManager(res)
 	res.osgi = NewOSGi(res)
+	res.sling = NewSling(res)
 
 	if res.IsLocal() {
 		res.local = NewLocal(res)
@@ -350,6 +352,8 @@ func (im *InstanceManager) configureCheckOpts(config *cfg.Config) {
 	if opts.AwaitDownTimeout.Duration > 0 {
 		im.CheckOpts.AwaitDownTimeout.Duration = opts.AwaitDownTimeout.Duration
 	}
+	im.CheckOpts.Installer.State = opts.Installer.State
+	im.CheckOpts.Installer.Pause = opts.Installer.Pause
 }
 
 func (im *InstanceManager) configureRest(config *cfg.Config) {

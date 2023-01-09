@@ -322,6 +322,7 @@ func (im *InstanceManager) AwaitStarted(instances []Instance) {
 	im.Check(instances, im.CheckOpts, []Checker{
 		im.CheckOpts.BundleStable,
 		im.CheckOpts.EventStable,
+		im.CheckOpts.Installer,
 		im.CheckOpts.AwaitUpTimeout,
 	})
 }

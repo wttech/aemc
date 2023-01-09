@@ -61,6 +61,10 @@ type ConfigValues struct {
 				TopicsUnstable []string      `mapstructure:"topics_unstable" yaml:"topics_unstable"`
 				DetailsIgnored []string      `mapstructure:"details_ignored" yaml:"details_ignored"`
 			} `mapstructure:"event_stable" yaml:"event_stable"`
+			Installer struct {
+				State bool `mapstructure:"busy" yaml:"busy"`
+				Pause bool `mapstructure:"pause" yaml:"pause"`
+			}
 			AwaitUpTimeout struct {
 				Duration time.Duration `mapstructure:"duration" yaml:"duration"`
 			} `mapstructure:"await_up_timeout" yaml:"await_up_timeout"`

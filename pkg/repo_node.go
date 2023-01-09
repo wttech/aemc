@@ -69,6 +69,26 @@ func (n RepoNode) Child(name string) RepoNode {
 	return NewNode(n.repo, fmt.Sprintf("%s/%s", n.path, name))
 }
 
+func (n RepoNode) Children() <-chan RepoNode {
+	result := make(chan RepoNode)
+	// TODO ..
+	return result
+}
+
+func (n RepoNode) ChildrenList() []RepoNode {
+	return langx.ChannelToSlice(n.Children()).([]RepoNode)
+}
+
+func (n RepoNode) Siblings() <-chan RepoNode {
+	result := make(chan RepoNode)
+	// TODO ..
+	return result
+}
+
+func (n RepoNode) SiblingList() []RepoNode {
+	return langx.ChannelToSlice(n.Siblings()).([]RepoNode)
+}
+
 func (n RepoNode) Sibling(name string) RepoNode {
 	return n.Parent().Child(name)
 }

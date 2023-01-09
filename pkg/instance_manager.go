@@ -25,10 +25,11 @@ type InstanceManager struct {
 func NewInstanceManager(aem *Aem) *InstanceManager {
 	result := new(InstanceManager)
 	result.aem = aem
-	result.Instances = result.NewLocalPair()
-	result.CheckOpts = result.NewCheckOpts()
+
 	result.LocalOpts = result.NewLocalOpts(result)
 	result.ProcessingMode = instance.ProcessingParallel
+	result.CheckOpts = result.NewCheckOpts()
+	result.Instances = result.NewLocalPair()
 
 	return result
 }

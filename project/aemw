@@ -12,7 +12,7 @@ DOWNLOAD_DIR="${HOME_DIR}/tmp"
 OS=$(detectOs)
 ARCH=$(detectArch)
 
-# Download or build tool
+# Download tool or use installed
 
 BIN_DOWNLOAD_NAME="aemc-cli"
 BIN_DOWNLOAD_URL="https://github.com/wttech/aemc/releases/download/v${VERSION}/${BIN_DOWNLOAD_NAME}_${OS}_${ARCH}.tar.gz"
@@ -45,7 +45,7 @@ if [ -f "$SCRIPT" ]; then
 
   STARTED_TIMESTAMP=$(date +%s)
   step "script '${COMMAND}' started"
-  step "check progress using command 'tail -f aem/home/aem.log'"
+  step "check script progress using command 'tail -f aem/home/aem.log'"
 
   # shellcheck source=aem/*.sh
   . "${SCRIPT}"

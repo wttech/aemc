@@ -13,7 +13,6 @@ import (
 
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
-	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/osx"
 )
 
@@ -84,10 +83,20 @@ func (li LocalInstance) Create() error {
 	if err := li.copyLicenseFile(); err != nil {
 		return err
 	}
-	if err := li.createLockSave(); err != nil {
+	if err := li.createLock().Lock(); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (li LocalInstance) createLock() osx.Lock[localInstanceCreateLock] {
+	return osx.NewLock(fmt.Sprintf("%s/lock/create.yml", li.Dir()), localInstanceCreateLock{
+		Created: time.Now(),
+	})
+}
+
+type localInstanceCreateLock struct {
+	Created time.Time
 }
 
 func (li LocalInstance) unpackJarFile() error {
@@ -117,25 +126,8 @@ func (li LocalInstance) copyLicenseFile() error {
 	return nil
 }
 
-type CreateLock struct {
-	Created time.Time
-}
-
-func (li LocalInstance) createLockSave() error {
-	lock := CreateLock{Created: time.Now()}
-	err := fmtx.MarshalToFile(li.createLockPath(), lock)
-	if err != nil {
-		return fmt.Errorf("cannot save lock 'create' for instance '%s': %w", li.instance.ID(), err)
-	}
-	return nil
-}
-
-func (li LocalInstance) createLockPath() string {
-	return fmt.Sprintf("%s/lock/create.yml", li.Dir())
-}
-
 func (li LocalInstance) IsCreated() bool {
-	return pathx.Exists(li.createLockPath())
+	return li.createLock().IsLocked()
 }
 
 func (li LocalInstance) Start() error {
@@ -147,10 +139,26 @@ func (li LocalInstance) Start() error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute start script for instance '%s': %w", li.instance.ID(), err)
 	}
-	if err := li.upLockSave(); err != nil {
+	if err := li.startLock().Lock(); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (li LocalInstance) startLock() osx.Lock[localInstanceStartLock] {
+	return osx.NewLock(fmt.Sprintf("%s/lock/start.yml", li.Dir()), localInstanceStartLock{
+		Version:  li.Version,
+		HTTPPort: li.instance.HTTP().Port(),
+		RunModes: li.RunModesString(),
+		JVMOpts:  li.JVMOptsString(),
+	})
+}
+
+type localInstanceStartLock struct {
+	Version  string
+	JVMOpts  string
+	RunModes string
+	HTTPPort string
 }
 
 func (li LocalInstance) Stop() error {
@@ -162,7 +170,7 @@ func (li LocalInstance) Stop() error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute stop script for instance '%s': %w", li.instance.ID(), err)
 	}
-	if err := li.upLockDelete(); err != nil {
+	if err := li.startLock().Unlock(); err != nil {
 		return err
 	}
 	return nil
@@ -351,56 +359,12 @@ func (li LocalInstance) OutOfDate() bool {
 }
 
 func (li LocalInstance) UpToDate() bool {
-	return li.upLockCurrent() == li.upLockSaved()
-}
-
-func (li LocalInstance) upLockCurrent() upToDateLock {
-	return upToDateLock{
-		Version:  li.Version,
-		HTTPPort: li.instance.HTTP().Port(),
-		RunModes: li.RunModesString(),
-		JVMOpts:  li.JVMOptsString(),
-	}
-}
-
-func (li LocalInstance) upLockSave() error {
-	err := fmtx.MarshalToFile(li.upLockPath(), li.upLockCurrent())
+	upToDate, err := li.startLock().IsUpToDate()
 	if err != nil {
-		return fmt.Errorf("cannot save instance up lock file '%s': %w", li.upLockPath(), err)
+		log.Debugf("cannot check if instance '%s' is up-to-date: %s", li.instance.ID(), err)
+		return false
 	}
-	return nil
-}
-
-func (li LocalInstance) upLockDelete() error {
-	err := pathx.Delete(li.upLockPath())
-	if err != nil {
-		return fmt.Errorf("cannot delete instance up lock file '%s': %w", li.upLockPath(), err)
-	}
-	return nil
-}
-
-func (li LocalInstance) upLockSaved() upToDateLock {
-	var result = upToDateLock{}
-	if pathx.Exists(li.upLockPath()) {
-		if err := fmtx.UnmarshalFile(li.upLockPath(), &result); err != nil {
-			log.Warn(fmt.Sprintf("cannot read instance up lock file '%s': %s", li.upLockPath(), err))
-		}
-	}
-	return result
-}
-
-// up lock helps with restarting AEM when it is out-of-date (when changed: run modes, http port, jvm opts)
-// but should not block turning on/off on demand as out-of-date-ness is too complex to diagnose
-func (li LocalInstance) upLockPath() string {
-	return fmt.Sprintf("%s/lock/up.yml", li.Dir())
-}
-
-type upToDateLock struct {
-	Version string
-
-	JVMOpts  string
-	RunModes string
-	HTTPPort string
+	return upToDate
 }
 
 func (li LocalInstance) PID() (int, error) {

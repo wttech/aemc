@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 #step "build AEM application"
-#step "check progress using command 'tail -f aem/home/build.log'"
+#step "check build progress using command 'tail -f aem/home/build.log'"
 #mvn clean package -l aem/home/build.log
 #clc
 

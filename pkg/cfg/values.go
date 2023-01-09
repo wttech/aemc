@@ -62,7 +62,7 @@ type ConfigValues struct {
 				DetailsIgnored []string      `mapstructure:"details_ignored" yaml:"details_ignored"`
 			} `mapstructure:"event_stable" yaml:"event_stable"`
 			Installer struct {
-				State bool `mapstructure:"busy" yaml:"busy"`
+				State bool `mapstructure:"state" yaml:"state"`
 				Pause bool `mapstructure:"pause" yaml:"pause"`
 			}
 			AwaitUpTimeout struct {

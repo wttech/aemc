@@ -66,14 +66,14 @@ func (n RepoNode) Child(name string) RepoNode {
 }
 
 func (n RepoNode) Children() langx.Iterator[RepoNode] {
-	return RepoNodeIterator{nextNodes: func(node RepoNode) []RepoNode {
-		return []RepoNode{} // TODO impl this
+	return RepoNodeIterator{nextNodes: func(node RepoNode) ([]RepoNode, error) {
+		return []RepoNode{}, nil // TODO impl this
 	}}
 }
 
 func (n RepoNode) Siblings() langx.Iterator[RepoNode] {
-	return RepoNodeIterator{nextNodes: func(node RepoNode) []RepoNode {
-		return []RepoNode{} // TODO impl this
+	return RepoNodeIterator{nextNodes: func(node RepoNode) ([]RepoNode, error) {
+		return []RepoNode{}, nil // TODO impl this
 	}}
 }
 
@@ -184,19 +184,23 @@ func (n RepoNode) SaveProp(name string, value any) error {
 
 type RepoNodeIterator struct {
 	nodes     langx.Stack[RepoNode]
-	nextNodes func(node RepoNode) []RepoNode
+	nextNodes func(node RepoNode) ([]RepoNode, error)
 }
 
-func (i RepoNodeIterator) Next() (RepoNode, bool) {
+func (i RepoNodeIterator) Next() (RepoNode, bool, error) {
+	var zero RepoNode
 	node, ok := i.nodes.Pop()
 	if ok {
-		for _, v := range i.nextNodes(node) {
+		nextNodes, err := i.nextNodes(node)
+		if err != nil {
+			return zero, false, err
+		}
+		for _, v := range nextNodes {
 			i.nodes.Push(v)
 		}
-		return node, true
+		return node, true, nil
 	}
-	var zero RepoNode
-	return zero, false
+	return zero, false, nil
 }
 
 func (n RepoNode) String() string {

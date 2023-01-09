@@ -24,7 +24,10 @@ func (i SlingInstaller) State() (*SlingInstallerJMXBean, error) {
 }
 
 func (i SlingInstaller) CountPauses() (int, error) {
-	pauseNodes := langx.IteratorToSlice(i.instance.Repo().Node(SlingInstallerPauseRoot).Children()) // TODO handle error
+	pauseNodes, err := langx.IteratorToSlice(i.instance.Repo().Node(SlingInstallerPauseRoot).Children())
+	if err != nil {
+		return -1, err
+	}
 	return len(pauseNodes), nil
 }
 

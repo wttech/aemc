@@ -1,19 +1,23 @@
 package langx
 
+// Iterator is a consequence of missing idiom, see: <https://github.com/golang/go/discussions/56413>
 type Iterator[T any] interface {
-	Next() (T, bool)
+	Next() (T, bool, error)
 }
 
-func IteratorToSlice[T any](it Iterator[T]) []T {
+func IteratorToSlice[T any](it Iterator[T]) ([]T, error) {
 	var res []T
 	for {
-		v, ok := it.Next()
+		v, ok, err := it.Next()
+		if err != nil {
+			return nil, err
+		}
 		if !ok {
 			break
 		}
 		res = append(res, v)
 	}
-	return res
+	return res, nil
 }
 
 type Stack[T any] struct {

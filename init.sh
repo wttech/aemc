@@ -1,13 +1,15 @@
 #!/usr/bin/env sh
 
 VERSION=${AEMC_VERSION:-"0.6.4"}
-SOURCE_URL=https://raw.githubusercontent.com/wttech/aemc/v${VERSION}
+SOURCE_URL="https://raw.githubusercontent.com/wttech/aemc/v${VERSION}"
 
-AEM_WRAPPER=aemw
-AEM_DIR=aem
-SCRIPT_DIR=${AEM_DIR}/script
-HOME_DIR=${AEM_DIR}/home
-CONFIG_FILE=${HOME_DIR}/aem.yml
+AEM_WRAPPER="aemw"
+AEM_DIR="aem"
+SCRIPT_DIR="${AEM_DIR}/script"
+HOME_DIR="${AEM_DIR}/home"
+LIB_DIR="${AEM_DIR}/lib"
+CONFIG_FILE="${HOME_DIR}/aem.yml"
+SETUP_FILE="${SCRIPT_DIR}/setup.sh"
 
 if [ -f "$AEM_WRAPPER" ]; then
   echo "The project contains already AEM Compose!"
@@ -41,8 +43,9 @@ echo ""
 echo "Initialized AEM Compose"
 echo ""
 
-echo "The next step is instructing the tool where AEM files are located (JAR or SDK ZIP, license)."
-echo "Adjust the configuration file '${CONFIG_FILE}' by updating properties: 'dist_file', 'license_file'."
+echo "The next step is providing AEM files (JAR or SDK ZIP, license) to directory '${LIB_DIR}'"
+echo "Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '${CONFIG_FILE}'"
+echo "Later on, remember to customise AEM instance setup in provisioning file '${SETUP_FILE}' for service pack installation, application build, etc."
 echo "Finally, use control scripts to manage AEM instances:"
 echo ""
 

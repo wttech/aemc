@@ -46,6 +46,7 @@ echo ""
 echo "The next step is providing AEM files (JAR or SDK ZIP, license) to directory '${LIB_DIR}'"
 echo "Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '${CONFIG_FILE}'"
 echo "Later on, remember to customise AEM instance setup in provisioning file '${SETUP_FILE}' for service pack installation, application build, etc."
+echo "To avoid problems with IDE performance, make sure to exclude from indexing the directory '${HOME_DIR}'"
 echo "Finally, use control scripts to manage AEM instances:"
 echo ""
 

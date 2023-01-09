@@ -61,32 +61,20 @@ func (n RepoNode) Parents() <-chan RepoNode {
 	return result
 }
 
-func (n RepoNode) ParentsList() []RepoNode {
-	return langx.ChannelToSlice(n.Parents()).([]RepoNode)
-}
-
 func (n RepoNode) Child(name string) RepoNode {
 	return NewNode(n.repo, fmt.Sprintf("%s/%s", n.path, name))
 }
 
-func (n RepoNode) Children() <-chan RepoNode {
-	result := make(chan RepoNode)
-	// TODO ..
-	return result
+func (n RepoNode) Children() langx.Iterator[RepoNode] {
+	return RepoNodeIterator{nextNodes: func(node RepoNode) []RepoNode {
+		return []RepoNode{} // TODO impl this
+	}}
 }
 
-func (n RepoNode) ChildrenList() []RepoNode {
-	return langx.ChannelToSlice(n.Children()).([]RepoNode)
-}
-
-func (n RepoNode) Siblings() <-chan RepoNode {
-	result := make(chan RepoNode)
-	// TODO ..
-	return result
-}
-
-func (n RepoNode) SiblingList() []RepoNode {
-	return langx.ChannelToSlice(n.Siblings()).([]RepoNode)
+func (n RepoNode) Siblings() langx.Iterator[RepoNode] {
+	return RepoNodeIterator{nextNodes: func(node RepoNode) []RepoNode {
+		return []RepoNode{} // TODO impl this
+	}}
 }
 
 func (n RepoNode) Sibling(name string) RepoNode {
@@ -192,6 +180,23 @@ func (n RepoNode) DeleteProp(name string) error {
 
 func (n RepoNode) SaveProp(name string, value any) error {
 	return n.repo.Save(n.path, map[string]any{name: value})
+}
+
+type RepoNodeIterator struct {
+	nodes     langx.Stack[RepoNode]
+	nextNodes func(node RepoNode) []RepoNode
+}
+
+func (i RepoNodeIterator) Next() (RepoNode, bool) {
+	node, ok := i.nodes.Pop()
+	if ok {
+		for _, v := range i.nextNodes(node) {
+			i.nodes.Push(v)
+		}
+		return node, true
+	}
+	var zero RepoNode
+	return zero, false
 }
 
 func (n RepoNode) String() string {

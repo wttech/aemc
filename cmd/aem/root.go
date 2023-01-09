@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/instance"
@@ -40,7 +39,7 @@ func (c *CLI) rootFlags(cmd *cobra.Command) {
 		"Controls input format ("+strings.Join(cfg.InputFormats(), "|")+")")
 	cmd.PersistentFlags().StringVar(&(c.config.Values().Input.File),
 		"input-file", c.config.Values().Input.File,
-		fmt.Sprintf("Provides input as file path (or %s)", cfg.InputStdin))
+		"Provides input as file path")
 	cmd.PersistentFlags().StringVar(&(c.config.Values().Input.String),
 		"input-string", c.config.Values().Input.String,
 		"Provides input as string")

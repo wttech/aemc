@@ -5,20 +5,23 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/fmtx"
+	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/pkg"
 )
 
 type PackageManager struct {
 	instance *Instance
 
-	uploadForce bool
+	DeployAvoidance  bool
+	SnapshotPatterns []string
 }
 
 func NewPackageManager(res *Instance) *PackageManager {
 	return &PackageManager{
 		instance: res,
 
-		uploadForce: false,
+		DeployAvoidance:  false,
+		SnapshotPatterns: []string{"**/*-SNAPSHOT.zip"},
 	}
 }
 
@@ -102,6 +105,10 @@ func (pm *PackageManager) findInternal(pid string) (*pkg.ListItem, error) {
 	return nil, nil
 }
 
+func (pm *PackageManager) IsSnapshot(localPath string) bool {
+	return stringsx.MatchSomePattern(localPath, pm.SnapshotPatterns)
+}
+
 func (pm *PackageManager) Build(remotePath string) error {
 	log.Infof("building package '%s' on instance '%s'", remotePath, pm.instance.ID())
 	response, err := pm.instance.http.Request().Post(ServiceJsonPath + remotePath + "?cmd=build")
@@ -122,7 +129,7 @@ func (pm *PackageManager) Build(remotePath string) error {
 }
 
 func (pm *PackageManager) UploadWithChanged(localPath string) (bool, error) {
-	if pm.uploadForce {
+	if pm.IsSnapshot(localPath) {
 		_, err := pm.Upload(localPath)
 		if err != nil {
 			return false, err
@@ -191,6 +198,9 @@ func (pm *PackageManager) Install(remotePath string) error {
 }
 
 func (pm *PackageManager) DeployWithChanged(localPath string) (bool, error) {
+	if pm.IsSnapshot(localPath) {
+		return true, pm.Deploy(localPath)
+	}
 	p, err := pm.ByFile(localPath)
 	if err != nil {
 		return false, err
@@ -199,7 +209,7 @@ func (pm *PackageManager) DeployWithChanged(localPath string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if !state.Exists || !state.Data.Installed() { // TODO checksum checking needed
+	if !state.Exists || !state.Data.Installed() { // TODO support 'DeployAvoidance'
 		return true, pm.Deploy(localPath)
 	}
 	return false, nil

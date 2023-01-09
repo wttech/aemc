@@ -315,7 +315,10 @@ func (im *InstanceManager) configureInstances(config *cfg.Config) {
 
 func configureInstance(inst Instance, config *cfg.Config) {
 	packageOpts := config.Values().Instance.Package
-	inst.packageManager.uploadForce = packageOpts.Upload.Force
+	inst.packageManager.DeployAvoidance = packageOpts.DeployAvoidance
+	if packageOpts.SnapshotPatterns != nil {
+		inst.packageManager.SnapshotPatterns = packageOpts.SnapshotPatterns
+	}
 
 	osgiOpts := config.Values().Instance.OSGi
 	inst.osgi.bundleManager.InstallStart = osgiOpts.Bundle.Install.Start

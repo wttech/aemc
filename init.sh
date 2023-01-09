@@ -7,7 +7,7 @@ AEM_WRAPPER="aemw"
 AEM_DIR="aem"
 SCRIPT_DIR="${AEM_DIR}/script"
 HOME_DIR="${AEM_DIR}/home"
-LIB_DIR="${AEM_DIR}/lib"
+LIB_DIR="${HOME_DIR}/lib"
 CONFIG_FILE="${HOME_DIR}/aem.yml"
 SETUP_FILE="${SCRIPT_DIR}/setup.sh"
 

@@ -25,7 +25,7 @@ step "deploying APM"
 aem package deploy --url "https://github.com/wttech/APM/releases/download/apm-5.5.1/apm-all-5.5.1.zip"
 clc
 
-#step "deploying AEM service pack"
+#step "deploying AEM service pack (it may take a several minutes)"
 #aem package deploy --file "aem/home/lib/aem-service-pkg-6.5.*.0.zip"
 #clc
 #

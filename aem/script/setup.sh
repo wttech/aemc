@@ -28,12 +28,5 @@ clc
 #step "deploying AEM service pack (it may take a several minutes)"
 #aem package deploy --file "aem/home/lib/aem-service-pkg-6.5.*.0.zip"
 #clc
-#
-#step "build AEM application"
-#step "check progress using command 'tail -f aem/home/build.log'"
-#mvn clean package -l aem/home/build.log
-#clc
-#
-#step "deploy AEM application"
-#aem package deploy --file "all/target/*.all-*.zip"
-#clc
+
+. aem/script/deploy.sh

@@ -1,11 +1,10 @@
 #!/usr/bin/env sh
 
-# TODO <https://github.com/wttech/aemc/issues/7>
-
-step "building AEM application"
-mvn clean package
+step "build AEM application"
+step "check progress using command 'tail -f aem/home/build.log'"
+mvn clean package -l aem/home/build.log
 clc
 
-step "deploying AEM application"
-aem package deploy --file all/target/mysite.all-1.0.0-SNAPSHOT.zip
+step "deploy AEM application"
+aem package deploy --file "all/target/*.all-*.zip"
 clc

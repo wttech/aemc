@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 VERSION=${AEMC_VERSION:-"0.6.4"}
-SOURCE_URL="https://raw.githubusercontent.com/wttech/aemc/v${VERSION}"
+SOURCE_URL="https://raw.githubusercontent.com/wttech/aemc/v${VERSION}/init"
 
 AEM_WRAPPER="aemw"
 AEM_DIR="aem"

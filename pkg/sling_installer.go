@@ -1,7 +1,5 @@
 package pkg
 
-import "github.com/wttech/aemc/pkg/common/langx"
-
 type SlingInstaller struct {
 	instance *Instance
 }
@@ -24,7 +22,7 @@ func (i SlingInstaller) State() (*SlingInstallerJMXBean, error) {
 }
 
 func (i SlingInstaller) CountPauses() (int, error) {
-	pauseNodes, err := langx.IteratorToSlice(i.instance.Repo().Node(SlingInstallerPauseRoot).Children())
+	pauseNodes, err := i.instance.Repo().Node(SlingInstallerPauseRoot).Children()
 	if err != nil {
 		return -1, err
 	}

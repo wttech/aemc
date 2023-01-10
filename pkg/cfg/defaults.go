@@ -19,4 +19,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("output.file", OutputFileDefault)
 
 	v.SetDefault("instance.processing_mode", instance.ProcessingAuto)
+
+	v.SetDefault("instance.check.installer.state", true)
+	v.SetDefault("instance.check.installer.pause", true)
 }

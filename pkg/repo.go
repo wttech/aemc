@@ -53,8 +53,10 @@ func (r Repo) Exists(path string) (bool, error) {
 
 func (r Repo) Read(path string) (map[string]any, error) {
 	response, err := r.instance.http.Request().Get(fmt.Sprintf("%s.json", path))
-	if err != nil || response.IsError() {
+	if err != nil {
 		return nil, fmt.Errorf("cannot read properties of node '%s': %w", path, err)
+	} else if response.IsError() {
+		return nil, fmt.Errorf("cannot read properties of node '%s': %s", path, response.Status())
 	}
 	var props map[string]any
 	err = fmtx.UnmarshalJSON(response.RawBody(), &props)

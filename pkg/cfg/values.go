@@ -64,14 +64,14 @@ type ConfigValues struct {
 			Installer struct {
 				State bool `mapstructure:"state" yaml:"state"`
 				Pause bool `mapstructure:"pause" yaml:"pause"`
-			}
+			} `mapstructure:"installer" yaml:"installer"`
 			AwaitUpTimeout struct {
 				Duration time.Duration `mapstructure:"duration" yaml:"duration"`
 			} `mapstructure:"await_up_timeout" yaml:"await_up_timeout"`
 			AwaitDownTimeout struct {
 				Duration time.Duration `mapstructure:"duration" yaml:"duration"`
 			} `mapstructure:"await_down_timeout" yaml:"await_down_timeout"`
-		}
+		} `mapstructure:"check" yaml:"check"`
 
 		Local struct {
 			UnpackDir string `mapstructure:"unpack_dir" yaml:"unpack_dir"`

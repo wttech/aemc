@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/samber/lo"
 	"github.com/wttech/aemc/pkg/common/fmtx"
+	"github.com/wttech/aemc/pkg/common/langx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"golang.org/x/exp/maps"
 )
@@ -247,4 +248,28 @@ func (n RepoNode) MarshalText() string {
 		sb.WriteString(fmt.Sprintf("path '%s' does not exist\n", n.path))
 	}
 	return sb.String()
+}
+
+func (n RepoNode) Traverse() RepoNodeTraversingIterator {
+	return RepoNodeTraversingIterator{unvisited: langx.NewStackWithValue(n)}
+}
+
+type RepoNodeTraversingIterator struct {
+	unvisited langx.Stack[RepoNode]
+}
+
+func (i *RepoNodeTraversingIterator) Next() (RepoNode, bool, error) {
+	var zero RepoNode
+	if i.unvisited.IsEmpty() {
+		return zero, false, nil
+	}
+	current := i.unvisited.Pop()
+	children, err := current.Children()
+	if err != nil {
+		return zero, true, err
+	}
+	for _, child := range children {
+		i.unvisited.Push(child)
+	}
+	return current, true, nil
 }

@@ -250,26 +250,26 @@ func (n RepoNode) MarshalText() string {
 	return sb.String()
 }
 
-func (n RepoNode) Traverse() RepoNodeTraversal {
-	return RepoNodeTraversal{unvisited: langx.NewStackWithValue(n)}
+func (n RepoNode) Traverse() RepoNodeTraversor {
+	return RepoNodeTraversor{nodes: langx.NewStackWithValue(n)}
 }
 
-type RepoNodeTraversal struct {
-	unvisited langx.Stack[RepoNode]
+type RepoNodeTraversor struct {
+	nodes langx.Stack[RepoNode]
 }
 
-func (i *RepoNodeTraversal) Next() (RepoNode, bool, error) {
+func (i *RepoNodeTraversor) Next() (RepoNode, bool, error) {
 	var zero RepoNode
-	if i.unvisited.IsEmpty() {
+	if i.nodes.IsEmpty() {
 		return zero, false, nil
 	}
-	current := i.unvisited.Pop()
+	current := i.nodes.Pop()
 	children, err := current.Children()
 	if err != nil {
 		return zero, true, err
 	}
 	for _, child := range children {
-		i.unvisited.Push(child)
+		i.nodes.Push(child)
 	}
 	return current, true, nil
 }

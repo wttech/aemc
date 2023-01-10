@@ -250,15 +250,15 @@ func (n RepoNode) MarshalText() string {
 	return sb.String()
 }
 
-func (n RepoNode) Traverse() RepoNodeTraversingIterator {
-	return RepoNodeTraversingIterator{unvisited: langx.NewStackWithValue(n)}
+func (n RepoNode) Traverse() RepoNodeTraversal {
+	return RepoNodeTraversal{unvisited: langx.NewStackWithValue(n)}
 }
 
-type RepoNodeTraversingIterator struct {
+type RepoNodeTraversal struct {
 	unvisited langx.Stack[RepoNode]
 }
 
-func (i *RepoNodeTraversingIterator) Next() (RepoNode, bool, error) {
+func (i *RepoNodeTraversal) Next() (RepoNode, bool, error) {
 	var zero RepoNode
 	if i.unvisited.IsEmpty() {
 		return zero, false, nil

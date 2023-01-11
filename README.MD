@@ -69,7 +69,7 @@ sh aemw version
 Ensure having installed [Go](https://go.dev/dl/) then run command:
 
 - latest released version: `go install github.com/wttech/aemc/cmd/aem@latest`,
-- specific released version: `go install github.com/wttech/aemc/cmd/aem@v0.6.4`,
+- specific released version: `go install github.com/wttech/aemc/cmd/aem@v0.7.0`,
 - recently committed version: `go install github.com/wttech/aemc/cmd/aem@main`,
 
 ## Ansible Collection

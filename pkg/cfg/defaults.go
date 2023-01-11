@@ -24,6 +24,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("instance.check.installer.state", true)
 	v.SetDefault("instance.check.installer.pause", true)
 
+	v.SetDefault("instance.check.await_strict", true)
+
 	v.SetDefault("instance.check.event_stable.received_max_age", "5s")
 	v.SetDefault("instance.check.event_stable.topics_unstable", []string{
 		"org/osgi/framework/ServiceEvent/*",

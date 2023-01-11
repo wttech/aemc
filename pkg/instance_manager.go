@@ -87,6 +87,7 @@ type CheckOpts struct {
 	Interval      time.Duration
 	DoneThreshold int
 	DoneNever     bool
+	AwaitStrict   bool
 
 	BundleStable     BundleStableChecker
 	EventStable      EventStableChecker
@@ -358,6 +359,7 @@ func (im *InstanceManager) configureCheckOpts(config *cfg.Config) {
 	if opts.EventStable.DetailsIgnored != nil {
 		im.CheckOpts.EventStable.DetailsIgnored = opts.EventStable.DetailsIgnored
 	}
+	im.CheckOpts.AwaitStrict = opts.AwaitStrict
 	if opts.AwaitUpTimeout.Duration > 0 {
 		im.CheckOpts.AwaitUpTimeout.Duration = opts.AwaitUpTimeout.Duration
 	}

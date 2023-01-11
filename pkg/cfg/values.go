@@ -66,6 +66,7 @@ type ConfigValues struct {
 				State bool `mapstructure:"state" yaml:"state"`
 				Pause bool `mapstructure:"pause" yaml:"pause"`
 			} `mapstructure:"installer" yaml:"installer"`
+			AwaitStrict    bool `mapstructure:"await_strict" yaml:"await_strict"`
 			AwaitUpTimeout struct {
 				Duration time.Duration `mapstructure:"duration" yaml:"duration"`
 			} `mapstructure:"await_up_timeout" yaml:"await_up_timeout"`

@@ -20,6 +20,19 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("instance.processing_mode", instance.ProcessingAuto)
 
+	v.SetDefault("instance.check.done_threshold", 5)
 	v.SetDefault("instance.check.installer.state", true)
 	v.SetDefault("instance.check.installer.pause", true)
+
+	v.SetDefault("instance.check.event_stable.received_max_age", "5s")
+	v.SetDefault("instance.check.event_stable.topics_unstable", []string{
+		"org/osgi/framework/ServiceEvent/*",
+		"org/osgi/framework/FrameworkEvent/*",
+		"org/osgi/framework/BundleEvent/*",
+	})
+	v.SetDefault("instance.check.event_stable.details_ignored", []string{
+		"*.*MBean",
+		"org.osgi.service.component.runtime.ServiceComponentRuntime",
+		"java.util.ResourceBundle",
+	})
 }

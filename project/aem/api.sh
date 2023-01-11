@@ -1,5 +1,35 @@
 #!/usr/bin/env sh
 
+VERSION=${AEMC_VERSION:-"0.6.4"}
+AEM_DIR="aem"
+HOME_DIR="${AEM_DIR}/home"
+DOWNLOAD_DIR="${HOME_DIR}/tmp"
+
+OS=$(detectOs)
+ARCH=$(detectArch)
+
+# Download or build tool
+
+BIN_DOWNLOAD_NAME="aemc-cli"
+BIN_DOWNLOAD_URL="https://github.com/wttech/aemc/releases/download/v${VERSION}/${BIN_DOWNLOAD_NAME}_${OS}_${ARCH}.tar.gz"
+BIN_ROOT="${DOWNLOAD_DIR}/${BIN_DOWNLOAD_NAME}/${VERSION}"
+BIN_ARCHIVE_FILE="${BIN_ROOT}/${BIN_DOWNLOAD_NAME}.tar.gz"
+BIN_ARCHIVE_DIR="${BIN_ROOT}/${BIN_DOWNLOAD_NAME}"
+BIN_NAME="aem"
+BIN_EXEC_FILE="${BIN_ARCHIVE_DIR}/${BIN_NAME}"
+
+if [ "${VERSION}" != "installed" ] ; then
+  if [ ! -f "${BIN_EXEC_FILE}" ]; then
+    mkdir -p "${BIN_ARCHIVE_DIR}"
+    downloadFile "${BIN_DOWNLOAD_URL}" "${BIN_ARCHIVE_FILE}"
+    tar -xf "${BIN_ARCHIVE_FILE}" -C "${BIN_ARCHIVE_DIR}"
+    chmod +x "${BIN_EXEC_FILE}"
+  fi
+  aem() {
+      "./${BIN_EXEC_FILE}" "$@"
+  }
+fi
+
 # print provisioning step header
 step () {
   DATE=$(date "+%Y-%m-%d %H:%M:%S")

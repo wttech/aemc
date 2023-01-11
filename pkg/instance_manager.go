@@ -83,9 +83,10 @@ func (im InstanceManager) Publishes() []Instance {
 }
 
 type CheckOpts struct {
-	Warmup   time.Duration
-	Interval time.Duration
-	Endless  bool
+	Warmup        time.Duration
+	Interval      time.Duration
+	DoneThreshold int
+	Endless       bool
 
 	BundleStable     BundleStableChecker
 	EventStable      EventStableChecker
@@ -97,8 +98,9 @@ type CheckOpts struct {
 
 func (im *InstanceManager) NewCheckOpts() *CheckOpts {
 	return &CheckOpts{
-		Warmup:   time.Second * 1,
-		Interval: time.Second * 5,
+		Warmup:        time.Second * 1,
+		Interval:      time.Second * 5,
+		DoneThreshold: 3,
 
 		BundleStable:     NewBundleStableChecker(),
 		EventStable:      NewEventStableChecker(),
@@ -116,11 +118,20 @@ func (im *InstanceManager) Check(instances []Instance, opts *CheckOpts, checks [
 		return
 	}
 	time.Sleep(opts.Warmup)
+	done := 0
 	for {
 		if im.CheckOnce(instances, checks) {
+			done++
 			if !opts.Endless {
-				break
+				if done <= opts.DoneThreshold {
+					log.Infof("instances checked (%d/%d)", done, opts.DoneThreshold)
+				}
+				if done == opts.DoneThreshold {
+					break
+				}
 			}
+		} else {
+			done = 0
 		}
 		time.Sleep(opts.Interval)
 	}
@@ -334,6 +345,7 @@ func (im *InstanceManager) configureCheckOpts(config *cfg.Config) {
 
 	im.CheckOpts.Warmup = opts.Warmup
 	im.CheckOpts.Interval = opts.Interval
+	im.CheckOpts.DoneThreshold = opts.DoneThreshold
 
 	if opts.BundleStable.SymbolicNamesIgnored != nil {
 		im.CheckOpts.BundleStable.SymbolicNamesIgnored = opts.BundleStable.SymbolicNamesIgnored

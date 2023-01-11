@@ -248,7 +248,7 @@ func (c StatusStoppedChecker) Check(instance Instance) CheckResult {
 
 		return CheckResult{
 			ok:      false,
-			message: fmt.Sprintf("not stopped - %s bundle(s) stable", stablePercent),
+			message: fmt.Sprintf("not stopped (%s bundles stable)", stablePercent),
 		}
 	}
 

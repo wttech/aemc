@@ -85,11 +85,11 @@ func GlobOne(pathPattern string) (string, error) {
 	pattern := stringsx.AfterLast(pathPattern, "/")
 	paths, err := GlobDir(dir, pattern)
 	if err != nil {
-		return "", fmt.Errorf("cannot find any file as pattern is invalid '%s': %w", pattern, err)
+		return "", err
 	}
 	sort.Strings(paths)
 	if len(paths) == 0 {
-		return "", fmt.Errorf("cannot find any file matching pattern '%s'", pattern)
+		return "", fmt.Errorf("cannot find any file matching pattern '%s'", pathPattern)
 	}
 	return paths[len(paths)-1], nil
 }
@@ -101,9 +101,12 @@ func GlobDir(dir string, pattern string) ([]string, error) {
 	if err != nil {
 		return m, err
 	}
+	if !Exists(dir) {
+		return m, fmt.Errorf("cannot glob non-existing dir '%s' with pattern '%s'", dir, pattern)
+	}
 	fi, err := os.Stat(dir)
 	if err != nil {
-		return m, err
+		return m, fmt.Errorf("cannot glob dir '%s' with pattern '%s' : %w", dir, pattern, err)
 	}
 	if !fi.IsDir() {
 		return m, err

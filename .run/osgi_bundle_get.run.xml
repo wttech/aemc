@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="osgi bundle get" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="aemc" />
-    <working_directory value="$PROJECT_DIR$" />
+    <working_directory value="$PROJECT_DIR$/project" />
     <parameters value="osgi bundle get --symbolic-name com.adobe.cq.ups-profile-lookup -A" />
     <kind value="DIRECTORY" />
     <package value="github.com/wttech/aemc" />

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/filex"
-	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"os/exec"
@@ -24,43 +23,45 @@ func (s Sdk) lockFile() string {
 	return s.Dir() + "/lock/create.yml"
 }
 
-type Lock struct {
+func (s Sdk) lock(zipFile string) osx.Lock[SdkLock] {
+	return osx.NewLock(s.Dir()+"/lock/create.yml", SdkLock{
+		Version:  pathx.NameWithoutExt(zipFile),
+		Unpacked: time.Now(),
+	})
+}
+
+type SdkLock struct {
 	Version  string
 	Unpacked time.Time
 }
 
 func (s Sdk) Prepare(zipFile string) error {
-	versionNew := pathx.NameWithoutExt(zipFile)
-	upToDate := false
-	if pathx.Exists(s.lockFile()) {
-		var lock Lock
-		err := fmtx.UnmarshalFile(s.lockFile(), &lock)
-		if err != nil {
-			return fmt.Errorf("cannot read instance SDK lock file '%s': %w", s.lockFile(), err)
-		}
-		upToDate = versionNew == lock.Version
-	}
-	if upToDate {
-		log.Debugf("existing instance SDK '%s' is up-to-date", versionNew)
-		return nil
-	}
-	log.Infof("preparing new instance SDK '%s'", versionNew)
-	err := s.prepare(zipFile)
+	lock := s.lock(zipFile)
+
+	upToDate, err := lock.IsUpToDate()
 	if err != nil {
 		return err
 	}
-	lock := Lock{Version: versionNew, Unpacked: time.Now()}
-	err = fmtx.MarshalToFile(s.lockFile(), lock)
-	if err != nil {
-		return fmt.Errorf("cannot save instance SDK lock file '%s': %w", s.lockFile(), err)
+	if upToDate {
+		log.Debugf("existing instance SDK '%s' is up-to-date", lock.Data().Version)
+		return nil
 	}
-	log.Infof("prepared new instance SDK '%s'", versionNew)
+	log.Infof("preparing new instance SDK '%s'", lock.Data().Version)
+	err = s.prepare(zipFile)
+	if err != nil {
+		return err
+	}
+	err = lock.Lock()
+	if err != nil {
+		return err
+	}
+	log.Infof("prepared new instance SDK '%s'", lock.Data().Version)
 
 	jar, err := s.QuickstartJar()
 	if err != nil {
 		return err
 	}
-	log.Debugf("found JAR '%s' in unpacked SDK '%s'", jar, versionNew)
+	log.Debugf("found JAR '%s' in unpacked SDK '%s'", jar, lock.Data().Version)
 
 	return nil
 }

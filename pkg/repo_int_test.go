@@ -56,3 +56,47 @@ func TestRepoSaveThenRemoveProp(t *testing.T) {
 	_, ok = props["second"]
 	a.False(ok)
 }
+
+func TestRepoReadChildren(t *testing.T) {
+	t.Parallel()
+
+	a := assert.New(t)
+	aem := pkg.NewAem()
+
+	instance := aem.InstanceManager().NewLocalAuthor()
+	children, err := instance.Repo().Node("/content").Children()
+	a.Nil(err)
+	a.NotEmpty(children)
+}
+
+func TestRepoReadParents(t *testing.T) {
+	t.Parallel()
+
+	a := assert.New(t)
+	aem := pkg.NewAem()
+
+	instance := aem.InstanceManager().NewLocalAuthor()
+	parents := instance.Repo().Node("/content/dam/projects").Parents()
+	a.Len(parents, 2)
+}
+
+func TestRepoTraverse(t *testing.T) {
+	t.Parallel()
+
+	a := assert.New(t)
+	aem := pkg.NewAem()
+
+	instance := aem.InstanceManager().NewLocalAuthor()
+	it := instance.Repo().Node("/content/dam/projects").Traverse()
+
+	traversed := 0
+	for {
+		_, ok, err := it.Next()
+		if !ok {
+			break
+		}
+		a.Nil(err)
+		traversed++
+	}
+	a.GreaterOrEqual(traversed, 20)
+}

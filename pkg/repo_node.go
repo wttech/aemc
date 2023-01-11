@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/samber/lo"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/langx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
@@ -45,28 +46,72 @@ func (n RepoNode) Content() RepoNode {
 }
 
 func (n RepoNode) Parent() RepoNode {
-	return NewNode(n.repo, stringsx.BeforeLast(n.path, "/"))
+	parentPath := stringsx.BeforeLast(n.path, "/")
+	if parentPath == "" {
+		parentPath = "/"
+	}
+	return NewNode(n.repo, parentPath)
 }
 
-func (n RepoNode) Parents() <-chan RepoNode {
-	result := make(chan RepoNode)
-	go func() {
-		current := n
-		for !current.Root() {
-			current = current.Parent()
-			result <- current
+func (n RepoNode) Parents() []RepoNode {
+	result := []RepoNode{}
+	current := n
+	for {
+		current = current.Parent()
+		if current.Root() {
+			break
 		}
-		close(result)
-	}()
+		result = append(result, current)
+	}
 	return result
 }
 
-func (n RepoNode) ParentsList() []RepoNode {
-	return langx.ChannelToSlice(n.Parents()).([]RepoNode)
+func (n RepoNode) Breadcrumb() []RepoNode {
+	result := []RepoNode{n}
+	current := n
+	for {
+		current = current.Parent()
+		if current.Root() {
+			break
+		}
+		result = append(result, current)
+	}
+	return lo.Reverse(result)
 }
 
 func (n RepoNode) Child(name string) RepoNode {
 	return NewNode(n.repo, fmt.Sprintf("%s/%s", n.path, name))
+}
+
+func (n RepoNode) Children() ([]RepoNode, error) {
+	response, err := n.repo.instance.http.Request().Get(fmt.Sprintf("%s.harray.1.json", n.path))
+	if err != nil {
+		return nil, fmt.Errorf("cannot read children of node '%s': %w", n.path, err)
+	} else if response.IsError() {
+		return nil, fmt.Errorf("cannot read children of node '%s': %s", n.path, response.Status())
+	}
+	var children nodeArrayChildren
+	err = fmtx.UnmarshalJSON(response.RawBody(), &children)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse children of node '%s': %w", n.path, err)
+	}
+	return lo.Map(children.Children, func(child nodeArrayChild, _ int) RepoNode { return n.Child(child.Name) }), nil
+}
+
+type nodeArrayChildren struct {
+	Children []nodeArrayChild `json:"__children__"`
+}
+
+type nodeArrayChild struct {
+	Name string `json:"__name__"`
+}
+
+func (n RepoNode) Siblings() ([]RepoNode, error) {
+	parentChildren, err := n.Parent().Children()
+	if err != nil {
+		return nil, err
+	}
+	return lo.Filter(parentChildren, func(child RepoNode, _ int) bool { return child.path != n.path }), nil
 }
 
 func (n RepoNode) Sibling(name string) RepoNode {
@@ -203,4 +248,28 @@ func (n RepoNode) MarshalText() string {
 		sb.WriteString(fmt.Sprintf("path '%s' does not exist\n", n.path))
 	}
 	return sb.String()
+}
+
+func (n RepoNode) Traverse() RepoNodeTraversor {
+	return RepoNodeTraversor{nodes: langx.NewStackWithValue(n)}
+}
+
+type RepoNodeTraversor struct {
+	nodes langx.Stack[RepoNode]
+}
+
+func (i *RepoNodeTraversor) Next() (RepoNode, bool, error) {
+	var zero RepoNode
+	if i.nodes.IsEmpty() {
+		return zero, false, nil
+	}
+	current := i.nodes.Pop()
+	children, err := current.Children()
+	if err != nil {
+		return zero, true, err
+	}
+	for _, child := range children {
+		i.nodes.Push(child)
+	}
+	return current, true, nil
 }

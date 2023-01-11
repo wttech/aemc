@@ -40,6 +40,7 @@ type Instance struct {
 	http           *HTTP
 	repository     *Repo
 	osgi           *OSGi
+	sling          *Sling
 	packageManager *PackageManager
 
 	id       string
@@ -91,6 +92,10 @@ func (i *Instance) Repo() *Repo {
 
 func (i *Instance) OSGI() *OSGi {
 	return i.osgi
+}
+
+func (i Instance) Sling() *Sling {
+	return i.sling
 }
 
 func (i *Instance) PackageManager() *PackageManager {

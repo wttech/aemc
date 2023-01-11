@@ -83,6 +83,13 @@ func NewBundleStableChecker() BundleStableChecker {
 	}
 }
 
+func NewInstallerChecker() InstallerChecker {
+	return InstallerChecker{
+		State: true,
+		Pause: true,
+	}
+}
+
 func NewStatusStoppedChecker() StatusStoppedChecker {
 	return StatusStoppedChecker{}
 }
@@ -154,7 +161,7 @@ func (c EventStableChecker) Check(instance Instance) CheckResult {
 	unstableEventCount := len(unstableEvents)
 
 	if unstableEventCount > 0 {
-		message := fmt.Sprintf("recent event(s) unstable (%d): %s", unstableEventCount, unstableEvents[0].Details())
+		message := fmt.Sprintf("recent events unstable (%d): %s", unstableEventCount, unstableEvents[0].Details())
 		return CheckResult{
 			ok:      false,
 			message: message,
@@ -164,6 +171,53 @@ func (c EventStableChecker) Check(instance Instance) CheckResult {
 	return CheckResult{
 		ok:      true,
 		message: "recent events stable",
+	}
+}
+
+type InstallerChecker struct {
+	State bool
+	Pause bool
+}
+
+func (c InstallerChecker) Check(instance Instance) CheckResult {
+	installer := instance.Sling().Installer()
+	if c.State {
+		state, err := installer.State()
+		if err != nil {
+			return CheckResult{
+				ok:      false,
+				message: "installer state unknown",
+				err:     err,
+			}
+		}
+		if state.IsBusy() {
+			return CheckResult{
+				ok:      false,
+				message: fmt.Sprintf("installer busy (%d)", state.ActiveResourceCount),
+				err:     err,
+			}
+		}
+	}
+	if c.Pause {
+		pauseCount, err := installer.CountPauses()
+		if err != nil {
+			return CheckResult{
+				ok:      false,
+				message: "installer pause unknown",
+				err:     err,
+			}
+		}
+		if pauseCount > 0 {
+			return CheckResult{
+				ok:      false,
+				message: fmt.Sprintf("installer paused (%d)", pauseCount),
+				err:     err,
+			}
+		}
+	}
+	return CheckResult{
+		ok:      true,
+		message: "installer idle",
 	}
 }
 
@@ -194,7 +248,7 @@ func (c StatusStoppedChecker) Check(instance Instance) CheckResult {
 
 		return CheckResult{
 			ok:      false,
-			message: fmt.Sprintf("not stopped - %s bundle(s) stable", stablePercent),
+			message: fmt.Sprintf("not stopped (%s bundles stable)", stablePercent),
 		}
 	}
 

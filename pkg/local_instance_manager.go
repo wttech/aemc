@@ -207,7 +207,11 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		}
 	}
 
-	im.AwaitStarted(instances)
+	if im.CheckOpts.AwaitStrict {
+		im.AwaitStarted(started)
+	} else {
+		im.AwaitStarted(instances)
+	}
 
 	return started, nil
 }
@@ -241,7 +245,11 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 		}
 	}
 
-	im.AwaitStopped(instances)
+	if im.CheckOpts.AwaitStrict {
+		im.AwaitStopped(stopped)
+	} else {
+		im.AwaitStopped(instances)
+	}
 
 	return stopped, nil
 }
@@ -322,6 +330,7 @@ func (im *InstanceManager) AwaitStarted(instances []Instance) {
 	im.Check(instances, im.CheckOpts, []Checker{
 		im.CheckOpts.BundleStable,
 		im.CheckOpts.EventStable,
+		im.CheckOpts.Installer,
 		im.CheckOpts.AwaitUpTimeout,
 	})
 }

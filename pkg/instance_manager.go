@@ -25,10 +25,11 @@ type InstanceManager struct {
 func NewInstanceManager(aem *Aem) *InstanceManager {
 	result := new(InstanceManager)
 	result.aem = aem
-	result.Instances = result.NewLocalPair()
-	result.CheckOpts = result.NewCheckOpts()
+
 	result.LocalOpts = result.NewLocalOpts(result)
 	result.ProcessingMode = instance.ProcessingParallel
+	result.CheckOpts = result.NewCheckOpts()
+	result.Instances = result.NewLocalPair()
 
 	return result
 }
@@ -82,43 +83,55 @@ func (im InstanceManager) Publishes() []Instance {
 }
 
 type CheckOpts struct {
-	Warmup   time.Duration
-	Interval time.Duration
-	Endless  bool
+	Warmup        time.Duration
+	Interval      time.Duration
+	DoneThreshold int
+	DoneNever     bool
+	AwaitStrict   bool
 
-	BundleStable   BundleStableChecker
-	EventStable    EventStableChecker
-	AwaitUpTimeout TimeoutChecker
-
+	BundleStable     BundleStableChecker
+	EventStable      EventStableChecker
+	Installer        InstallerChecker
+	AwaitUpTimeout   TimeoutChecker
 	StatusStopped    StatusStoppedChecker
 	AwaitDownTimeout TimeoutChecker
 }
 
 func (im *InstanceManager) NewCheckOpts() *CheckOpts {
 	return &CheckOpts{
-		Warmup:   time.Second * 1,
-		Interval: time.Second * 5,
+		Warmup:        time.Second * 1,
+		Interval:      time.Second * 5,
+		DoneThreshold: 3,
 
 		BundleStable:     NewBundleStableChecker(),
 		EventStable:      NewEventStableChecker(),
 		AwaitUpTimeout:   NewTimeoutChecker("up", time.Minute*10),
+		Installer:        NewInstallerChecker(),
 		StatusStopped:    NewStatusStoppedChecker(),
 		AwaitDownTimeout: NewTimeoutChecker("down", time.Minute*5),
 	}
 }
 
-// TODO support endless mode; 'aem instance await --endless'
 func (im *InstanceManager) Check(instances []Instance, opts *CheckOpts, checks []Checker) {
 	if len(instances) == 0 {
 		log.Infof("no instances to check")
 		return
 	}
 	time.Sleep(opts.Warmup)
+	done := 0
 	for {
 		if im.CheckOnce(instances, checks) {
-			if !opts.Endless {
-				break
+			if !opts.DoneNever {
+				done++
+				if done <= opts.DoneThreshold {
+					log.Infof("instances checked (%d/%d)", done, opts.DoneThreshold)
+				}
+				if done == opts.DoneThreshold {
+					break
+				}
 			}
+		} else {
+			done = 0
 		}
 		time.Sleep(opts.Interval)
 	}
@@ -190,6 +203,7 @@ func (im *InstanceManager) New(id, url, user, password string) *Instance {
 	res.repository = NewRepo(res)
 	res.packageManager = NewPackageManager(res)
 	res.osgi = NewOSGi(res)
+	res.sling = NewSling(res)
 
 	if res.IsLocal() {
 		res.local = NewLocal(res)
@@ -236,8 +250,7 @@ func (im *InstanceManager) configureInstances(config *cfg.Config) {
 			i, err := im.NewByURL(iCfg.HTTPURL)
 			if err != nil {
 				log.Warn(fmt.Errorf("cannot create instance from URL '%s': %w", iCfg.HTTPURL, err))
-			} else {
-				defined = append(defined, *i)
+				continue
 			}
 			i.id = ID
 			if len(iCfg.User) > 0 {
@@ -259,6 +272,7 @@ func (im *InstanceManager) configureInstances(config *cfg.Config) {
 					}
 				}
 			}
+			defined = append(defined, *i)
 		}
 	} else if len(opts.ConfigURL) > 0 {
 		iURL, err := im.NewByURL(opts.ConfigURL)
@@ -331,6 +345,7 @@ func (im *InstanceManager) configureCheckOpts(config *cfg.Config) {
 
 	im.CheckOpts.Warmup = opts.Warmup
 	im.CheckOpts.Interval = opts.Interval
+	im.CheckOpts.DoneThreshold = opts.DoneThreshold
 
 	if opts.BundleStable.SymbolicNamesIgnored != nil {
 		im.CheckOpts.BundleStable.SymbolicNamesIgnored = opts.BundleStable.SymbolicNamesIgnored
@@ -344,12 +359,15 @@ func (im *InstanceManager) configureCheckOpts(config *cfg.Config) {
 	if opts.EventStable.DetailsIgnored != nil {
 		im.CheckOpts.EventStable.DetailsIgnored = opts.EventStable.DetailsIgnored
 	}
+	im.CheckOpts.AwaitStrict = opts.AwaitStrict
 	if opts.AwaitUpTimeout.Duration > 0 {
 		im.CheckOpts.AwaitUpTimeout.Duration = opts.AwaitUpTimeout.Duration
 	}
 	if opts.AwaitDownTimeout.Duration > 0 {
 		im.CheckOpts.AwaitDownTimeout.Duration = opts.AwaitDownTimeout.Duration
 	}
+	im.CheckOpts.Installer.State = opts.Installer.State
+	im.CheckOpts.Installer.Pause = opts.Installer.Pause
 }
 
 func (im *InstanceManager) configureRest(config *cfg.Config) {

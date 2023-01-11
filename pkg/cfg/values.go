@@ -51,9 +51,10 @@ type ConfigValues struct {
 		ProcessingMode string `mapstructure:"processing_mode" yaml:"processing_mode"`
 
 		Check struct {
-			Warmup       time.Duration `mapstructure:"warmup" yaml:"warmup"`
-			Interval     time.Duration `mapstructure:"interval" yaml:"interval"`
-			BundleStable struct {
+			Warmup        time.Duration `mapstructure:"warmup" yaml:"warmup"`
+			Interval      time.Duration `mapstructure:"interval" yaml:"interval"`
+			DoneThreshold int           `mapstructure:"done_threshold" yaml:"done_threshold"`
+			BundleStable  struct {
 				SymbolicNamesIgnored []string `mapstructure:"symbolic_names_ignored" yaml:"symbolic_names_ignored"`
 			} `mapstructure:"bundle_stable" yaml:"bundle_stable"`
 			EventStable struct {
@@ -61,13 +62,18 @@ type ConfigValues struct {
 				TopicsUnstable []string      `mapstructure:"topics_unstable" yaml:"topics_unstable"`
 				DetailsIgnored []string      `mapstructure:"details_ignored" yaml:"details_ignored"`
 			} `mapstructure:"event_stable" yaml:"event_stable"`
+			Installer struct {
+				State bool `mapstructure:"state" yaml:"state"`
+				Pause bool `mapstructure:"pause" yaml:"pause"`
+			} `mapstructure:"installer" yaml:"installer"`
+			AwaitStrict    bool `mapstructure:"await_strict" yaml:"await_strict"`
 			AwaitUpTimeout struct {
 				Duration time.Duration `mapstructure:"duration" yaml:"duration"`
 			} `mapstructure:"await_up_timeout" yaml:"await_up_timeout"`
 			AwaitDownTimeout struct {
 				Duration time.Duration `mapstructure:"duration" yaml:"duration"`
 			} `mapstructure:"await_down_timeout" yaml:"await_down_timeout"`
-		}
+		} `mapstructure:"check" yaml:"check"`
 
 		Local struct {
 			UnpackDir string `mapstructure:"unpack_dir" yaml:"unpack_dir"`

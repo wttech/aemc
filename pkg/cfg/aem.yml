@@ -34,6 +34,30 @@ instance:
     warmup: 1s
     # Time to wait for next state checking
     interval: 5s
+    # Number of successful check attempts that indicates end of checking
+    done_threshold: 3
+    # Wait only for those instances whose state has been changed internally (unaware of external changes)
+    await_strict: true
+    # Bundle state tracking
+    bundle_stable:
+      symbolic_names_ignored: []
+    # OSGi events tracking
+    event_stable:
+      topics_unstable:
+        - "org/osgi/framework/ServiceEvent/*"
+        - "org/osgi/framework/FrameworkEvent/*"
+        - "org/osgi/framework/BundleEvent/*"
+      details_ignored:
+        - "*.*MBean"
+        - "org.osgi.service.component.runtime.ServiceComponentRuntime"
+        - "java.util.ResourceBundle"
+      received_max_age: 5s
+    # Sling Installer tracking
+    installer:
+      # Check JMX state
+      state: true
+      # Check Pause Installation nodes
+      pause: true
 
   # Managed locally (set up automatically)
   local:

@@ -131,28 +131,7 @@ It will produce default configuration file named *aem.yml*.
 Correct the `dist_file`, `license_file`, `unpack_dir` properties to provide essential files to be able to launch AEM instances.
 
 ```yml
-log:
-  timestamp_format: "2006-01-02 15:04:05"
-  full_timestamp: true
-
-#input:
-#  format: yml
-#  file: STDIN
-#
-#output:
-#  format: text
-#  file: aem.log
-
-java:
-  #home_dir: /Library/Java/JavaVirtualMachines/jdk-11.0.15.jdk/Contents/Home
-
 instance:
-
-  # Processing mode
-  # 'auto'     - for more than 1 local instances - 'serial', otherwise 'parallel'
-  # 'parallel' - for working with remote instances
-  # 'serial'   - for working with local instances
-  processing_mode: auto
 
   # Defined by single value (only remote)
   config_url: ''
@@ -163,12 +142,12 @@ instance:
       http_url: http://localhost:4502
       user: admin
       password: admin
-      run_modes: [ local, scene7 ]
+      run_modes: [ local ]
     local_publish:
       http_url: http://localhost:4503
       user: admin
       password: admin
-      run_modes: [ local, scene7 ]
+      run_modes: [ local ]
 
   # Filters for defined
   filter:
@@ -176,30 +155,63 @@ instance:
     author: false
     publish: false
 
+  # Tuning performance & reliability
+  # 'auto'     - for more than 1 local instances - 'serial', otherwise 'parallel'
+  # 'parallel' - for working with remote instances
+  # 'serial'   - for working with local instances
+  processing_mode: auto
+
   # State checking
   check:
+    # Time to wait before first state checking (to avoid false-positives)
+    warmup: 1s
+    # Time to wait for next state checking
     interval: 5s
-
-    bundle_stable:
-      symbolic_names_ignored: []
 
   # Managed locally (set up automatically)
   local:
-    unpack_dir: '/path/to/aem/data/instances'
-    quickstart:
-      dist_file: '/path/to/aem/files/aem-sdk-quickstart-2022.7.8005.jar'
-      license_file: '/path/to/aem/files/license.properties'
+    # Data dir (Sling launchpad, JCR repository)
+    unpack_dir: "./aem/home/instance"
 
+    # Source files
+    quickstart:
+      # AEM SDK ZIP or JAR
+      dist_file: './aem/home/lib/{aem-sdk,cq-quickstart}-*.{zip,jar}'
+      # AEM License properties file
+      license_file: "./aem/home/lib/license.properties"
+
+  # Package Manager
   package:
-    upload:
-      force: false
+    # Calculate and store checksums on AEM instances to avoid re-deployments when packages are unchanged
+    deploy_avoidance: false
+    # Force re-uploading/installing of just built AEM packages (needed when deploy avoidance is off)
+    snapshot_patterns: ["**/*-SNAPSHOT.zip"]
 
   osgi:
-    install:
-      start: true
-      start_level: 20
-      refresh_packages: true
+    bundle:
+      install:
+        start: true
+        start_level: 20
+        refresh_packages: true
 
+java:
+  home_dir: {{ .Env.JAVA_HOME }}
+
+log:
+  level: info
+  timestamp_format: "2006-01-02 15:04:05"
+  full_timestamp: true
+
+input:
+  format: yml
+  file: STDIN
+
+output:
+  format: text
+  file: aem/home/aem.log
+
+base:
+  tmp_dir: aem/home/tmp
 ```
 
 After instructing tool where the AEM instances files are located then, finally, instances may be created and launched:

@@ -20,6 +20,7 @@ echo "Downloading AEM Compose Files"
 echo ""
 
 mkdir -p "$SCRIPT_DIR" "$HOME_DIR"
+curl -s "${SOURCE_URL}/${SCRIPT_DIR}/deploy.sh" -o "${SCRIPT_DIR}/deploy.sh"
 curl -s "${SOURCE_URL}/${SCRIPT_DIR}/destroy.sh" -o "${SCRIPT_DIR}/destroy.sh"
 curl -s "${SOURCE_URL}/${SCRIPT_DIR}/down.sh" -o "${SCRIPT_DIR}/down.sh"
 curl -s "${SOURCE_URL}/${SCRIPT_DIR}/resetup.sh" -o "${SCRIPT_DIR}/resetup.sh"

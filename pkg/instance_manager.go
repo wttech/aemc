@@ -86,7 +86,7 @@ type CheckOpts struct {
 	Warmup        time.Duration
 	Interval      time.Duration
 	DoneThreshold int
-	Endless       bool
+	DoneNever     bool
 
 	BundleStable     BundleStableChecker
 	EventStable      EventStableChecker
@@ -111,7 +111,6 @@ func (im *InstanceManager) NewCheckOpts() *CheckOpts {
 	}
 }
 
-// TODO support endless mode; 'aem instance await --endless'
 func (im *InstanceManager) Check(instances []Instance, opts *CheckOpts, checks []Checker) {
 	if len(instances) == 0 {
 		log.Infof("no instances to check")
@@ -121,8 +120,8 @@ func (im *InstanceManager) Check(instances []Instance, opts *CheckOpts, checks [
 	done := 0
 	for {
 		if im.CheckOnce(instances, checks) {
-			done++
-			if !opts.Endless {
+			if !opts.DoneNever {
+				done++
 				if done <= opts.DoneThreshold {
 					log.Infof("instances checked (%d/%d)", done, opts.DoneThreshold)
 				}
@@ -250,8 +249,7 @@ func (im *InstanceManager) configureInstances(config *cfg.Config) {
 			i, err := im.NewByURL(iCfg.HTTPURL)
 			if err != nil {
 				log.Warn(fmt.Errorf("cannot create instance from URL '%s': %w", iCfg.HTTPURL, err))
-			} else {
-				defined = append(defined, *i)
+				continue
 			}
 			i.id = ID
 			if len(iCfg.User) > 0 {
@@ -273,6 +271,7 @@ func (im *InstanceManager) configureInstances(config *cfg.Config) {
 					}
 				}
 			}
+			defined = append(defined, *i)
 		}
 	} else if len(opts.ConfigURL) > 0 {
 		iURL, err := im.NewByURL(opts.ConfigURL)

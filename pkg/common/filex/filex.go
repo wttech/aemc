@@ -1,16 +1,14 @@
 package filex
 
 import (
+	"crypto/md5"
 	"fmt"
 	"github.com/codingsince1985/checksum"
-	"github.com/mholt/archiver/v3"
 	"github.com/wttech/aemc/pkg/common/pathx"
-	"github.com/wttech/aemc/pkg/common/stringsx"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
-	"sort"
 )
 
 func Write(path string, text string) error {
@@ -76,13 +74,13 @@ func Copy(sourcePath, destinationPath string) error {
 	return err
 }
 
-func ChecksumPath(path string, dirIncludes []string, dirExcludes []string) (string, error) {
+func ChecksumPath(path string, ignorePatterns []string) (string, error) {
 	dir, err := pathx.IsDirStrict(path)
 	if err != nil {
 		return "", err
 	}
 	if dir {
-		return ChecksumDir(path, dirIncludes, dirExcludes)
+		return ChecksumDir(path, ignorePatterns)
 	} else {
 		return ChecksumFile(path)
 	}
@@ -91,37 +89,24 @@ func ChecksumFile(file string) (string, error) {
 	return checksum.MD5sum(file)
 }
 
-func ChecksumDir(dir string, includes []string, excludes []string) (string, error) {
-	var tarFiles []string
-	err := filepath.WalkDir(dir, func(dirPath string, d fs.DirEntry, e error) error {
-		if e != nil {
-			return e
+func ChecksumDir(dir string, ignorePatterns []string) (string, error) {
+	hash := md5.New()
+	pathMatcher := pathx.NewMatcher(ignorePatterns)
+	if err := filepath.WalkDir(dir, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
 		}
-		if (len(includes) == 0 || stringsx.MatchSomePattern(dirPath, includes)) && !stringsx.MatchSomePattern(dirPath, excludes) {
-			tarFiles = append(tarFiles, dirPath)
+		if !entry.IsDir() && pathMatcher.Match(path) {
+			fileSum, err := ChecksumFile(path)
+			if err != nil {
+				return err
+			}
+			_, _ = io.WriteString(hash, fileSum)
 		}
 		return nil
-	})
-	if err != nil {
+	}); err != nil {
 		return "", fmt.Errorf("cannot find files to calculate checksum of directory '%s': %w", dir, err)
 	}
-	dirTarFile := filepath.Dir(dir) + "/" + filepath.Base(dir) + ".tar"
-	defer func() {
-		_ = pathx.DeleteIfExists(dirTarFile)
-	}()
-	sort.Strings(tarFiles)
-	/* TODO remove it
-	for _, f := range tarFiles {
-		println(f)
-	}
-	*/
-	// TODO calculate hashes separately; dump to file and compare what is changing
-	// TODO maybe dedicated command aem file track --dir '.' --checksum-file 'aem/home/build.log --output-value 'changed' ?
-	// TODO or: aem file updated --input-paths 'core/**,ui.apps/**' --output-file all/target/all-*.zip --checksum-dir=aem/home/build (output file optional)
-
-	err = archiver.Archive(tarFiles, dirTarFile)
-	if err != nil {
-		return "", fmt.Errorf("cannot make a temporary archive to calculate checksum of directory '%s': %w", dir, err)
-	}
-	return ChecksumFile(dirTarFile)
+	dirSum := fmt.Sprintf("%x", hash.Sum(nil))
+	return dirSum, nil
 }

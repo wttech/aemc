@@ -150,10 +150,10 @@ func (c EventStableChecker) Check(instance Instance) CheckResult {
 		if !receivedTime.Add(c.ReceivedMaxAge).After(nowTime) {
 			return false
 		}
-		if !stringsx.MatchSomePattern(e.Topic, c.TopicsUnstable) {
+		if !stringsx.MatchSome(e.Topic, c.TopicsUnstable) {
 			return false
 		}
-		if stringsx.MatchSomePattern(e.Details(), c.DetailsIgnored) {
+		if stringsx.MatchSome(e.Details(), c.DetailsIgnored) {
 			return false
 		}
 		return true

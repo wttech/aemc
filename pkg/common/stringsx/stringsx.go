@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/gobwas/glob"
 	"github.com/samber/lo"
-	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -24,13 +23,12 @@ func PercentExplained(num, total, decimals int) string {
 	return fmt.Sprintf("%d/%d=%s", num, total, Percent(num, total, decimals))
 }
 
-func MatchPattern(value, pattern string) bool {
-	matched, _ := path.Match(pattern, value)
-	return matched
+func Match(value, pattern string) bool {
+	return glob.MustCompile(pattern).Match(value)
 }
 
-func MatchSomePattern(value string, patterns []string) bool {
-	return lo.SomeBy(patterns, func(p string) bool { return glob.MustCompile(p).Match(value) })
+func MatchSome(value string, patterns []string) bool {
+	return lo.SomeBy(patterns, func(p string) bool { return Match(value, p) })
 }
 
 func Between(str string, start string, end string) (result string) {

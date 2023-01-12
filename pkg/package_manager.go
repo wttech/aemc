@@ -106,7 +106,7 @@ func (pm *PackageManager) findInternal(pid string) (*pkg.ListItem, error) {
 }
 
 func (pm *PackageManager) IsSnapshot(localPath string) bool {
-	return stringsx.MatchSomePattern(localPath, pm.SnapshotPatterns)
+	return stringsx.MatchSome(localPath, pm.SnapshotPatterns)
 }
 
 func (pm *PackageManager) Build(remotePath string) error {

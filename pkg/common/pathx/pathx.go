@@ -3,6 +3,7 @@ package pathx
 import (
 	"fmt"
 	"github.com/gobwas/glob"
+	ignore "github.com/sabhiram/go-gitignore"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"os"
@@ -138,4 +139,15 @@ func GlobDir(dir string, pattern string) ([]string, error) {
 		}
 	}
 	return m, nil
+}
+
+type Matcher struct {
+	ignoreMatcher *ignore.GitIgnore
+}
+
+func NewMatcher(ignorePatterns []string) Matcher {
+	return Matcher{ignoreMatcher: ignore.CompileIgnoreLines(ignorePatterns...)}
+}
+func (m *Matcher) Match(path string) bool {
+	return !m.ignoreMatcher.MatchesPath(path)
 }

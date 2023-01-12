@@ -1,5 +1,7 @@
 package pkg
 
+import "strconv"
+
 type SlingInstaller struct {
 	instance *Instance
 }
@@ -30,12 +32,22 @@ func (i SlingInstaller) CountPauses() (int, error) {
 }
 
 type SlingInstallerJMXBean struct {
-	Active                 bool `json:"Active"`
-	SuspendedSince         int  `json:"SuspendedSince"`
-	ActiveResourceCount    int  `json:"ActiveResourceCount"`
-	InstalledResourceCount int  `json:"InstalledResourceCount"`
+	Active                 bool   `json:"Active"`
+	SuspendedSince         int    `json:"SuspendedSince"`
+	ActiveResourceCount    string `json:"ActiveResourceCount"`
+	InstalledResourceCount string `json:"InstalledResourceCount"`
 }
 
 func (b SlingInstallerJMXBean) IsBusy() bool {
-	return b.Active || b.ActiveResourceCount > 0
+	return b.Active || b.ActiveResources() > 0
+}
+
+func (b SlingInstallerJMXBean) ActiveResources() int {
+	count, _ := strconv.Atoi(b.ActiveResourceCount)
+	return count
+}
+
+func (b SlingInstallerJMXBean) InstalledResources() int {
+	count, _ := strconv.Atoi(b.InstalledResourceCount)
+	return count
 }

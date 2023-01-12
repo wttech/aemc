@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/httpx"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"strings"
 )
 
@@ -13,10 +14,32 @@ func (c *CLI) fileCmd() *cobra.Command {
 		Use:   "file",
 		Short: "File operation utilities",
 	}
+	cmd.AddCommand(c.fileFindCmd())
 	cmd.AddCommand(c.fileDownloadCmd())
 	cmd.AddCommand(c.fileArchiveCmd())
 	cmd.AddCommand(c.fileUnarchiveCmd())
 	cmd.AddCommand(c.fileChecksumCmd())
+	return cmd
+}
+
+func (c *CLI) fileFindCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "find",
+		Aliases: []string{"search"},
+		Short:   "Find file by pattern",
+		Run: func(cmd *cobra.Command, args []string) {
+			file, _ := cmd.Flags().GetString("file")
+			fileGlobbed, err := pathx.GlobOne(file)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("file", fileGlobbed)
+			c.Ok("file found")
+		},
+	}
+	cmd.Flags().String("file", "", "File path pattern with wildcards")
+	_ = cmd.MarkFlagRequired("file")
 	return cmd
 }
 
@@ -139,13 +162,16 @@ func (c *CLI) fileChecksumCmd() *cobra.Command {
 		Short:   "Checksum file or directory",
 		Run: func(cmd *cobra.Command, args []string) {
 			path, _ := cmd.Flags().GetString("path")
-			excludes, _ := cmd.Flags().GetStringSlice("excludes")
-			excludesCombined := lo.Uniq(append(c.aem.BaseOpts().ChecksumExcluded, excludes...))
-			checksum, err := filex.ChecksumPath(path, excludesCombined)
+			dirIncludes, _ := cmd.Flags().GetStringSlice("includes")
+			dirExcludesExtra, _ := cmd.Flags().GetStringSlice("excludes")
+			dirExcludes := lo.Uniq(append(c.aem.BaseOpts().ChecksumExcludes, dirExcludesExtra...))
+
+			checksum, err := filex.ChecksumPath(path, dirIncludes, dirExcludes)
 			if err != nil {
 				c.Error(err)
 				return
 			}
+
 			c.SetOutput("path", path)
 			c.SetOutput("checksum", checksum)
 			c.Ok("checksum calculated")
@@ -153,6 +179,7 @@ func (c *CLI) fileChecksumCmd() *cobra.Command {
 	}
 	cmd.Flags().String("path", "", "Path to file or directory")
 	_ = cmd.MarkFlagRequired("path")
+	cmd.Flags().StringSlice("includes", []string{}, "Path inclusion patterns (with wildcards)")
 	cmd.Flags().StringSlice("excludes", []string{}, "Path exclusion patterns (with wildcards)")
 	return cmd
 }

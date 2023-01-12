@@ -93,9 +93,13 @@ func (c *CLI) configure() {
 }
 
 func (c *CLI) configureOutput() {
-	c.outputFile = c.config.Values().Output.File
 	c.outputValue = c.config.Values().Output.Value
-	c.outputFormat = strings.ReplaceAll(c.config.Values().Output.Format, "yaml", "yml")
+	if len(c.outputValue) > 0 {
+		c.outputFormat = fmtx.Text
+	} else {
+		c.outputFile = c.config.Values().Output.File
+		c.outputFormat = strings.ReplaceAll(c.config.Values().Output.Format, "yaml", "yml")
+	}
 
 	if !lo.Contains(cfg.OutputFormats(), c.outputFormat) {
 		log.Fatalf("unsupported CLI output format detected! supported ones are: %s", strings.Join(cfg.OutputFormats(), ", "))
@@ -164,6 +168,7 @@ func (c *CLI) printCommandResult() {
 	}))
 }
 
+// TODO allow to print 'changed', 'failed', 'elapsed', 'ended' as well
 func (c *CLI) printOutputValue() {
 	value, ok := c.outputResponse.Data[c.outputValue]
 	if !ok {

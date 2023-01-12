@@ -11,7 +11,8 @@ type ConfigValues struct {
 	} `mapstructure:"log" yaml:"log"`
 
 	Base struct {
-		TmpDir string `mapstructure:"tmp_dir" yaml:"tmp_dir"`
+		TmpDir           string   `mapstructure:"tmp_dir" yaml:"tmp_dir"`
+		ChecksumExcludes []string `mapstructure:"checksum_excludes" yaml:"checksum_excludes"`
 	}
 
 	Input struct {

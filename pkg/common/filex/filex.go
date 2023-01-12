@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 )
 
 func Write(path string, text string) error {
@@ -75,13 +76,13 @@ func Copy(sourcePath, destinationPath string) error {
 	return err
 }
 
-func ChecksumPath(path string, dirExcludes []string) (string, error) {
+func ChecksumPath(path string, dirIncludes []string, dirExcludes []string) (string, error) {
 	dir, err := pathx.IsDirStrict(path)
 	if err != nil {
 		return "", err
 	}
 	if dir {
-		return ChecksumDir(path, dirExcludes)
+		return ChecksumDir(path, dirIncludes, dirExcludes)
 	} else {
 		return ChecksumFile(path)
 	}
@@ -90,14 +91,13 @@ func ChecksumFile(file string) (string, error) {
 	return checksum.MD5sum(file)
 }
 
-func ChecksumDir(dir string, excludes []string) (string, error) {
+func ChecksumDir(dir string, includes []string, excludes []string) (string, error) {
 	var tarFiles []string
 	err := filepath.WalkDir(dir, func(dirPath string, d fs.DirEntry, e error) error {
 		if e != nil {
 			return e
 		}
-		matched := stringsx.MatchSomePattern(dirPath, excludes)
-		if !d.IsDir() && !matched {
+		if (len(includes) == 0 || stringsx.MatchSomePattern(dirPath, includes)) && !stringsx.MatchSomePattern(dirPath, excludes) {
 			tarFiles = append(tarFiles, dirPath)
 		}
 		return nil
@@ -105,10 +105,20 @@ func ChecksumDir(dir string, excludes []string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("cannot find files to calculate checksum of directory '%s': %w", dir, err)
 	}
-	dirTarFile := dir + ".tar"
+	dirTarFile := filepath.Dir(dir) + "/" + filepath.Base(dir) + ".tar"
 	defer func() {
 		_ = pathx.DeleteIfExists(dirTarFile)
 	}()
+	sort.Strings(tarFiles)
+	/* TODO remove it
+	for _, f := range tarFiles {
+		println(f)
+	}
+	*/
+	// TODO calculate hashes separately; dump to file and compare what is changing
+	// TODO maybe dedicated command aem file track --dir '.' --checksum-file 'aem/home/build.log --output-value 'changed' ?
+	// TODO or: aem file updated --input-paths 'core/**,ui.apps/**' --output-file all/target/all-*.zip --checksum-dir=aem/home/build (output file optional)
+
 	err = archiver.Archive(tarFiles, dirTarFile)
 	if err != nil {
 		return "", fmt.Errorf("cannot make a temporary archive to calculate checksum of directory '%s': %w", dir, err)

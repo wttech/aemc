@@ -1,36 +1,66 @@
 package base
 
+import (
+	"github.com/wttech/aemc/pkg/cfg"
+)
+
 type Opts struct {
 	TmpDir           string
-	ChecksumExcluded []string
+	ChecksumExcludes []string
 }
 
 func NewOpts() *Opts {
 	return &Opts{
 		TmpDir: "aem/home/tmp",
-		ChecksumExcluded: []string{
+		ChecksumExcludes: []string{
 			// meta files
-			"**/.*/**",
+			".*",
+			".*/**",
 			"**/.*",
+			"**/.*/**",
 
 			// build files
-			"**/target/**",
+			"target/**",
 			"**/target",
-			"**/build/**",
+			"**/target/**",
+
+			"build/**",
 			"**/build",
-			"**/dist/**",
+			"**/build/**",
+
+			"dist/**",
 			"**/dist",
+			"**/dist/**",
+
+			"generated/**",
 			"**/generated",
 			"**/generated/**",
+
+			"package-lock.json",
 			"**/package-lock.json",
 
 			// temporary files
-			"**/node_modules/**",
+			"*.log",
+			"*.tmp",
+
+			"node_modules",
 			"**/node_modules",
-			"**/node/**",
+			"**/node_modules/**",
+
+			"node/**",
 			"**/node",
-			"**/*.log",
-			"**/*.tmp",
+			"**/node/**",
 		},
+	}
+}
+
+func (o Opts) Configure(config *cfg.Config) {
+	opts := config.Values().Base
+
+	if len(opts.TmpDir) > 0 {
+		o.TmpDir = opts.TmpDir
+	}
+	if len(opts.ChecksumExcludes) > 0 {
+		o.ChecksumExcludes = opts.ChecksumExcludes
 	}
 }

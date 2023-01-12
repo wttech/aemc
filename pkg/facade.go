@@ -44,6 +44,7 @@ func (a *Aem) InstanceManager() *InstanceManager {
 }
 
 func (a *Aem) Configure(config *cfg.Config) {
+	a.baseOpts.Configure(config)
 	a.javaOpts.Configure(config)
 	a.instanceManager.Configure(config)
 }

@@ -193,7 +193,7 @@ func (c InstallerChecker) Check(instance Instance) CheckResult {
 		if state.IsBusy() {
 			return CheckResult{
 				ok:      false,
-				message: fmt.Sprintf("installer busy (%d)", state.ActiveResourceCount),
+				message: fmt.Sprintf("installer busy (%d)", state.ActiveResources()),
 				err:     err,
 			}
 		}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/httpx"
@@ -15,6 +16,7 @@ func (c *CLI) fileCmd() *cobra.Command {
 	cmd.AddCommand(c.fileDownloadCmd())
 	cmd.AddCommand(c.fileArchiveCmd())
 	cmd.AddCommand(c.fileUnarchiveCmd())
+	cmd.AddCommand(c.fileChecksumCmd())
 	return cmd
 }
 
@@ -127,5 +129,30 @@ func (c *CLI) fileArchiveCmd() *cobra.Command {
 	cmd.Flags().String("target-file", "", "Target archive file path (zip/tar.gz/...)")
 	_ = cmd.MarkFlagRequired("target-file")
 
+	return cmd
+}
+
+func (c *CLI) fileChecksumCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "checksum",
+		Aliases: []string{"cs"},
+		Short:   "Checksum file or directory",
+		Run: func(cmd *cobra.Command, args []string) {
+			path, _ := cmd.Flags().GetString("path")
+			excludes, _ := cmd.Flags().GetStringSlice("excludes")
+			excludesCombined := lo.Uniq(append(c.aem.BaseOpts().ChecksumExcluded, excludes...))
+			checksum, err := filex.ChecksumPath(path, excludesCombined)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("path", path)
+			c.SetOutput("checksum", checksum)
+			c.Ok("checksum calculated")
+		},
+	}
+	cmd.Flags().String("path", "", "Path to file or directory")
+	_ = cmd.MarkFlagRequired("path")
+	cmd.Flags().StringSlice("excludes", []string{}, "Path exclusion patterns (with wildcards)")
 	return cmd
 }

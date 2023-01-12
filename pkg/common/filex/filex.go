@@ -2,8 +2,12 @@ package filex
 
 import (
 	"fmt"
+	"github.com/codingsince1985/checksum"
+	"github.com/mholt/archiver/v3"
 	"github.com/wttech/aemc/pkg/common/pathx"
+	"github.com/wttech/aemc/pkg/common/stringsx"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -69,4 +73,45 @@ func Copy(sourcePath, destinationPath string) error {
 		}
 	}
 	return err
+}
+
+func ChecksumPath(path string, dirExcludes []string) (string, error) {
+	dir, err := pathx.IsDirStrict(path)
+	if err != nil {
+		return "", err
+	}
+	if dir {
+		return ChecksumDir(path, dirExcludes)
+	} else {
+		return ChecksumFile(path)
+	}
+}
+func ChecksumFile(file string) (string, error) {
+	return checksum.MD5sum(file)
+}
+
+func ChecksumDir(dir string, excludes []string) (string, error) {
+	var tarFiles []string
+	err := filepath.WalkDir(dir, func(dirPath string, d fs.DirEntry, e error) error {
+		if e != nil {
+			return e
+		}
+		matched := stringsx.MatchSomePattern(dirPath, excludes)
+		if !d.IsDir() && !matched {
+			tarFiles = append(tarFiles, dirPath)
+		}
+		return nil
+	})
+	if err != nil {
+		return "", fmt.Errorf("cannot find files to calculate checksum of directory '%s': %w", dir, err)
+	}
+	dirTarFile := dir + ".tar"
+	defer func() {
+		_ = pathx.DeleteIfExists(dirTarFile)
+	}()
+	err = archiver.Archive(tarFiles, dirTarFile)
+	if err != nil {
+		return "", fmt.Errorf("cannot make a temporary archive to calculate checksum of directory '%s': %w", dir, err)
+	}
+	return ChecksumFile(dirTarFile)
 }

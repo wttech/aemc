@@ -23,6 +23,7 @@ type ConfigValues struct {
 	Output struct {
 		File   string `mapstructure:"file" yaml:"file"`
 		Format string `mapstructure:"format" yaml:"format"`
+		Value  string `mapstructure:"value" yaml:"value"`
 	} `mapstructure:"output" yaml:"output"`
 
 	Java struct {

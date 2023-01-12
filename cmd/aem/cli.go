@@ -38,6 +38,7 @@ type CLI struct {
 	ended   time.Time
 
 	outputFormat   string
+	outputValue    string
 	outputBuffer   *bytes.Buffer
 	outputFile     string
 	outputResponse *OutputResponse
@@ -93,6 +94,7 @@ func (c *CLI) configure() {
 
 func (c *CLI) configureOutput() {
 	c.outputFile = c.config.Values().Output.File
+	c.outputValue = c.config.Values().Output.Value
 	c.outputFormat = strings.ReplaceAll(c.config.Values().Output.Format, "yaml", "yml")
 
 	if !lo.Contains(cfg.OutputFormats(), c.outputFormat) {
@@ -136,8 +138,12 @@ func (c *CLI) exit() {
 	if c.outputFormat == fmtx.None {
 		c.printCommandResult()
 	} else if c.outputFormat == fmtx.Text {
-		c.printOutputText()
-		c.printCommandResult()
+		if len(c.outputValue) > 0 {
+			c.printOutputValue()
+		} else {
+			c.printOutputText()
+			c.printCommandResult()
+		}
 	} else {
 		c.printOutputMarshaled()
 	}
@@ -156,6 +162,15 @@ func (c *CLI) printCommandResult() {
 		{"elapsed", c.outputResponse.Elapsed},
 		{"ended", fmtx.TimeHumanReadable(c.outputResponse.Ended)},
 	}))
+}
+
+func (c *CLI) printOutputValue() {
+	value, ok := c.outputResponse.Data[c.outputValue]
+	if !ok {
+		println("<undefined>")
+	} else {
+		println(fmtx.MarshalText(value))
+	}
 }
 
 func (c *CLI) printOutputText() {

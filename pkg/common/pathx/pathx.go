@@ -43,6 +43,19 @@ func ExistsStrict(path string) (bool, error) {
 	return false, fmt.Errorf("cannot check path existence '%s': %w", path, err)
 }
 
+func IsDir(path string) bool {
+	exists, err := IsDirStrict(path)
+	return err == nil && exists
+}
+
+func IsDirStrict(path string) (bool, error) {
+	stat, err := os.Stat(path)
+	if err != nil {
+		return false, fmt.Errorf("cannot check if path is a dir '%s': %w", path, err)
+	}
+	return stat.IsDir(), nil
+}
+
 func Delete(path string) error {
 	err := os.RemoveAll(path)
 	if err != nil {

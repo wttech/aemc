@@ -163,7 +163,7 @@ func (c *CLI) fileChecksumCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			path, _ := cmd.Flags().GetString("path")
 			ignorePatternsExtra, _ := cmd.Flags().GetStringSlice("ignore")
-			ignorePatterns := lo.Uniq(append(c.aem.BaseOpts().ChecksumIgnorePatterns, ignorePatternsExtra...))
+			ignorePatterns := lo.Uniq(append(c.aem.BaseOpts().ChecksumExcludes, ignorePatternsExtra...))
 
 			checksum, err := filex.ChecksumPath(path, ignorePatterns)
 			if err != nil {
@@ -178,6 +178,6 @@ func (c *CLI) fileChecksumCmd() *cobra.Command {
 	}
 	cmd.Flags().String("path", "", "Path to file or directory")
 	_ = cmd.MarkFlagRequired("path")
-	cmd.Flags().StringSlice("ignore", []string{}, "Path patterns (git-ignore style)")
+	cmd.Flags().StringSlice("path-ignored", []string{}, "Ignored subpaths patterns (git-ignore style)")
 	return cmd
 }

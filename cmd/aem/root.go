@@ -20,6 +20,7 @@ func (c *CLI) rootCmd() *cobra.Command {
 			return nil
 		},
 	}
+	cmd.AddCommand(c.appCmd())
 	cmd.AddCommand(c.versionCmd())
 	cmd.AddCommand(c.configCmd())
 	cmd.AddCommand(c.instanceCmd())

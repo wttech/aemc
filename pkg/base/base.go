@@ -5,14 +5,17 @@ import (
 )
 
 type Opts struct {
-	TmpDir                 string
-	ChecksumIgnorePatterns []string
+	TmpDir           string
+	ChecksumExcludes []string
 }
 
 func NewOpts() *Opts {
 	return &Opts{
 		TmpDir: "aem/home/tmp",
-		ChecksumIgnorePatterns: []string{
+		ChecksumExcludes: []string{
+			// AEM files
+			"**/aem/home/**",
+
 			// meta files
 			"**/.*",
 			"**/.*/**",
@@ -37,7 +40,6 @@ func NewOpts() *Opts {
 			"**/node_modules/**",
 			"**/node",
 			"**/node/**",
-			"**/aem/home/**",
 		},
 	}
 }
@@ -49,6 +51,6 @@ func (o Opts) Configure(config *cfg.Config) {
 		o.TmpDir = opts.TmpDir
 	}
 	if len(opts.ChecksumExcludes) > 0 {
-		o.ChecksumIgnorePatterns = opts.ChecksumExcludes
+		o.ChecksumExcludes = opts.ChecksumExcludes
 	}
 }

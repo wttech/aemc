@@ -82,21 +82,21 @@ func Copy(sourcePath, destinationPath string) error {
 	return err
 }
 
-func ChecksumPath(path string, ignorePatterns []string) (string, error) {
+func ChecksumPath(path string, pathIgnored []string) (string, error) {
 	dir, err := pathx.IsDirStrict(path)
 	if err != nil {
 		return "", err
 	}
 	if dir {
-		return ChecksumDir(path, ignorePatterns)
+		return ChecksumDir(path, pathIgnored)
 	}
 	return ChecksumFile(path)
 }
 
-func ChecksumPaths(paths []string, excludes []string) (string, error) {
+func ChecksumPaths(paths []string, pathIgnored []string) (string, error) {
 	hash := md5.New()
 	for _, path := range paths {
-		pathSum, err := ChecksumPath(path, excludes)
+		pathSum, err := ChecksumPath(path, pathIgnored)
 		if err != nil {
 			return "", err
 		}
@@ -110,14 +110,14 @@ func ChecksumFile(file string) (string, error) {
 	return checksum.MD5sum(file)
 }
 
-func ChecksumDir(dir string, excludes []string) (string, error) {
+func ChecksumDir(dir string, pathIgnored []string) (string, error) {
 	hash := md5.New()
-	excludeMatcher := pathx.NewMatcher(excludes)
+	pathIgnoreMatcher := pathx.NewIgnoreMatcher(pathIgnored)
 	if err := filepath.WalkDir(dir, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if !entry.IsDir() && excludeMatcher.Match(path) {
+		if !entry.IsDir() && !pathIgnoreMatcher.Match(path) {
 			fileSum, err := ChecksumFile(path)
 			if err != nil {
 				return err
@@ -131,7 +131,3 @@ func ChecksumDir(dir string, excludes []string) (string, error) {
 	dirSum := fmt.Sprintf("%x", hash.Sum(nil))
 	return dirSum, nil
 }
-
-const (
-	ChecksumFormat = "md5"
-)

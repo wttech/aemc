@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/httpx"
@@ -162,10 +161,9 @@ func (c *CLI) fileChecksumCmd() *cobra.Command {
 		Short:   "Checksum file or directory",
 		Run: func(cmd *cobra.Command, args []string) {
 			path, _ := cmd.Flags().GetString("path")
-			ignorePatternsExtra, _ := cmd.Flags().GetStringSlice("ignore")
-			ignorePatterns := lo.Uniq(append(c.aem.BaseOpts().ChecksumExcludes, ignorePatternsExtra...))
+			pathIgnored, _ := cmd.Flags().GetStringSlice("path-ignored")
 
-			checksum, err := filex.ChecksumPath(path, ignorePatterns)
+			checksum, err := filex.ChecksumPath(path, pathIgnored)
 			if err != nil {
 				c.Error(err)
 				return

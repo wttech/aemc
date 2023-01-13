@@ -141,13 +141,13 @@ func GlobDir(dir string, pattern string) ([]string, error) {
 	return m, nil
 }
 
-type Matcher struct {
-	ignoreMatcher *ignore.GitIgnore
+type IgnoreMatcher struct {
+	matcher *ignore.GitIgnore
 }
 
-func NewMatcher(ignorePatterns []string) Matcher {
-	return Matcher{ignoreMatcher: ignore.CompileIgnoreLines(ignorePatterns...)}
+func NewIgnoreMatcher(patterns []string) IgnoreMatcher {
+	return IgnoreMatcher{matcher: ignore.CompileIgnoreLines(patterns...)}
 }
-func (m *Matcher) Match(path string) bool {
-	return !m.ignoreMatcher.MatchesPath(path)
+func (m *IgnoreMatcher) Match(path string) bool {
+	return m.matcher.MatchesPath(path)
 }

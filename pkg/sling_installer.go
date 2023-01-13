@@ -1,6 +1,8 @@
 package pkg
 
-import "strconv"
+import (
+	"github.com/spf13/cast"
+)
 
 type SlingInstaller struct {
 	instance *Instance
@@ -32,10 +34,10 @@ func (i SlingInstaller) CountPauses() (int, error) {
 }
 
 type SlingInstallerJMXBean struct {
-	Active                 bool   `json:"Active"`
-	SuspendedSince         int    `json:"SuspendedSince"`
-	ActiveResourceCount    string `json:"ActiveResourceCount"`
-	InstalledResourceCount string `json:"InstalledResourceCount"`
+	Active                 bool `json:"Active"`
+	SuspendedSince         int  `json:"SuspendedSince"`
+	ActiveResourceCount    any  `json:"ActiveResourceCount"`    // AEM type bug: sometimes 'int' or 'string'
+	InstalledResourceCount any  `json:"InstalledResourceCount"` // AEM type bug: sometimes 'int' or 'string'
 }
 
 func (b SlingInstallerJMXBean) IsBusy() bool {
@@ -43,11 +45,9 @@ func (b SlingInstallerJMXBean) IsBusy() bool {
 }
 
 func (b SlingInstallerJMXBean) ActiveResources() int {
-	count, _ := strconv.Atoi(b.ActiveResourceCount)
-	return count
+	return cast.ToInt(b.ActiveResourceCount)
 }
 
 func (b SlingInstallerJMXBean) InstalledResources() int {
-	count, _ := strconv.Atoi(b.InstalledResourceCount)
-	return count
+	return cast.ToInt(b.InstalledResourceCount)
 }

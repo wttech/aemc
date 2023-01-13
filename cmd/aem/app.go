@@ -28,11 +28,13 @@ func (c *CLI) appBuildCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			sources, _ := cmd.Flags().GetStringSlice("sources")
-			sourcesIgnoredExtra, _ := cmd.Flags().GetStringSlice("sources-ignored")
-			sourcesIgnored := lo.Uniq(append(c.aem.BaseOpts().ChecksumExcludes, sourcesIgnoredExtra...))
+			appManager := c.aem.AppManager()
 
-			changed, err := c.aem.Build(command, fileGlobbed, sources, sourcesIgnored)
+			sourcePaths, _ := cmd.Flags().GetStringSlice("sources")
+			sourcesIgnoredExtra, _ := cmd.Flags().GetStringSlice("sources-ignored")
+			appManager.SourcesIgnored = lo.Uniq(append(appManager.SourcesIgnored, sourcesIgnoredExtra...))
+
+			changed, err := appManager.BuildWithChanged(command, fileGlobbed, sourcePaths)
 			if err != nil {
 				c.Error(err)
 				return
@@ -40,7 +42,7 @@ func (c *CLI) appBuildCmd() *cobra.Command {
 
 			c.SetOutput("command", command)
 			c.SetOutput("file", fileGlobbed)
-			c.SetOutput("sources", sources)
+			c.SetOutput("sources", sourcePaths)
 
 			if changed {
 				c.Changed("build executed")

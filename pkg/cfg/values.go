@@ -11,8 +11,7 @@ type ConfigValues struct {
 	} `mapstructure:"log" yaml:"log"`
 
 	Base struct {
-		TmpDir           string   `mapstructure:"tmp_dir" yaml:"tmp_dir"`
-		ChecksumExcludes []string `mapstructure:"checksum_excludes" yaml:"checksum_excludes"`
+		TmpDir string `mapstructure:"tmp_dir" yaml:"tmp_dir"`
 	}
 
 	Input struct {
@@ -26,6 +25,10 @@ type ConfigValues struct {
 		Format string `mapstructure:"format" yaml:"format"`
 		Value  string `mapstructure:"value" yaml:"value"`
 	} `mapstructure:"output" yaml:"output"`
+
+	App struct {
+		SourceExcludes []string `mapstructure:"sources_ignored" yaml:"sources_ignored"`
+	} `mapstructure:"app" yaml:"app"`
 
 	Java struct {
 		HomeDir            string `mapstructure:"home_dir" yaml:"home_dir"`

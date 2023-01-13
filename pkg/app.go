@@ -71,7 +71,7 @@ func (am *AppManager) BuildWithChanged(command string, file string, sourcePaths 
 	if err != nil {
 		return false, err
 	}
-	checksumFile := file + ".build"
+	checksumFile := file + ".build.md5"
 	checksumExists, err := pathx.ExistsStrict(checksumFile)
 	if err != nil {
 		return false, err

@@ -23,7 +23,12 @@ type ConfigValues struct {
 	Output struct {
 		File   string `mapstructure:"file" yaml:"file"`
 		Format string `mapstructure:"format" yaml:"format"`
+		Value  string `mapstructure:"value" yaml:"value"`
 	} `mapstructure:"output" yaml:"output"`
+
+	App struct {
+		SourceExcludes []string `mapstructure:"sources_ignored" yaml:"sources_ignored"`
+	} `mapstructure:"app" yaml:"app"`
 
 	Java struct {
 		HomeDir            string `mapstructure:"home_dir" yaml:"home_dir"`

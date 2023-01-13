@@ -38,6 +38,7 @@ type CLI struct {
 	ended   time.Time
 
 	outputFormat   string
+	outputValue    string
 	outputBuffer   *bytes.Buffer
 	outputFile     string
 	outputResponse *OutputResponse
@@ -92,8 +93,13 @@ func (c *CLI) configure() {
 }
 
 func (c *CLI) configureOutput() {
-	c.outputFile = c.config.Values().Output.File
-	c.outputFormat = strings.ReplaceAll(c.config.Values().Output.Format, "yaml", "yml")
+	c.outputValue = c.config.Values().Output.Value
+	if len(c.outputValue) > 0 {
+		c.outputFormat = fmtx.Text
+	} else {
+		c.outputFile = c.config.Values().Output.File
+		c.outputFormat = strings.ReplaceAll(c.config.Values().Output.Format, "yaml", "yml")
+	}
 
 	if !lo.Contains(cfg.OutputFormats(), c.outputFormat) {
 		log.Fatalf("unsupported CLI output format detected! supported ones are: %s", strings.Join(cfg.OutputFormats(), ", "))
@@ -136,8 +142,12 @@ func (c *CLI) exit() {
 	if c.outputFormat == fmtx.None {
 		c.printCommandResult()
 	} else if c.outputFormat == fmtx.Text {
-		c.printOutputText()
-		c.printCommandResult()
+		if len(c.outputValue) > 0 {
+			c.printOutputValue()
+		} else {
+			c.printOutputText()
+			c.printCommandResult()
+		}
 	} else {
 		c.printOutputMarshaled()
 	}
@@ -156,6 +166,16 @@ func (c *CLI) printCommandResult() {
 		{"elapsed", c.outputResponse.Elapsed},
 		{"ended", fmtx.TimeHumanReadable(c.outputResponse.Ended)},
 	}))
+}
+
+// TODO allow to print 'changed', 'failed', 'elapsed', 'ended' as well
+func (c *CLI) printOutputValue() {
+	value, ok := c.outputResponse.Data[c.outputValue]
+	if !ok {
+		println("<undefined>")
+	} else {
+		println(fmtx.MarshalText(value))
+	}
 }
 
 func (c *CLI) printOutputText() {

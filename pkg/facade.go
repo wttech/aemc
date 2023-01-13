@@ -15,6 +15,7 @@ type Aem struct {
 	baseOpts        *base.Opts
 	javaOpts        *java.Opts
 	instanceManager *InstanceManager
+	appManager      *AppManager
 }
 
 // NewAem creates Aem facade
@@ -24,6 +25,7 @@ func NewAem() *Aem {
 	result.baseOpts = base.NewOpts()
 	result.javaOpts = java.NewOpts()
 	result.instanceManager = NewInstanceManager(result)
+	result.appManager = NewAppManager(result)
 	return result
 }
 
@@ -39,11 +41,17 @@ func (a *Aem) JavaOpts() *java.Opts {
 	return a.javaOpts
 }
 
+func (a *Aem) AppManager() *AppManager {
+	return a.appManager
+}
+
 func (a *Aem) InstanceManager() *InstanceManager {
 	return a.instanceManager
 }
 
 func (a *Aem) Configure(config *cfg.Config) {
+	a.baseOpts.Configure(config)
 	a.javaOpts.Configure(config)
+	a.appManager.Configure(config)
 	a.instanceManager.Configure(config)
 }

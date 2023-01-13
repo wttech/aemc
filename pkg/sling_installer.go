@@ -1,5 +1,9 @@
 package pkg
 
+import (
+	"github.com/spf13/cast"
+)
+
 type SlingInstaller struct {
 	instance *Instance
 }
@@ -32,10 +36,18 @@ func (i SlingInstaller) CountPauses() (int, error) {
 type SlingInstallerJMXBean struct {
 	Active                 bool `json:"Active"`
 	SuspendedSince         int  `json:"SuspendedSince"`
-	ActiveResourceCount    int  `json:"ActiveResourceCount"`
-	InstalledResourceCount int  `json:"InstalledResourceCount"`
+	ActiveResourceCount    any  `json:"ActiveResourceCount"`    // AEM type bug: sometimes 'int' or 'string'
+	InstalledResourceCount any  `json:"InstalledResourceCount"` // AEM type bug: sometimes 'int' or 'string'
 }
 
 func (b SlingInstallerJMXBean) IsBusy() bool {
-	return b.Active || b.ActiveResourceCount > 0
+	return b.Active || b.ActiveResources() > 0
+}
+
+func (b SlingInstallerJMXBean) ActiveResources() int {
+	return cast.ToInt(b.ActiveResourceCount)
+}
+
+func (b SlingInstallerJMXBean) InstalledResources() int {
+	return cast.ToInt(b.InstalledResourceCount)
 }

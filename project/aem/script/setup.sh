@@ -13,10 +13,6 @@ userId: admin
 echo "$PROPS" | aem repl agent setup -A --location "author" --name "publish"
 clc
 
-step "saving some node"
-echo "foo: bar3" | aem repo node save -A --path "/content/foo"
-clc
-
 step "enabling CRX/DE"
 aem osgi config save --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet" --input-string "alias: /crx/server"
 clc

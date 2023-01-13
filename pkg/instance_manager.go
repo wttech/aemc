@@ -149,7 +149,7 @@ func (im *InstanceManager) CheckOnce(instances []Instance, checks []Checker) boo
 				ok = false
 			}
 			if result.err != nil {
-				log.Infof("cannot check instance '%s': %s", i.ID(), result.err)
+				log.Infof("%s | %s", i.ID(), result.err)
 			} else if len(result.message) > 0 {
 				log.Infof("%s | %s", i.ID(), result.message)
 			}

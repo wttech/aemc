@@ -3,6 +3,7 @@ package pathx
 import (
 	"fmt"
 	"github.com/gobwas/glob"
+	ignore "github.com/sabhiram/go-gitignore"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"os"
@@ -41,6 +42,19 @@ func ExistsStrict(path string) (bool, error) {
 		return false, nil
 	}
 	return false, fmt.Errorf("cannot check path existence '%s': %w", path, err)
+}
+
+func IsDir(path string) bool {
+	exists, err := IsDirStrict(path)
+	return err == nil && exists
+}
+
+func IsDirStrict(path string) (bool, error) {
+	stat, err := os.Stat(path)
+	if err != nil {
+		return false, fmt.Errorf("cannot check if path is a dir '%s': %w", path, err)
+	}
+	return stat.IsDir(), nil
 }
 
 func Delete(path string) error {
@@ -125,4 +139,15 @@ func GlobDir(dir string, pattern string) ([]string, error) {
 		}
 	}
 	return m, nil
+}
+
+type IgnoreMatcher struct {
+	matcher *ignore.GitIgnore
+}
+
+func NewIgnoreMatcher(patterns []string) IgnoreMatcher {
+	return IgnoreMatcher{matcher: ignore.CompileIgnoreLines(patterns...)}
+}
+func (m *IgnoreMatcher) Match(path string) bool {
+	return m.matcher.MatchesPath(path)
 }

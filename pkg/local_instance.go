@@ -369,14 +369,14 @@ func (li LocalInstance) UpToDate() bool {
 
 func (li LocalInstance) PID() (int, error) {
 	file := fmt.Sprintf("%s/crx-quickstart/conf/cq.pid", li.Dir())
-	bytes, err := filex.Read(file)
+	str, err := filex.ReadString(file)
 	if err != nil {
 		return 0, fmt.Errorf("cannot read instance PID file '%s'", file)
 	}
-	str := strings.TrimSpace(string(bytes))
-	num, err := strconv.Atoi(str)
+	strTrimmed := strings.TrimSpace(str)
+	num, err := strconv.Atoi(strTrimmed)
 	if err != nil {
-		return 0, fmt.Errorf("cannot convert value '%s' to integer read from instance PID file '%s'", str, file)
+		return 0, fmt.Errorf("cannot convert value '%s' to integer read from instance PID file '%s'", strTrimmed, file)
 	}
 	return num, nil
 }

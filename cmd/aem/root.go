@@ -20,6 +20,7 @@ func (c *CLI) rootCmd() *cobra.Command {
 			return nil
 		},
 	}
+	cmd.AddCommand(c.appCmd())
 	cmd.AddCommand(c.versionCmd())
 	cmd.AddCommand(c.configCmd())
 	cmd.AddCommand(c.instanceCmd())
@@ -49,6 +50,9 @@ func (c *CLI) rootFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(&(c.config.Values().Output.File),
 		"output-file", c.config.Values().Output.File,
 		"Controls output file path")
+	cmd.PersistentFlags().StringVar(&(c.config.Values().Output.Value),
+		"output-value", c.config.Values().Output.Value,
+		"Limits output to single variable")
 
 	// instance filtering
 	cmd.PersistentFlags().StringVarP(&(c.config.Values().Instance.ConfigURL),

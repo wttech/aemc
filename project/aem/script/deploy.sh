@@ -1,8 +1,10 @@
 #!/usr/bin/env sh
 
 #step "build AEM application"
-#step "check build progress using command 'tail -f aem/home/build.log'"
-#mvn clean package -l aem/home/build.log
+#aem app build \
+#  --command "mvn clean package" \
+#  --sources "pom.xml,all,core,ui.apps,ui.apps.structure,ui.config,ui.content,ui.frontend,ui.tests" \
+#  --file "all/target/*.all-*.zip"
 #clc
 
 #step "deploy AEM application"

@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/httpx"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"strings"
 )
 
@@ -12,9 +13,32 @@ func (c *CLI) fileCmd() *cobra.Command {
 		Use:   "file",
 		Short: "File operation utilities",
 	}
+	cmd.AddCommand(c.fileFindCmd())
 	cmd.AddCommand(c.fileDownloadCmd())
 	cmd.AddCommand(c.fileArchiveCmd())
 	cmd.AddCommand(c.fileUnarchiveCmd())
+	cmd.AddCommand(c.fileChecksumCmd())
+	return cmd
+}
+
+func (c *CLI) fileFindCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "find",
+		Aliases: []string{"search"},
+		Short:   "Find file by pattern",
+		Run: func(cmd *cobra.Command, args []string) {
+			file, _ := cmd.Flags().GetString("file")
+			fileGlobbed, err := pathx.GlobOne(file)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("file", fileGlobbed)
+			c.Ok("file found")
+		},
+	}
+	cmd.Flags().String("file", "", "File path pattern with wildcards")
+	_ = cmd.MarkFlagRequired("file")
 	return cmd
 }
 
@@ -127,5 +151,31 @@ func (c *CLI) fileArchiveCmd() *cobra.Command {
 	cmd.Flags().String("target-file", "", "Target archive file path (zip/tar.gz/...)")
 	_ = cmd.MarkFlagRequired("target-file")
 
+	return cmd
+}
+
+func (c *CLI) fileChecksumCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "checksum",
+		Aliases: []string{"cs"},
+		Short:   "Checksum file or directory",
+		Run: func(cmd *cobra.Command, args []string) {
+			path, _ := cmd.Flags().GetString("path")
+			pathIgnored, _ := cmd.Flags().GetStringSlice("path-ignored")
+
+			checksum, err := filex.ChecksumPath(path, pathIgnored)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+
+			c.SetOutput("path", path)
+			c.SetOutput("checksum", checksum)
+			c.Ok("checksum calculated")
+		},
+	}
+	cmd.Flags().String("path", "", "Path to file or directory")
+	_ = cmd.MarkFlagRequired("path")
+	cmd.Flags().StringSlice("path-ignored", []string{}, "Ignored subpaths patterns (git-ignore style)")
 	return cmd
 }

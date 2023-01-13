@@ -1,9 +1,12 @@
 package filex
 
 import (
+	"crypto/md5"
 	"fmt"
+	"github.com/codingsince1985/checksum"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -29,6 +32,14 @@ func Read(path string) ([]byte, error) {
 		return nil, fmt.Errorf("cannot read file '%s': %w", path, err)
 	}
 	return bytes, nil
+}
+
+func ReadString(path string) (string, error) {
+	bytes, err := Read(path)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
 }
 
 var fileCopyBufferSize = 4 * 1024 // 4 kB <https://stackoverflow.com/a/3034155>
@@ -69,4 +80,54 @@ func Copy(sourcePath, destinationPath string) error {
 		}
 	}
 	return err
+}
+
+func ChecksumPath(path string, pathIgnored []string) (string, error) {
+	dir, err := pathx.IsDirStrict(path)
+	if err != nil {
+		return "", err
+	}
+	if dir {
+		return ChecksumDir(path, pathIgnored)
+	}
+	return ChecksumFile(path)
+}
+
+func ChecksumPaths(paths []string, pathIgnored []string) (string, error) {
+	hash := md5.New()
+	for _, path := range paths {
+		pathSum, err := ChecksumPath(path, pathIgnored)
+		if err != nil {
+			return "", err
+		}
+		_, _ = io.WriteString(hash, pathSum)
+	}
+	dirsSum := fmt.Sprintf("%x", hash.Sum(nil))
+	return dirsSum, nil
+}
+
+func ChecksumFile(file string) (string, error) {
+	return checksum.MD5sum(file)
+}
+
+func ChecksumDir(dir string, pathIgnored []string) (string, error) {
+	hash := md5.New()
+	pathIgnoreMatcher := pathx.NewIgnoreMatcher(pathIgnored)
+	if err := filepath.WalkDir(dir, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !entry.IsDir() && !pathIgnoreMatcher.Match(path) {
+			fileSum, err := ChecksumFile(path)
+			if err != nil {
+				return err
+			}
+			_, _ = io.WriteString(hash, fileSum)
+		}
+		return nil
+	}); err != nil {
+		return "", fmt.Errorf("cannot find files to calculate checksum of directory '%s': %w", dir, err)
+	}
+	dirSum := fmt.Sprintf("%x", hash.Sum(nil))
+	return dirSum, nil
 }

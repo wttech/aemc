@@ -90,7 +90,7 @@ func (am *AppManager) BuildWithChanged(command string, file string, sourcePaths 
 	if err != nil {
 		return false, err
 	}
-	if err = filex.Write(checksumFile, checksumCurrent); err != nil {
+	if err = filex.WriteString(checksumFile, checksumCurrent); err != nil {
 		return false, err
 	}
 	return true, nil

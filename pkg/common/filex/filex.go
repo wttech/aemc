@@ -11,16 +11,24 @@ import (
 	"path/filepath"
 )
 
-func Write(path string, text string) error {
+func Write(path string, data []byte) error {
 	err := pathx.Ensure(filepath.Dir(path))
 	if err != nil {
-		return fmt.Errorf("cannot ensure path '%s': %w", path, err)
+		return err
 	}
-	err = os.WriteFile(path, []byte(text), 0755)
+	err = os.WriteFile(path, data, 0755)
 	if err != nil {
 		return fmt.Errorf("cannot write to file '%s': %w", path, err)
 	}
 	return nil
+}
+
+func WriteString(path string, text string) error {
+	err := pathx.Ensure(filepath.Dir(path))
+	if err != nil {
+		return err
+	}
+	return Write(path, []byte(text))
 }
 
 func Read(path string) ([]byte, error) {
@@ -40,6 +48,14 @@ func ReadString(path string) (string, error) {
 		return "", err
 	}
 	return string(bytes), nil
+}
+
+func AmendString(file string, updater func(string) string) error {
+	content, err := ReadString(file)
+	if err != nil {
+		return err
+	}
+	return WriteString(file, updater(content))
 }
 
 var fileCopyBufferSize = 4 * 1024 // 4 kB <https://stackoverflow.com/a/3034155>

@@ -157,5 +157,5 @@ func Sep() string {
 }
 
 func Normalize(path string) string {
-	return strings.ReplaceAll(strings.ReplaceAll(path, "\\", Sep()), "/", Sep())
+	return strings.ReplaceAll(path, "\\", "/")
 }

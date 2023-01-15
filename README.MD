@@ -72,6 +72,18 @@ Ensure having installed [Go](https://go.dev/dl/) then run command:
 - specific released version: `go install github.com/wttech/aemc/cmd/aem@v0.9.0`,
 - recently committed version: `go install github.com/wttech/aemc/cmd/aem@main`,
 
+Use installed version of the tool instead of the one defined in file *aem/api.sh* by running the following command:
+
+```shell
+export AEMC_VERSION=installed
+```
+
+To start using again version from wrapper file, simply unset the environment variable:
+
+```shell
+unset AEMC_VERSION
+```
+
 ## Ansible Collection
 
 See a separate project based on AEM Compose: <https://github.com/wttech/aemc-ansible>

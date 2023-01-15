@@ -8,8 +8,8 @@ import (
 
 func CommandShell(args []string) *exec.Cmd {
 	if osx.IsWindows() {
-		args = append([]string{"/C"}, args...)
-		return exec.Command("cmd", args...)
+		cmdArgs := append([]string{"/C"}, args...)
+		return exec.Command("cmd", cmdArgs...)
 	}
 	return exec.Command("sh", args...)
 }

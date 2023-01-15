@@ -1,9 +1,8 @@
 package tplx
 
 import (
-	"html/template"
 	"reflect"
-	textTemplate "text/template"
+	"text/template"
 )
 
 func New(name string) *template.Template {
@@ -11,7 +10,7 @@ func New(name string) *template.Template {
 }
 
 // based on <https://github.com/leekchan/gtf/blob/master/gtf.go>
-var funcMap = textTemplate.FuncMap{
+var funcMap = template.FuncMap{
 	"default": func(arg interface{}, value interface{}) interface{} {
 		defer recovery()
 		v := reflect.ValueOf(value)

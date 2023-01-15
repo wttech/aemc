@@ -275,7 +275,7 @@ It will:
 
 * bump version is source files automatically,
 * commit changes,
-* push release tag that will initiate [release workflow](.github/workflows/release.yml).
+* push release tag that will initiate [release workflow](.github/workflows/release-perform.yml).
 
 # Contributing
 

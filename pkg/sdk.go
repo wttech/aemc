@@ -3,10 +3,10 @@ package pkg
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"github.com/wttech/aemc/pkg/common/execx"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
-	"os/exec"
 	"path/filepath"
 	"time"
 )
@@ -139,7 +139,7 @@ func (s Sdk) unpackDispatcher() error {
 		}
 		log.Infof("unpacking SDK dispatcher tools using script '%s' to dir '%s'", sh, s.DispatcherDir())
 		out := s.localOpts.manager.aem.output
-		cmd := exec.Command(osx.ShellPath, sh, "--target", s.DispatcherDir())
+		cmd := execx.CommandShell([]string{sh, "--target", s.DispatcherDir()})
 		cmd.Stdout = out
 		cmd.Stderr = out
 		if err := cmd.Run(); err != nil {

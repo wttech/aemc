@@ -6,10 +6,6 @@ import (
 	"strings"
 )
 
-const (
-	ShellPath = "/bin/sh"
-)
-
 func EnvVars() map[string]string {
 	result := make(map[string]string)
 	for _, e := range os.Environ() {

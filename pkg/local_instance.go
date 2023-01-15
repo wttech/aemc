@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"github.com/wttech/aemc/pkg/common/execx"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"os"
@@ -135,7 +136,7 @@ func (li LocalInstance) Start() error {
 		return fmt.Errorf("cannot start instance as it is not created")
 	}
 	// TODO enforce 'java' to be always from JAVA_PATH (update $PATH var accordingly)
-	cmd := li.verboseCommand(osx.ShellPath, li.binScript("start"))
+	cmd := li.verboseCommand(li.binScript("start"))
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute start script for instance '%s': %w", li.instance.ID(), err)
 	}
@@ -166,7 +167,7 @@ func (li LocalInstance) Stop() error {
 		return fmt.Errorf("cannot stop instance as it is not created")
 	}
 	// TODO enforce 'java' to be always from JAVA_PATH (update $PATH var accordingly)
-	cmd := li.verboseCommand(osx.ShellPath, li.binScript("stop"))
+	cmd := li.verboseCommand(li.binScript("stop"))
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute stop script for instance '%s': %w", li.instance.ID(), err)
 	}
@@ -286,7 +287,7 @@ func (li LocalInstance) Status() (LocalStatus, error) {
 	if !li.IsCreated() {
 		return LocalStatusUnknown, fmt.Errorf("cannot check status of instance as it is not created")
 	}
-	cmd := li.quietCommand(osx.ShellPath, li.binScript("status"))
+	cmd := li.quietCommand(li.binScript("status"))
 	exitCode := 0
 	if err := cmd.Run(); err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
@@ -318,8 +319,8 @@ func (li LocalInstance) Delete() error {
 	return nil
 }
 
-func (li LocalInstance) verboseCommand(name string, arg ...string) *exec.Cmd {
-	cmd := li.quietCommand(name, arg...)
+func (li LocalInstance) verboseCommand(args ...string) *exec.Cmd {
+	cmd := li.quietCommand(args...)
 
 	out := li.instance.manager.aem.output
 	cmd.Stdout = out
@@ -328,8 +329,8 @@ func (li LocalInstance) verboseCommand(name string, arg ...string) *exec.Cmd {
 	return cmd
 }
 
-func (li LocalInstance) quietCommand(name string, arg ...string) *exec.Cmd {
-	cmd := exec.Command(name, arg...)
+func (li LocalInstance) quietCommand(args ...string) *exec.Cmd {
+	cmd := execx.CommandShell(args)
 	cmd.Dir = li.Dir()
 	cmd.Env = append(os.Environ(),
 		"JAVA_HOME="+pathx.Abs(li.Opts().JavaOpts.HomeDir),

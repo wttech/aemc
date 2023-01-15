@@ -151,3 +151,11 @@ func NewIgnoreMatcher(patterns []string) IgnoreMatcher {
 func (m *IgnoreMatcher) Match(path string) bool {
 	return m.matcher.MatchesPath(path)
 }
+
+func Sep() string {
+	return string(os.PathSeparator)
+}
+
+func Normalize(path string) string {
+	return strings.ReplaceAll(path, Sep(), "/")
+}

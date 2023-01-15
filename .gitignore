@@ -222,3 +222,4 @@ $RECYCLE.BIN/
 /lib
 dist/
 **/aem/home/
+!pkg/instance/resource

@@ -137,7 +137,7 @@ func (li LocalInstance) unpackJarFile() error {
 	if err != nil {
 		return err
 	}
-	cmd := li.verboseCommand([]string{
+	cmd := li.commandVerbose([]string{
 		pathx.Abs(li.Opts().JavaOpts.Executable()), "-jar",
 		pathx.Abs(jar), "-unpack",
 	})
@@ -202,7 +202,7 @@ func (li LocalInstance) Start() error {
 		return fmt.Errorf("cannot start instance as it is not created")
 	}
 	// TODO enforce 'java' to be always from JAVA_PATH (update $PATH var accordingly)
-	cmd := li.verboseCommand(li.binCommandShell("start"))
+	cmd := li.commandVerbose(li.binCommandShell(LocalInstanceScriptStart))
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute start script for instance '%s': %w", li.instance.ID(), err)
 	}
@@ -233,7 +233,7 @@ func (li LocalInstance) Stop() error {
 		return fmt.Errorf("cannot stop instance as it is not created")
 	}
 	// TODO enforce 'java' to be always from JAVA_PATH (update $PATH var accordingly)
-	cmd := li.verboseCommand(li.binCommandShell(LocalInstanceScriptStop))
+	cmd := li.commandVerbose(li.binCommandShell(LocalInstanceScriptStop))
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute stop script for instance '%s': %w", li.instance.ID(), err)
 	}
@@ -241,6 +241,10 @@ func (li LocalInstance) Stop() error {
 		return err
 	}
 	return nil
+}
+
+func (li LocalInstance) Clean() error {
+	return pathx.DeleteIfExists(li.pidFile())
 }
 
 func (li LocalInstance) Restart() error {
@@ -277,12 +281,21 @@ func (li LocalInstance) Kill() error {
 	}
 	var cmd *exec.Cmd
 	if osx.IsWindows() {
-		cmd = li.verboseCommand([]string{"taskkill", "/F", "/PID", fmt.Sprintf("%d", pid)})
+		cmd = execx.CommandShell([]string{"taskkill", "/F", "/PID", fmt.Sprintf("%d", pid)})
 	} else {
-		cmd = li.verboseCommand([]string{"kill", "-9", fmt.Sprintf("%d", pid)})
+		cmd = exec.Command("kill", "-9", fmt.Sprintf("%d", pid))
 	}
+
+	out := li.instance.manager.aem.output
+	cmd.Stdout = out
+	cmd.Stderr = out
+
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("cannot execute kill command for instance '%s': %w", li.instance.ID(), err)
+		return fmt.Errorf("cannot execute kill command for instance '%s' with PID '%d': %w", li.instance.ID(), pid, err)
+	}
+	file := li.pidFile()
+	if err := pathx.DeleteIfExists(file); err != nil {
+		return fmt.Errorf("cannot delete PID file '%s' for instance '%s': %w", file, li.instance.ID(), err)
 	}
 	return nil
 }
@@ -353,7 +366,7 @@ func (li LocalInstance) Status() (LocalStatus, error) {
 	if !li.IsCreated() {
 		return LocalStatusUnknown, fmt.Errorf("cannot check status of instance as it is not created")
 	}
-	cmd := li.quietCommand(li.binCommandShell(LocalInstanceScriptStatus))
+	cmd := li.commandQuiet(li.binCommandShell(LocalInstanceScriptStatus))
 	exitCode := 0
 	if err := cmd.Run(); err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
@@ -385,8 +398,8 @@ func (li LocalInstance) Delete() error {
 	return nil
 }
 
-func (li LocalInstance) verboseCommand(args []string) *exec.Cmd {
-	cmd := li.quietCommand(args)
+func (li LocalInstance) commandVerbose(args []string) *exec.Cmd {
+	cmd := li.commandQuiet(args)
 
 	out := li.instance.manager.aem.output
 	cmd.Stdout = out
@@ -395,7 +408,7 @@ func (li LocalInstance) verboseCommand(args []string) *exec.Cmd {
 	return cmd
 }
 
-func (li LocalInstance) quietCommand(args []string) *exec.Cmd {
+func (li LocalInstance) commandQuiet(args []string) *exec.Cmd {
 	cmd := execx.CommandShell(args)
 	cmd.Dir = li.Dir()
 	cmd.Env = append(os.Environ(),
@@ -434,8 +447,12 @@ func (li LocalInstance) UpToDate() bool {
 	return upToDate
 }
 
+func (li LocalInstance) pidFile() string {
+	return fmt.Sprintf("%s/crx-quickstart/conf/cq.pid", li.Dir())
+}
+
 func (li LocalInstance) PID() (int, error) {
-	file := fmt.Sprintf("%s/crx-quickstart/conf/cq.pid", li.Dir())
+	file := li.pidFile()
 	str, err := filex.ReadString(file)
 	if err != nil {
 		return 0, fmt.Errorf("cannot read instance PID file '%s'", file)

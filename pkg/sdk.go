@@ -3,10 +3,10 @@ package pkg
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"github.com/wttech/aemc/pkg/common/execx"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
-	"os/exec"
 	"path/filepath"
 	"time"
 )
@@ -100,7 +100,7 @@ func (s Sdk) DispatcherDir() string {
 	return s.Dir() + "/dispatcher"
 }
 
-func (s Sdk) dispatcherToolsUnixSh() (string, error) {
+func (s Sdk) dispatcherToolsUnixScript() (string, error) {
 	return s.findFile("*-dispatcher-tools-*-unix.sh")
 }
 
@@ -133,19 +133,19 @@ func (s Sdk) unpackDispatcher() error {
 			return err
 		}
 	} else {
-		sh, err := s.dispatcherToolsUnixSh()
+		script, err := s.dispatcherToolsUnixScript()
 		if err != nil {
 			return err
 		}
-		log.Infof("unpacking SDK dispatcher tools using script '%s' to dir '%s'", sh, s.DispatcherDir())
+		log.Infof("unpacking SDK dispatcher tools using script '%s' to dir '%s'", script, s.DispatcherDir())
 		out := s.localOpts.manager.aem.output
-		cmd := exec.Command(osx.ShellPath, sh, "--target", s.DispatcherDir())
+		cmd := execx.CommandShell([]string{script, "--target", s.DispatcherDir()})
 		cmd.Stdout = out
 		cmd.Stderr = out
 		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("cannot run SDK dispatcher tools unpacking script '%s': %w", sh, err)
+			return fmt.Errorf("cannot run SDK dispatcher tools unpacking script '%s': %w", script, err)
 		}
-		log.Infof("unpacked SDK dispatcher tools using script '%s' to dir '%s'", sh, s.DispatcherDir())
+		log.Infof("unpacked SDK dispatcher tools using script '%s' to dir '%s'", script, s.DispatcherDir())
 	}
 	return nil
 }

@@ -130,7 +130,7 @@ func (c *Config) Init() error {
 	if pathx.Exists(file) {
 		return fmt.Errorf("config file already exists: '%s'", file)
 	}
-	err := filex.Write(file, configYml)
+	err := filex.WriteString(file, configYml)
 	if err != nil {
 		return fmt.Errorf("cannot create initial config file '%s': '%w'", file, err)
 	}

@@ -1,5 +1,9 @@
 package instance
 
+import (
+	_ "embed"
+)
+
 type ProcessingMode string
 
 const (
@@ -11,3 +15,6 @@ const (
 func ProcessingModes() []string {
 	return []string{ProcessingAuto, ProcessingParallel, ProcessingSerial}
 }
+
+//go:embed resource/cbp.exe
+var CbpExecutable []byte

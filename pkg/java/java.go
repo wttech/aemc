@@ -5,6 +5,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/samber/lo"
 	"github.com/wttech/aemc/pkg/cfg"
+	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"os"
@@ -29,7 +30,7 @@ func (o *Opts) Validate() error {
 		return fmt.Errorf("java home dir is not set; fix it by setting config property 'java.home_dir' or environment variable 'JAVA_HOME'")
 	}
 	if !pathx.Exists(o.Executable()) {
-		return fmt.Errorf("java executable '%s' does not exist", o.HomeDir)
+		return fmt.Errorf("java executable '%s' does not exist", o.Executable())
 	}
 	currentVersion, err := o.CurrentVersion()
 	if err != nil {
@@ -42,7 +43,10 @@ func (o *Opts) Validate() error {
 }
 
 func (o *Opts) Executable() string {
-	return o.HomeDir + "/bin/java"
+	if osx.IsWindows() {
+		return pathx.Normalize(o.HomeDir) + "/bin/java.exe"
+	}
+	return pathx.Normalize(o.HomeDir) + "/bin/java"
 }
 
 func (o *Opts) CurrentVersion() (*version.Version, error) {
@@ -76,7 +80,7 @@ func (o *Opts) Configure(config *cfg.Config) {
 	opts := config.Values().Java
 
 	if len(opts.HomeDir) > 0 {
-		o.HomeDir = opts.HomeDir
+		o.HomeDir = pathx.Normalize(opts.HomeDir)
 	}
 	if len(opts.VersionConstraints) > 0 {
 		o.VersionConstraints = version.MustConstraints(version.NewConstraint(opts.VersionConstraints))

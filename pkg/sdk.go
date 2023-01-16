@@ -138,10 +138,8 @@ func (s Sdk) unpackDispatcher() error {
 			return err
 		}
 		log.Infof("unpacking SDK dispatcher tools using script '%s' to dir '%s'", script, s.DispatcherDir())
-		out := s.localOpts.manager.aem.output
 		cmd := execx.CommandShell([]string{script, "--target", s.DispatcherDir()})
-		cmd.Stdout = out
-		cmd.Stderr = out
+		s.localOpts.manager.aem.CommandOutput(cmd)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("cannot run SDK dispatcher tools unpacking script '%s': %w", script, err)
 		}

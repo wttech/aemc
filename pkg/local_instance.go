@@ -3,6 +3,7 @@ package pkg
 import (
 	"fmt"
 	"github.com/wttech/aemc/pkg/common/filex"
+	"github.com/wttech/aemc/pkg/common/netx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"os"
 	"os/exec"
@@ -132,7 +133,10 @@ func (li LocalInstance) IsCreated() bool {
 
 func (li LocalInstance) Start() error {
 	if !li.IsCreated() {
-		return fmt.Errorf("cannot start instance as it is not created")
+		return fmt.Errorf("cannot start instance '%s' as it is not created", li.instance.ID())
+	}
+	if err := li.checkPortsOpen(); err != nil {
+		return err
 	}
 	// TODO enforce 'java' to be always from JAVA_PATH (update $PATH var accordingly)
 	cmd := li.verboseCommand(osx.ShellPath, li.binScript("start"))
@@ -141,6 +145,21 @@ func (li LocalInstance) Start() error {
 	}
 	if err := li.startLock().Lock(); err != nil {
 		return err
+	}
+	return nil
+}
+
+func (li LocalInstance) checkPortsOpen() error {
+	host := li.instance.http.Hostname()
+	ports := []string{
+		li.instance.http.Port(),
+		li.DebugPort(),
+	}
+	for _, port := range ports {
+		reachable, err := netx.IsReachable(host, port, time.Second*3)
+		if reachable {
+			return fmt.Errorf("cannot start instance '%s' as '%s:%s' is not open: %w", li.instance.ID(), host, port, err)
+		}
 	}
 	return nil
 }

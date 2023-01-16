@@ -247,8 +247,10 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 
 	if im.CheckOpts.AwaitStrict {
 		im.AwaitStopped(stopped)
+		im.Clean(stopped)
 	} else {
 		im.AwaitStopped(instances)
+		im.Clean(instances)
 	}
 
 	return stopped, nil
@@ -353,6 +355,21 @@ func (im *InstanceManager) AwaitStopped(instances []Instance) {
 		NewStatusStoppedChecker(),
 		NewTimeoutChecker("down", time.Minute*5),
 	})
+}
+
+func (im *InstanceManager) Clean(instances []Instance) ([]Instance, error) {
+	cleaned := []Instance{}
+	for _, i := range instances {
+		if !i.local.IsRunning() {
+			err := i.local.Clean()
+			if err != nil {
+				return nil, fmt.Errorf("cannot clean instance '%s': %s", i.ID(), err)
+			}
+			log.Infof("cleaned instance '%s'", i.ID())
+			cleaned = append(cleaned, i)
+		}
+	}
+	return cleaned, nil
 }
 
 func (im *InstanceManager) configureLocalOpts(config *cfg.Config) {

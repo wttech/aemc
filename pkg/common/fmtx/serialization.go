@@ -87,7 +87,7 @@ func MarshalToFileInFormat(format string, path string, out any) error {
 	if err != nil {
 		return fmt.Errorf("cannot marshal data for file '%s': %w", path, err)
 	}
-	err = filex.Write(path, text)
+	err = filex.WriteString(path, text)
 	if err != nil {
 		return err
 	}

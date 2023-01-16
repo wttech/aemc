@@ -22,17 +22,17 @@ echo "Bumping version in files"
 
 README_FILE="README.MD"
 PROJECT_INIT_SCRIPT="project/init.sh"
-PROJECT_WRAPPER_SCRIPT="project/aemw"
+PROJECT_API_SCRIPT="project/aem/api.sh"
 
 # <https://stackoverflow.com/a/57766728>
 if [ "$(uname)" = "Darwin" ]; then
   sed -i '' 's/AEMC_VERSION:-"[^\"]*"/AEMC_VERSION:-"'"$VERSION"'"/g' "$PROJECT_INIT_SCRIPT"
-  sed -i '' 's/AEMC_VERSION:-"[^\"]*"/AEMC_VERSION:-"'"$VERSION"'"/g' "$PROJECT_WRAPPER_SCRIPT"
+  sed -i '' 's/AEMC_VERSION:-"[^\"]*"/AEMC_VERSION:-"'"$VERSION"'"/g' "$PROJECT_API_SCRIPT"
   # shellcheck disable=SC2016
   sed -i '' 's/aem\@v[^\`]*\`/aem@v'"$VERSION"\`'/g' "$README_FILE"
 else
     sed -i 's/AEMC_VERSION:-"[^\"]*"/AEMC_VERSION:-"'"$VERSION"'"/g' "$PROJECT_INIT_SCRIPT"
-    sed -i 's/AEMC_VERSION:-"[^\"]*"/AEMC_VERSION:-"'"$VERSION"'"/g' "$PROJECT_WRAPPER_SCRIPT"
+    sed -i 's/AEMC_VERSION:-"[^\"]*"/AEMC_VERSION:-"'"$VERSION"'"/g' "$PROJECT_API_SCRIPT"
     # shellcheck disable=SC2016
     sed -i 's/aem\@v[^\`]*\`/aem@v'"$VERSION"\`'/g' "$README_FILE"
 fi

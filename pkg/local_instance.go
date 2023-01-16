@@ -2,9 +2,11 @@ package pkg
 
 import (
 	"fmt"
+	"github.com/wttech/aemc/pkg/common/execx"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/netx"
 	"github.com/wttech/aemc/pkg/common/pathx"
+	"github.com/wttech/aemc/pkg/instance"
 	"os"
 	"os/exec"
 	"sort"
@@ -31,6 +33,12 @@ type LocalInstanceState struct {
 	Attributes []string `yaml:"attributes" json:"attributes"`
 	Dir        string   `yaml:"dir" json:"dir"`
 }
+
+const (
+	LocalInstanceScriptStart  = "start"
+	LocalInstanceScriptStop   = "stop"
+	LocalInstanceScriptStatus = "status"
+)
 
 func (li LocalInstance) Instance() *Instance {
 	return li.instance
@@ -62,8 +70,23 @@ func (li LocalInstance) Dir() string {
 	return pathx.Abs(fmt.Sprintf("%s/%s", li.Opts().UnpackDir, li.instance.ID()))
 }
 
-func (li LocalInstance) binScript(name string) string {
-	return fmt.Sprintf("%s/crx-quickstart/bin/%s", li.Dir(), name)
+func (li LocalInstance) binCommandShell(name string) []string {
+	if osx.IsWindows() { // note 'call' usage here; without it on Windows exit code is always 0
+		return []string{"call", li.binScriptWindows(name)}
+	}
+	return []string{li.binScriptUnix(name)}
+}
+
+func (li LocalInstance) binScriptWindows(name string) string {
+	return pathx.Normalize(fmt.Sprintf("%s/crx-quickstart/bin/%s.bat", li.Dir(), name))
+}
+
+func (li LocalInstance) binScriptUnix(name string) string {
+	return pathx.Normalize(fmt.Sprintf("%s/crx-quickstart/bin/%s", li.Dir(), name))
+}
+
+func (li LocalInstance) binCbpExecutable() string {
+	return pathx.Normalize(fmt.Sprintf("%s/crx-quickstart/bin/cbp.exe", li.Dir()))
 }
 
 func (li LocalInstance) DebugPort() string {
@@ -75,6 +98,9 @@ func (li LocalInstance) LicenseFile() string {
 }
 
 func (li LocalInstance) Create() error {
+	if err := pathx.DeleteIfExists(li.Dir()); err != nil {
+		return fmt.Errorf("cannot clean up dir for instance '%s': %w", li.instance.ID(), err)
+	}
 	if err := pathx.Ensure(li.Dir()); err != nil {
 		return fmt.Errorf("cannot create dir for instance '%s': %w", li.instance.ID(), err)
 	}
@@ -82,6 +108,12 @@ func (li LocalInstance) Create() error {
 		return err
 	}
 	if err := li.copyLicenseFile(); err != nil {
+		return err
+	}
+	if err := li.copyCbpExecutable(); err != nil {
+		return err
+	}
+	if err := li.correctFiles(); err != nil {
 		return err
 	}
 	if err := li.createLock().Lock(); err != nil {
@@ -106,10 +138,10 @@ func (li LocalInstance) unpackJarFile() error {
 	if err != nil {
 		return err
 	}
-	cmd := li.verboseCommand(
+	cmd := li.commandVerbose([]string{
 		pathx.Abs(li.Opts().JavaOpts.Executable()), "-jar",
 		pathx.Abs(jar), "-unpack",
-	)
+	})
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot unpack files for instance '%s': %w", li.instance.ID(), err)
 	}
@@ -127,6 +159,41 @@ func (li LocalInstance) copyLicenseFile() error {
 	return nil
 }
 
+func (li LocalInstance) copyCbpExecutable() error {
+	dest := li.binCbpExecutable()
+	log.Infof("copying CBP executable to '%s' for instance '%s'", dest, li.instance.ID())
+	if err := filex.Write(dest, instance.CbpExecutable); err != nil {
+		return fmt.Errorf("cannot copy CBP executable to '%s' for instance '%s': %s", dest, li.instance.ID(), err)
+	}
+	return nil
+}
+
+func (li LocalInstance) correctFiles() error {
+	filex.AmendString(li.binScriptUnix(LocalInstanceScriptStart), func(content string) string {
+		content = strings.ReplaceAll(content, // introduce CQ_START_OPTS (not available by default)
+			"set START_OPTS=start -c %CurrDirName% -i launchpad",
+			"set START_OPTS=start -c %CurrDirName% -i launchpad %CQ_START_OPTS%",
+		)
+		return content
+	})
+	filex.AmendString(li.binScriptWindows(LocalInstanceScriptStart), func(content string) string {
+		content = strings.ReplaceAll(content, // update 'timeout' to 'ping' as of it does not work when called from process without GUI
+			"timeout /T 1 /NOBREAK >nul",
+			"ping 127.0.0.1 -n 3 > nul",
+		)
+		content = strings.ReplaceAll(content, // force instance to be launched in background (it is windowed by default)
+			"start \"CQ\" cmd.exe /C java %CQ_JVM_OPTS% -jar %CurrDirName%\\%CQ_JARFILE% %START_OPTS%",
+			"crx-quickstart\\bin\\cbp.exe cmd.exe /C \"java %CQ_JVM_OPTS% -jar %CurrDirName%\\%CQ_JARFILE% %START_OPTS% 1> %CurrDirName%\\logs\\stdout.log 2>&1\"",
+		)
+		content = strings.ReplaceAll(content, // introduce CQ_START_OPTS (not available by default)
+			"set START_OPTS=start -c %CurrDirName% -i launchpad",
+			"set START_OPTS=start -c %CurrDirName% -i launchpad %CQ_START_OPTS%",
+		)
+		return content
+	})
+	return nil
+}
+
 func (li LocalInstance) IsCreated() bool {
 	return li.createLock().IsLocked()
 }
@@ -139,7 +206,7 @@ func (li LocalInstance) Start() error {
 		return err
 	}
 	// TODO enforce 'java' to be always from JAVA_PATH (update $PATH var accordingly)
-	cmd := li.verboseCommand(osx.ShellPath, li.binScript("start"))
+	cmd := li.commandVerbose(li.binCommandShell(LocalInstanceScriptStart))
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute start script for instance '%s': %w", li.instance.ID(), err)
 	}
@@ -185,7 +252,7 @@ func (li LocalInstance) Stop() error {
 		return fmt.Errorf("cannot stop instance as it is not created")
 	}
 	// TODO enforce 'java' to be always from JAVA_PATH (update $PATH var accordingly)
-	cmd := li.verboseCommand(osx.ShellPath, li.binScript("stop"))
+	cmd := li.commandVerbose(li.binCommandShell(LocalInstanceScriptStop))
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute stop script for instance '%s': %w", li.instance.ID(), err)
 	}
@@ -193,6 +260,10 @@ func (li LocalInstance) Stop() error {
 		return err
 	}
 	return nil
+}
+
+func (li LocalInstance) Clean() error {
+	return pathx.DeleteIfExists(li.pidFile())
 }
 
 func (li LocalInstance) Restart() error {
@@ -229,12 +300,21 @@ func (li LocalInstance) Kill() error {
 	}
 	var cmd *exec.Cmd
 	if osx.IsWindows() {
-		cmd = li.verboseCommand("taskkill", "/F", "/PID", fmt.Sprintf("%d", pid))
+		cmd = execx.CommandShell([]string{"taskkill", "/F", "/PID", fmt.Sprintf("%d", pid)})
 	} else {
-		cmd = li.verboseCommand("kill", "-9", fmt.Sprintf("%d", pid))
+		cmd = exec.Command("kill", "-9", fmt.Sprintf("%d", pid))
 	}
+
+	out := li.instance.manager.aem.output
+	cmd.Stdout = out
+	cmd.Stderr = out
+
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("cannot execute kill command for instance '%s': %w", li.instance.ID(), err)
+		return fmt.Errorf("cannot execute kill command for instance '%s' with PID '%d': %w", li.instance.ID(), pid, err)
+	}
+	file := li.pidFile()
+	if err := pathx.DeleteIfExists(file); err != nil {
+		return fmt.Errorf("cannot delete PID file '%s' for instance '%s': %w", file, li.instance.ID(), err)
 	}
 	return nil
 }
@@ -305,7 +385,7 @@ func (li LocalInstance) Status() (LocalStatus, error) {
 	if !li.IsCreated() {
 		return LocalStatusUnknown, fmt.Errorf("cannot check status of instance as it is not created")
 	}
-	cmd := li.quietCommand(osx.ShellPath, li.binScript("status"))
+	cmd := li.commandQuiet(li.binCommandShell(LocalInstanceScriptStatus))
 	exitCode := 0
 	if err := cmd.Run(); err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
@@ -337,8 +417,8 @@ func (li LocalInstance) Delete() error {
 	return nil
 }
 
-func (li LocalInstance) verboseCommand(name string, arg ...string) *exec.Cmd {
-	cmd := li.quietCommand(name, arg...)
+func (li LocalInstance) commandVerbose(args []string) *exec.Cmd {
+	cmd := li.commandQuiet(args)
 
 	out := li.instance.manager.aem.output
 	cmd.Stdout = out
@@ -347,8 +427,8 @@ func (li LocalInstance) verboseCommand(name string, arg ...string) *exec.Cmd {
 	return cmd
 }
 
-func (li LocalInstance) quietCommand(name string, arg ...string) *exec.Cmd {
-	cmd := exec.Command(name, arg...)
+func (li LocalInstance) commandQuiet(args []string) *exec.Cmd {
+	cmd := execx.CommandShell(args)
 	cmd.Dir = li.Dir()
 	cmd.Env = append(os.Environ(),
 		"JAVA_HOME="+pathx.Abs(li.Opts().JavaOpts.HomeDir),
@@ -386,8 +466,12 @@ func (li LocalInstance) UpToDate() bool {
 	return upToDate
 }
 
+func (li LocalInstance) pidFile() string {
+	return fmt.Sprintf("%s/crx-quickstart/conf/cq.pid", li.Dir())
+}
+
 func (li LocalInstance) PID() (int, error) {
-	file := fmt.Sprintf("%s/crx-quickstart/conf/cq.pid", li.Dir())
+	file := li.pidFile()
 	str, err := filex.ReadString(file)
 	if err != nil {
 		return 0, fmt.Errorf("cannot read instance PID file '%s'", file)

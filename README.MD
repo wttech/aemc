@@ -69,8 +69,20 @@ sh aemw version
 Ensure having installed [Go](https://go.dev/dl/) then run command:
 
 - latest released version: `go install github.com/wttech/aemc/cmd/aem@latest`,
-- specific released version: `go install github.com/wttech/aemc/cmd/aem@v0.8.0`,
+- specific released version: `go install github.com/wttech/aemc/cmd/aem@v0.9.0`,
 - recently committed version: `go install github.com/wttech/aemc/cmd/aem@main`,
+
+Use installed version of the tool instead of the one defined in file *aem/api.sh* by running the following command:
+
+```shell
+export AEMC_VERSION=installed
+```
+
+To start using again version from wrapper file, simply unset the environment variable:
+
+```shell
+unset AEMC_VERSION
+```
 
 ## Ansible Collection
 
@@ -263,7 +275,7 @@ It will:
 
 * bump version is source files automatically,
 * commit changes,
-* push release tag that will initiate [release workflow](.github/workflows/release.yml).
+* push release tag that will initiate [release workflow](.github/workflows/release-perform.yml).
 
 # Contributing
 

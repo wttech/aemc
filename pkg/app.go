@@ -3,10 +3,9 @@ package pkg
 import (
 	"fmt"
 	"github.com/wttech/aemc/pkg/cfg"
+	"github.com/wttech/aemc/pkg/common/execx"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/pathx"
-	"os/exec"
-	"strings"
 )
 
 type AppManager struct {
@@ -53,11 +52,7 @@ func NewAppManager(aem *Aem) *AppManager {
 }
 
 func (am *AppManager) Build(command string) error {
-	parts := strings.Split(command, " ")
-	name := parts[0]
-	args := parts[1:]
-
-	cmd := exec.Command(name, args...)
+	cmd := execx.CommandString(command)
 	cmd.Stdout = am.aem.output
 	cmd.Stderr = am.aem.output
 	if err := cmd.Run(); err != nil {
@@ -95,7 +90,7 @@ func (am *AppManager) BuildWithChanged(command string, file string, sourcePaths 
 	if err != nil {
 		return false, err
 	}
-	if err = filex.Write(checksumFile, checksumCurrent); err != nil {
+	if err = filex.WriteString(checksumFile, checksumCurrent); err != nil {
 		return false, err
 	}
 	return true, nil

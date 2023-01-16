@@ -70,13 +70,6 @@ func (li LocalInstance) Dir() string {
 	return pathx.Abs(fmt.Sprintf("%s/%s", li.Opts().UnpackDir, li.instance.ID()))
 }
 
-func (li LocalInstance) binCommandShell(name string) []string {
-	if osx.IsWindows() { // note 'call' usage here; without it on Windows exit code is always 0
-		return []string{"call", li.binScriptWindows(name)}
-	}
-	return []string{li.binScriptUnix(name)}
-}
-
 func (li LocalInstance) binScriptWindows(name string) string {
 	return pathx.Normalize(fmt.Sprintf("%s/crx-quickstart/bin/%s.bat", li.Dir(), name))
 }
@@ -138,10 +131,9 @@ func (li LocalInstance) unpackJarFile() error {
 	if err != nil {
 		return err
 	}
-	cmd := li.commandVerbose([]string{
-		pathx.Abs(li.Opts().JavaOpts.Executable()), "-jar",
-		pathx.Abs(jar), "-unpack",
-	})
+	cmd := exec.Command(pathx.Abs(li.Opts().JavaOpts.Executable()), "-jar", pathx.Abs(jar), "-unpack")
+	cmd.Dir = li.Dir()
+	li.instance.manager.aem.CommandOutput(cmd)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot unpack files for instance '%s': %w", li.instance.ID(), err)
 	}
@@ -206,7 +198,7 @@ func (li LocalInstance) Start() error {
 		return err
 	}
 	// TODO enforce 'java' to be always from JAVA_PATH (update $PATH var accordingly)
-	cmd := li.commandVerbose(li.binCommandShell(LocalInstanceScriptStart))
+	cmd := li.binScriptCommand(LocalInstanceScriptStart, true)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute start script for instance '%s': %w", li.instance.ID(), err)
 	}
@@ -223,9 +215,9 @@ func (li LocalInstance) checkPortsOpen() error {
 		li.DebugPort(),
 	}
 	for _, port := range ports {
-		reachable, err := netx.IsReachable(host, port, time.Second*3)
+		reachable, _ := netx.IsReachable(host, port, time.Second*3)
 		if reachable {
-			return fmt.Errorf("cannot start instance '%s' as '%s:%s' is not open: %w", li.instance.ID(), host, port, err)
+			return fmt.Errorf("some process is already running on address '%s:%s'", host, port)
 		}
 	}
 	return nil
@@ -252,7 +244,7 @@ func (li LocalInstance) Stop() error {
 		return fmt.Errorf("cannot stop instance as it is not created")
 	}
 	// TODO enforce 'java' to be always from JAVA_PATH (update $PATH var accordingly)
-	cmd := li.commandVerbose(li.binCommandShell(LocalInstanceScriptStop))
+	cmd := li.binScriptCommand(LocalInstanceScriptStop, true)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute stop script for instance '%s': %w", li.instance.ID(), err)
 	}
@@ -304,10 +296,8 @@ func (li LocalInstance) Kill() error {
 	} else {
 		cmd = exec.Command("kill", "-9", fmt.Sprintf("%d", pid))
 	}
-
-	out := li.instance.manager.aem.output
-	cmd.Stdout = out
-	cmd.Stderr = out
+	cmd.Dir = li.Dir()
+	li.instance.manager.aem.CommandOutput(cmd)
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute kill command for instance '%s' with PID '%d': %w", li.instance.ID(), pid, err)
@@ -385,7 +375,7 @@ func (li LocalInstance) Status() (LocalStatus, error) {
 	if !li.IsCreated() {
 		return LocalStatusUnknown, fmt.Errorf("cannot check status of instance as it is not created")
 	}
-	cmd := li.commandQuiet(li.binCommandShell(LocalInstanceScriptStatus))
+	cmd := li.binScriptCommand(LocalInstanceScriptStatus, false)
 	exitCode := 0
 	if err := cmd.Run(); err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
@@ -417,17 +407,13 @@ func (li LocalInstance) Delete() error {
 	return nil
 }
 
-func (li LocalInstance) commandVerbose(args []string) *exec.Cmd {
-	cmd := li.commandQuiet(args)
-
-	out := li.instance.manager.aem.output
-	cmd.Stdout = out
-	cmd.Stderr = out
-
-	return cmd
-}
-
-func (li LocalInstance) commandQuiet(args []string) *exec.Cmd {
+func (li LocalInstance) binScriptCommand(name string, verbose bool) *exec.Cmd {
+	var args []string
+	if osx.IsWindows() { // note 'call' usage here; without it on Windows exit code is always 0
+		args = []string{"call", li.binScriptWindows(name)}
+	} else {
+		args = []string{li.binScriptUnix(name)}
+	}
 	cmd := execx.CommandShell(args)
 	cmd.Dir = li.Dir()
 	cmd.Env = append(os.Environ(),
@@ -436,7 +422,9 @@ func (li LocalInstance) commandQuiet(args []string) *exec.Cmd {
 		"CQ_RUNMODE="+li.instance.local.RunModesString(),
 		"CQ_JVM_OPTS="+li.instance.local.JVMOptsString(),
 	)
-
+	if verbose {
+		li.instance.manager.aem.CommandOutput(cmd)
+	}
 	return cmd
 }
 

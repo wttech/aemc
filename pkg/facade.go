@@ -7,6 +7,7 @@ import (
 	"github.com/wttech/aemc/pkg/java"
 	"io"
 	"os"
+	"os/exec"
 )
 
 // Aem is a facade to access AEM-related API
@@ -54,4 +55,9 @@ func (a *Aem) Configure(config *cfg.Config) {
 	a.javaOpts.Configure(config)
 	a.appManager.Configure(config)
 	a.instanceManager.Configure(config)
+}
+
+func (a *Aem) CommandOutput(cmd *exec.Cmd) {
+	cmd.Stdout = a.output
+	cmd.Stderr = a.output
 }

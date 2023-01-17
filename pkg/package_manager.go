@@ -209,15 +209,11 @@ func (pm *PackageManager) DeployWithChanged(localPath string) (bool, error) {
 }
 
 func (pm *PackageManager) deployRegular(localPath string) (bool, error) {
-	p, err := pm.ByFile(localPath)
+	deployed, err := pm.IsDeployed(localPath)
 	if err != nil {
 		return false, err
 	}
-	state, err := p.State()
-	if err != nil {
-		return false, err
-	}
-	if !state.Exists || !state.Data.Installed() {
+	if !deployed {
 		return true, pm.Deploy(localPath)
 	}
 	return false, nil
@@ -229,7 +225,11 @@ func (pm *PackageManager) deploySnapshot(localPath string) (bool, error) {
 		return false, err
 	}
 	lock := pm.deployLock(localPath, checksum)
-	if !pm.SnapshotDeployStrict {
+	deployed, err := pm.IsDeployed(localPath)
+	if err != nil {
+		return false, err
+	}
+	if deployed && !pm.SnapshotDeployStrict && lock.IsLocked() {
 		lockData, err := lock.DataLocked()
 		if err != nil {
 			return false, err
@@ -246,6 +246,18 @@ func (pm *PackageManager) deploySnapshot(localPath string) (bool, error) {
 	return true, nil
 }
 
+func (pm *PackageManager) IsDeployed(localPath string) (bool, error) {
+	p, err := pm.ByFile(localPath)
+	if err != nil {
+		return false, err
+	}
+	state, err := p.State()
+	if err != nil {
+		return false, err
+	}
+	return state.Exists && state.Data.Installed(), nil
+}
+
 func (pm *PackageManager) Deploy(localPath string) error {
 	remotePath, err := pm.Upload(localPath)
 	if err != nil {
@@ -259,7 +271,7 @@ func (pm *PackageManager) Deploy(localPath string) error {
 
 func (pm *PackageManager) deployLock(file string, checksum string) osx.Lock[packageDeployLock] {
 	name := filepath.Base(file)
-	return osx.NewLock(fmt.Sprintf("%s/package/%s.yml", pm.instance.local.WorkDir(), name), packageDeployLock{
+	return osx.NewLock(fmt.Sprintf("%s/package/deploy/%s.yml", pm.instance.local.WorkDir(), name), packageDeployLock{
 		Deployed: time.Now(),
 		Checksum: checksum,
 	})

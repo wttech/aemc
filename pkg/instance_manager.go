@@ -146,7 +146,7 @@ func (im *InstanceManager) CheckOnce(instances []Instance, checks []Checker) (bo
 	instanceResults, err := InstanceProcess(im.aem, instances, func(i Instance) ([]CheckResult, error) {
 		var results []CheckResult
 		for _, check := range checks {
-			if check.Spec().Always || lo.SomeBy(results, func(r CheckResult) bool { return !r.ok }) {
+			if check.Spec().Always || lo.EveryBy(results, func(r CheckResult) bool { return r.ok }) {
 				result := check.Check(i)
 				results = append(results, result)
 

@@ -205,10 +205,10 @@ func (pm *PackageManager) DeployWithChanged(localPath string) (bool, error) {
 	if pm.IsSnapshot(localPath) {
 		return pm.deploySnapshot(localPath)
 	}
-	return pm.DeployRegular(localPath)
+	return pm.deployRegular(localPath)
 }
 
-func (pm *PackageManager) DeployRegular(localPath string) (bool, error) {
+func (pm *PackageManager) deployRegular(localPath string) (bool, error) {
 	deployed, err := pm.IsDeployed(localPath)
 	if err != nil {
 		return false, err

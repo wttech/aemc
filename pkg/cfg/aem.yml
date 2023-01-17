@@ -79,7 +79,7 @@ instance:
     # Force re-uploading/installing of snapshot AEM packages (just built / unreleased)
     snapshot_patterns: [ "**/*-SNAPSHOT.zip" ]
     # Use checksums to avoid re-deployments when snapshot AEM packages are unchanged
-    deploy_avoidance: false
+    snapshot_deploy_skipping: true
 
   # OSGi Framework
   osgi:
@@ -137,4 +137,3 @@ input:
 output:
   format: text
   file: aem/home/aem.log
-

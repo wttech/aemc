@@ -90,8 +90,8 @@ type ConfigValues struct {
 		} `mapstructure:"local" yaml:"local"`
 
 		Package struct {
-			DeployAvoidance  bool     `mapstructure:"deploy_avoidance" yaml:"deploy_avoidance"`
-			SnapshotPatterns []string `mapstructure:"snapshot_patterns" yaml:"snapshot_patterns"`
+			SnapshotDeployStrict bool     `mapstructure:"snapshot_deploy_strict" yaml:"snapshot_deploy_strict"`
+			SnapshotPatterns     []string `mapstructure:"snapshot_patterns" yaml:"snapshot_patterns"`
 		} `mapstructure:"package" yaml:"package"`
 
 		OSGi struct {

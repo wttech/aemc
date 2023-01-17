@@ -140,18 +140,22 @@ func (im *InstanceManager) Check(instances []Instance, opts *CheckOpts, checks [
 func (im *InstanceManager) CheckOnce(instances []Instance, checks []Checker) bool {
 	ok := true
 	for _, i := range instances {
+		instanceOk := true
 		for _, check := range checks {
-			result := check.Check(i)
-			if result.abort {
-				log.Fatalf("%s | %s", i.ID(), result.message)
-			}
-			if !result.ok {
-				ok = false
-			}
-			if result.err != nil {
-				log.Infof("%s | %s", i.ID(), result.err)
-			} else if len(result.message) > 0 {
-				log.Infof("%s | %s", i.ID(), result.message)
+			if check.Spec().Always || instanceOk {
+				result := check.Check(i)
+				if result.abort {
+					log.Fatalf("%s | %s", i.ID(), result.message)
+				}
+				if !result.ok {
+					ok = false
+					instanceOk = false
+				}
+				if result.err != nil {
+					log.Infof("%s | %s", i.ID(), result.err)
+				} else if len(result.message) > 0 {
+					log.Infof("%s | %s", i.ID(), result.message)
+				}
 			}
 		}
 	}
@@ -329,7 +333,7 @@ func (im *InstanceManager) configureInstances(config *cfg.Config) {
 
 func configureInstance(inst Instance, config *cfg.Config) {
 	packageOpts := config.Values().Instance.Package
-	inst.packageManager.DeployAvoidance = packageOpts.DeployAvoidance
+	inst.packageManager.SnapshotDeployStrict = packageOpts.SnapshotDeployStrict
 	if packageOpts.SnapshotPatterns != nil {
 		inst.packageManager.SnapshotPatterns = packageOpts.SnapshotPatterns
 	}

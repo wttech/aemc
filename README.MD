@@ -38,6 +38,7 @@ Provides complete set of commands to comfortably work with CRX packages, OSGi co
 
 Key assumptions:
 
+- Idempotent and fast
 - Rich configuration options
 - Self-describing, both machine & human-readable 
 - Multiple input & output formats (text/yaml/json)

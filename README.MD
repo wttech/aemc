@@ -42,7 +42,7 @@ Key assumptions:
 - Self-describing, both machine & human-readable 
 - Multiple input & output formats (text/yaml/json)
 
-![CLI Screenshot](docs/cli-main.png)
+![CLI Screenshot](docs/cli-demo.gif)
 
 ## CLI - AEM Project Quickstart
 

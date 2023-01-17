@@ -43,7 +43,7 @@ func (c *CLI) osgiBundleInstall() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			installed, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
+			installed, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				changed, err := instance.OSGI().BundleManager().InstallWithChanged(path)
 				if err != nil {
 					return nil, err
@@ -90,7 +90,7 @@ func (c *CLI) osgiBundleUninstall() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			uninstalled, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
+			uninstalled, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				bundle, err := osgiBundleByFlags(cmd, instance)
 				if err != nil {
 					return nil, err
@@ -178,7 +178,7 @@ func (c *CLI) osgiBundleStartCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			started, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
+			started, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				bundle, err := osgiBundleByFlags(cmd, instance)
 				if err != nil {
 					return nil, err
@@ -225,7 +225,7 @@ func (c *CLI) osgiBundleStopCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			stopped, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
+			stopped, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				bundle, err := osgiBundleByFlags(cmd, instance)
 				if err != nil {
 					return nil, err
@@ -272,7 +272,7 @@ func (c *CLI) osgiBundleRestartCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			restarted, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
+			restarted, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				bundle, err := osgiBundleByFlags(cmd, instance)
 				if err != nil {
 					return nil, err
@@ -401,7 +401,7 @@ func (c *CLI) osgiConfigSave() *cobra.Command {
 				c.Fail(fmt.Sprintf("cannot save config as input props cannot be parsed: %s", err))
 				return
 			}
-			saved, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
+			saved, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				config := osgiConfigFromFlag(cmd, instance)
 				changed, err := config.SaveWithChanged(props)
 				if err != nil {
@@ -443,7 +443,7 @@ func (c *CLI) osgiConfigDelete() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			deleted, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
+			deleted, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				config := osgiConfigFromFlag(cmd, instance)
 				changed, err := config.DeleteWithChanged()
 				if err != nil {

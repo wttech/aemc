@@ -91,7 +91,7 @@ func (c *CLI) pkgUploadCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			uploaded, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
+			uploaded, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				changed, err := instance.PackageManager().UploadWithChanged(path)
 				if err != nil {
 					return nil, err
@@ -135,7 +135,7 @@ func (c *CLI) pkgInstallCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			installed, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
+			installed, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				p, err := pkgByFlags(cmd, instance)
 				if err != nil {
 					return nil, err
@@ -184,7 +184,7 @@ func (c *CLI) pkgDeployCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			deployed, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
+			deployed, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				changed, err := instance.PackageManager().DeployWithChanged(path)
 				if err != nil {
 					return nil, err
@@ -228,7 +228,7 @@ func (c *CLI) pkgUninstallCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			uninstalled, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
+			uninstalled, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				p, err := pkgByFlags(cmd, instance)
 				if err != nil {
 					return nil, err
@@ -272,7 +272,7 @@ func (c *CLI) pkgDeleteCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			deleted, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
+			deleted, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				p, err := pkgByFlags(cmd, instance)
 				if err != nil {
 					return nil, err
@@ -316,7 +316,7 @@ func (c *CLI) pkgPurgeCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			purged, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
+			purged, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				p, err := pkgByFlags(cmd, instance)
 				if err != nil {
 					return nil, err

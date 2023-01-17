@@ -67,7 +67,7 @@ func (c *CLI) repoNodeSave() *cobra.Command {
 				c.Fail(fmt.Sprintf("cannot save node as input props cannot be parsed: %s", err))
 				return
 			}
-			saved, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
+			saved, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				node := repoNodeByFlags(cmd, instance)
 				changed, err := node.SaveWithChanged(props)
 				if err != nil {
@@ -106,7 +106,7 @@ func (c *CLI) repoNodeDelete() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			deleted, err := c.aem.InstanceManager().Process(instances, func(instance pkg.Instance) (map[string]any, error) {
+			deleted, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				node := repoNodeByFlags(cmd, instance)
 				changed, err := node.DeleteWithChanged()
 				if err != nil {

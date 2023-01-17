@@ -67,19 +67,31 @@ func (li LocalInstance) Opts() *LocalOpts {
 }
 
 func (li LocalInstance) Dir() string {
-	return pathx.Abs(fmt.Sprintf("%s/%s", li.Opts().UnpackDir, li.instance.ID()))
+	return pathx.Normalize(pathx.Abs(fmt.Sprintf("%s/%s", li.Opts().UnpackDir, li.instance.ID())))
+}
+
+func (li LocalInstance) WorkDir() string {
+	return fmt.Sprintf("%s/%s", li.Dir(), "aem-compose")
+}
+
+func (li LocalInstance) lockDir() string {
+	return fmt.Sprintf("%s/%s", li.WorkDir(), "lock")
+}
+
+func (li LocalInstance) QuickstartDir() string {
+	return fmt.Sprintf("%s/%s", li.Dir(), "crx-quickstart")
 }
 
 func (li LocalInstance) binScriptWindows(name string) string {
-	return pathx.Normalize(fmt.Sprintf("%s/crx-quickstart/bin/%s.bat", li.Dir(), name))
+	return fmt.Sprintf("%sbin/%s.bat", li.QuickstartDir(), name)
 }
 
 func (li LocalInstance) binScriptUnix(name string) string {
-	return pathx.Normalize(fmt.Sprintf("%s/crx-quickstart/bin/%s", li.Dir(), name))
+	return pathx.Normalize(fmt.Sprintf("%s/bin/%s", li.QuickstartDir(), name))
 }
 
 func (li LocalInstance) binCbpExecutable() string {
-	return pathx.Normalize(fmt.Sprintf("%s/crx-quickstart/bin/cbp.exe", li.Dir()))
+	return pathx.Normalize(fmt.Sprintf("%s/bin/cbp.exe", li.QuickstartDir()))
 }
 
 func (li LocalInstance) DebugPort() string {
@@ -116,7 +128,7 @@ func (li LocalInstance) Create() error {
 }
 
 func (li LocalInstance) createLock() osx.Lock[localInstanceCreateLock] {
-	return osx.NewLock(fmt.Sprintf("%s/lock/create.yml", li.Dir()), localInstanceCreateLock{
+	return osx.NewLock(fmt.Sprintf("%s/create.yml", li.lockDir()), localInstanceCreateLock{
 		Created: time.Now(),
 	})
 }
@@ -224,7 +236,7 @@ func (li LocalInstance) checkPortsOpen() error {
 }
 
 func (li LocalInstance) startLock() osx.Lock[localInstanceStartLock] {
-	return osx.NewLock(fmt.Sprintf("%s/lock/start.yml", li.Dir()), localInstanceStartLock{
+	return osx.NewLock(fmt.Sprintf("%s/start.yml", li.lockDir()), localInstanceStartLock{
 		Version:  li.Version,
 		HTTPPort: li.instance.HTTP().Port(),
 		RunModes: li.RunModesString(),

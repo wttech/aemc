@@ -4,24 +4,28 @@ import (
 	"fmt"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
+	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/fmtx"
+	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/pkg"
+	"path/filepath"
+	"time"
 )
 
 type PackageManager struct {
 	instance *Instance
 
-	DeployAvoidance  bool
-	SnapshotPatterns []string
+	SnapshotDeployStrict bool
+	SnapshotPatterns     []string
 }
 
 func NewPackageManager(res *Instance) *PackageManager {
 	return &PackageManager{
 		instance: res,
 
-		DeployAvoidance:  false,
-		SnapshotPatterns: []string{"**/*-SNAPSHOT.zip"},
+		SnapshotDeployStrict: false,
+		SnapshotPatterns:     []string{"**/*-SNAPSHOT.zip"},
 	}
 }
 
@@ -199,8 +203,12 @@ func (pm *PackageManager) Install(remotePath string) error {
 
 func (pm *PackageManager) DeployWithChanged(localPath string) (bool, error) {
 	if pm.IsSnapshot(localPath) {
-		return true, pm.Deploy(localPath)
+		return pm.deploySnapshot(localPath)
 	}
+	return pm.deployRegular(localPath)
+}
+
+func (pm *PackageManager) deployRegular(localPath string) (bool, error) {
 	p, err := pm.ByFile(localPath)
 	if err != nil {
 		return false, err
@@ -209,10 +217,27 @@ func (pm *PackageManager) DeployWithChanged(localPath string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if !state.Exists || !state.Data.Installed() { // TODO support 'DeployAvoidance'
+	if !state.Exists || !state.Data.Installed() {
 		return true, pm.Deploy(localPath)
 	}
 	return false, nil
+}
+
+func (pm *PackageManager) deploySnapshot(localPath string) (bool, error) {
+	checksum, err := filex.ChecksumFile(localPath)
+	if err != nil {
+		return false, err
+	}
+	lock := pm.deployLock(localPath, checksum)
+	if !pm.SnapshotDeployStrict && checksum == lock.Data().Checksum {
+		log.Infof("skipped deploying package '%s' on instance '%s'", localPath, pm.instance.ID())
+		return false, nil
+	}
+	if err := pm.Deploy(localPath); err != nil {
+		return false, err
+	}
+	lock.Lock()
+	return true, nil
 }
 
 func (pm *PackageManager) Deploy(localPath string) error {
@@ -224,6 +249,19 @@ func (pm *PackageManager) Deploy(localPath string) error {
 		return err
 	}
 	return nil
+}
+
+func (pm *PackageManager) deployLock(file string, checksum string) osx.Lock[packageDeployLock] {
+	name := filepath.Base(file)
+	return osx.NewLock(fmt.Sprintf("%s/package/%s.yml", pm.instance.local.WorkDir(), name), packageDeployLock{
+		Deployed: time.Now(),
+		Checksum: checksum,
+	})
+}
+
+type packageDeployLock struct {
+	Deployed time.Time
+	Checksum string
 }
 
 func (pm *PackageManager) Uninstall(remotePath string) error {

@@ -29,6 +29,11 @@ func (c *CheckResult) Err() error {
 
 type Checker interface {
 	Check(instance Instance) CheckResult
+	Spec() CheckSpec
+}
+
+type CheckSpec struct {
+	Always bool // some checks should be run all the time, some other may be skipped if previous failed
 }
 
 func NewTimeoutChecker(expectedState string, duration time.Duration) TimeoutChecker {
@@ -51,6 +56,10 @@ func (c TimeoutChecker) Check(_ Instance) CheckResult {
 	return CheckResult{
 		ok: true,
 	}
+}
+
+func (c TimeoutChecker) Spec() CheckSpec {
+	return CheckSpec{Always: true}
 }
 
 type TimeoutChecker struct {
@@ -81,6 +90,10 @@ func NewBundleStableChecker() BundleStableChecker {
 	return BundleStableChecker{
 		SymbolicNamesIgnored: []string{},
 	}
+}
+
+func (c BundleStableChecker) Spec() CheckSpec {
+	return CheckSpec{Always: true}
 }
 
 func NewInstallerChecker() InstallerChecker {
@@ -134,6 +147,10 @@ type EventStableChecker struct {
 	DetailsIgnored []string
 }
 
+func (c EventStableChecker) Spec() CheckSpec {
+	return CheckSpec{Always: true}
+}
+
 func (c EventStableChecker) Check(instance Instance) CheckResult {
 	events, err := instance.osgi.eventManager.List()
 	if err != nil {
@@ -177,6 +194,10 @@ func (c EventStableChecker) Check(instance Instance) CheckResult {
 type InstallerChecker struct {
 	State bool
 	Pause bool
+}
+
+func (c InstallerChecker) Spec() CheckSpec {
+	return CheckSpec{Always: false}
 }
 
 func (c InstallerChecker) Check(instance Instance) CheckResult {
@@ -223,6 +244,10 @@ func (c InstallerChecker) Check(instance Instance) CheckResult {
 
 type StatusStoppedChecker struct {
 	instanceManager *InstanceManager
+}
+
+func (c StatusStoppedChecker) Spec() CheckSpec {
+	return CheckSpec{Always: true}
 }
 
 func (c StatusStoppedChecker) Check(instance Instance) CheckResult {

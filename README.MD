@@ -144,6 +144,7 @@ It will produce default configuration file named *aem.yml*.
 Correct the `dist_file`, `license_file`, `unpack_dir` properties to provide essential files to be able to launch AEM instances.
 
 ```yml
+# AEM instances to work with
 instance:
 
   # Defined by single value (only remote)
@@ -152,12 +153,12 @@ instance:
   # Defined strictly with full details (local or remote)
   config:
     local_author:
-      http_url: http://localhost:4502
+      http_url: http://127.0.0.1:4502
       user: admin
       password: admin
       run_modes: [ local ]
     local_publish:
-      http_url: http://localhost:4503
+      http_url: http://127.0.0.1:4503
       user: admin
       password: admin
       run_modes: [ local ]
@@ -180,26 +181,53 @@ instance:
     warmup: 1s
     # Time to wait for next state checking
     interval: 5s
+    # Number of successful check attempts that indicates end of checking
+    done_threshold: 3
+    # Wait only for those instances whose state has been changed internally (unaware of external changes)
+    await_strict: true
+    # Bundle state tracking
+    bundle_stable:
+      symbolic_names_ignored: []
+    # OSGi events tracking
+    event_stable:
+      # Topics indicating that instance is not stable
+      topics_unstable:
+        - "org/osgi/framework/ServiceEvent/*"
+        - "org/osgi/framework/FrameworkEvent/*"
+        - "org/osgi/framework/BundleEvent/*"
+      # Ignored service names to handle known issues
+      details_ignored:
+        - "*.*MBean"
+        - "org.osgi.service.component.runtime.ServiceComponentRuntime"
+        - "java.util.ResourceBundle"
+      received_max_age: 5s
+    # Sling Installer tracking
+    installer:
+      # JMX state checking
+      state: true
+      # Pause Installation nodes checking
+      pause: true
 
   # Managed locally (set up automatically)
   local:
     # Data dir (Sling launchpad, JCR repository)
-    unpack_dir: "./aem/home/instance"
+    unpack_dir: "aem/home/instance"
 
     # Source files
     quickstart:
       # AEM SDK ZIP or JAR
-      dist_file: './aem/home/lib/{aem-sdk,cq-quickstart}-*.{zip,jar}'
+      dist_file: 'aem/home/lib/{aem-sdk,cq-quickstart}-*.{zip,jar}'
       # AEM License properties file
-      license_file: "./aem/home/lib/license.properties"
+      license_file: "aem/home/lib/license.properties"
 
   # Package Manager
   package:
-    # Calculate and store checksums on AEM instances to avoid re-deployments when packages are unchanged
-    deploy_avoidance: false
-    # Force re-uploading/installing of just built AEM packages (needed when deploy avoidance is off)
-    snapshot_patterns: ["**/*-SNAPSHOT.zip"]
+    # Force re-uploading/installing of snapshot AEM packages (just built / unreleased)
+    snapshot_patterns: [ "**/*-SNAPSHOT.zip" ]
+    # Use checksums to avoid re-deployments when snapshot AEM packages are unchanged
+    snapshot_deploy_skipping: true
 
+  # OSGi Framework
   osgi:
     bundle:
       install:
@@ -207,8 +235,41 @@ instance:
         start_level: 20
         refresh_packages: true
 
+# Java options used to launch AEM instances
 java:
+  # Java JRE/JDK location
   home_dir: {{ .Env.JAVA_HOME }}
+  # Validate if following Java version constraints are met
+  version_constraints: ">= 11, < 12"
+
+# AEM application build
+app:
+  # Exclude the following paths when determining if the build should be executed or not
+  sources_ignored:
+    - "**/aem/home/**"
+    - "**/.*"
+    - "**/.*/**"
+    - "!.content.xml"
+    - "**/target"
+    - "**/target/**"
+    - "**/build"
+    - "**/build/**"
+    - "**/dist"
+    - "**/dist/**"
+    - "**/generated"
+    - "**/generated/**"
+    - "package-lock.json"
+    - "**/package-lock.json"
+    - "*.log"
+    - "*.tmp"
+    - "**/node_modules"
+    - "**/node_modules/**"
+    - "**/node"
+    - "**/node/**"
+
+base:
+  # Location of temporary files (downloaded AEM packages, etc)
+  tmp_dir: aem/home/tmp
 
 log:
   level: info
@@ -222,9 +283,6 @@ input:
 output:
   format: text
   file: aem/home/aem.log
-
-base:
-  tmp_dir: aem/home/tmp
 ```
 
 After instructing tool where the AEM instances files are located then, finally, instances may be created and launched:

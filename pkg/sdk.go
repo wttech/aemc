@@ -43,10 +43,10 @@ func (s Sdk) Prepare(zipFile string) error {
 		return err
 	}
 	if upToDate {
-		log.Debugf("existing instance SDK '%s' is up-to-date", lock.Data().Version)
+		log.Debugf("existing instance SDK '%s' is up-to-date", lock.DataCurrent().Version)
 		return nil
 	}
-	log.Infof("preparing new instance SDK '%s'", lock.Data().Version)
+	log.Infof("preparing new instance SDK '%s'", lock.DataCurrent().Version)
 	err = s.prepare(zipFile)
 	if err != nil {
 		return err
@@ -55,13 +55,13 @@ func (s Sdk) Prepare(zipFile string) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("prepared new instance SDK '%s'", lock.Data().Version)
+	log.Infof("prepared new instance SDK '%s'", lock.DataCurrent().Version)
 
 	jar, err := s.QuickstartJar()
 	if err != nil {
 		return err
 	}
-	log.Debugf("found JAR '%s' in unpacked SDK '%s'", jar, lock.Data().Version)
+	log.Debugf("found JAR '%s' in unpacked SDK '%s'", jar, lock.DataCurrent().Version)
 
 	return nil
 }

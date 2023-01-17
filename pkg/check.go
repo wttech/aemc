@@ -178,7 +178,7 @@ func (c EventStableChecker) Check(instance Instance) CheckResult {
 	unstableEventCount := len(unstableEvents)
 
 	if unstableEventCount > 0 {
-		message := fmt.Sprintf("recent events unstable (%d): %s", unstableEventCount, unstableEvents[0].Details())
+		message := fmt.Sprintf("some events unstable (%d): %s", unstableEventCount, unstableEvents[0].Details())
 		return CheckResult{
 			ok:      false,
 			message: message,

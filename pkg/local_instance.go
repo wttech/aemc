@@ -458,7 +458,8 @@ func (li LocalInstance) OutOfDate() bool {
 }
 
 func (li LocalInstance) UpToDate() bool {
-	upToDate, err := li.startLock().IsUpToDate()
+	lock := li.startLock()
+	upToDate, err := lock.IsUpToDate()
 	if err != nil {
 		log.Debugf("cannot check if instance '%s' is up-to-date: %s", li.instance.ID(), err)
 		return false

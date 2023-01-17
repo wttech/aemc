@@ -229,9 +229,15 @@ func (pm *PackageManager) deploySnapshot(localPath string) (bool, error) {
 		return false, err
 	}
 	lock := pm.deployLock(localPath, checksum)
-	if !pm.SnapshotDeployStrict && checksum == lock.Data().Checksum {
-		log.Infof("skipped deploying package '%s' on instance '%s'", localPath, pm.instance.ID())
-		return false, nil
+	if !pm.SnapshotDeployStrict {
+		lockData, err := lock.DataLocked()
+		if err != nil {
+			return false, err
+		}
+		if checksum == lockData.Checksum {
+			log.Infof("skipped deploying package '%s' on instance '%s'", localPath, pm.instance.ID())
+			return false, nil
+		}
 	}
 	if err := pm.Deploy(localPath); err != nil {
 		return false, err

@@ -9,7 +9,6 @@ import (
 	"github.com/wttech/aemc/pkg/java"
 	"os"
 	"strings"
-	"time"
 )
 
 const (
@@ -339,10 +338,11 @@ func (im *InstanceManager) AwaitStarted(instances []Instance) error {
 	}
 	log.Infof("awaiting up instance(s) '%s'", InstanceIds(instances))
 	return im.Check(instances, im.CheckOpts, []Checker{
-		im.CheckOpts.BundleStable,
-		im.CheckOpts.EventStable,
-		im.CheckOpts.Installer,
 		im.CheckOpts.AwaitUpTimeout,
+		im.CheckOpts.Reachable,
+		im.CheckOpts.EventStable,
+		im.CheckOpts.BundleStable,
+		im.CheckOpts.Installer,
 	})
 }
 
@@ -360,8 +360,9 @@ func (im *InstanceManager) AwaitStopped(instances []Instance) error {
 	}
 	log.Infof("awaiting down instance(s) '%s'", InstanceIds(instances))
 	return im.Check(instances, im.CheckOpts, []Checker{
-		NewStatusStoppedChecker(),
-		NewTimeoutChecker("down", time.Minute*5),
+		im.CheckOpts.AwaitDownTimeout,
+		im.CheckOpts.StatusStopped,
+		im.CheckOpts.Unreachable,
 	})
 }
 

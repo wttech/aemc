@@ -89,10 +89,12 @@ type CheckOpts struct {
 	DoneNever     bool
 	AwaitStrict   bool
 
+	Reachable        ReachableHTTPChecker
 	BundleStable     BundleStableChecker
 	EventStable      EventStableChecker
 	Installer        InstallerChecker
 	AwaitUpTimeout   TimeoutChecker
+	Unreachable      ReachableHTTPChecker
 	StatusStopped    StatusStoppedChecker
 	AwaitDownTimeout TimeoutChecker
 }
@@ -103,12 +105,14 @@ func (im *InstanceManager) NewCheckOpts() *CheckOpts {
 		Interval:      time.Second * 5,
 		DoneThreshold: 3,
 
+		Reachable:        NewReachableChecker(true),
 		BundleStable:     NewBundleStableChecker(),
 		EventStable:      NewEventStableChecker(),
 		AwaitUpTimeout:   NewTimeoutChecker("up", time.Minute*10),
 		Installer:        NewInstallerChecker(),
 		StatusStopped:    NewStatusStoppedChecker(),
 		AwaitDownTimeout: NewTimeoutChecker("down", time.Minute*5),
+		Unreachable:      NewReachableChecker(false),
 	}
 }
 
@@ -146,18 +150,18 @@ func (im *InstanceManager) CheckOnce(instances []Instance, checks []Checker) (bo
 	instanceResults, err := InstanceProcess(im.aem, instances, func(i Instance) ([]CheckResult, error) {
 		var results []CheckResult
 		for _, check := range checks {
-			if check.Spec().Always || lo.EveryBy(results, func(r CheckResult) bool { return r.ok }) {
-				result := check.Check(i)
-				results = append(results, result)
-
-				if result.abort {
-					log.Fatalf("%s | %s", i.ID(), result.message)
-				}
-				if result.err != nil {
-					log.Infof("%s | %s", i.ID(), result.err)
-				} else if len(result.message) > 0 {
-					log.Infof("%s | %s", i.ID(), result.message)
-				}
+			result := check.Check(i)
+			results = append(results, result)
+			if result.abort {
+				log.Fatalf("%s | %s", i.ID(), result.message)
+			}
+			if result.err != nil {
+				log.Infof("%s | %s", i.ID(), result.err)
+			} else if len(result.message) > 0 {
+				log.Infof("%s | %s", i.ID(), result.message)
+			}
+			if !result.ok && check.Spec().Mandatory {
+				break
 			}
 		}
 		return results, nil
@@ -332,7 +336,7 @@ func (im *InstanceManager) configureInstances(config *cfg.Config) {
 
 func configureInstance(inst Instance, config *cfg.Config) {
 	packageOpts := config.Values().Instance.Package
-	inst.packageManager.SnapshotDeployStrict = packageOpts.SnapshotDeployStrict
+	inst.packageManager.SnapshotDeploySkipping = packageOpts.SnapshotDeploySkipping
 	if packageOpts.SnapshotPatterns != nil {
 		inst.packageManager.SnapshotPatterns = packageOpts.SnapshotPatterns
 	}
@@ -371,6 +375,9 @@ func (im *InstanceManager) configureCheckOpts(config *cfg.Config) {
 	}
 	im.CheckOpts.Installer.State = opts.Installer.State
 	im.CheckOpts.Installer.Pause = opts.Installer.Pause
+
+	im.CheckOpts.Reachable.Timeout = opts.Reachable.Timeout
+	im.CheckOpts.Unreachable.Timeout = opts.Unreachable.Timeout
 }
 
 func (im *InstanceManager) configureRest(config *cfg.Config) {

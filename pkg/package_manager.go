@@ -16,16 +16,16 @@ import (
 type PackageManager struct {
 	instance *Instance
 
-	SnapshotDeployStrict bool
-	SnapshotPatterns     []string
+	SnapshotDeploySkipping bool
+	SnapshotPatterns       []string
 }
 
 func NewPackageManager(res *Instance) *PackageManager {
 	return &PackageManager{
 		instance: res,
 
-		SnapshotDeployStrict: false,
-		SnapshotPatterns:     []string{"**/*-SNAPSHOT.zip"},
+		SnapshotDeploySkipping: false,
+		SnapshotPatterns:       []string{"**/*-SNAPSHOT.zip"},
 	}
 }
 
@@ -229,7 +229,7 @@ func (pm *PackageManager) deploySnapshot(localPath string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if deployed && !pm.SnapshotDeployStrict && lock.IsLocked() {
+	if deployed && pm.SnapshotDeploySkipping && lock.IsLocked() {
 		lockData, err := lock.DataLocked()
 		if err != nil {
 			return false, err

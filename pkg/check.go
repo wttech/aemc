@@ -3,6 +3,7 @@ package pkg
 import (
 	"fmt"
 	"github.com/samber/lo"
+	"github.com/wttech/aemc/pkg/common/netx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/osgi"
 	"time"
@@ -33,7 +34,7 @@ type Checker interface {
 }
 
 type CheckSpec struct {
-	Always bool // some checks should be run all the time, some other may be skipped if previous failed
+	Mandatory bool // indicates if next checks should be skipped if that particular one fails
 }
 
 func NewTimeoutChecker(expectedState string, duration time.Duration) TimeoutChecker {
@@ -59,12 +60,10 @@ func (c TimeoutChecker) Check(_ Instance) CheckResult {
 }
 
 func (c TimeoutChecker) Spec() CheckSpec {
-	return CheckSpec{Always: true}
+	return CheckSpec{Mandatory: true}
 }
 
 type TimeoutChecker struct {
-	instanceManager *InstanceManager
-
 	Started       time.Time
 	Duration      time.Duration
 	ExpectedState string
@@ -93,7 +92,7 @@ func NewBundleStableChecker() BundleStableChecker {
 }
 
 func (c BundleStableChecker) Spec() CheckSpec {
-	return CheckSpec{Always: true}
+	return CheckSpec{Mandatory: true}
 }
 
 func NewInstallerChecker() InstallerChecker {
@@ -148,7 +147,7 @@ type EventStableChecker struct {
 }
 
 func (c EventStableChecker) Spec() CheckSpec {
-	return CheckSpec{Always: true}
+	return CheckSpec{Mandatory: false}
 }
 
 func (c EventStableChecker) Check(instance Instance) CheckResult {
@@ -197,7 +196,7 @@ type InstallerChecker struct {
 }
 
 func (c InstallerChecker) Spec() CheckSpec {
-	return CheckSpec{Always: false}
+	return CheckSpec{Mandatory: false}
 }
 
 func (c InstallerChecker) Check(instance Instance) CheckResult {
@@ -242,12 +241,10 @@ func (c InstallerChecker) Check(instance Instance) CheckResult {
 	}
 }
 
-type StatusStoppedChecker struct {
-	instanceManager *InstanceManager
-}
+type StatusStoppedChecker struct{}
 
 func (c StatusStoppedChecker) Spec() CheckSpec {
-	return CheckSpec{Always: true}
+	return CheckSpec{Mandatory: true}
 }
 
 func (c StatusStoppedChecker) Check(instance Instance) CheckResult {
@@ -267,10 +264,8 @@ func (c StatusStoppedChecker) Check(instance Instance) CheckResult {
 				message: "not stopped (bundles unknown)",
 			}
 		}
-
 		unstableBundles := bundles.FindUnstable()
 		stablePercent := bundleStablePercent(bundles, unstableBundles)
-
 		return CheckResult{
 			ok:      false,
 			message: fmt.Sprintf("not stopped (%s bundles stable)", stablePercent),
@@ -280,6 +275,42 @@ func (c StatusStoppedChecker) Check(instance Instance) CheckResult {
 	return CheckResult{
 		ok:      true,
 		message: "stopped (not running)",
+	}
+}
+
+func NewReachableChecker(reachable bool) ReachableHTTPChecker {
+	return ReachableHTTPChecker{
+		Mandatory: reachable,
+		Reachable: reachable,
+		Timeout:   time.Second * 3,
+	}
+}
+
+type ReachableHTTPChecker struct {
+	Mandatory bool
+	Reachable bool
+	Timeout   time.Duration
+}
+
+func (c ReachableHTTPChecker) Spec() CheckSpec {
+	return CheckSpec{Mandatory: c.Mandatory}
+}
+
+func (c ReachableHTTPChecker) Check(instance Instance) CheckResult {
+	address := fmt.Sprintf("%s:%s", instance.http.Hostname(), instance.http.Port())
+	reachable, _ := netx.IsReachable(instance.http.Hostname(), instance.http.Port(), c.Timeout)
+	if c.Reachable == reachable {
+		return CheckResult{ok: true}
+	}
+	if reachable {
+		return CheckResult{
+			ok:      false,
+			message: fmt.Sprintf("still reachable: %s", address),
+		}
+	}
+	return CheckResult{
+		ok:      false,
+		message: fmt.Sprintf("not reachable: %s", address),
 	}
 }
 

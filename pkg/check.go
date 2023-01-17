@@ -11,8 +11,8 @@ import (
 type CheckResult struct {
 	message string
 	ok      bool
-	abort   bool
 	err     error
+	abort   bool
 }
 
 func (c *CheckResult) Message() string {

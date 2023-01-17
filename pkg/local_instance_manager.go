@@ -29,7 +29,7 @@ type LocalOpts struct {
 	Sdk        *Sdk
 }
 
-func (im InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
+func (im *InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
 	result := &LocalOpts{
 		manager: manager,
 
@@ -116,7 +116,7 @@ func (o *Quickstart) FindLicenseFile() (string, error) {
 }
 
 // LocalValidate checks prerequisites needed to manage local instances
-func (im InstanceManager) LocalValidate() error {
+func (im *InstanceManager) LocalValidate() error {
 	err := im.LocalOpts.Validate()
 	if err != nil {
 		return err
@@ -191,7 +191,9 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		}
 	}
 
-	im.AwaitStopped(outdated)
+	if err := im.AwaitStopped(outdated); err != nil {
+		return outdated, err
+	}
 
 	log.Infof("starting instance(s)")
 
@@ -208,9 +210,13 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 	}
 
 	if im.CheckOpts.AwaitStrict {
-		im.AwaitStarted(started)
+		if err := im.AwaitStarted(started); err != nil {
+			return started, err
+		}
 	} else {
-		im.AwaitStarted(instances)
+		if err := im.AwaitStarted(instances); err != nil {
+			return instances, err
+		}
 	}
 
 	return started, nil
@@ -246,10 +252,14 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 	}
 
 	if im.CheckOpts.AwaitStrict {
-		im.AwaitStopped(stopped)
+		if err := im.AwaitStopped(stopped); err != nil {
+			return stopped, err
+		}
 		im.Clean(stopped)
 	} else {
-		im.AwaitStopped(instances)
+		if err := im.AwaitStopped(instances); err != nil {
+			return instances, err
+		}
 		im.Clean(instances)
 	}
 
@@ -315,21 +325,20 @@ func (im *InstanceManager) Delete(instances []Instance) ([]Instance, error) {
 	return deleted, nil
 }
 
-func (im *InstanceManager) AwaitStartedOne(instance Instance) {
-	im.AwaitStarted([]Instance{instance})
+func (im *InstanceManager) AwaitStartedOne(instance Instance) error {
+	return im.AwaitStarted([]Instance{instance})
 }
 
-func (im *InstanceManager) AwaitStartedAll() {
-	im.AwaitStarted(im.All())
+func (im *InstanceManager) AwaitStartedAll() error {
+	return im.AwaitStarted(im.All())
 }
 
-// TODO add timeout and then return error
-func (im *InstanceManager) AwaitStarted(instances []Instance) {
+func (im *InstanceManager) AwaitStarted(instances []Instance) error {
 	if len(instances) == 0 {
-		return
+		return nil
 	}
 	log.Infof("awaiting up instance(s) '%s'", InstanceIds(instances))
-	im.Check(instances, im.CheckOpts, []Checker{
+	return im.Check(instances, im.CheckOpts, []Checker{
 		im.CheckOpts.BundleStable,
 		im.CheckOpts.EventStable,
 		im.CheckOpts.Installer,
@@ -337,21 +346,20 @@ func (im *InstanceManager) AwaitStarted(instances []Instance) {
 	})
 }
 
-func (im *InstanceManager) AwaitStoppedOne(instance Instance) {
-	im.AwaitStopped([]Instance{instance})
+func (im *InstanceManager) AwaitStoppedOne(instance Instance) error {
+	return im.AwaitStopped([]Instance{instance})
 }
 
-func (im *InstanceManager) AwaitStoppedAll() {
-	im.AwaitStopped(im.Locals())
+func (im *InstanceManager) AwaitStoppedAll() error {
+	return im.AwaitStopped(im.Locals())
 }
 
-// TODO add timeout and then return error
-func (im *InstanceManager) AwaitStopped(instances []Instance) {
+func (im *InstanceManager) AwaitStopped(instances []Instance) error {
 	if len(instances) == 0 {
-		return
+		return nil
 	}
 	log.Infof("awaiting down instance(s) '%s'", InstanceIds(instances))
-	im.Check(instances, im.CheckOpts, []Checker{
+	return im.Check(instances, im.CheckOpts, []Checker{
 		NewStatusStoppedChecker(),
 		NewTimeoutChecker("down", time.Minute*5),
 	})

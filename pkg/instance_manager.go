@@ -46,7 +46,7 @@ func (im *InstanceManager) One() (*Instance, error) {
 	return &i, nil
 }
 
-func (im InstanceManager) Some() ([]Instance, error) {
+func (im *InstanceManager) Some() ([]Instance, error) {
 	result := im.All()
 	if len(result) == 0 {
 		return result, fmt.Errorf("no instances defined")
@@ -54,19 +54,19 @@ func (im InstanceManager) Some() ([]Instance, error) {
 	return result, nil
 }
 
-func (im InstanceManager) All() []Instance {
+func (im *InstanceManager) All() []Instance {
 	return im.Instances
 }
 
-func (im InstanceManager) Remotes() []Instance {
+func (im *InstanceManager) Remotes() []Instance {
 	return lo.Filter(im.All(), func(i Instance, _ int) bool { return i.IsRemote() })
 }
 
-func (im InstanceManager) Locals() []Instance {
+func (im *InstanceManager) Locals() []Instance {
 	return lo.Filter(im.All(), func(i Instance, _ int) bool { return i.IsLocal() })
 }
 
-func (im InstanceManager) SomeLocals() ([]Instance, error) {
+func (im *InstanceManager) SomeLocals() ([]Instance, error) {
 	result := im.Locals()
 	if len(result) == 0 {
 		return result, fmt.Errorf("no local instances defined")
@@ -74,11 +74,11 @@ func (im InstanceManager) SomeLocals() ([]Instance, error) {
 	return result, nil
 }
 
-func (im InstanceManager) Authors() []Instance {
+func (im *InstanceManager) Authors() []Instance {
 	return lo.Filter(im.All(), func(i Instance, _ int) bool { return i.IsAuthor() })
 }
 
-func (im InstanceManager) Publishes() []Instance {
+func (im *InstanceManager) Publishes() []Instance {
 	return lo.Filter(im.All(), func(i Instance, _ int) bool { return i.IsPublish() })
 }
 
@@ -112,44 +112,46 @@ func (im *InstanceManager) NewCheckOpts() *CheckOpts {
 	}
 }
 
-func (im *InstanceManager) Check(instances []Instance, opts *CheckOpts, checks []Checker) {
+func (im *InstanceManager) Check(instances []Instance, opts *CheckOpts, checks []Checker) error {
 	if len(instances) == 0 {
 		log.Infof("no instances to check")
-		return
+		return nil
 	}
 	time.Sleep(opts.Warmup)
-	done := 0
+	doneTimes := 0
 	for {
-		if im.CheckOnce(instances, checks) {
+		done, err := im.CheckOnce(instances, checks)
+		if err != nil {
+			return err
+		}
+		if done {
 			if !opts.DoneNever {
-				done++
-				if done <= opts.DoneThreshold {
-					log.Infof("instances checked (%d/%d)", done, opts.DoneThreshold)
+				doneTimes++
+				if doneTimes <= opts.DoneThreshold {
+					log.Infof("instances checked (%d/%d)", doneTimes, opts.DoneThreshold)
 				}
-				if done == opts.DoneThreshold {
+				if doneTimes == opts.DoneThreshold {
 					break
 				}
 			}
 		} else {
-			done = 0
+			doneTimes = 0
 		}
 		time.Sleep(opts.Interval)
 	}
+	return nil
 }
 
-func (im *InstanceManager) CheckOnce(instances []Instance, checks []Checker) bool {
-	ok := true
-	for _, i := range instances {
-		instanceOk := true
+func (im *InstanceManager) CheckOnce(instances []Instance, checks []Checker) (bool, error) {
+	instanceResults, err := InstanceProcess(im.aem, instances, func(i Instance) ([]CheckResult, error) {
+		var results []CheckResult
 		for _, check := range checks {
-			if check.Spec().Always || instanceOk {
+			if check.Spec().Always || lo.SomeBy(results, func(r CheckResult) bool { return !r.ok }) {
 				result := check.Check(i)
+				results = append(results, result)
+
 				if result.abort {
 					log.Fatalf("%s | %s", i.ID(), result.message)
-				}
-				if !result.ok {
-					ok = false
-					instanceOk = false
 				}
 				if result.err != nil {
 					log.Infof("%s | %s", i.ID(), result.err)
@@ -158,8 +160,15 @@ func (im *InstanceManager) CheckOnce(instances []Instance, checks []Checker) boo
 				}
 			}
 		}
+		return results, nil
+	})
+	if err != nil {
+		return false, nil
 	}
-	return ok
+	ok := lo.EveryBy(instanceResults, func(results []CheckResult) bool {
+		return lo.EveryBy(results, func(result CheckResult) bool { return result.ok })
+	})
+	return ok, nil
 }
 
 func (im *InstanceManager) NewLocalAuthor() Instance {
@@ -226,16 +235,6 @@ func (im *InstanceManager) AwaitAll() {
 
 func (im *InstanceManager) Await(instances []Instance) {
 	im.AwaitStarted(instances)
-}
-
-func (im InstanceManager) Process(instances []Instance, processor func(instance Instance) (map[string]any, error)) ([]map[string]any, error) {
-	parallel := false
-	if im.ProcessingMode == instance.ProcessingParallel {
-		parallel = true
-	} else if im.ProcessingMode == instance.ProcessingAuto {
-		parallel = lo.CountBy(instances, func(instance Instance) bool { return instance.IsLocal() }) <= 1
-	}
-	return lox.Map(parallel, instances, processor)
 }
 
 func (im *InstanceManager) Configure(config *cfg.Config) {
@@ -380,4 +379,16 @@ func (im *InstanceManager) configureRest(config *cfg.Config) {
 
 func InstanceIds(instances []Instance) string {
 	return strings.Join(lo.Map(instances, func(i Instance, _ int) string { return i.id }), ",")
+}
+
+// InstanceProcess is a workaround for <https://stackoverflow.com/a/71132286/3360007> (ideally should be a method of manager)
+func InstanceProcess[R any](aem *Aem, instances []Instance, processor func(instance Instance) (R, error)) ([]R, error) {
+	parallel := false
+	mode := aem.InstanceManager().ProcessingMode
+	if mode == instance.ProcessingParallel {
+		parallel = true
+	} else if mode == instance.ProcessingAuto {
+		parallel = lo.CountBy(instances, func(instance Instance) bool { return instance.IsLocal() }) <= 1
+	}
+	return lox.Map(parallel, instances, processor)
 }

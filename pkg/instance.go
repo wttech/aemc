@@ -22,6 +22,7 @@ const (
 	LocationRemote       = "remote"
 	RoleAuthorPortSuffix = "02"
 	ClassifierDefault    = ""
+	AemVersionUnknown    = "unknown"
 )
 
 type Role string
@@ -33,11 +34,14 @@ const (
 
 // Instance represents AEM instance
 type Instance struct {
-	manager          *InstanceManager
-	systemProperties map[string]string
+	manager *InstanceManager
+
+	timeLocation *time.Location
+	aemVersion   string
 
 	local          *LocalInstance
 	http           *HTTP
+	status         *Status
 	repository     *Repo
 	osgi           *OSGi
 	sling          *Sling
@@ -84,6 +88,10 @@ func (i *Instance) Local() *LocalInstance {
 
 func (i *Instance) HTTP() *HTTP {
 	return i.http
+}
+
+func (i *Instance) Status() *Status {
+	return i.status
 }
 
 func (i *Instance) Repo() *Repo {
@@ -180,20 +188,8 @@ func localHosts() []string {
 }
 
 func (i *Instance) TimeLocation() *time.Location {
-	err := i.loadPropertiesOnce()
-	if err != nil {
-		log.Warn(err)
-		return nil
-	}
-	loc := time.Now().Location()
-	locName, ok := i.systemProperties["user.timezone"]
-	if ok {
-		loc, err = time.LoadLocation(locName)
-		if err != nil {
-			log.Warnf("cannot load time location '%s' of instance '%s': %s", locName, i.id, err)
-		}
-	}
-	return loc
+	i.identifySilently()
+	return i.timeLocation
 }
 
 func (i *Instance) Now() time.Time {
@@ -223,37 +219,28 @@ func (i *Instance) Attributes() []string {
 	return result
 }
 
-func (i *Instance) loadPropertiesOnce() error {
-	if i.systemProperties == nil {
-		systemProperties, err := i.ReadSystemProperties()
+func (i *Instance) identifySilently() {
+	if err := i.identify(); err != nil {
+		log.Warnf("cannot identify instance properly: %s", err)
+	}
+}
+
+func (i *Instance) identify() error {
+	if i.timeLocation == nil {
+		timeLocation, err := i.status.TimeLocation()
 		if err != nil {
 			return err
 		}
-		i.systemProperties = systemProperties
+		i.timeLocation = timeLocation
+	}
+	if i.aemVersion == AemVersionUnknown {
+		aemVersion, err := i.status.AemVersion()
+		if err != nil {
+			return err
+		}
+		i.aemVersion = aemVersion
 	}
 	return nil
-}
-
-func (i Instance) ReadSystemProperties() (map[string]string, error) {
-	response, err := i.http.Request().Get("/system/console/status-System%20Properties.json")
-	if err != nil {
-		return nil, fmt.Errorf("cannot read system properties on instance '%s'", i.id)
-	}
-	var results []string
-	if err = fmtx.UnmarshalJSON(response.RawBody(), &results); err != nil {
-		return nil, fmt.Errorf("cannot parse system properties response from instance '%s': %w", i.id, err)
-	}
-	results = lo.Filter(results, func(r string, _ int) bool {
-		return strings.Count(strings.TrimSpace(r), " = ") == 1
-	})
-	return lo.Associate(results, func(r string) (string, string) {
-		parts := strings.Split(strings.TrimSpace(r), " = ")
-		return parts[0], parts[1]
-	}), nil
-}
-
-func (i *Instance) SystemProperties() map[string]string {
-	return i.systemProperties
 }
 
 func (i Instance) String() string {
@@ -294,4 +281,9 @@ func (i Instance) MarshalText() string {
 	}
 	sb.WriteString(fmtx.TblProps(props))
 	return sb.String()
+}
+
+func (i Instance) AemVersion() string {
+	i.identifySilently()
+	return i.aemVersion
 }

@@ -66,8 +66,16 @@ func (li LocalInstance) Opts() *LocalOpts {
 	return li.instance.manager.LocalOpts
 }
 
+func (li LocalInstance) Name() string {
+	id := li.instance.IDInfo()
+	if id.Classifier != "" {
+		return string(id.Role) + IDDelimiter + id.Classifier
+	}
+	return string(id.Role)
+}
+
 func (li LocalInstance) Dir() string {
-	return pathx.Normalize(pathx.Abs(fmt.Sprintf("%s/%s", li.Opts().UnpackDir, li.instance.ID())))
+	return pathx.Normalize(pathx.Abs(fmt.Sprintf("%s/%s", li.Opts().UnpackDir, li.Name())))
 }
 
 func (li LocalInstance) WorkDir() string {
@@ -220,6 +228,16 @@ func (li LocalInstance) Start() error {
 	return nil
 }
 
+func (li LocalInstance) StartAndAwait() error {
+	if err := li.Start(); err != nil {
+		return err
+	}
+	if err := li.instance.manager.AwaitStartedOne(*li.instance); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (li LocalInstance) checkPortsOpen() error {
 	host := li.instance.http.Hostname()
 	ports := []string{
@@ -261,6 +279,16 @@ func (li LocalInstance) Stop() error {
 		return fmt.Errorf("cannot execute stop script for instance '%s': %w", li.instance.ID(), err)
 	}
 	if err := li.startLock().Unlock(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (li LocalInstance) StopAndAwait() error {
+	if err := li.Stop(); err != nil {
+		return err
+	}
+	if err := li.instance.manager.AwaitStoppedOne(*li.instance); err != nil {
 		return err
 	}
 	return nil
@@ -483,4 +511,12 @@ func (li LocalInstance) PID() (int, error) {
 		return 0, fmt.Errorf("cannot convert value '%s' to integer read from instance PID file '%s'", strTrimmed, file)
 	}
 	return num, nil
+}
+
+func (li LocalInstance) MakeBackup(file string) error {
+	return nil
+}
+
+func (li LocalInstance) UseBackup(file string) error {
+	return nil
 }

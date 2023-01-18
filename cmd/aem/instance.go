@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg/common/intsx"
+	"github.com/wttech/aemc/pkg/common/timex"
+	"strings"
 )
 
 func (c *CLI) instanceCmd() *cobra.Command {
@@ -20,6 +22,7 @@ func (c *CLI) instanceCmd() *cobra.Command {
 	cmd.AddCommand(c.instanceDeleteCmd())
 	cmd.AddCommand(c.instanceListCmd())
 	cmd.AddCommand(c.instanceAwaitCmd())
+	cmd.AddCommand(c.instanceBackupCmd())
 	return cmd
 }
 
@@ -224,4 +227,100 @@ func (c *CLI) instanceListCmd() *cobra.Command {
 			c.Ok("instance(s) listed")
 		},
 	}
+}
+
+func (c *CLI) instanceBackupCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "backup",
+		Aliases: []string{"bak"},
+		Short:   "Manages AEM instance backups",
+	}
+	cmd.AddCommand(c.instanceBackupMakeCmd())
+	cmd.AddCommand(c.instanceBackupListCmd())
+	cmd.AddCommand(c.instanceBackupUseCmd())
+	return cmd
+}
+
+func (c *CLI) instanceBackupMakeCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "make",
+		Aliases: []string{"create"},
+		Short:   "Makes AEM instance backup",
+		Run: func(cmd *cobra.Command, args []string) {
+			instanceManager := c.aem.InstanceManager()
+			localInstance, err := instanceManager.OneLocal()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			instance := localInstance.Instance()
+			running := localInstance.IsRunning()
+			fileNameParts := []string{localInstance.Name()}
+
+			if running {
+				fileNameParts = append(fileNameParts, instance.AemVersion())
+				if localInstance.StopAndAwait(); err != nil {
+					c.Error(err)
+					return
+				}
+			}
+
+			file, _ := cmd.Flags().GetString("file")
+			if file == "" {
+				fileNameParts = append(fileNameParts, timex.FileTimestampForNow())
+				file = fmt.Sprintf("%s/%s", localInstance.Opts().BackupDir, strings.Join(fileNameParts, "-"))
+			}
+
+			if err := localInstance.MakeBackup(file); err != nil {
+				c.Error(err)
+				return
+			}
+
+			if running {
+				if err := localInstance.StartAndAwait(); err != nil {
+					c.Error(err)
+					return
+				}
+			}
+
+			c.SetOutput("instance", instance)
+			c.SetOutput("file", file)
+			c.Ok("instance backup made")
+		},
+	}
+	cmd.Flags().String("file", "", "Local file path")
+	return cmd
+}
+
+func (c *CLI) instanceBackupListCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "Lists available AEM instance backups",
+		Run: func(cmd *cobra.Command, args []string) {
+			c.Ok("instance backup listed")
+		},
+	}
+	return cmd
+}
+
+func (c *CLI) instanceBackupUseCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "use",
+		Aliases: []string{"read", "load"},
+		Short:   "Use AEM instance backup",
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+
+			c.SetOutput("instance", instance)
+			c.Ok("instance backup used")
+		},
+	}
+	cmd.Flags().String("file", "", "Local file path")
+	cmd.MarkFlagRequired("file")
+	return cmd
 }

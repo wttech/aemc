@@ -23,6 +23,7 @@ type LocalOpts struct {
 	manager *InstanceManager
 
 	UnpackDir  string
+	BackupDir  string
 	JavaOpts   *java.Opts
 	Quickstart *Quickstart
 	Sdk        *Sdk

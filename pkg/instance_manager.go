@@ -46,6 +46,18 @@ func (im *InstanceManager) One() (*Instance, error) {
 	return &i, nil
 }
 
+func (im *InstanceManager) OneLocal() (*LocalInstance, error) {
+	instance, err := im.One()
+	if err != nil {
+		return nil, err
+	}
+	if !instance.IsLocal() {
+		return nil, fmt.Errorf("the instance matching current filters is not defined as local")
+	}
+	return instance.Local(), nil
+
+}
+
 func (im *InstanceManager) Some() ([]Instance, error) {
 	result := im.All()
 	if len(result) == 0 {
@@ -211,12 +223,15 @@ func (im *InstanceManager) NewByURL(url string) (*Instance, error) {
 
 func (im *InstanceManager) New(id, url, user, password string) *Instance {
 	res := &Instance{
-		manager:  im,
+		manager:    im,
+		aemVersion: AemVersionUnknown,
+
 		id:       id,
 		user:     user,
 		password: password,
 	}
 	res.http = NewHTTP(res, url)
+	res.status = NewStatus(res)
 	res.repository = NewRepo(res)
 	res.packageManager = NewPackageManager(res)
 	res.osgi = NewOSGi(res)

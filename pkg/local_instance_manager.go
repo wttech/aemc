@@ -343,8 +343,8 @@ func (im *InstanceManager) AwaitStarted(instances []Instance) error {
 	return im.Check(instances, im.CheckOpts, []Checker{
 		im.CheckOpts.AwaitUpTimeout,
 		im.CheckOpts.Reachable,
-		im.CheckOpts.EventStable,
 		im.CheckOpts.BundleStable,
+		im.CheckOpts.EventStable,
 		im.CheckOpts.Installer,
 	})
 }

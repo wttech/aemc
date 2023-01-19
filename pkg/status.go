@@ -5,15 +5,20 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/fmtx"
-	"github.com/wttech/aemc/pkg/status"
+	"regexp"
 	"strings"
 	"time"
 )
 
 const (
-	SystemPropPath     = "/system/console/status-System%20Properties.json"
-	SystemPropTimezone = "user.timezone"
-	SystemOverviewPath = "/libs/granite/operations/content/systemoverview/export.json"
+	SystemPropPath        = "/system/console/status-System%20Properties.json"
+	SystemPropTimezone    = "user.timezone"
+	SystemProductInfoPath = "/system/console/status-productinfo.txt"
+	SystemProductInfoRegex
+)
+
+var (
+	aemVersionRegex = regexp.MustCompile("^ {2}Adobe Experience Manager \\\\((.*)\\\\)$")
 )
 
 type Status struct {
@@ -58,32 +63,15 @@ func (sm Status) TimeLocation() (*time.Location, error) {
 	return timeLocation, nil
 }
 
-func (sm Status) SystemOverview() (*status.SystemOverview, error) {
-	response, err := sm.instance.http.Request().Get(SystemOverviewPath)
-	if err != nil {
-		return nil, fmt.Errorf("cannot read system overview on instance '%s'", sm.instance.id)
-	}
-	var result status.SystemOverview
-	if err := fmtx.UnmarshalJSON(response.RawBody(), &result); err != nil {
-		return nil, fmt.Errorf("cannot parse system overview response from instance '%s': %w", sm.instance.id, err)
-	}
-	return &result, nil
-}
-
 func (sm Status) AemVersion() (string, error) {
-	systemOverview, err := sm.SystemOverview()
+	response, err := sm.instance.http.Request().Get(SystemProductInfoPath)
 	if err != nil {
-		return AemVersionUnknown, err
+		return AemVersionUnknown, fmt.Errorf("cannot read system product info on instance '%s'", sm.instance.id)
 	}
-	return systemOverview.Instance.AemVersion, nil
-}
-
-func (sm Status) RunModes() ([]string, error) {
-	systemOverview, err := sm.SystemOverview()
-	if err != nil {
-		return []string{}, err
+	text := response.String()
+	matches := aemVersionRegex.FindStringSubmatch(text)
+	if len(matches) != 1 {
+		return AemVersionUnknown, fmt.Errorf("cannot find AEM version in system product info of instance '%s'", sm.instance.id)
 	}
-	return lo.Map(strings.Split(systemOverview.Instance.RunModes, ","), func(s string, _ int) string {
-		return strings.TrimSpace(s)
-	}), nil
+	return matches[0], nil
 }

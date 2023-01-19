@@ -36,9 +36,6 @@ const (
 type Instance struct {
 	manager *InstanceManager
 
-	timeLocation *time.Location
-	aemVersion   string
-
 	local          *LocalInstance
 	http           *HTTP
 	status         *Status
@@ -78,27 +75,27 @@ func (i Instance) Password() string {
 	return i.password
 }
 
-func (i *Instance) Manager() *InstanceManager {
+func (i Instance) Manager() *InstanceManager {
 	return i.manager
 }
 
-func (i *Instance) Local() *LocalInstance {
+func (i Instance) Local() *LocalInstance {
 	return i.local
 }
 
-func (i *Instance) HTTP() *HTTP {
+func (i Instance) HTTP() *HTTP {
 	return i.http
 }
 
-func (i *Instance) Status() *Status {
+func (i Instance) Status() *Status {
 	return i.status
 }
 
-func (i *Instance) Repo() *Repo {
+func (i Instance) Repo() *Repo {
 	return i.repository
 }
 
-func (i *Instance) OSGI() *OSGi {
+func (i Instance) OSGI() *OSGi {
 	return i.osgi
 }
 
@@ -106,7 +103,7 @@ func (i Instance) Sling() *Sling {
 	return i.sling
 }
 
-func (i *Instance) PackageManager() *PackageManager {
+func (i Instance) PackageManager() *PackageManager {
 	return i.packageManager
 }
 
@@ -131,19 +128,19 @@ type IDInfo struct {
 	Classifier string
 }
 
-func (i *Instance) IsLocal() bool {
+func (i Instance) IsLocal() bool {
 	return i.IDInfo().Location == LocationLocal
 }
 
-func (i *Instance) IsRemote() bool {
+func (i Instance) IsRemote() bool {
 	return !i.IsLocal()
 }
 
-func (i *Instance) IsAuthor() bool {
+func (i Instance) IsAuthor() bool {
 	return i.IDInfo().Role == RoleAuthor
 }
 
-func (i *Instance) IsPublish() bool {
+func (i Instance) IsPublish() bool {
 	return i.IDInfo().Role == RolePublish
 }
 
@@ -187,20 +184,33 @@ func localHosts() []string {
 	return []string{"127.0.0.1", "localhost"}
 }
 
-func (i *Instance) TimeLocation() *time.Location {
-	i.identifySilently()
-	return i.timeLocation
+func (i Instance) TimeLocation() *time.Location {
+	loc, err := i.status.TimeLocation()
+	if err != nil {
+		log.Warn("cannot determine time location of instance '%s'", i.id)
+		return time.UTC
+	}
+	return loc
 }
 
-func (i *Instance) Now() time.Time {
+func (i Instance) AemVersion() string {
+	version, err := i.status.AemVersion()
+	if err != nil {
+		log.Warn("cannot determine AEM version of instance '%s'", i.id)
+		return AemVersionUnknown
+	}
+	return version
+}
+
+func (i Instance) Now() time.Time {
 	return time.Now().In(i.TimeLocation())
 }
 
-func (i *Instance) Time(unixMilli int64) time.Time {
+func (i Instance) Time(unixMilli int64) time.Time {
 	return time.UnixMilli(unixMilli).In(i.TimeLocation())
 }
 
-func (i *Instance) Attributes() []string {
+func (i Instance) Attributes() []string {
 	var result []string
 	if i.IsLocal() {
 		result = append(result, "local")
@@ -217,30 +227,6 @@ func (i *Instance) Attributes() []string {
 		result = append(result, "remote")
 	}
 	return result
-}
-
-func (i *Instance) identifySilently() {
-	if err := i.identify(); err != nil {
-		log.Warnf("cannot identify instance properly: %s", err)
-	}
-}
-
-func (i *Instance) identify() error {
-	if i.timeLocation == nil {
-		timeLocation, err := i.status.TimeLocation()
-		if err != nil {
-			return err
-		}
-		i.timeLocation = timeLocation
-	}
-	if i.aemVersion == AemVersionUnknown {
-		aemVersion, err := i.status.AemVersion()
-		if err != nil {
-			return err
-		}
-		i.aemVersion = aemVersion
-	}
-	return nil
 }
 
 func (i Instance) String() string {
@@ -281,9 +267,4 @@ func (i Instance) MarshalText() string {
 	}
 	sb.WriteString(fmtx.TblProps(props))
 	return sb.String()
-}
-
-func (i Instance) AemVersion() string {
-	i.identifySilently()
-	return i.aemVersion
 }

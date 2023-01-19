@@ -95,17 +95,6 @@ func (c BundleStableChecker) Spec() CheckSpec {
 	return CheckSpec{Mandatory: true}
 }
 
-func NewInstallerChecker() InstallerChecker {
-	return InstallerChecker{
-		State: true,
-		Pause: true,
-	}
-}
-
-func NewStatusStoppedChecker() StatusStoppedChecker {
-	return StatusStoppedChecker{}
-}
-
 type BundleStableChecker struct {
 	SymbolicNamesIgnored []string
 }
@@ -190,6 +179,13 @@ func (c EventStableChecker) Check(instance Instance) CheckResult {
 	}
 }
 
+func NewInstallerChecker() InstallerChecker {
+	return InstallerChecker{
+		State: true,
+		Pause: true,
+	}
+}
+
 type InstallerChecker struct {
 	State bool
 	Pause bool
@@ -239,6 +235,10 @@ func (c InstallerChecker) Check(instance Instance) CheckResult {
 		ok:      true,
 		message: "installer idle",
 	}
+}
+
+func NewStatusStoppedChecker() StatusStoppedChecker {
+	return StatusStoppedChecker{}
 }
 
 type StatusStoppedChecker struct{}

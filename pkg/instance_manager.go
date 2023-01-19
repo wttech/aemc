@@ -223,8 +223,7 @@ func (im *InstanceManager) NewByURL(url string) (*Instance, error) {
 
 func (im *InstanceManager) New(id, url, user, password string) *Instance {
 	res := &Instance{
-		manager:    im,
-		aemVersion: AemVersionUnknown,
+		manager: im,
 
 		id:       id,
 		user:     user,

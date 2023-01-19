@@ -84,8 +84,8 @@ func (li LocalInstance) WorkDir() string {
 	return fmt.Sprintf("%s/%s", li.Dir(), "aem-compose")
 }
 
-func (li LocalInstance) lockDir() string {
-	return fmt.Sprintf("%s/%s", li.WorkDir(), "lock")
+func (li LocalInstance) LockDir() string {
+	return fmt.Sprintf("%s/lock", li.WorkDir())
 }
 
 func (li LocalInstance) QuickstartDir() string {
@@ -138,7 +138,7 @@ func (li LocalInstance) Create() error {
 }
 
 func (li LocalInstance) createLock() osx.Lock[localInstanceCreateLock] {
-	return osx.NewLock(fmt.Sprintf("%s/create.yml", li.lockDir()), localInstanceCreateLock{
+	return osx.NewLock(fmt.Sprintf("%s/create.yml", li.LockDir()), localInstanceCreateLock{
 		Created: time.Now(),
 	})
 }
@@ -256,7 +256,7 @@ func (li LocalInstance) checkPortsOpen() error {
 }
 
 func (li LocalInstance) startLock() osx.Lock[localInstanceStartLock] {
-	return osx.NewLock(fmt.Sprintf("%s/start.yml", li.lockDir()), localInstanceStartLock{
+	return osx.NewLock(fmt.Sprintf("%s/start.yml", li.LockDir()), localInstanceStartLock{
 		Version:  li.Version,
 		HTTPPort: li.instance.HTTP().Port(),
 		RunModes: li.RunModesString(),

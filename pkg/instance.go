@@ -188,16 +188,17 @@ func localHosts() []string {
 func (i Instance) TimeLocation() *time.Location {
 	loc, err := i.status.TimeLocation()
 	if err != nil {
-		log.Debugf("cannot determine time location of instance '%s'", i.id)
+		log.Debugf("cannot determine time location of instance '%s': %s", i.id, err)
 		return time.UTC
 	}
 	return loc
 }
 
 func (i Instance) AemVersion() string {
+	// TODO try to retrieve version from filename 'aem/home/instance/local_author/crx-quickstart/app/cq-quickstart-6.5.0-standalone-quickstart.jar'
 	version, err := i.status.AemVersion()
 	if err != nil {
-		log.Debugf("cannot determine AEM version of instance '%s'", i.id)
+		log.Debugf("cannot determine AEM version of instance '%s': %s", i.id, err)
 		return AemVersionUnknown
 	}
 	return version
@@ -253,10 +254,9 @@ func (i Instance) MarshalText() string {
 	sb := bytes.NewBufferString("")
 	sb.WriteString(fmt.Sprintf("ID '%s'\n", state.ID))
 	props := map[string]any{
-		"http url":      state.URL,
-		"attributes":    state.Attributes,
-		"time location": i.TimeLocation(),
-		"aem version":   i.AemVersion(),
+		"http url":    state.URL,
+		"attributes":  state.Attributes,
+		"aem version": i.AemVersion(),
 	}
 	if i.IsLocal() {
 		l := i.Local()

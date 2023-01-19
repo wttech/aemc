@@ -39,7 +39,7 @@ const (
 	LocalInstanceScriptStart     = "start"
 	LocalInstanceScriptStop      = "stop"
 	LocalInstanceScriptStatus    = "status"
-	LocalInstanceBackupExtension = "aemb.zst"
+	LocalInstanceBackupExtension = "aemb.tar.zst"
 )
 
 func (li LocalInstance) Instance() *Instance {

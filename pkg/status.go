@@ -64,10 +64,10 @@ func (sm Status) SystemOverview() (*status.SystemOverview, error) {
 		return nil, fmt.Errorf("cannot read system overview on instance '%s'", sm.instance.id)
 	}
 	var result status.SystemOverview
-	if err = fmtx.UnmarshalJSON(response.RawBody(), &result); err != nil {
+	if err := fmtx.UnmarshalJSON(response.RawBody(), &result); err != nil {
 		return nil, fmt.Errorf("cannot parse system overview response from instance '%s': %w", sm.instance.id, err)
 	}
-	return nil, nil
+	return &result, nil
 }
 
 func (sm Status) AemVersion() (string, error) {

@@ -3,19 +3,32 @@ package filex
 import (
 	"fmt"
 	"github.com/mholt/archiver/v3"
+	"github.com/samber/lo"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"os"
 	"path/filepath"
 )
 
-func Archive(sourceDir, targetFile string) error {
+func Archive(sourcePath, targetFile string) error {
 	err := pathx.Ensure(filepath.Dir(targetFile))
 	if err != nil {
 		return err
 	}
-	err = archiver.Archive([]string{sourceDir}, targetFile)
+	var sourcePaths []string
+	if pathx.IsDir(sourcePath) {
+		sourceDirEntries, err := os.ReadDir(sourcePath)
+		if err != nil {
+			return fmt.Errorf("cannot read dir '%s' to be archived to file '%s': %w", sourcePath, targetFile, err)
+		}
+		sourcePaths = lo.Map(sourceDirEntries, func(e os.DirEntry, _ int) string {
+			return pathx.Normalize(fmt.Sprintf("%s/%s", sourcePath, e.Name()))
+		})
+	} else {
+		sourcePaths = []string{sourcePath}
+	}
+	err = archiver.Archive(sourcePaths, targetFile)
 	if err != nil {
-		return fmt.Errorf("cannot archive dir '%s' to file '%s': %w", sourceDir, targetFile, err)
+		return fmt.Errorf("cannot archive dir '%s' to file '%s': %w", sourcePath, targetFile, err)
 	}
 	return nil
 }

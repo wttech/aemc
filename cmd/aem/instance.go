@@ -303,13 +303,35 @@ func (c *CLI) instanceBackupUseCmd() *cobra.Command {
 		Aliases: []string{"read", "load"},
 		Short:   "Use AEM instance backup",
 		Run: func(cmd *cobra.Command, args []string) {
-			instance, err := c.aem.InstanceManager().One()
+			instanceManager := c.aem.InstanceManager()
+			localInstance, err := instanceManager.OneLocal()
 			if err != nil {
 				c.Error(err)
 				return
 			}
+			instance := localInstance.Instance()
+
+			file, _ := cmd.Flags().GetString("file")
+			running := localInstance.IsRunning()
+			if running {
+				if localInstance.StopAndAwait(); err != nil {
+					c.Error(err)
+					return
+				}
+			}
+			if err := localInstance.UseBackup(file); err != nil {
+				c.Error(err)
+				return
+			}
+			if running {
+				if err := localInstance.StartAndAwait(); err != nil {
+					c.Error(err)
+					return
+				}
+			}
 
 			c.SetOutput("instance", instance)
+			c.SetOutput("file", file)
 			c.Ok("instance backup used")
 		},
 	}

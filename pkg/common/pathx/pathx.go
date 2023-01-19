@@ -44,6 +44,10 @@ func ExistsStrict(path string) (bool, error) {
 	return false, fmt.Errorf("cannot check path existence '%s': %w", path, err)
 }
 
+func IsFile(path string) bool {
+	return !IsDir(path)
+}
+
 func IsDir(path string) bool {
 	exists, err := IsDirStrict(path)
 	return err == nil && exists

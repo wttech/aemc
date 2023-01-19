@@ -5,6 +5,7 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/fmtx"
+	"io"
 	"regexp"
 	"strings"
 	"time"
@@ -18,7 +19,7 @@ const (
 )
 
 var (
-	aemVersionRegex = regexp.MustCompile("^ {2}Adobe Experience Manager \\\\((.*)\\\\)$")
+	aemVersionRegex = regexp.MustCompile("^ {2}Adobe Experience Manager \\((.*)\\)$")
 )
 
 type Status struct {
@@ -68,10 +69,16 @@ func (sm Status) AemVersion() (string, error) {
 	if err != nil {
 		return AemVersionUnknown, fmt.Errorf("cannot read system product info on instance '%s'", sm.instance.id)
 	}
-	text := response.String()
-	matches := aemVersionRegex.FindStringSubmatch(text)
-	if len(matches) != 1 {
-		return AemVersionUnknown, fmt.Errorf("cannot find AEM version in system product info of instance '%s'", sm.instance.id)
+	bytes, err := io.ReadAll(response.RawBody())
+	if err != nil {
+		return AemVersionUnknown, fmt.Errorf("cannot read system product info on instance '%s': %w", sm.instance.id, err)
 	}
-	return matches[0], nil
+	lines := string(bytes)
+	for _, line := range strings.Split(lines, "\n") {
+		matches := aemVersionRegex.FindStringSubmatch(line)
+		if matches != nil {
+			return matches[1], nil
+		}
+	}
+	return AemVersionUnknown, nil
 }

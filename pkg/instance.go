@@ -7,6 +7,7 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/fmtx"
+	"golang.org/x/exp/maps"
 	nurl "net/url"
 	"strings"
 	"time"
@@ -187,7 +188,7 @@ func localHosts() []string {
 func (i Instance) TimeLocation() *time.Location {
 	loc, err := i.status.TimeLocation()
 	if err != nil {
-		log.Warn("cannot determine time location of instance '%s'", i.id)
+		log.Debugf("cannot determine time location of instance '%s'", i.id)
 		return time.UTC
 	}
 	return loc
@@ -196,7 +197,7 @@ func (i Instance) TimeLocation() *time.Location {
 func (i Instance) AemVersion() string {
 	version, err := i.status.AemVersion()
 	if err != nil {
-		log.Warn("cannot determine AEM version of instance '%s'", i.id)
+		log.Debugf("cannot determine AEM version of instance '%s'", i.id)
 		return AemVersionUnknown
 	}
 	return version
@@ -251,19 +252,17 @@ func (i Instance) MarshalText() string {
 	state := i.State()
 	sb := bytes.NewBufferString("")
 	sb.WriteString(fmt.Sprintf("ID '%s'\n", state.ID))
-	var props map[string]any
+	props := map[string]any{
+		"http url":      state.URL,
+		"attributes":    state.Attributes,
+		"time location": i.TimeLocation(),
+		"aem version":   i.AemVersion(),
+	}
 	if i.IsLocal() {
 		l := i.Local()
-		props = map[string]any{
-			"http url":   state.URL,
-			"attributes": state.Attributes,
-			"dir":        l.Dir(),
-		}
-	} else {
-		props = map[string]any{
-			"http url":   state.URL,
-			"attributes": state.Attributes,
-		}
+		maps.Copy(props, map[string]any{
+			"dir": l.Dir(),
+		})
 	}
 	sb.WriteString(fmtx.TblProps(props))
 	return sb.String()

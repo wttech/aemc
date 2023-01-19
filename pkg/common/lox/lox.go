@@ -3,6 +3,8 @@ package lox
 import (
 	"context"
 	"golang.org/x/sync/errgroup"
+	"math/rand"
+	"time"
 )
 
 func Map[I any, R any](parallel bool, iterable []I, callback func(instance I) (R, error)) ([]R, error) {
@@ -40,4 +42,12 @@ func SerialMap[I any, R any](iterable []I, callback func(iteratee I) (R, error))
 		results[i] = result
 	}
 	return results, nil
+}
+
+func Random[I any](iterable []I) I {
+	if len(iterable) == 0 {
+		panic("cannot get random value from empty slice")
+	}
+	rand.Seed(time.Now().Unix())
+	return iterable[rand.Intn(len(iterable))]
 }

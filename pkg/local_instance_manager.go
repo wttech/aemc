@@ -150,12 +150,10 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 	}
 	for _, i := range instances {
 		if !i.local.IsCreated() {
-			log.Infof("creating instance '%s'", i.ID())
 			err := i.local.Create()
 			if err != nil {
 				return nil, fmt.Errorf("cannot create instance '%s': %s", i.ID(), err)
 			}
-			log.Infof("created instance '%s'", i.ID())
 			created = append(created, i)
 		}
 	}
@@ -185,7 +183,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		if i.local.IsRunning() && i.local.OutOfDate() {
 			outdated = append(outdated, i)
 
-			log.Infof("instance '%s' is already started but out-of-date - stopping", i.ID())
+			log.Infof("instance '%s' is already started but out-of-date", i.ID())
 			err := i.local.Stop()
 			if err != nil {
 				return nil, fmt.Errorf("cannot stop out-of-date instance '%s': %s", i.ID(), err)
@@ -206,7 +204,6 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 			if err != nil {
 				return nil, fmt.Errorf("cannot start instance '%s': %s", i.ID(), err)
 			}
-			log.Infof("started instance '%s'", i.ID())
 			started = append(started, i)
 		}
 	}
@@ -248,7 +245,6 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 			if err != nil {
 				return nil, fmt.Errorf("cannot stop instance '%s': %s", i.ID(), err)
 			}
-			log.Infof("stopped instance '%s'", i.ID())
 			stopped = append(stopped, i)
 		}
 	}
@@ -283,7 +279,7 @@ func (im *InstanceManager) Kill(instances []Instance) ([]Instance, error) {
 		return nil, err
 	}
 
-	log.Info("killing instance(s)")
+	log.Infof("killing instance(s) '%s'", InstanceIds(instances))
 
 	killed := []Instance{}
 	for _, i := range instances {
@@ -312,6 +308,8 @@ func (im *InstanceManager) DeleteAll() ([]Instance, error) {
 
 func (im *InstanceManager) Delete(instances []Instance) ([]Instance, error) {
 	// im.LocalValidate()
+
+	log.Infof("deleting instance(s) '%s'", InstanceIds(instances))
 
 	deleted := []Instance{}
 	for _, i := range instances {
@@ -370,6 +368,8 @@ func (im *InstanceManager) AwaitStopped(instances []Instance) error {
 }
 
 func (im *InstanceManager) Clean(instances []Instance) ([]Instance, error) {
+	log.Infof("cleaning instance(s) '%s'", InstanceIds(instances))
+
 	cleaned := []Instance{}
 	for _, i := range instances {
 		if !i.local.IsRunning() {

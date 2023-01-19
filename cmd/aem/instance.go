@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg/common/intsx"
-	"github.com/wttech/aemc/pkg/common/timex"
-	"strings"
 )
 
 func (c *CLI) instanceCmd() *cobra.Command {
@@ -244,7 +242,7 @@ func (c *CLI) instanceBackupCmd() *cobra.Command {
 func (c *CLI) instanceBackupMakeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "make",
-		Aliases: []string{"create"},
+		Aliases: []string{"mk", "create"},
 		Short:   "Makes AEM instance backup",
 		Run: func(cmd *cobra.Command, args []string) {
 			instanceManager := c.aem.InstanceManager()
@@ -254,28 +252,23 @@ func (c *CLI) instanceBackupMakeCmd() *cobra.Command {
 				return
 			}
 			instance := localInstance.Instance()
-			running := localInstance.IsRunning()
-			fileNameParts := []string{localInstance.Name()}
 
+			file, _ := cmd.Flags().GetString("file")
+			if file == "" {
+				file = localInstance.ProposeBackupFile()
+			}
+
+			running := localInstance.IsRunning()
 			if running {
-				fileNameParts = append(fileNameParts, instance.AemVersion())
 				if localInstance.StopAndAwait(); err != nil {
 					c.Error(err)
 					return
 				}
 			}
-
-			file, _ := cmd.Flags().GetString("file")
-			if file == "" {
-				fileNameParts = append(fileNameParts, timex.FileTimestampForNow())
-				file = fmt.Sprintf("%s/%s", localInstance.Opts().BackupDir, strings.Join(fileNameParts, "-"))
-			}
-
 			if err := localInstance.MakeBackup(file); err != nil {
 				c.Error(err)
 				return
 			}
-
 			if running {
 				if err := localInstance.StartAndAwait(); err != nil {
 					c.Error(err)

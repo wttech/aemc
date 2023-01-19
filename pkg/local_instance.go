@@ -6,6 +6,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/netx"
 	"github.com/wttech/aemc/pkg/common/pathx"
+	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/instance"
 	"os"
 	"os/exec"
@@ -35,9 +36,10 @@ type LocalInstanceState struct {
 }
 
 const (
-	LocalInstanceScriptStart  = "start"
-	LocalInstanceScriptStop   = "stop"
-	LocalInstanceScriptStatus = "status"
+	LocalInstanceScriptStart     = "start"
+	LocalInstanceScriptStop      = "stop"
+	LocalInstanceScriptStatus    = "status"
+	LocalInstanceBackupExtension = "aemb.zst"
 )
 
 func (li LocalInstance) Instance() *Instance {
@@ -513,10 +515,34 @@ func (li LocalInstance) PID() (int, error) {
 	return num, nil
 }
 
+func (li LocalInstance) ProposeBackupFile() string {
+	nameParts := []string{li.Name()}
+	if li.IsRunning() {
+		nameParts = append(nameParts, li.instance.AemVersion())
+	}
+	nameParts = append(nameParts, timex.FileTimestampForNow())
+	return fmt.Sprintf("%s/%s.%s", li.Opts().BackupDir, strings.Join(nameParts, "-"), LocalInstanceBackupExtension)
+}
+
 func (li LocalInstance) MakeBackup(file string) error {
+	if li.IsRunning() {
+		return fmt.Errorf("cannot make a backup of instance '%s' to file '%s' - instance cannot be running", file, li.instance.ID())
+	}
+	if err := filex.Archive(li.Dir(), file); err != nil {
+		return fmt.Errorf("cannot make a backup of instance '%s' to file '%s': %w", file, li.instance.ID(), err)
+	}
 	return nil
 }
 
 func (li LocalInstance) UseBackup(file string) error {
+	if li.IsRunning() {
+		return fmt.Errorf("cannot use backup of instance '%s' from file '%s' - instance cannot be running", file, li.instance.ID())
+	}
+	if err := li.Delete(); err != nil {
+		return err
+	}
+	if err := filex.Unarchive(file, li.Dir()); err != nil {
+		return fmt.Errorf("cannot use a backup of instance '%s' from file '%s': %w", file, li.instance.ID(), err)
+	}
 	return nil
 }

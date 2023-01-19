@@ -64,8 +64,10 @@ instance:
 
   # Managed locally (set up automatically)
   local:
-    # Data dir (Sling launchpad, JCR repository)
-    unpack_dir: "aem/home/instance"
+    # Current runtime dir (Sling launchpad, JCR repository)
+    unpack_dir: "aem/home/data/instance"
+    # Archived runtime dir (AEM backup files '*.aemb.zst')
+    backup_dir: "aem/home/data/backup"
 
     # Source files
     quickstart:

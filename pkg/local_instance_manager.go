@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	UnpackDir       = "aem/home/instance"
+	UnpackDir       = "aem/home/data/instance"
+	BackupDir       = "aem/home/data/backup"
 	LibDir          = "aem/home/lib"
 	DistFile        = LibDir + "/aem-sdk-quickstart.jar"
 	LicenseFile     = LibDir + "/" + LicenseFilename
@@ -34,6 +35,7 @@ func (im *InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
 		manager: manager,
 
 		UnpackDir: UnpackDir,
+		BackupDir: BackupDir,
 		JavaOpts:  im.aem.javaOpts,
 		Quickstart: &Quickstart{
 			DistFile:    DistFile,
@@ -387,6 +389,9 @@ func (im *InstanceManager) configureLocalOpts(config *cfg.Config) {
 
 	if len(opts.UnpackDir) > 0 {
 		im.LocalOpts.UnpackDir = opts.UnpackDir
+	}
+	if len(opts.BackupDir) > 0 {
+		im.LocalOpts.BackupDir = opts.BackupDir
 	}
 	if len(opts.Quickstart.DistFile) > 0 {
 		im.LocalOpts.Quickstart.DistFile = opts.Quickstart.DistFile

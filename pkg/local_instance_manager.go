@@ -414,14 +414,14 @@ func newBackupList(files []string) *BackupList {
 }
 
 type BackupList struct {
-	Total int
-	Files []BackupFile
+	Total int          `json:"total" yaml:"total"`
+	Files []BackupFile `json:"files" yaml:"files"`
 }
 
 type BackupFile struct {
-	Path     string
-	Size     uint64
-	Modified time.Time
+	Path     string    `json:"path" yaml:"path"`
+	Size     uint64    `json:"size" yaml:"size"`
+	Modified time.Time `json:"modified" yaml:"modified"`
 }
 
 func (fl BackupList) MarshalText() string {

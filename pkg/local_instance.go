@@ -541,6 +541,9 @@ func (li LocalInstance) ProposeBackupFile() string {
 }
 
 func (li LocalInstance) MakeBackup(file string) error {
+	if !li.IsCreated() {
+		return fmt.Errorf("cannot make backup of instance '%s' to file '%s' - instance not created", li.instance.ID(), file)
+	}
 	if li.IsRunning() {
 		return fmt.Errorf("cannot make a backup of instance '%s' to file '%s' - instance cannot be running", li.instance.ID(), file)
 	}

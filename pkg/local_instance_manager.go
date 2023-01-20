@@ -1,14 +1,19 @@
 package pkg
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/cfg"
+	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
+	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/java"
 	"os"
 	"strings"
+	"time"
 )
 
 const (
@@ -382,6 +387,58 @@ func (im *InstanceManager) Clean(instances []Instance) ([]Instance, error) {
 		}
 	}
 	return cleaned, nil
+}
+
+func (im *InstanceManager) ListBackups() (*BackupList, error) {
+	dir := im.LocalOpts.BackupDir
+	files, err := pathx.GlobDir(dir, "*."+LocalInstanceBackupExtension)
+	if err != nil {
+		return nil, fmt.Errorf("cannot list instance backups in directory '%s': %w", dir, err)
+	}
+	return newBackupList(files), nil
+}
+
+func newBackupList(files []string) *BackupList {
+	items := lo.Map(files, func(file string, _ int) BackupFile {
+		stat, _ := os.Stat(file)
+		return BackupFile{
+			Path:     file,
+			Size:     uint64(stat.Size()),
+			Modified: stat.ModTime(),
+		}
+	})
+	return &BackupList{
+		Total: len(items),
+		Files: items,
+	}
+}
+
+type BackupList struct {
+	Total int
+	Files []BackupFile
+}
+
+type BackupFile struct {
+	Path     string
+	Size     uint64
+	Modified time.Time
+}
+
+func (fl BackupList) MarshalText() string {
+	bs := bytes.NewBufferString("")
+	bs.WriteString(fmtx.TblMap("stats", "stat", "value", map[string]any{
+		"total": len(fl.Files),
+		"size":  humanize.Bytes(lo.SumBy(fl.Files, func(file BackupFile) uint64 { return file.Size })),
+	}))
+	bs.WriteString("\n")
+	bs.WriteString(fmtx.TblRows("list", []string{"path", "size", "modified"}, lo.Map(fl.Files, func(file BackupFile, _ int) map[string]any {
+		return map[string]any{
+			"path":     file.Path,
+			"size":     humanize.Bytes(file.Size),
+			"modified": timex.Human(file.Modified),
+		}
+	})))
+	return bs.String()
 }
 
 func (im *InstanceManager) configureLocalOpts(config *cfg.Config) {

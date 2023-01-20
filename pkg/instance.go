@@ -189,7 +189,7 @@ func (i Instance) TimeLocation() *time.Location {
 	loc, err := i.status.TimeLocation()
 	if err != nil {
 		log.Debugf("cannot determine time location of instance '%s': %s", i.id, err)
-		return time.UTC
+		return time.Now().Location()
 	}
 	return loc
 }

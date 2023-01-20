@@ -14,6 +14,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
+	"github.com/wttech/aemc/pkg/common/timex"
 	"io"
 	"os"
 	"path"
@@ -164,7 +165,7 @@ func (c *CLI) printCommandResult() {
 		{"changed", c.outputResponse.Changed},
 		{"failed", c.outputResponse.Failed},
 		{"elapsed", c.outputResponse.Elapsed},
-		{"ended", fmtx.TimeHumanReadable(c.outputResponse.Ended)},
+		{"ended", timex.Human(c.outputResponse.Ended)},
 	}))
 }
 

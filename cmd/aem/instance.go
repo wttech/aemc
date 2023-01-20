@@ -291,7 +291,12 @@ func (c *CLI) instanceBackupListCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "Lists available AEM instance backups",
 		Run: func(cmd *cobra.Command, args []string) {
-			// TODO ...
+			backups, err := c.aem.InstanceManager().ListBackups()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("backups", backups)
 			c.Ok("instance backup listed")
 		},
 	}
@@ -310,20 +315,19 @@ func (c *CLI) instanceBackupUseCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			deleteCreated, _ := cmd.Flags().GetBool("delete-created")
+			if !deleteCreated && localInstance.IsCreated() {
+				c.Fail("instance already created; to delete it use flag '--delete-created'")
+				return
+			}
 			instance := localInstance.Instance()
 			file, _ := cmd.Flags().GetString("file")
-			deleteCreated, _ := cmd.Flags().GetBool("delete-created")
-
 			running := localInstance.IsRunning()
 			if running {
 				if localInstance.StopAndAwait(); err != nil {
 					c.Error(err)
 					return
 				}
-			}
-			if !deleteCreated && localInstance.IsCreated() {
-				c.Fail("instance already created; to delete it use flag '--delete-created'")
-				return
 			}
 			if err := localInstance.UseBackup(file, deleteCreated); err != nil {
 				c.Error(err)
@@ -335,7 +339,6 @@ func (c *CLI) instanceBackupUseCmd() *cobra.Command {
 					return
 				}
 			}
-
 			c.SetOutput("instance", instance)
 			c.SetOutput("file", file)
 			c.Ok("instance backup used")

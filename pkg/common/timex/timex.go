@@ -9,3 +9,7 @@ func FileTimestamp(value time.Time) string {
 func FileTimestampForNow() string {
 	return FileTimestamp(time.Now())
 }
+
+func Human(time time.Time) string {
+	return time.Format("2006-01-02 15:04:05")
+}

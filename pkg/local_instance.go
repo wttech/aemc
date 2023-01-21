@@ -548,7 +548,8 @@ func (li LocalInstance) MakeBackup(file string) error {
 		return fmt.Errorf("cannot make a backup of instance '%s' to file '%s' - instance cannot be running", li.instance.ID(), file)
 	}
 	log.Infof("making backup of instance '%s' to file '%s'", li.instance.ID(), file)
-	if err := filex.Archive(li.Dir(), file); err != nil {
+	_, err := filex.ArchiveWithChanged(li.Dir(), file)
+	if err != nil {
 		return fmt.Errorf("cannot make a backup of instance '%s' to file '%s': %w", li.instance.ID(), file, err)
 	}
 	log.Infof("made backup of instance '%s' to file '%s'", li.instance.ID(), file)
@@ -568,7 +569,8 @@ func (li LocalInstance) UseBackup(file string, deleteCreated bool) error {
 		}
 	}
 	log.Infof("using backup of instance '%s' from file '%s'", li.instance.ID(), file)
-	if err := filex.Unarchive(file, li.Dir()); err != nil {
+	_, err := filex.UnarchiveWithChanged(file, li.Dir())
+	if err != nil {
 		return fmt.Errorf("cannot use a backup of instance '%s' from file '%s': %w", li.instance.ID(), file, err)
 	}
 	log.Infof("used backup of instance '%s' from file '%s'", li.instance.ID(), file)

@@ -41,7 +41,7 @@ func (c *CLI) instanceBackupMakeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "make",
 		Aliases: []string{"mk", "create"},
-		Short:   "Makes AEM instance backup",
+		Short:   "Makes single AEM instance backup",
 		Run: func(cmd *cobra.Command, args []string) {
 			instanceManager := c.aem.InstanceManager()
 			localInstance, err := instanceManager.OneLocal()
@@ -87,7 +87,7 @@ func (c *CLI) instanceBackupUseCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "use",
 		Aliases: []string{"read", "load"},
-		Short:   "Use AEM instance backup",
+		Short:   "Uses single AEM instance backup",
 		Run: func(cmd *cobra.Command, args []string) {
 			instanceManager := c.aem.InstanceManager()
 			localInstance, err := instanceManager.OneLocal()

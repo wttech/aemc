@@ -144,7 +144,7 @@ func (im *InstanceManager) Check(instances []Instance, opts *CheckOpts, checks [
 			if !opts.DoneNever {
 				doneTimes++
 				if doneTimes <= opts.DoneThreshold {
-					log.Infof("instances checked (%d/%d)", doneTimes, opts.DoneThreshold)
+					log.Infof("instances checked (%d/%d) '%s'", doneTimes, opts.DoneThreshold, InstanceIds(instances))
 				}
 				if doneTimes == opts.DoneThreshold {
 					break

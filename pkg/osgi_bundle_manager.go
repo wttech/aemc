@@ -59,7 +59,7 @@ func (bm *OSGiBundleManager) List() (*osgi.BundleList, error) {
 		return nil, fmt.Errorf("cannot request bundle list on instance '%s': %w", bm.instance.ID(), err)
 	}
 	if resp.IsError() {
-		return nil, fmt.Errorf("cannot request bundle list on instance '%s': %w", bm.instance.ID(), err)
+		return nil, fmt.Errorf("cannot request bundle list on instance '%s': %s", bm.instance.ID(), resp.Status())
 	}
 	var res osgi.BundleList
 	if err = fmtx.UnmarshalJSON(resp.RawBody(), &res); err != nil {

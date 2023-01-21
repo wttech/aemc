@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/intsx"
@@ -51,7 +52,7 @@ func (pl List) MarshalText() string {
 			"group":     item.Group,
 			"name":      item.Name,
 			"version":   item.Version,
-			"size":      item.Size,
+			"size":      humanize.Bytes(uint64(item.Size)),
 			"installed": item.Installed(), // TODO date or 'not yet'
 			"built":     item.Built(),     // TODO date or 'not yet'
 		}

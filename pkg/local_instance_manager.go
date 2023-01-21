@@ -1,18 +1,24 @@
 package pkg
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/cfg"
+	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
+	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/java"
 	"os"
 	"strings"
+	"time"
 )
 
 const (
-	UnpackDir       = "aem/home/instance"
+	UnpackDir       = "aem/home/data/instance"
+	BackupDir       = "aem/home/data/backup"
 	LibDir          = "aem/home/lib"
 	DistFile        = LibDir + "/aem-sdk-quickstart.jar"
 	LicenseFile     = LibDir + "/" + LicenseFilename
@@ -23,6 +29,7 @@ type LocalOpts struct {
 	manager *InstanceManager
 
 	UnpackDir  string
+	BackupDir  string
 	JavaOpts   *java.Opts
 	Quickstart *Quickstart
 	Sdk        *Sdk
@@ -33,6 +40,7 @@ func (im *InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
 		manager: manager,
 
 		UnpackDir: UnpackDir,
+		BackupDir: BackupDir,
 		JavaOpts:  im.aem.javaOpts,
 		Quickstart: &Quickstart{
 			DistFile:    DistFile,
@@ -147,12 +155,10 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 	}
 	for _, i := range instances {
 		if !i.local.IsCreated() {
-			log.Infof("creating instance '%s'", i.ID())
 			err := i.local.Create()
 			if err != nil {
 				return nil, fmt.Errorf("cannot create instance '%s': %s", i.ID(), err)
 			}
-			log.Infof("created instance '%s'", i.ID())
 			created = append(created, i)
 		}
 	}
@@ -182,7 +188,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		if i.local.IsRunning() && i.local.OutOfDate() {
 			outdated = append(outdated, i)
 
-			log.Infof("instance '%s' is already started but out-of-date - stopping", i.ID())
+			log.Infof("instance '%s' is already started but out-of-date", i.ID())
 			err := i.local.Stop()
 			if err != nil {
 				return nil, fmt.Errorf("cannot stop out-of-date instance '%s': %s", i.ID(), err)
@@ -203,7 +209,6 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 			if err != nil {
 				return nil, fmt.Errorf("cannot start instance '%s': %s", i.ID(), err)
 			}
-			log.Infof("started instance '%s'", i.ID())
 			started = append(started, i)
 		}
 	}
@@ -245,7 +250,6 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 			if err != nil {
 				return nil, fmt.Errorf("cannot stop instance '%s': %s", i.ID(), err)
 			}
-			log.Infof("stopped instance '%s'", i.ID())
 			stopped = append(stopped, i)
 		}
 	}
@@ -280,7 +284,7 @@ func (im *InstanceManager) Kill(instances []Instance) ([]Instance, error) {
 		return nil, err
 	}
 
-	log.Info("killing instance(s)")
+	log.Infof("killing instance(s) '%s'", InstanceIds(instances))
 
 	killed := []Instance{}
 	for _, i := range instances {
@@ -309,6 +313,8 @@ func (im *InstanceManager) DeleteAll() ([]Instance, error) {
 
 func (im *InstanceManager) Delete(instances []Instance) ([]Instance, error) {
 	// im.LocalValidate()
+
+	log.Infof("deleting instance(s) '%s'", InstanceIds(instances))
 
 	deleted := []Instance{}
 	for _, i := range instances {
@@ -340,8 +346,8 @@ func (im *InstanceManager) AwaitStarted(instances []Instance) error {
 	return im.Check(instances, im.CheckOpts, []Checker{
 		im.CheckOpts.AwaitUpTimeout,
 		im.CheckOpts.Reachable,
-		im.CheckOpts.EventStable,
 		im.CheckOpts.BundleStable,
+		im.CheckOpts.EventStable,
 		im.CheckOpts.Installer,
 	})
 }
@@ -367,6 +373,8 @@ func (im *InstanceManager) AwaitStopped(instances []Instance) error {
 }
 
 func (im *InstanceManager) Clean(instances []Instance) ([]Instance, error) {
+	log.Infof("cleaning instance(s) '%s'", InstanceIds(instances))
+
 	cleaned := []Instance{}
 	for _, i := range instances {
 		if !i.local.IsRunning() {
@@ -381,11 +389,66 @@ func (im *InstanceManager) Clean(instances []Instance) ([]Instance, error) {
 	return cleaned, nil
 }
 
+func (im *InstanceManager) ListBackups() (*BackupList, error) {
+	dir := im.LocalOpts.BackupDir
+	files, err := pathx.GlobDir(dir, "*."+LocalInstanceBackupExtension)
+	if err != nil {
+		return nil, fmt.Errorf("cannot list instance backups in directory '%s': %w", dir, err)
+	}
+	return newBackupList(files), nil
+}
+
+func newBackupList(files []string) *BackupList {
+	items := lo.Map(files, func(file string, _ int) BackupFile {
+		stat, _ := os.Stat(file)
+		return BackupFile{
+			Path:     file,
+			Size:     uint64(stat.Size()),
+			Modified: stat.ModTime(),
+		}
+	})
+	return &BackupList{
+		Total: len(items),
+		Files: items,
+	}
+}
+
+type BackupList struct {
+	Total int          `json:"total" yaml:"total"`
+	Files []BackupFile `json:"files" yaml:"files"`
+}
+
+type BackupFile struct {
+	Path     string    `json:"path" yaml:"path"`
+	Size     uint64    `json:"size" yaml:"size"`
+	Modified time.Time `json:"modified" yaml:"modified"`
+}
+
+func (fl BackupList) MarshalText() string {
+	bs := bytes.NewBufferString("")
+	bs.WriteString(fmtx.TblMap("stats", "stat", "value", map[string]any{
+		"total": len(fl.Files),
+		"size":  humanize.Bytes(lo.SumBy(fl.Files, func(file BackupFile) uint64 { return file.Size })),
+	}))
+	bs.WriteString("\n")
+	bs.WriteString(fmtx.TblRows("list", []string{"path", "size", "modified"}, lo.Map(fl.Files, func(file BackupFile, _ int) map[string]any {
+		return map[string]any{
+			"path":     file.Path,
+			"size":     humanize.Bytes(file.Size),
+			"modified": timex.Human(file.Modified),
+		}
+	})))
+	return bs.String()
+}
+
 func (im *InstanceManager) configureLocalOpts(config *cfg.Config) {
 	opts := config.Values().Instance.Local
 
 	if len(opts.UnpackDir) > 0 {
 		im.LocalOpts.UnpackDir = opts.UnpackDir
+	}
+	if len(opts.BackupDir) > 0 {
+		im.LocalOpts.BackupDir = opts.BackupDir
 	}
 	if len(opts.Quickstart.DistFile) > 0 {
 		im.LocalOpts.Quickstart.DistFile = opts.Quickstart.DistFile

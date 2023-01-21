@@ -3,6 +3,7 @@ package pkg
 import (
 	"fmt"
 	"github.com/samber/lo"
+	"github.com/wttech/aemc/pkg/common/lox"
 	"github.com/wttech/aemc/pkg/common/netx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/osgi"
@@ -95,17 +96,6 @@ func (c BundleStableChecker) Spec() CheckSpec {
 	return CheckSpec{Mandatory: true}
 }
 
-func NewInstallerChecker() InstallerChecker {
-	return InstallerChecker{
-		State: true,
-		Pause: true,
-	}
-}
-
-func NewStatusStoppedChecker() StatusStoppedChecker {
-	return StatusStoppedChecker{}
-}
-
 type BundleStableChecker struct {
 	SymbolicNamesIgnored []string
 }
@@ -124,10 +114,11 @@ func (c BundleStableChecker) Check(instance Instance) CheckResult {
 
 	if unstableBundleCount > 0 {
 		var message string
+		randomBundleSymbolicName := lox.Random(unstableBundles).SymbolicName
 		if unstableBundleCount <= 10 {
-			message = fmt.Sprintf("some bundles unstable (%d): %s", unstableBundleCount, unstableBundles[0].SymbolicName)
+			message = fmt.Sprintf("some bundles unstable (%d): %s", unstableBundleCount, randomBundleSymbolicName)
 		} else {
-			message = fmt.Sprintf("many bundles unstable (%s): %s", bundleStablePercent(bundles, unstableBundles), unstableBundles[0].SymbolicName)
+			message = fmt.Sprintf("many bundles unstable (%s): %s", bundleStablePercent(bundles, unstableBundles), randomBundleSymbolicName)
 		}
 		return CheckResult{
 			ok:      false,
@@ -190,6 +181,13 @@ func (c EventStableChecker) Check(instance Instance) CheckResult {
 	}
 }
 
+func NewInstallerChecker() InstallerChecker {
+	return InstallerChecker{
+		State: true,
+		Pause: true,
+	}
+}
+
 type InstallerChecker struct {
 	State bool
 	Pause bool
@@ -239,6 +237,10 @@ func (c InstallerChecker) Check(instance Instance) CheckResult {
 		ok:      true,
 		message: "installer idle",
 	}
+}
+
+func NewStatusStoppedChecker() StatusStoppedChecker {
+	return StatusStoppedChecker{}
 }
 
 type StatusStoppedChecker struct{}

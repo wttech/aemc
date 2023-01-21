@@ -20,6 +20,7 @@ func (c *CLI) instanceCmd() *cobra.Command {
 	cmd.AddCommand(c.instanceDeleteCmd())
 	cmd.AddCommand(c.instanceListCmd())
 	cmd.AddCommand(c.instanceAwaitCmd())
+	cmd.AddCommand(c.instanceBackupCmd())
 	return cmd
 }
 

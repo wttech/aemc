@@ -7,6 +7,7 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/fmtx"
+	"golang.org/x/exp/maps"
 	nurl "net/url"
 	"strings"
 	"time"
@@ -22,6 +23,7 @@ const (
 	LocationRemote       = "remote"
 	RoleAuthorPortSuffix = "02"
 	ClassifierDefault    = ""
+	AemVersionUnknown    = "unknown"
 )
 
 type Role string
@@ -33,11 +35,11 @@ const (
 
 // Instance represents AEM instance
 type Instance struct {
-	manager          *InstanceManager
-	systemProperties map[string]string
+	manager *InstanceManager
 
 	local          *LocalInstance
 	http           *HTTP
+	status         *Status
 	repository     *Repo
 	osgi           *OSGi
 	sling          *Sling
@@ -74,23 +76,27 @@ func (i Instance) Password() string {
 	return i.password
 }
 
-func (i *Instance) Manager() *InstanceManager {
+func (i Instance) Manager() *InstanceManager {
 	return i.manager
 }
 
-func (i *Instance) Local() *LocalInstance {
+func (i Instance) Local() *LocalInstance {
 	return i.local
 }
 
-func (i *Instance) HTTP() *HTTP {
+func (i Instance) HTTP() *HTTP {
 	return i.http
 }
 
-func (i *Instance) Repo() *Repo {
+func (i Instance) Status() *Status {
+	return i.status
+}
+
+func (i Instance) Repo() *Repo {
 	return i.repository
 }
 
-func (i *Instance) OSGI() *OSGi {
+func (i Instance) OSGI() *OSGi {
 	return i.osgi
 }
 
@@ -98,7 +104,7 @@ func (i Instance) Sling() *Sling {
 	return i.sling
 }
 
-func (i *Instance) PackageManager() *PackageManager {
+func (i Instance) PackageManager() *PackageManager {
 	return i.packageManager
 }
 
@@ -123,19 +129,19 @@ type IDInfo struct {
 	Classifier string
 }
 
-func (i *Instance) IsLocal() bool {
+func (i Instance) IsLocal() bool {
 	return i.IDInfo().Location == LocationLocal
 }
 
-func (i *Instance) IsRemote() bool {
+func (i Instance) IsRemote() bool {
 	return !i.IsLocal()
 }
 
-func (i *Instance) IsAuthor() bool {
+func (i Instance) IsAuthor() bool {
 	return i.IDInfo().Role == RoleAuthor
 }
 
-func (i *Instance) IsPublish() bool {
+func (i Instance) IsPublish() bool {
 	return i.IDInfo().Role == RolePublish
 }
 
@@ -179,32 +185,34 @@ func localHosts() []string {
 	return []string{"127.0.0.1", "localhost"}
 }
 
-func (i *Instance) TimeLocation() *time.Location {
-	err := i.loadPropertiesOnce()
+func (i Instance) TimeLocation() *time.Location {
+	loc, err := i.status.TimeLocation()
 	if err != nil {
-		log.Warn(err)
-		return nil
-	}
-	loc := time.Now().Location()
-	locName, ok := i.systemProperties["user.timezone"]
-	if ok {
-		loc, err = time.LoadLocation(locName)
-		if err != nil {
-			log.Warnf("cannot load time location '%s' of instance '%s': %s", locName, i.id, err)
-		}
+		log.Debugf("cannot determine time location of instance '%s': %s", i.id, err)
+		return time.Now().Location()
 	}
 	return loc
 }
 
-func (i *Instance) Now() time.Time {
+func (i Instance) AemVersion() string {
+	// TODO try to retrieve version from filename 'aem/home/instance/local_author/crx-quickstart/app/cq-quickstart-6.5.0-standalone-quickstart.jar'
+	version, err := i.status.AemVersion()
+	if err != nil {
+		log.Debugf("cannot determine AEM version of instance '%s': %s", i.id, err)
+		return AemVersionUnknown
+	}
+	return version
+}
+
+func (i Instance) Now() time.Time {
 	return time.Now().In(i.TimeLocation())
 }
 
-func (i *Instance) Time(unixMilli int64) time.Time {
+func (i Instance) Time(unixMilli int64) time.Time {
 	return time.UnixMilli(unixMilli).In(i.TimeLocation())
 }
 
-func (i *Instance) Attributes() []string {
+func (i Instance) Attributes() []string {
 	var result []string
 	if i.IsLocal() {
 		result = append(result, "local")
@@ -221,39 +229,6 @@ func (i *Instance) Attributes() []string {
 		result = append(result, "remote")
 	}
 	return result
-}
-
-func (i *Instance) loadPropertiesOnce() error {
-	if i.systemProperties == nil {
-		systemProperties, err := i.ReadSystemProperties()
-		if err != nil {
-			return err
-		}
-		i.systemProperties = systemProperties
-	}
-	return nil
-}
-
-func (i Instance) ReadSystemProperties() (map[string]string, error) {
-	response, err := i.http.Request().Get("/system/console/status-System%20Properties.json")
-	if err != nil {
-		return nil, fmt.Errorf("cannot read system properties on instance '%s'", i.id)
-	}
-	var results []string
-	if err = fmtx.UnmarshalJSON(response.RawBody(), &results); err != nil {
-		return nil, fmt.Errorf("cannot parse system properties response from instance '%s': %w", i.id, err)
-	}
-	results = lo.Filter(results, func(r string, _ int) bool {
-		return strings.Count(strings.TrimSpace(r), " = ") == 1
-	})
-	return lo.Associate(results, func(r string) (string, string) {
-		parts := strings.Split(strings.TrimSpace(r), " = ")
-		return parts[0], parts[1]
-	}), nil
-}
-
-func (i *Instance) SystemProperties() map[string]string {
-	return i.systemProperties
 }
 
 func (i Instance) String() string {
@@ -278,19 +253,16 @@ func (i Instance) MarshalText() string {
 	state := i.State()
 	sb := bytes.NewBufferString("")
 	sb.WriteString(fmt.Sprintf("ID '%s'\n", state.ID))
-	var props map[string]any
+	props := map[string]any{
+		"http url":    state.URL,
+		"attributes":  state.Attributes,
+		"aem version": i.AemVersion(),
+	}
 	if i.IsLocal() {
 		l := i.Local()
-		props = map[string]any{
-			"http url":   state.URL,
-			"attributes": state.Attributes,
-			"dir":        l.Dir(),
-		}
-	} else {
-		props = map[string]any{
-			"http url":   state.URL,
-			"attributes": state.Attributes,
-		}
+		maps.Copy(props, map[string]any{
+			"dir": l.Dir(),
+		})
 	}
 	sb.WriteString(fmtx.TblProps(props))
 	return sb.String()

@@ -26,8 +26,8 @@ func NewInstanceManager(aem *Aem) *InstanceManager {
 	result := new(InstanceManager)
 	result.aem = aem
 
-	result.LocalOpts = result.NewLocalOpts(result)
 	result.ProcessingMode = instance.ProcessingParallel
+	result.LocalOpts = result.NewLocalOpts(result)
 	result.CheckOpts = result.NewCheckOpts()
 	result.Instances = result.NewLocalPair()
 
@@ -44,6 +44,18 @@ func (im *InstanceManager) One() (*Instance, error) {
 	}
 	i := instances[0]
 	return &i, nil
+}
+
+func (im *InstanceManager) OneLocal() (*LocalInstance, error) {
+	instance, err := im.One()
+	if err != nil {
+		return nil, err
+	}
+	if !instance.IsLocal() {
+		return nil, fmt.Errorf("the instance matching current filters is not defined as local")
+	}
+	return instance.Local(), nil
+
 }
 
 func (im *InstanceManager) Some() ([]Instance, error) {
@@ -132,7 +144,7 @@ func (im *InstanceManager) Check(instances []Instance, opts *CheckOpts, checks [
 			if !opts.DoneNever {
 				doneTimes++
 				if doneTimes <= opts.DoneThreshold {
-					log.Infof("instances checked (%d/%d)", doneTimes, opts.DoneThreshold)
+					log.Infof("instances checked (%d/%d) '%s'", doneTimes, opts.DoneThreshold, InstanceIds(instances))
 				}
 				if doneTimes == opts.DoneThreshold {
 					break
@@ -211,12 +223,14 @@ func (im *InstanceManager) NewByURL(url string) (*Instance, error) {
 
 func (im *InstanceManager) New(id, url, user, password string) *Instance {
 	res := &Instance{
-		manager:  im,
+		manager: im,
+
 		id:       id,
 		user:     user,
 		password: password,
 	}
 	res.http = NewHTTP(res, url)
+	res.status = NewStatus(res)
 	res.repository = NewRepo(res)
 	res.packageManager = NewPackageManager(res)
 	res.osgi = NewOSGi(res)

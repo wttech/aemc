@@ -531,7 +531,7 @@ func (li LocalInstance) PID() (int, error) {
 	return num, nil
 }
 
-func (li LocalInstance) ProposeBackupFile() string {
+func (li LocalInstance) ProposeBackupFileToMake() string {
 	nameParts := []string{li.Name()}
 	if li.IsRunning() {
 		nameParts = append(nameParts, li.instance.AemVersion())
@@ -554,6 +554,14 @@ func (li LocalInstance) MakeBackup(file string) error {
 	}
 	log.Infof("made backup of instance '%s' to file '%s'", li.instance.ID(), file)
 	return nil
+}
+
+func (li LocalInstance) ProposeBackupFileToUse() (string, error) {
+	file, err := pathx.GlobOne(fmt.Sprintf("%s/%s-*.%s", li.Opts().BackupDir, li.Name(), LocalInstanceBackupExtension))
+	if err != nil {
+		return "", fmt.Errorf("no backup file found to use for instance '%s': %w", li.instance.ID(), err)
+	}
+	return file, nil
 }
 
 func (li LocalInstance) UseBackup(file string, deleteCreated bool) error {

@@ -557,7 +557,17 @@ func (li LocalInstance) MakeBackup(file string) error {
 }
 
 func (li LocalInstance) ProposeBackupFileToUse() (string, error) {
-	file, err := pathx.GlobOne(fmt.Sprintf("%s/%s-*.%s", li.Opts().BackupDir, li.Name(), LocalInstanceBackupExtension))
+	var pathPattern string
+	if li.IsRunning() {
+		aemVersion, err := li.instance.status.AemVersion()
+		if err != nil {
+			return "", err
+		}
+		pathPattern = fmt.Sprintf("%s/%s-%s-*.%s", li.Opts().BackupDir, li.Name(), aemVersion, LocalInstanceBackupExtension)
+	} else {
+		pathPattern = fmt.Sprintf("%s/%s-*.%s", li.Opts().BackupDir, li.Name(), LocalInstanceBackupExtension)
+	}
+	file, err := pathx.GlobOne(pathPattern)
 	if err != nil {
 		return "", fmt.Errorf("no backup file found to use for instance '%s': %w", li.instance.ID(), err)
 	}

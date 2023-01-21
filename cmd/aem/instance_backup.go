@@ -102,6 +102,14 @@ func (c *CLI) instanceBackupUseCmd() *cobra.Command {
 			}
 			instance := localInstance.Instance()
 			file, _ := cmd.Flags().GetString("file")
+			if file == "" {
+				fileProposal, err := localInstance.ProposeBackupFileToUse()
+				if err != nil {
+					c.Error(err)
+					return
+				}
+				file = fileProposal
+			}
 			running := localInstance.IsRunning()
 			if running {
 				if localInstance.StopAndAwait(); err != nil {
@@ -125,7 +133,6 @@ func (c *CLI) instanceBackupUseCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().String("file", "", "Local file path")
-	cmd.MarkFlagRequired("file")
 	cmd.Flags().Bool("delete-created", false, "Delete already created instance")
 	return cmd
 }

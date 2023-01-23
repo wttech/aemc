@@ -39,6 +39,12 @@ instance:
     done_threshold: 3
     # Wait only for those instances whose state has been changed internally (unaware of external changes)
     await_strict: true
+    # Max time to wait for the instance to be healthy after executing the start script or e.g deploying a package
+    await_started_timeout:
+      duration: 10m
+    # Max time to wait for the instance to be stopped after executing the stop script
+    await_stopped_timeout:
+      duration: 10m
     # Bundle state tracking
     bundle_stable:
       symbolic_names_ignored: []

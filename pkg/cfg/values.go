@@ -71,13 +71,13 @@ type ConfigValues struct {
 				State bool `mapstructure:"state" yaml:"state"`
 				Pause bool `mapstructure:"pause" yaml:"pause"`
 			} `mapstructure:"installer" yaml:"installer"`
-			AwaitStrict    bool `mapstructure:"await_strict" yaml:"await_strict"`
-			AwaitUpTimeout struct {
+			AwaitStrict         bool `mapstructure:"await_strict" yaml:"await_strict"`
+			AwaitStartedTimeout struct {
 				Duration time.Duration `mapstructure:"duration" yaml:"duration"`
-			} `mapstructure:"await_up_timeout" yaml:"await_up_timeout"`
-			AwaitDownTimeout struct {
+			} `mapstructure:"await_started_timeout" yaml:"await_started_timeout"`
+			AwaitStoppedTimeout struct {
 				Duration time.Duration `mapstructure:"duration" yaml:"duration"`
-			} `mapstructure:"await_down_timeout" yaml:"await_down_timeout"`
+			} `mapstructure:"await_stopped_timeout" yaml:"await_stopped_timeout"`
 			Reachable struct {
 				Timeout time.Duration `mapstructure:"timeout" yaml:"timeout"`
 			} `mapstructure:"reachable" yaml:"reachable"`

@@ -344,7 +344,7 @@ func (im *InstanceManager) AwaitStarted(instances []Instance) error {
 	}
 	log.Infof("awaiting up instance(s) '%s'", InstanceIds(instances))
 	return im.Check(instances, im.CheckOpts, []Checker{
-		im.CheckOpts.AwaitUpTimeout,
+		im.CheckOpts.AwaitStartedTimeout,
 		im.CheckOpts.Reachable,
 		im.CheckOpts.BundleStable,
 		im.CheckOpts.EventStable,
@@ -366,7 +366,7 @@ func (im *InstanceManager) AwaitStopped(instances []Instance) error {
 	}
 	log.Infof("awaiting down instance(s) '%s'", InstanceIds(instances))
 	return im.Check(instances, im.CheckOpts, []Checker{
-		im.CheckOpts.AwaitDownTimeout,
+		im.CheckOpts.AwaitStoppedTimeout,
 		im.CheckOpts.StatusStopped,
 		im.CheckOpts.Unreachable,
 	})

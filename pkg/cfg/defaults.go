@@ -25,6 +25,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("instance.check.installer.pause", true)
 
 	v.SetDefault("instance.check.await_strict", true)
+	v.SetDefault("instance.check.await_started_timeout.duration", "10m")
+	v.SetDefault("instance.check.await_stopped_timeout.duration", "5m")
 	v.SetDefault("instance.check.reachable.timeout", "3s")
 	v.SetDefault("instance.check.unreachable.timeout", "3s")
 

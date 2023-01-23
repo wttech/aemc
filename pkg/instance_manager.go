@@ -101,14 +101,14 @@ type CheckOpts struct {
 	DoneNever     bool
 	AwaitStrict   bool
 
-	Reachable        ReachableHTTPChecker
-	BundleStable     BundleStableChecker
-	EventStable      EventStableChecker
-	Installer        InstallerChecker
-	AwaitUpTimeout   TimeoutChecker
-	Unreachable      ReachableHTTPChecker
-	StatusStopped    StatusStoppedChecker
-	AwaitDownTimeout TimeoutChecker
+	Reachable           ReachableHTTPChecker
+	BundleStable        BundleStableChecker
+	EventStable         EventStableChecker
+	Installer           InstallerChecker
+	AwaitStartedTimeout TimeoutChecker
+	Unreachable         ReachableHTTPChecker
+	StatusStopped       StatusStoppedChecker
+	AwaitStoppedTimeout TimeoutChecker
 }
 
 func (im *InstanceManager) NewCheckOpts() *CheckOpts {
@@ -117,14 +117,14 @@ func (im *InstanceManager) NewCheckOpts() *CheckOpts {
 		Interval:      time.Second * 5,
 		DoneThreshold: 3,
 
-		Reachable:        NewReachableChecker(true),
-		BundleStable:     NewBundleStableChecker(),
-		EventStable:      NewEventStableChecker(),
-		AwaitUpTimeout:   NewTimeoutChecker("up", time.Minute*10),
-		Installer:        NewInstallerChecker(),
-		StatusStopped:    NewStatusStoppedChecker(),
-		AwaitDownTimeout: NewTimeoutChecker("down", time.Minute*5),
-		Unreachable:      NewReachableChecker(false),
+		Reachable:           NewReachableChecker(true),
+		BundleStable:        NewBundleStableChecker(),
+		EventStable:         NewEventStableChecker(),
+		AwaitStartedTimeout: NewTimeoutChecker("started", time.Minute*10),
+		Installer:           NewInstallerChecker(),
+		StatusStopped:       NewStatusStoppedChecker(),
+		AwaitStoppedTimeout: NewTimeoutChecker("stopped", time.Minute*5),
+		Unreachable:         NewReachableChecker(false),
 	}
 }
 
@@ -381,11 +381,11 @@ func (im *InstanceManager) configureCheckOpts(config *cfg.Config) {
 		im.CheckOpts.EventStable.DetailsIgnored = opts.EventStable.DetailsIgnored
 	}
 	im.CheckOpts.AwaitStrict = opts.AwaitStrict
-	if opts.AwaitUpTimeout.Duration > 0 {
-		im.CheckOpts.AwaitUpTimeout.Duration = opts.AwaitUpTimeout.Duration
+	if opts.AwaitStartedTimeout.Duration > 0 {
+		im.CheckOpts.AwaitStartedTimeout.Duration = opts.AwaitStartedTimeout.Duration
 	}
-	if opts.AwaitDownTimeout.Duration > 0 {
-		im.CheckOpts.AwaitDownTimeout.Duration = opts.AwaitDownTimeout.Duration
+	if opts.AwaitStoppedTimeout.Duration > 0 {
+		im.CheckOpts.AwaitStoppedTimeout.Duration = opts.AwaitStoppedTimeout.Duration
 	}
 	im.CheckOpts.Installer.State = opts.Installer.State
 	im.CheckOpts.Installer.Pause = opts.Installer.Pause

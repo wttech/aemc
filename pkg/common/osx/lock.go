@@ -51,6 +51,9 @@ func (l Lock[T]) DataLocked() (T, error) {
 }
 
 func (l Lock[T]) IsUpToDate() (bool, error) {
+	if !l.IsLocked() {
+		return false, nil
+	}
 	dataLocked, err := l.DataLocked()
 	if err != nil {
 		return false, err

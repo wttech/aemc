@@ -8,7 +8,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"path/filepath"
-	"time"
 )
 
 type Sdk struct {
@@ -25,14 +24,12 @@ func (s Sdk) lockFile() string {
 
 func (s Sdk) lock(zipFile string) osx.Lock[SdkLock] {
 	return osx.NewLock(s.Dir()+"/lock/create.yml", SdkLock{
-		Version:  pathx.NameWithoutExt(zipFile),
-		Unpacked: time.Now(),
+		Version: pathx.NameWithoutExt(zipFile),
 	})
 }
 
 type SdkLock struct {
-	Version  string
-	Unpacked time.Time
+	Version string
 }
 
 func (s Sdk) Prepare(zipFile string) error {

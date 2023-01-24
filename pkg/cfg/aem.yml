@@ -75,6 +75,10 @@ instance:
     # Archived runtime dir (AEM backup files '*.aemb.zst')
     backup_dir: "aem/home/data/backup"
 
+    # Oak Run tool options (offline instance management)
+    oakrun:
+      source: "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.46.0/oak-run-1.46.0.jar"
+
     # Source files
     quickstart:
       # AEM SDK ZIP or JAR
@@ -132,9 +136,6 @@ app:
 base:
   # Location of temporary files (downloaded AEM packages, etc)
   tmp_dir: aem/home/tmp
-
-  # Salt used in encrypting sensitive values
-  salt: "[[BASE_SALT]]"
 
 log:
   level: info

@@ -18,3 +18,6 @@ func ProcessingModes() []string {
 
 //go:embed resource/cbp.exe
 var CbpExecutable []byte
+
+//go:embed resource/oak-run-1.46.0.jar
+var OakRunJar []byte

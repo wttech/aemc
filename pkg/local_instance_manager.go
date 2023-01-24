@@ -31,6 +31,7 @@ type LocalOpts struct {
 	UnpackDir  string
 	BackupDir  string
 	JavaOpts   *java.Opts
+	OakRun     *OakRun
 	Quickstart *Quickstart
 	Sdk        *Sdk
 }
@@ -49,6 +50,10 @@ func (im *InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
 	}
 	result.Sdk = &Sdk{
 		localOpts: result,
+	}
+	result.OakRun = &OakRun{
+		localOpts: result,
+		Source:    OakRunSourceEmbedded,
 	}
 	return result
 }
@@ -153,6 +158,9 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 			return created, err
 		}
 	}
+
+	im.LocalOpts.OakRun.Prepare()
+
 	for _, i := range instances {
 		if !i.local.IsCreated() {
 			err := i.local.Create()

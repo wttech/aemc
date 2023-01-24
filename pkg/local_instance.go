@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"github.com/wttech/aemc/pkg/common/cryptox"
 	"github.com/wttech/aemc/pkg/common/execx"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/netx"
@@ -47,12 +48,11 @@ func (li LocalInstance) Instance() *Instance {
 }
 
 func NewLocal(i *Instance) *LocalInstance {
-	return &LocalInstance{
-		instance: i,
-		Version:  "1",
-		JvmOpts:  []string{"-server", "-Xmx1024m", "-Djava.awt.headless=true"},
-		RunModes: []string{},
-	}
+	li := &LocalInstance{instance: i}
+	li.Version = "1"
+	li.JvmOpts = []string{"-server", "-Xmx1024m", "-Djava.awt.headless=true"}
+	li.RunModes = []string{}
+	return li
 }
 
 func (li LocalInstance) State() LocalInstanceState {
@@ -140,8 +140,8 @@ func (li LocalInstance) Create() error {
 }
 
 func (li LocalInstance) createLock() osx.Lock[localInstanceCreateLock] {
-	return osx.NewLock(fmt.Sprintf("%s/create.yml", li.LockDir()), localInstanceCreateLock{
-		Created: time.Now(),
+	return osx.NewLock(fmt.Sprintf("%s/create.yml", li.LockDir()), func() localInstanceCreateLock {
+		return localInstanceCreateLock{Created: time.Now()}
 	})
 }
 
@@ -214,9 +214,16 @@ func (li LocalInstance) IsCreated() bool {
 	return li.createLock().IsLocked()
 }
 
+func (li LocalInstance) IsInitialized() bool {
+	return li.startLock().IsLocked()
+}
+
 func (li LocalInstance) Start() error {
 	if !li.IsCreated() {
 		return fmt.Errorf("cannot start instance '%s' as it is not created", li.instance.ID())
+	}
+	if err := li.updatePassword(); err != nil {
+		return err
 	}
 	log.Infof("starting instance '%s' ", li.instance.ID())
 	if err := li.checkPortsOpen(); err != nil {
@@ -244,6 +251,20 @@ func (li LocalInstance) StartAndAwait() error {
 	return nil
 }
 
+func (li LocalInstance) updatePassword() error {
+	if li.IsInitialized() {
+		lock := li.startLock()
+		data, err := lock.DataLocked()
+		if err != nil {
+			return err
+		}
+		if data.Password != lock.DataCurrent().Password {
+			li.Opts().OakRun.SetPassword(li.QuickstartDir(), lock.DataCurrent().Password)
+		}
+	}
+	return nil
+}
+
 func (li LocalInstance) checkPortsOpen() error {
 	host := li.instance.http.Hostname()
 	ports := []string{
@@ -260,11 +281,14 @@ func (li LocalInstance) checkPortsOpen() error {
 }
 
 func (li LocalInstance) startLock() osx.Lock[localInstanceStartLock] {
-	return osx.NewLock(fmt.Sprintf("%s/start.yml", li.LockDir()), localInstanceStartLock{
-		Version:  li.Version,
-		HTTPPort: li.instance.HTTP().Port(),
-		RunModes: li.RunModesString(),
-		JVMOpts:  li.JVMOptsString(),
+	return osx.NewLock(fmt.Sprintf("%s/start.yml", li.LockDir()), func() localInstanceStartLock {
+		return localInstanceStartLock{
+			Version:  li.Version,
+			HTTPPort: li.instance.HTTP().Port(),
+			RunModes: li.RunModesString(),
+			JVMOpts:  li.JVMOptsString(),
+			Password: cryptox.HashString(li.instance.password),
+		}
 	})
 }
 
@@ -273,6 +297,7 @@ type localInstanceStartLock struct {
 	JVMOpts  string
 	RunModes string
 	HTTPPort string
+	Password string
 }
 
 func (li LocalInstance) Stop() error {
@@ -494,7 +519,12 @@ func (li LocalInstance) RunModesString() string {
 }
 
 func (li LocalInstance) JVMOptsString() string {
-	result := li.JvmOpts
+	result := append([]string{}, li.JvmOpts...)
+
+	// at the first boot admin password could be customized via property, at the next boot only via Oak Run
+	if !li.IsInitialized() {
+		result = append(result, fmt.Sprintf("-Dadmin.password=%s", li.instance.password))
+	}
 	sort.Strings(result)
 	return strings.Join(result, " ")
 }

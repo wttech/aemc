@@ -2,28 +2,36 @@ package cryptox
 
 import (
 	"crypto/aes"
+	"crypto/sha256"
 	"encoding/hex"
 	log "github.com/sirupsen/logrus"
 )
 
-func Encrypt(key []byte, plaintext string) (string, error) {
+func EncryptString(key []byte, text string) string {
 	c, err := aes.NewCipher(key)
 	if err != nil {
 		log.Fatalf("encryption key/salt is invalid: %s", err)
 	}
-	encrypted := make([]byte, len(plaintext))
-	c.Encrypt(encrypted, []byte(plaintext))
-	return hex.EncodeToString(encrypted), nil
+	encrypted := make([]byte, len(text))
+	c.Encrypt(encrypted, []byte(text))
+	return hex.EncodeToString(encrypted)
 }
 
-func Decrypt(key []byte, ct string) (string, error) {
+func DecryptString(key []byte, encrypted string) string {
 	c, err := aes.NewCipher(key)
 	if err != nil {
-		log.Fatalf("encryption key/salt is invalid: %s", err)
+		log.Fatalf("decryption key/salt is invalid: %s", err)
 	}
-	decoded, _ := hex.DecodeString(ct)
+	decoded, _ := hex.DecodeString(encrypted)
 	dest := make([]byte, len(decoded))
 	c.Decrypt(dest, decoded)
 	s := string(dest[:])
-	return s, nil
+	return s
+}
+
+func HashString(text string) string {
+	h := sha256.New()
+	h.Write([]byte(text))
+	bs := h.Sum(nil)
+	return string(bs)
 }

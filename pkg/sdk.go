@@ -18,18 +18,14 @@ func (s Sdk) Dir() string {
 	return s.localOpts.UnpackDir + "/sdk"
 }
 
-func (s Sdk) lockFile() string {
-	return s.Dir() + "/lock/create.yml"
+type SdkLock struct {
+	Version string
 }
 
 func (s Sdk) lock(zipFile string) osx.Lock[SdkLock] {
-	return osx.NewLock(s.Dir()+"/lock/create.yml", SdkLock{
-		Version: pathx.NameWithoutExt(zipFile),
+	return osx.NewLock(s.Dir()+"/lock/create.yml", func() SdkLock {
+		return SdkLock{Version: pathx.NameWithoutExt(zipFile)}
 	})
-}
-
-type SdkLock struct {
-	Version string
 }
 
 func (s Sdk) Prepare(zipFile string) error {

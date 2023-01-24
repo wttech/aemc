@@ -133,6 +133,9 @@ base:
   # Location of temporary files (downloaded AEM packages, etc)
   tmp_dir: aem/home/tmp
 
+  # Salt used in encrypting sensitive values
+  salt: "[[BASE_SALT]]"
+
 log:
   level: info
   timestamp_format: "2006-01-02 15:04:05"

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
+	"github.com/sethvargo/go-password/password"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/wttech/aemc/pkg/common"
@@ -125,13 +126,31 @@ func (c *Config) ConfigureLogger() {
 //go:embed aem.yml
 var configYml string
 
+func renderConfigYml() (string, error) {
+	tplParsed, err := tplx.New("config-tpl").Delims("[[", "]]").Parse(configYml)
+	if err != nil {
+		return "", err
+	}
+	var tplOutput bytes.Buffer
+	if err := tplParsed.Execute(&tplOutput, map[string]any{
+		"BASE_SALT": password.MustGenerate(16, 2, 2, false, false),
+	}); err != nil {
+		return "", err
+	}
+	return tplOutput.String(), nil
+}
+
 func (c *Config) Init() error {
 	file := File()
 	if pathx.Exists(file) {
 		return fmt.Errorf("config file already exists: '%s'", file)
 	}
-	err := filex.WriteString(file, configYml)
+
+	configYmlRendered, err := renderConfigYml()
 	if err != nil {
+		return fmt.Errorf("cannot render initial config file from template: '%w'", err)
+	}
+	if err = filex.WriteString(file, configYmlRendered); err != nil {
 		return fmt.Errorf("cannot create initial config file '%s': '%w'", file, err)
 	}
 	return nil

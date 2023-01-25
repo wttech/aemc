@@ -5,6 +5,7 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/fmtx"
+	"github.com/wttech/aemc/pkg/instance"
 	"io"
 	"regexp"
 	"strings"
@@ -67,11 +68,11 @@ func (sm Status) TimeLocation() (*time.Location, error) {
 func (sm Status) AemVersion() (string, error) {
 	response, err := sm.instance.http.Request().Get(SystemProductInfoPath)
 	if err != nil {
-		return AemVersionUnknown, fmt.Errorf("cannot read system product info on instance '%s'", sm.instance.id)
+		return instance.AemVersionUnknown, fmt.Errorf("cannot read system product info on instance '%s'", sm.instance.id)
 	}
 	bytes, err := io.ReadAll(response.RawBody())
 	if err != nil {
-		return AemVersionUnknown, fmt.Errorf("cannot read system product info on instance '%s': %w", sm.instance.id, err)
+		return instance.AemVersionUnknown, fmt.Errorf("cannot read system product info on instance '%s': %w", sm.instance.id, err)
 	}
 	lines := string(bytes)
 	for _, line := range strings.Split(lines, "\n") {
@@ -80,5 +81,5 @@ func (sm Status) AemVersion() (string, error) {
 			return matches[1], nil
 		}
 	}
-	return AemVersionUnknown, nil
+	return instance.AemVersionUnknown, nil
 }

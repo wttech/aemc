@@ -19,6 +19,7 @@ import (
 const (
 	UnpackDir       = "aem/home/data/instance"
 	BackupDir       = "aem/home/data/backup"
+	ToolDir         = "aem/home/opt"
 	LibDir          = "aem/home/lib"
 	DistFile        = LibDir + "/aem-sdk-quickstart.jar"
 	LicenseFile     = LibDir + "/" + LicenseFilename
@@ -29,6 +30,7 @@ type LocalOpts struct {
 	manager *InstanceManager
 
 	UnpackDir  string
+	ToolDir    string
 	BackupDir  string
 	JavaOpts   *java.Opts
 	OakRun     *OakRun
@@ -41,6 +43,7 @@ func (im *InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
 		manager: manager,
 
 		UnpackDir:  UnpackDir,
+		ToolDir:    ToolDir,
 		BackupDir:  BackupDir,
 		JavaOpts:   im.aem.javaOpts,
 		Quickstart: NewQuickstart(),
@@ -456,6 +459,9 @@ func (im *InstanceManager) configureLocalOpts(config *cfg.Config) {
 
 	if len(opts.UnpackDir) > 0 {
 		im.LocalOpts.UnpackDir = opts.UnpackDir
+	}
+	if len(opts.ToolDir) > 0 {
+		im.LocalOpts.ToolDir = opts.ToolDir
 	}
 	if len(opts.BackupDir) > 0 {
 		im.LocalOpts.BackupDir = opts.BackupDir

@@ -73,7 +73,7 @@ func (li LocalInstance) Opts() *LocalOpts {
 func (li LocalInstance) Name() string {
 	id := li.instance.IDInfo()
 	if id.Classifier != "" {
-		return string(id.Role) + IDDelimiter + id.Classifier
+		return string(id.Role) + instance.IDDelimiter + id.Classifier
 	}
 	return string(id.Role)
 }
@@ -224,7 +224,7 @@ func (li LocalInstance) Start() error {
 	if !li.IsCreated() {
 		return fmt.Errorf("cannot start instance '%s' as it is not created", li.instance.ID())
 	}
-	if err := li.updatePassword(); err != nil {
+	if err := li.updateAuth(); err != nil {
 		return err
 	}
 	log.Infof("starting instance '%s' ", li.instance.ID())
@@ -236,8 +236,7 @@ func (li LocalInstance) Start() error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute start script for instance '%s': %w", li.instance.ID(), err)
 	}
-	// TODO await only if custom aem password is set and only on first boot
-	if err := li.AwaitAuthReady(); err != nil {
+	if err := li.awaitAuth(); err != nil {
 		return err
 	}
 	if err := li.startLock().Lock(); err != nil {
@@ -257,17 +256,18 @@ func (li LocalInstance) StartAndAwait() error {
 	return nil
 }
 
-func (li LocalInstance) updatePassword() error {
-	if li.startLock().IsLocked() {
-		lock := li.startLock()
-		data, err := lock.DataLocked()
-		if err != nil {
+func (li LocalInstance) updateAuth() error {
+	if !li.IsInitialized() {
+		return nil
+	}
+	lock := li.startLock()
+	data, err := lock.DataLocked()
+	if err != nil {
+		return err
+	}
+	if data.Password != lock.DataCurrent().Password {
+		if err := li.Opts().OakRun.SetPassword(li.Dir(), LocalInstanceUser, li.instance.password); err != nil {
 			return err
-		}
-		if data.Password != lock.DataCurrent().Password {
-			if err := li.Opts().OakRun.SetPassword(li.Dir(), LocalInstanceUser, li.instance.password); err != nil {
-				return err
-			}
 		}
 	}
 	return nil
@@ -293,8 +293,8 @@ func (li LocalInstance) startLock() osx.Lock[localInstanceStartLock] {
 		return localInstanceStartLock{
 			Version:  li.Version,
 			HTTPPort: li.instance.HTTP().Port(),
-			RunModes: li.RunModesString(),
-			JVMOpts:  li.JVMOptsString(),
+			RunModes: strings.Join(li.RunModes, ","),
+			JVMOpts:  strings.Join(li.JvmOpts, " "),
 			Password: cryptox.HashString(li.instance.password),
 		}
 	})
@@ -418,8 +418,12 @@ func (li LocalInstance) AwaitNotRunning() error {
 	return li.Await("not running", func() bool { return !li.IsRunning() }, time.Minute*10)
 }
 
-// TODO make it more verbose about actual bundle progress
-func (li LocalInstance) AwaitAuthReady() error {
+// awaitAuth waits for a custom password to be in use (initially the default one is used instead)
+func (li LocalInstance) awaitAuth() error {
+	if li.IsInitialized() || li.instance.password == instance.PasswordDefault {
+		return nil
+	}
+	// TODO 'local_author | auth not ready (1/588=2%): xtg'
 	return li.Await("auth ready", func() bool {
 		_, err := li.instance.osgi.bundleManager.List()
 		return err == nil

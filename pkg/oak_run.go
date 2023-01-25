@@ -15,6 +15,7 @@ import (
 
 const (
 	OakRunSourceEmbedded = "embedded/oak-run-1.42.0.jar"
+	OakRunToolDirName    = "oak-run"
 )
 
 func NewOakRun(localOpts *LocalOpts) *OakRun {
@@ -38,7 +39,7 @@ type OakRunLock struct {
 }
 
 func (or OakRun) Dir() string {
-	return or.localOpts.UnpackDir + "/oak-run"
+	return or.localOpts.ToolDir + "/" + OakRunToolDirName
 }
 
 func (or OakRun) lock() osx.Lock[OakRunLock] {
@@ -114,6 +115,7 @@ func (or OakRun) RunScript(instanceDir string, scriptName, scriptTpl string, scr
 		pathx.DeleteIfExists(scriptFile)
 	}()
 	storeDir := fmt.Sprintf("%s/%s", instanceDir, or.StorePath)
+	// TODO https://issues.apache.org/jira/browse/OAK-5961 (handle JAnsi problem)
 	cmd := exec.Command("java", "-jar", or.JarFile(), "console", storeDir, "--read-write", fmt.Sprintf(":load %s", scriptFile))
 	or.localOpts.manager.aem.CommandOutput(cmd)
 	if err := cmd.Run(); err != nil {

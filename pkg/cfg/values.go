@@ -88,6 +88,7 @@ type ConfigValues struct {
 
 		Local struct {
 			UnpackDir string `mapstructure:"unpack_dir" yaml:"unpack_dir"`
+			ToolDir   string `mapstructure:"tool_dir" yaml:"tool_dir"`
 			BackupDir string `mapstructure:"backup_dir" yaml:"backup_dir"`
 
 			Quickstart struct {

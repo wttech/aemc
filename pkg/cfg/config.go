@@ -4,7 +4,6 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"github.com/sethvargo/go-password/password"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/wttech/aemc/pkg/common"
@@ -132,9 +131,7 @@ func renderConfigYml() (string, error) {
 		return "", err
 	}
 	var tplOutput bytes.Buffer
-	if err := tplParsed.Execute(&tplOutput, map[string]any{
-		"BASE_SALT": password.MustGenerate(16, 2, 2, false, false),
-	}); err != nil {
+	if err := tplParsed.Execute(&tplOutput, map[string]any{}); err != nil {
 		return "", err
 	}
 	return tplOutput.String(), nil

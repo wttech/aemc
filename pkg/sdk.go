@@ -10,6 +10,10 @@ import (
 	"path/filepath"
 )
 
+func NewSdk(localOpts *LocalOpts) *Sdk {
+	return &Sdk{localOpts: localOpts}
+}
+
 type Sdk struct {
 	localOpts *LocalOpts
 }

@@ -4,7 +4,9 @@ import (
 	"crypto/aes"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	log "github.com/sirupsen/logrus"
+	"io"
 )
 
 func EncryptString(key []byte, text string) string {
@@ -30,8 +32,7 @@ func DecryptString(key []byte, encrypted string) string {
 }
 
 func HashString(text string) string {
-	h := sha256.New()
-	h.Write([]byte(text))
-	bs := h.Sum(nil)
-	return string(bs)
+	hash := sha256.New()
+	_, _ = io.WriteString(hash, text)
+	return fmt.Sprintf("%x", hash.Sum(nil))
 }

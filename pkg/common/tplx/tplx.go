@@ -1,6 +1,7 @@
 package tplx
 
 import (
+	"bytes"
 	"reflect"
 	"text/template"
 )
@@ -32,4 +33,16 @@ var funcMap = template.FuncMap{
 
 func recovery() {
 	recover()
+}
+
+func RenderString(tplContent string, data any) (string, error) {
+	tplParsed, err := New("string-template").Parse(tplContent)
+	if err != nil {
+		return "", err
+	}
+	var tplOutput bytes.Buffer
+	if err := tplParsed.Execute(&tplOutput, data); err != nil {
+		return "", err
+	}
+	return tplOutput.String(), nil
 }

@@ -1,24 +1,36 @@
 package pkg
 
 import (
-	_ "embed"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/httpx"
 	"github.com/wttech/aemc/pkg/common/osx"
+	"github.com/wttech/aemc/pkg/common/pathx"
+	"github.com/wttech/aemc/pkg/common/tplx"
 	"github.com/wttech/aemc/pkg/instance"
+	"os/exec"
 	"path/filepath"
 )
 
 const (
-	OakRunSourceEmbedded = "embedded/oak-run-1.46.0.jar"
+	OakRunSourceEmbedded = "embedded/oak-run-1.42.0.jar"
 )
+
+func NewOakRun(localOpts *LocalOpts) *OakRun {
+	return &OakRun{
+		localOpts: localOpts,
+
+		Source:    OakRunSourceEmbedded,
+		StorePath: "crx-quickstart/repository/segmentstore",
+	}
+}
 
 type OakRun struct {
 	localOpts *LocalOpts
 
-	Source string
+	Source    string
+	StorePath string
 }
 
 type OakRunLock struct {
@@ -59,14 +71,14 @@ func (or OakRun) Prepare() error {
 }
 
 func (or OakRun) JarFile() string {
-	return fmt.Sprintf("%s/%s", or.Dir(), filepath.Base(or.Source))
+	return pathx.Abs(fmt.Sprintf("%s/%s", or.Dir(), filepath.Base(or.Source)))
 }
 
 func (or OakRun) prepare() error {
 	jarFile := or.JarFile()
 	if or.Source == OakRunSourceEmbedded {
 		log.Infof("copying embedded Oak Run JAR to file '%s'", jarFile)
-		if err := filex.Write(jarFile, instance.CbpExecutable); err != nil {
+		if err := filex.Write(jarFile, instance.OakRunJar); err != nil {
 			return fmt.Errorf("cannot embedded Oak Run JAR to file '%s': %s", jarFile, err)
 		}
 		log.Infof("copied embedded Oak Run JAR to file '%s'", jarFile)
@@ -80,7 +92,32 @@ func (or OakRun) prepare() error {
 	return nil
 }
 
-func (or OakRun) SetPassword(quickstartDir string, password string) error {
-	log.Infof("setting password for instance quickstart dir '%s'", quickstartDir)
+func (or OakRun) SetPassword(instanceDir string, user string, password string) error {
+	log.Infof("password setting for user '%s' on instance at dir '%s'", user, instanceDir)
+	if err := or.RunScript(instanceDir, "set-password", instance.OakRunSetPassword, map[string]any{"User": user, "Password": password}); err != nil {
+		return err
+	}
+	log.Infof("password set for user '%s' on instance at dir '%s'", user, instanceDir)
+	return nil
+}
+
+func (or OakRun) RunScript(instanceDir string, scriptName, scriptTpl string, scriptData map[string]any) error {
+	scriptContent, err := tplx.RenderString(scriptTpl, scriptData)
+	if err != nil {
+		return err
+	}
+	scriptFile := fmt.Sprintf("%s/aem-compose/oak-run/%s.groovy", instanceDir, scriptName)
+	if err := filex.WriteString(scriptFile, scriptContent); err != nil {
+		return fmt.Errorf("cannot save Oak Run script '%s': %w", scriptFile, err)
+	}
+	defer func() {
+		// TODO pathx.DeleteIfExists(scriptFile)
+	}()
+	storeDir := fmt.Sprintf("%s/%s", instanceDir, or.StorePath)
+	cmd := exec.Command("java", "-jar", or.JarFile(), "console", storeDir, "--read-write", fmt.Sprintf(":load %s", scriptFile))
+	or.localOpts.manager.aem.CommandOutput(cmd)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("cannot run Oak Run script '%s': %w", scriptFile, err)
+	}
 	return nil
 }

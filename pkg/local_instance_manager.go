@@ -40,21 +40,13 @@ func (im *InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
 	result := &LocalOpts{
 		manager: manager,
 
-		UnpackDir: UnpackDir,
-		BackupDir: BackupDir,
-		JavaOpts:  im.aem.javaOpts,
-		Quickstart: &Quickstart{
-			DistFile:    DistFile,
-			LicenseFile: LicenseFile,
-		},
+		UnpackDir:  UnpackDir,
+		BackupDir:  BackupDir,
+		JavaOpts:   im.aem.javaOpts,
+		Quickstart: NewQuickstart(),
 	}
-	result.Sdk = &Sdk{
-		localOpts: result,
-	}
-	result.OakRun = &OakRun{
-		localOpts: result,
-		Source:    OakRunSourceEmbedded,
-	}
+	result.Sdk = NewSdk(result)
+	result.OakRun = NewOakRun(result)
 	return result
 }
 
@@ -100,6 +92,13 @@ func (o *LocalOpts) Jar() (string, error) {
 
 func IsSdkFile(path string) bool {
 	return pathx.Ext(path) == "zip"
+}
+
+func NewQuickstart() *Quickstart {
+	return &Quickstart{
+		DistFile:    DistFile,
+		LicenseFile: LicenseFile,
+	}
 }
 
 type Quickstart struct {
@@ -221,14 +220,14 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		}
 	}
 
+	var awaited []Instance
 	if im.CheckOpts.AwaitStrict {
-		if err := im.AwaitStarted(started); err != nil {
-			return started, err
-		}
+		awaited = started
 	} else {
-		if err := im.AwaitStarted(instances); err != nil {
-			return instances, err
-		}
+		awaited = instances
+	}
+	if err := im.AwaitStarted(awaited); err != nil {
+		return nil, err
 	}
 
 	return started, nil
@@ -262,16 +261,19 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 		}
 	}
 
+	var awaited []Instance
 	if im.CheckOpts.AwaitStrict {
-		if err := im.AwaitStopped(stopped); err != nil {
-			return stopped, err
-		}
-		im.Clean(stopped)
+		awaited = stopped
 	} else {
-		if err := im.AwaitStopped(instances); err != nil {
-			return instances, err
-		}
-		im.Clean(instances)
+		awaited = instances
+	}
+	if err := im.AwaitStopped(awaited); err != nil {
+		return nil, err
+	}
+
+	_, err = im.Clean(stopped)
+	if err != nil {
+		return nil, err
 	}
 
 	return stopped, nil

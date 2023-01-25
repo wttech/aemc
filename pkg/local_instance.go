@@ -41,6 +41,7 @@ const (
 	LocalInstanceScriptStop      = "stop"
 	LocalInstanceScriptStatus    = "status"
 	LocalInstanceBackupExtension = "aemb.tar.zst"
+	LocalInstanceUser            = "admin"
 )
 
 func (li LocalInstance) Instance() *Instance {
@@ -234,11 +235,21 @@ func (li LocalInstance) Start() error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute start script for instance '%s': %w", li.instance.ID(), err)
 	}
+	// TODO await only if custom aem password is set and only on first boot
+	if err := li.AwaitAuthReady(); err != nil {
+		return err
+	}
 	if err := li.startLock().Lock(); err != nil {
 		return err
 	}
 	log.Infof("started instance '%s' ", li.instance.ID())
 	return nil
+}
+
+// IsAuthReady checks  AEM to set up custom AEM password on first run
+func (li LocalInstance) IsAuthReady() bool {
+	_, err := li.instance.osgi.BundleManager().List()
+	return err == nil
 }
 
 func (li LocalInstance) StartAndAwait() error {
@@ -252,14 +263,16 @@ func (li LocalInstance) StartAndAwait() error {
 }
 
 func (li LocalInstance) updatePassword() error {
-	if li.IsInitialized() {
+	if li.startLock().IsLocked() {
 		lock := li.startLock()
 		data, err := lock.DataLocked()
 		if err != nil {
 			return err
 		}
 		if data.Password != lock.DataCurrent().Password {
-			li.Opts().OakRun.SetPassword(li.QuickstartDir(), lock.DataCurrent().Password)
+			if err := li.Opts().OakRun.SetPassword(li.Dir(), LocalInstanceUser, li.instance.password); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -309,9 +322,6 @@ func (li LocalInstance) Stop() error {
 	cmd := li.binScriptCommand(LocalInstanceScriptStop, true)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute stop script for instance '%s': %w", li.instance.ID(), err)
-	}
-	if err := li.startLock().Unlock(); err != nil {
-		return err
 	}
 	log.Infof("stopped instance '%s' ", li.instance.ID())
 	return nil
@@ -411,6 +421,13 @@ func (li LocalInstance) AwaitRunning() error {
 
 func (li LocalInstance) AwaitNotRunning() error {
 	return li.Await("not running", func() bool { return !li.IsRunning() }, time.Minute*10)
+}
+
+func (li LocalInstance) AwaitAuthReady() error {
+	return li.Await("auth ready", func() bool {
+		_, err := li.instance.osgi.bundleManager.List()
+		return err == nil
+	}, time.Minute*10)
 }
 
 type LocalStatus int

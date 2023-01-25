@@ -42,6 +42,7 @@ const (
 	LocalInstanceScriptStatus    = "status"
 	LocalInstanceBackupExtension = "aemb.tar.zst"
 	LocalInstanceUser            = "admin"
+	LocalInstanceWorkDirName     = "aem-compose"
 )
 
 func (li LocalInstance) Instance() *Instance {
@@ -82,7 +83,7 @@ func (li LocalInstance) Dir() string {
 }
 
 func (li LocalInstance) WorkDir() string {
-	return fmt.Sprintf("%s/%s", li.Dir(), "aem-compose")
+	return fmt.Sprintf("%s/%s", li.Dir(), LocalInstanceWorkDirName)
 }
 
 func (li LocalInstance) LockDir() string {
@@ -200,7 +201,7 @@ func (li LocalInstance) correctFiles() error {
 		)
 		content = strings.ReplaceAll(content, // force instance to be launched in background (it is windowed by default)
 			"start \"CQ\" cmd.exe /C java %CQ_JVM_OPTS% -jar %CurrDirName%\\%CQ_JARFILE% %START_OPTS%",
-			"aem-compose\\bin\\cbp.exe cmd.exe /C \"java %CQ_JVM_OPTS% -jar %CurrDirName%\\%CQ_JARFILE% %START_OPTS% 1> %CurrDirName%\\logs\\stdout.log 2>&1\"",
+			LocalInstanceWorkDirName+"\\bin\\cbp.exe cmd.exe /C \"java %CQ_JVM_OPTS% -jar %CurrDirName%\\%CQ_JARFILE% %START_OPTS% 1> %CurrDirName%\\logs\\stdout.log 2>&1\"",
 		)
 		content = strings.ReplaceAll(content, // introduce CQ_START_OPTS (not available by default)
 			"set START_OPTS=start -c %CurrDirName% -i launchpad",
@@ -244,12 +245,6 @@ func (li LocalInstance) Start() error {
 	}
 	log.Infof("started instance '%s' ", li.instance.ID())
 	return nil
-}
-
-// IsAuthReady checks  AEM to set up custom AEM password on first run
-func (li LocalInstance) IsAuthReady() bool {
-	_, err := li.instance.osgi.BundleManager().List()
-	return err == nil
 }
 
 func (li LocalInstance) StartAndAwait() error {
@@ -423,6 +418,7 @@ func (li LocalInstance) AwaitNotRunning() error {
 	return li.Await("not running", func() bool { return !li.IsRunning() }, time.Minute*10)
 }
 
+// TODO make it more verbose about actual bundle progress
 func (li LocalInstance) AwaitAuthReady() error {
 	return li.Await("auth ready", func() bool {
 		_, err := li.instance.osgi.bundleManager.List()

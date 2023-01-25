@@ -106,12 +106,12 @@ func (or OakRun) RunScript(instanceDir string, scriptName, scriptTpl string, scr
 	if err != nil {
 		return err
 	}
-	scriptFile := fmt.Sprintf("%s/aem-compose/oak-run/%s.groovy", instanceDir, scriptName)
+	scriptFile := fmt.Sprintf("%s/%s/tmp/oak-run/%s.groovy", instanceDir, LocalInstanceWorkDirName, scriptName)
 	if err := filex.WriteString(scriptFile, scriptContent); err != nil {
 		return fmt.Errorf("cannot save Oak Run script '%s': %w", scriptFile, err)
 	}
 	defer func() {
-		// TODO pathx.DeleteIfExists(scriptFile)
+		pathx.DeleteIfExists(scriptFile)
 	}()
 	storeDir := fmt.Sprintf("%s/%s", instanceDir, or.StorePath)
 	cmd := exec.Command("java", "-jar", or.JarFile(), "console", storeDir, "--read-write", fmt.Sprintf(":load %s", scriptFile))

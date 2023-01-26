@@ -73,7 +73,7 @@ ARCH=$(detectArch)
 
 AEM_DIR="aem"
 HOME_DIR="${AEM_DIR}/home"
-DOWNLOAD_DIR="${HOME_DIR}/tmp"
+DOWNLOAD_DIR="${HOME_DIR}/opt"
 
 BIN_DOWNLOAD_NAME="aemc-cli"
 BIN_DOWNLOAD_URL="https://github.com/wttech/aemc/releases/download/v${VERSION}/${BIN_DOWNLOAD_NAME}_${OS}_${ARCH}.tar.gz"

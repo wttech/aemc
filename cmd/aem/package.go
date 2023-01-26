@@ -410,7 +410,7 @@ func pkgByFlags(cmd *cobra.Command, instance pkg.Instance) (*pkg.Package, error)
 	}
 	file, _ := cmd.Flags().GetString("file")
 	if len(file) > 0 {
-		fileGlobbed, err := pathx.GlobOne(file)
+		fileGlobbed, err := pathx.GlobSome(file)
 		if err != nil {
 			return nil, err
 		}
@@ -447,7 +447,7 @@ func (c *CLI) pkgPathByFlags(cmd *cobra.Command) (string, error) {
 	}
 	file, _ := cmd.Flags().GetString("file")
 	if len(file) > 0 {
-		fileGlobbed, err := pathx.GlobOne(file)
+		fileGlobbed, err := pathx.GlobSome(file)
 		if err != nil {
 			return "", err
 		}

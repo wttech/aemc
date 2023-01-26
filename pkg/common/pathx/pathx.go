@@ -98,18 +98,40 @@ func NameWithoutExt(path string) string {
 	return name[:len(name)-len(ext)]
 }
 
-func GlobOne(pathPattern string) (string, error) {
-	dir := stringsx.BeforeLast(pathPattern, "/")
-	pattern := stringsx.AfterLast(pathPattern, "/")
-	paths, err := GlobDir(dir, pattern)
+func GlobSome(pathPattern string) (string, error) {
+	path, err := GlobOne(pathPattern)
 	if err != nil {
 		return "", err
 	}
-	sort.Strings(paths)
-	if len(paths) == 0 {
+	if path == "" {
 		return "", fmt.Errorf("cannot find any file matching pattern '%s'", pathPattern)
 	}
+	return path, nil
+}
+
+func GlobOne(pathPattern string) (string, error) {
+	paths, err := GlobAll(pathPattern)
+	if err != nil {
+		return "", err
+	}
+	if len(paths) == 0 {
+		return "", nil
+	}
+	sort.Strings(paths)
 	return paths[len(paths)-1], nil
+}
+
+func GlobAll(pathPattern string) ([]string, error) {
+	dir := stringsx.BeforeLast(pathPattern, "/")
+	if !Exists(dir) {
+		return nil, nil
+	}
+	pattern := stringsx.AfterLast(pathPattern, "/")
+	paths, err := GlobDir(dir, pattern)
+	if err != nil {
+		return nil, err
+	}
+	return paths, nil
 }
 
 // GlobDir is a modified version of 'go/1.19.2/libexec/src/path/filepath/match.go'

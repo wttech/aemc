@@ -630,7 +630,7 @@ func (li LocalInstance) ProposeBackupFileToUse() (string, error) {
 	} else {
 		pathPattern = fmt.Sprintf("%s/%s-*.%s", li.Opts().BackupDir, li.Name(), LocalInstanceBackupExtension)
 	}
-	file, err := pathx.GlobOne(pathPattern)
+	file, err := pathx.GlobSome(pathPattern)
 	if err != nil {
 		return "", fmt.Errorf("no backup file found to use for instance '%s': %w", li.instance.ID(), err)
 	}

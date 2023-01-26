@@ -122,11 +122,11 @@ func (o *Quickstart) Validate() error {
 }
 
 func (o *Quickstart) FindDistFile() (string, error) {
-	return pathx.GlobOne(o.DistFile)
+	return pathx.GlobSome(o.DistFile)
 }
 
 func (o *Quickstart) FindLicenseFile() (string, error) {
-	return pathx.GlobOne(o.LicenseFile)
+	return pathx.GlobSome(o.LicenseFile)
 }
 
 // LocalValidate checks prerequisites needed to manage local instances

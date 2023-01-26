@@ -11,14 +11,14 @@ instance:
       user: admin
       password: admin
       run_modes: [ local ]
-      jvm_opts: ['-Djava.io.tmpdir={{ .Path }}/aem/home/tmp', '-Duser.language=en', '-Duser.country=US', '-Duser.timezone=UTC']
+      jvm_opts: ['-Djava.io.tmpdir={{ .Path }}/aem/home/tmp', '-Duser.language=en', '-Duser.country=US', '-Duser.timezone=UTC', '-Duser.name=aem-compose']
       start_opts: []
     local_publish:
       http_url: http://127.0.0.1:4503
       user: admin
       password: admin
       run_modes: [ local ]
-      jvm_opts: ['-Djava.io.tmpdir={{ .Path }}/aem/home/tmp', '-Duser.language=en', '-Duser.country=US', '-Duser.timezone=UTC']
+      jvm_opts: [ '-Djava.io.tmpdir={{ .Path }}/aem/home/tmp', '-Duser.language=en', '-Duser.country=US', '-Duser.timezone=UTC', '-Duser.name=aem-compose' ]
       start_opts: []
 
   # Filters for defined

@@ -10,26 +10,30 @@ import (
 	"path/filepath"
 )
 
+const (
+	SdkToolDirName = "sdk"
+)
+
+func NewSdk(localOpts *LocalOpts) *Sdk {
+	return &Sdk{localOpts: localOpts}
+}
+
 type Sdk struct {
 	localOpts *LocalOpts
 }
 
 func (s Sdk) Dir() string {
-	return s.localOpts.UnpackDir + "/sdk"
-}
-
-func (s Sdk) lockFile() string {
-	return s.Dir() + "/lock/create.yml"
-}
-
-func (s Sdk) lock(zipFile string) osx.Lock[SdkLock] {
-	return osx.NewLock(s.Dir()+"/lock/create.yml", SdkLock{
-		Version: pathx.NameWithoutExt(zipFile),
-	})
+	return s.localOpts.ToolDir + "/" + SdkToolDirName
 }
 
 type SdkLock struct {
-	Version string
+	Version string `yaml:"version"`
+}
+
+func (s Sdk) lock(zipFile string) osx.Lock[SdkLock] {
+	return osx.NewLock(s.Dir()+"/lock/create.yml", func() SdkLock {
+		return SdkLock{Version: pathx.NameWithoutExt(zipFile)}
+	})
 }
 
 func (s Sdk) Prepare(zipFile string) error {

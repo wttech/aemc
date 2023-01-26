@@ -271,15 +271,17 @@ func (pm *PackageManager) Deploy(localPath string) error {
 
 func (pm *PackageManager) deployLock(file string, checksum string) osx.Lock[packageDeployLock] {
 	name := filepath.Base(file)
-	return osx.NewLock(fmt.Sprintf("%s/package/deploy/%s.yml", pm.instance.local.LockDir(), name), packageDeployLock{
-		Deployed: time.Now(),
-		Checksum: checksum,
+	return osx.NewLock(fmt.Sprintf("%s/package/deploy/%s.yml", pm.instance.local.LockDir(), name), func() packageDeployLock {
+		return packageDeployLock{
+			Deployed: time.Now(),
+			Checksum: checksum,
+		}
 	})
 }
 
 type packageDeployLock struct {
-	Deployed time.Time
-	Checksum string
+	Deployed time.Time `yaml:"deployed"`
+	Checksum string    `yaml:"checksum"`
 }
 
 func (pm *PackageManager) Uninstall(remotePath string) error {

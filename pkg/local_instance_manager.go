@@ -7,6 +7,7 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/cfg"
+	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/timex"
@@ -17,11 +18,11 @@ import (
 )
 
 const (
-	UnpackDir       = "aem/home/data/instance"
-	BackupDir       = "aem/home/data/backup"
-	LibDir          = "aem/home/lib"
-	DistFile        = LibDir + "/aem-sdk-quickstart.jar"
-	LicenseFile     = LibDir + "/" + LicenseFilename
+	UnpackDir = common.VarDir + "/instance"
+	BackupDir = common.VarDir + "/backup"
+
+	DistFile        = common.LibDir + "/aem-sdk-quickstart.jar"
+	LicenseFile     = common.LibDir + "/" + LicenseFilename
 	LicenseFilename = "license.properties"
 )
 
@@ -29,8 +30,10 @@ type LocalOpts struct {
 	manager *InstanceManager
 
 	UnpackDir  string
+	ToolDir    string
 	BackupDir  string
 	JavaOpts   *java.Opts
+	OakRun     *OakRun
 	Quickstart *Quickstart
 	Sdk        *Sdk
 }
@@ -39,17 +42,14 @@ func (im *InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
 	result := &LocalOpts{
 		manager: manager,
 
-		UnpackDir: UnpackDir,
-		BackupDir: BackupDir,
-		JavaOpts:  im.aem.javaOpts,
-		Quickstart: &Quickstart{
-			DistFile:    DistFile,
-			LicenseFile: LicenseFile,
-		},
+		UnpackDir:  UnpackDir,
+		BackupDir:  BackupDir,
+		ToolDir:    common.ToolDir,
+		JavaOpts:   im.aem.javaOpts,
+		Quickstart: NewQuickstart(),
 	}
-	result.Sdk = &Sdk{
-		localOpts: result,
-	}
+	result.Sdk = NewSdk(result)
+	result.OakRun = NewOakRun(result)
 	return result
 }
 
@@ -95,6 +95,13 @@ func (o *LocalOpts) Jar() (string, error) {
 
 func IsSdkFile(path string) bool {
 	return pathx.Ext(path) == "zip"
+}
+
+func NewQuickstart() *Quickstart {
+	return &Quickstart{
+		DistFile:    DistFile,
+		LicenseFile: LicenseFile,
+	}
 }
 
 type Quickstart struct {
@@ -153,6 +160,9 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 			return created, err
 		}
 	}
+
+	im.LocalOpts.OakRun.Prepare()
+
 	for _, i := range instances {
 		if !i.local.IsCreated() {
 			err := i.local.Create()
@@ -213,14 +223,14 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		}
 	}
 
+	var awaited []Instance
 	if im.CheckOpts.AwaitStrict {
-		if err := im.AwaitStarted(started); err != nil {
-			return started, err
-		}
+		awaited = started
 	} else {
-		if err := im.AwaitStarted(instances); err != nil {
-			return instances, err
-		}
+		awaited = instances
+	}
+	if err := im.AwaitStarted(awaited); err != nil {
+		return nil, err
 	}
 
 	return started, nil
@@ -254,16 +264,19 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 		}
 	}
 
+	var awaited []Instance
 	if im.CheckOpts.AwaitStrict {
-		if err := im.AwaitStopped(stopped); err != nil {
-			return stopped, err
-		}
-		im.Clean(stopped)
+		awaited = stopped
 	} else {
-		if err := im.AwaitStopped(instances); err != nil {
-			return instances, err
-		}
-		im.Clean(instances)
+		awaited = instances
+	}
+	if err := im.AwaitStopped(awaited); err != nil {
+		return nil, err
+	}
+
+	_, err = im.Clean(stopped)
+	if err != nil {
+		return nil, err
 	}
 
 	return stopped, nil
@@ -447,6 +460,9 @@ func (im *InstanceManager) configureLocalOpts(config *cfg.Config) {
 	if len(opts.UnpackDir) > 0 {
 		im.LocalOpts.UnpackDir = opts.UnpackDir
 	}
+	if len(opts.ToolDir) > 0 {
+		im.LocalOpts.ToolDir = opts.ToolDir
+	}
 	if len(opts.BackupDir) > 0 {
 		im.LocalOpts.BackupDir = opts.BackupDir
 	}
@@ -455,5 +471,11 @@ func (im *InstanceManager) configureLocalOpts(config *cfg.Config) {
 	}
 	if len(opts.Quickstart.LicenseFile) > 0 {
 		im.LocalOpts.Quickstart.LicenseFile = opts.Quickstart.LicenseFile
+	}
+	if len(opts.OakRun.DownloadURL) > 0 {
+		im.LocalOpts.OakRun.DownloadURL = opts.OakRun.DownloadURL
+	}
+	if len(opts.OakRun.StorePath) > 0 {
+		im.LocalOpts.OakRun.StorePath = opts.OakRun.StorePath
 	}
 }

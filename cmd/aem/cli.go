@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	OutputFileDefault = common.HomeDir + "/aem.log"
+	OutputFileDefault = common.LogDir + "/aem.log"
 )
 
 type CLI struct {

@@ -8,16 +8,16 @@ import (
 )
 
 type Lock[T comparable] struct {
-	path        string
-	dataCurrent T
+	path         string
+	dataProvider func() T
 }
 
-func NewLock[T comparable](path string, data T) Lock[T] {
-	return Lock[T]{path: path, dataCurrent: data}
+func NewLock[T comparable](path string, dataProvider func() T) Lock[T] {
+	return Lock[T]{path, dataProvider}
 }
 
 func (l Lock[T]) Lock() error {
-	err := fmtx.MarshalToFile(l.path, l.dataCurrent)
+	err := fmtx.MarshalToFile(l.path, l.dataProvider())
 	if err != nil {
 		return fmt.Errorf("cannot save lock file '%s': %w", l.path, err)
 	}
@@ -36,7 +36,7 @@ func (l Lock[T]) IsLocked() bool {
 }
 
 func (l Lock[T]) DataCurrent() T {
-	return l.dataCurrent
+	return l.dataProvider()
 }
 
 func (l Lock[T]) DataLocked() (T, error) {
@@ -58,6 +58,6 @@ func (l Lock[T]) IsUpToDate() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	upToDate := cmp.Equal(l.dataCurrent, dataLocked)
+	upToDate := cmp.Equal(l.DataCurrent(), dataLocked)
 	return upToDate, nil
 }

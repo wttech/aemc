@@ -16,22 +16,21 @@ type HTTP struct {
 
 func NewHTTP(instance *Instance, baseURL string) *HTTP {
 	return &HTTP{
-		client:   newInstanceHTTPClient(instance, baseURL),
+		client:   newInstanceHTTPClient(baseURL),
 		instance: instance,
 	}
 }
 
-func newInstanceHTTPClient(instance *Instance, baseURL string) *resty.Client {
+func newInstanceHTTPClient(baseURL string) *resty.Client {
 	client := resty.New()
 	client.SetBaseURL(baseURL)
-	client.SetBasicAuth(instance.User(), instance.Password())
 	client.SetDisableWarn(true)
 	client.SetDoNotParseResponse(true)
 	return client
 }
 
 func (hc *HTTP) Request() *resty.Request {
-	return hc.client.R()
+	return hc.client.R().SetBasicAuth(hc.instance.User(), hc.instance.Password())
 }
 
 func (hc *HTTP) RequestFormData(props map[string]any) *resty.Request {

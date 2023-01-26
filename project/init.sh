@@ -4,12 +4,13 @@ VERSION=${AEMC_VERSION:-"0.11.2"}
 SOURCE_URL="https://raw.githubusercontent.com/wttech/aemc/v${VERSION}/project"
 
 AEM_WRAPPER="aemw"
+
 AEM_DIR="aem"
 SCRIPT_DIR="${AEM_DIR}/script"
 HOME_DIR="${AEM_DIR}/home"
+DEFAULT_DIR="${AEM_DIR}/default"
+DEFAULT_CONFIG_DIR="${DEFAULT_DIR}/etc"
 LIB_DIR="${HOME_DIR}/lib"
-CONFIG_FILE="${HOME_DIR}/aem.yml"
-SETUP_FILE="${SCRIPT_DIR}/setup.sh"
 
 if [ -f "$AEM_WRAPPER" ]; then
   echo "The project contains already AEM Compose!"
@@ -19,7 +20,9 @@ fi
 echo "Downloading AEM Compose Files"
 echo ""
 
-mkdir -p "$SCRIPT_DIR" "$HOME_DIR"
+mkdir -p "${SCRIPT_DIR}" "${HOME_DIR}" "${DEFAULT_CONFIG_DIR}" "${LIB_DIR}"
+
+curl -s "${SOURCE_URL}/${DEFAULT_CONFIG_DIR}/aem.yml" -o "${DEFAULT_CONFIG_DIR}/aem.yml"
 curl -s "${SOURCE_URL}/${SCRIPT_DIR}/deploy.sh" -o "${SCRIPT_DIR}/deploy.sh"
 curl -s "${SOURCE_URL}/${SCRIPT_DIR}/destroy.sh" -o "${SCRIPT_DIR}/destroy.sh"
 curl -s "${SOURCE_URL}/${SCRIPT_DIR}/down.sh" -o "${SCRIPT_DIR}/down.sh"
@@ -30,37 +33,13 @@ curl -s "${SOURCE_URL}/${SCRIPT_DIR}/up.sh" -o "${SCRIPT_DIR}/up.sh"
 curl -s "${SOURCE_URL}/${AEM_DIR}/api.sh" -o "${AEM_DIR}/api.sh"
 curl -s "${SOURCE_URL}/${AEM_WRAPPER}" -o "${AEM_WRAPPER}"
 
-echo "Downloading & Running AEM Compose CLI"
+echo "Downloading & Testing AEM Compose CLI"
 echo ""
 
 chmod +x "${AEM_WRAPPER}"
 sh ${AEM_WRAPPER} version
 
-echo "Scaffolding AEM Compose configuration file"
+echo "Success! Now initialize AEM Compose by running the command:"
 echo ""
 
-./${AEM_WRAPPER} config init
-
-echo "Creating AEM Compose directories"
-echo ""
-
-mkdir -p "$LIB_DIR"
-
-echo "Initialized AEM Compose"
-echo ""
-
-echo "The next step is providing AEM files (JAR or SDK ZIP, license) to directory '${LIB_DIR}'"
-echo "Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '${CONFIG_FILE}'"
-echo "Later on, remember to customise AEM instance setup in provisioning file '${SETUP_FILE}' for service pack installation, application build, etc."
-echo "To avoid problems with IDE performance, make sure to exclude from indexing the directory '${HOME_DIR}'"
-echo "Finally, use control scripts to manage AEM instances:"
-echo ""
-
-echo "sh aemw [setup|resetup|up|down|restart]"
-
-echo ""
-echo "It is also possible to run individual AEM Compose CLI commands separately."
-echo "Discover available commands by running:"
-echo ""
-
-echo "sh aemw --help"
+echo "sh ${AEM_WRAPPER} init"

@@ -5,3 +5,14 @@
 
 # Force UNIX line-ending to avoid errors on higher environments
 * text=auto eol=lf
+
+# Handle embedded binaries as Git LFS resources
+
+**/resource/*.zip filter=lfs diff=lfs merge=lfs -text
+**/resource/*.tar.gz filter=lfs diff=lfs merge=lfs -text
+**/resource/*.tar filter=lfs diff=lfs merge=lfs -text
+**/resource/*.jar filter=lfs diff=lfs merge=lfs -text
+**/resource/*.exe filter=lfs diff=lfs merge=lfs -text
+**/resource/*.rpm filter=lfs diff=lfs merge=lfs -text
+**/resource/*.deb filter=lfs diff=lfs merge=lfs -text
+**/resource/*.so filter=lfs diff=lfs merge=lfs -text

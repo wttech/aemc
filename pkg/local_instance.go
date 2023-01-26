@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"github.com/wttech/aemc/pkg/common/cryptox"
 	"github.com/wttech/aemc/pkg/common/execx"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/netx"
@@ -40,6 +41,8 @@ const (
 	LocalInstanceScriptStop      = "stop"
 	LocalInstanceScriptStatus    = "status"
 	LocalInstanceBackupExtension = "aemb.tar.zst"
+	LocalInstanceUser            = "admin"
+	LocalInstanceWorkDirName     = "aem-compose"
 )
 
 func (li LocalInstance) Instance() *Instance {
@@ -47,12 +50,11 @@ func (li LocalInstance) Instance() *Instance {
 }
 
 func NewLocal(i *Instance) *LocalInstance {
-	return &LocalInstance{
-		instance: i,
-		Version:  "1",
-		JvmOpts:  []string{"-server", "-Xmx1024m", "-Djava.awt.headless=true"},
-		RunModes: []string{},
-	}
+	li := &LocalInstance{instance: i}
+	li.Version = "1"
+	li.JvmOpts = []string{"-server", "-Xmx1024m", "-Djava.awt.headless=true"}
+	li.RunModes = []string{}
+	return li
 }
 
 func (li LocalInstance) State() LocalInstanceState {
@@ -71,7 +73,7 @@ func (li LocalInstance) Opts() *LocalOpts {
 func (li LocalInstance) Name() string {
 	id := li.instance.IDInfo()
 	if id.Classifier != "" {
-		return string(id.Role) + IDDelimiter + id.Classifier
+		return string(id.Role) + instance.IDDelimiter + id.Classifier
 	}
 	return string(id.Role)
 }
@@ -81,7 +83,7 @@ func (li LocalInstance) Dir() string {
 }
 
 func (li LocalInstance) WorkDir() string {
-	return fmt.Sprintf("%s/%s", li.Dir(), "aem-compose")
+	return fmt.Sprintf("%s/%s", li.Dir(), LocalInstanceWorkDirName)
 }
 
 func (li LocalInstance) LockDir() string {
@@ -140,13 +142,13 @@ func (li LocalInstance) Create() error {
 }
 
 func (li LocalInstance) createLock() osx.Lock[localInstanceCreateLock] {
-	return osx.NewLock(fmt.Sprintf("%s/create.yml", li.LockDir()), localInstanceCreateLock{
-		Created: time.Now(),
+	return osx.NewLock(fmt.Sprintf("%s/create.yml", li.LockDir()), func() localInstanceCreateLock {
+		return localInstanceCreateLock{Created: time.Now()}
 	})
 }
 
 type localInstanceCreateLock struct {
-	Created time.Time
+	Created time.Time `yaml:"created"`
 }
 
 func (li LocalInstance) unpackJarFile() error {
@@ -199,7 +201,7 @@ func (li LocalInstance) correctFiles() error {
 		)
 		content = strings.ReplaceAll(content, // force instance to be launched in background (it is windowed by default)
 			"start \"CQ\" cmd.exe /C java %CQ_JVM_OPTS% -jar %CurrDirName%\\%CQ_JARFILE% %START_OPTS%",
-			"aem-compose\\bin\\cbp.exe cmd.exe /C \"java %CQ_JVM_OPTS% -jar %CurrDirName%\\%CQ_JARFILE% %START_OPTS% 1> %CurrDirName%\\logs\\stdout.log 2>&1\"",
+			LocalInstanceWorkDirName+"\\bin\\cbp.exe cmd.exe /C \"java %CQ_JVM_OPTS% -jar %CurrDirName%\\%CQ_JARFILE% %START_OPTS% 1> %CurrDirName%\\logs\\stdout.log 2>&1\"",
 		)
 		content = strings.ReplaceAll(content, // introduce CQ_START_OPTS (not available by default)
 			"set START_OPTS=start -c %CurrDirName% -i launchpad",
@@ -214,9 +216,16 @@ func (li LocalInstance) IsCreated() bool {
 	return li.createLock().IsLocked()
 }
 
+func (li LocalInstance) IsInitialized() bool {
+	return li.startLock().IsLocked()
+}
+
 func (li LocalInstance) Start() error {
 	if !li.IsCreated() {
 		return fmt.Errorf("cannot start instance '%s' as it is not created", li.instance.ID())
+	}
+	if err := li.updateAuth(); err != nil {
+		return err
 	}
 	log.Infof("starting instance '%s' ", li.instance.ID())
 	if err := li.checkPortsOpen(); err != nil {
@@ -226,6 +235,9 @@ func (li LocalInstance) Start() error {
 	cmd := li.binScriptCommand(LocalInstanceScriptStart, true)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute start script for instance '%s': %w", li.instance.ID(), err)
+	}
+	if err := li.awaitAuth(); err != nil {
+		return err
 	}
 	if err := li.startLock().Lock(); err != nil {
 		return err
@@ -240,6 +252,23 @@ func (li LocalInstance) StartAndAwait() error {
 	}
 	if err := li.instance.manager.AwaitStartedOne(*li.instance); err != nil {
 		return err
+	}
+	return nil
+}
+
+func (li LocalInstance) updateAuth() error {
+	if !li.IsInitialized() {
+		return nil
+	}
+	lock := li.startLock()
+	data, err := lock.DataLocked()
+	if err != nil {
+		return err
+	}
+	if data.Password != lock.DataCurrent().Password {
+		if err := li.Opts().OakRun.SetPassword(li.Dir(), LocalInstanceUser, li.instance.password); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -260,19 +289,23 @@ func (li LocalInstance) checkPortsOpen() error {
 }
 
 func (li LocalInstance) startLock() osx.Lock[localInstanceStartLock] {
-	return osx.NewLock(fmt.Sprintf("%s/start.yml", li.LockDir()), localInstanceStartLock{
-		Version:  li.Version,
-		HTTPPort: li.instance.HTTP().Port(),
-		RunModes: li.RunModesString(),
-		JVMOpts:  li.JVMOptsString(),
+	return osx.NewLock(fmt.Sprintf("%s/start.yml", li.LockDir()), func() localInstanceStartLock {
+		return localInstanceStartLock{
+			Version:  li.Version,
+			HTTPPort: li.instance.HTTP().Port(),
+			RunModes: strings.Join(li.RunModes, ","),
+			JVMOpts:  strings.Join(li.JvmOpts, " "),
+			Password: cryptox.HashString(li.instance.password),
+		}
 	})
 }
 
 type localInstanceStartLock struct {
-	Version  string
-	JVMOpts  string
-	RunModes string
-	HTTPPort string
+	Version  string `yaml:"version"`
+	JVMOpts  string `yaml:"jvm_opts"`
+	RunModes string `yaml:"run_modes"`
+	HTTPPort string `yaml:"http_port"`
+	Password string `yaml:"password"`
 }
 
 func (li LocalInstance) Stop() error {
@@ -284,9 +317,6 @@ func (li LocalInstance) Stop() error {
 	cmd := li.binScriptCommand(LocalInstanceScriptStop, true)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute stop script for instance '%s': %w", li.instance.ID(), err)
-	}
-	if err := li.startLock().Unlock(); err != nil {
-		return err
 	}
 	log.Infof("stopped instance '%s' ", li.instance.ID())
 	return nil
@@ -386,6 +416,18 @@ func (li LocalInstance) AwaitRunning() error {
 
 func (li LocalInstance) AwaitNotRunning() error {
 	return li.Await("not running", func() bool { return !li.IsRunning() }, time.Minute*10)
+}
+
+// awaitAuth waits for a custom password to be in use (initially the default one is used instead)
+func (li LocalInstance) awaitAuth() error {
+	if li.IsInitialized() || li.instance.password == instance.PasswordDefault {
+		return nil
+	}
+	// TODO 'local_author | auth not ready (1/588=2%): xtg'
+	return li.Await("auth ready", func() bool {
+		_, err := li.instance.osgi.bundleManager.List()
+		return err == nil
+	}, time.Minute*10)
 }
 
 type LocalStatus int
@@ -494,7 +536,12 @@ func (li LocalInstance) RunModesString() string {
 }
 
 func (li LocalInstance) JVMOptsString() string {
-	result := li.JvmOpts
+	result := append([]string{}, li.JvmOpts...)
+
+	// at the first boot admin password could be customized via property, at the next boot only via Oak Run
+	if !li.IsInitialized() {
+		result = append(result, fmt.Sprintf("-Dadmin.password=%s", li.instance.password))
+	}
 	sort.Strings(result)
 	return strings.Join(result, " ")
 }

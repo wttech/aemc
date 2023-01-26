@@ -7,30 +7,11 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/fmtx"
+	"github.com/wttech/aemc/pkg/instance"
 	"golang.org/x/exp/maps"
 	nurl "net/url"
 	"strings"
 	"time"
-)
-
-const (
-	IDDelimiter          = "_"
-	URLLocalAuthor       = "http://localhost:4502"
-	URLLocalPublish      = "http://localhost:4503"
-	PasswordDefault      = "admin"
-	UserDefault          = "admin"
-	LocationLocal        = "local"
-	LocationRemote       = "remote"
-	RoleAuthorPortSuffix = "02"
-	ClassifierDefault    = ""
-	AemVersionUnknown    = "unknown"
-)
-
-type Role string
-
-const (
-	RoleAuthor  Role = "author"
-	RolePublish Role = "publish"
 )
 
 // Instance represents AEM instance
@@ -109,28 +90,28 @@ func (i Instance) PackageManager() *PackageManager {
 }
 
 func (i Instance) IDInfo() IDInfo {
-	parts := strings.Split(i.id, IDDelimiter)
+	parts := strings.Split(i.id, instance.IDDelimiter)
 	if len(parts) == 2 {
 		return IDInfo{
 			Location: parts[0],
-			Role:     Role(parts[1]),
+			Role:     instance.Role(parts[1]),
 		}
 	}
 	return IDInfo{
 		Location:   parts[0],
-		Role:       Role(parts[1]),
+		Role:       instance.Role(parts[1]),
 		Classifier: parts[2],
 	}
 }
 
 type IDInfo struct {
 	Location   string
-	Role       Role
+	Role       instance.Role
 	Classifier string
 }
 
 func (i Instance) IsLocal() bool {
-	return i.IDInfo().Location == LocationLocal
+	return i.IDInfo().Location == instance.LocationLocal
 }
 
 func (i Instance) IsRemote() bool {
@@ -138,35 +119,35 @@ func (i Instance) IsRemote() bool {
 }
 
 func (i Instance) IsAuthor() bool {
-	return i.IDInfo().Role == RoleAuthor
+	return i.IDInfo().Role == instance.RoleAuthor
 }
 
 func (i Instance) IsPublish() bool {
-	return i.IDInfo().Role == RolePublish
+	return i.IDInfo().Role == instance.RolePublish
 }
 
 func locationByURL(config *nurl.URL) string {
 	if lo.Contains(localHosts(), config.Hostname()) {
-		return LocationLocal
+		return instance.LocationLocal
 	}
-	return LocationRemote
+	return instance.LocationRemote
 }
 
-func roleByURL(config *nurl.URL) Role {
-	if strings.HasSuffix(config.Port(), RoleAuthorPortSuffix) {
-		return RoleAuthor
+func roleByURL(config *nurl.URL) instance.Role {
+	if strings.HasSuffix(config.Port(), instance.RoleAuthorPortSuffix) {
+		return instance.RoleAuthor
 	}
-	return RolePublish
+	return instance.RolePublish
 }
 
 // TODO local-publish-preview etc
 func classifierByURL(_ *nurl.URL) string {
-	return ClassifierDefault
+	return instance.ClassifierDefault
 }
 
 func credentialsByURL(config *nurl.URL) (string, string) {
-	user := UserDefault
-	pwd := PasswordDefault
+	user := instance.UserDefault
+	pwd := instance.PasswordDefault
 
 	urlUser := config.User.Username()
 	if urlUser != "" {
@@ -199,7 +180,7 @@ func (i Instance) AemVersion() string {
 	version, err := i.status.AemVersion()
 	if err != nil {
 		log.Debugf("cannot determine AEM version of instance '%s': %s", i.id, err)
-		return AemVersionUnknown
+		return instance.AemVersionUnknown
 	}
 	return version
 }

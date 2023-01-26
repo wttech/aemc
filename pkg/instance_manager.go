@@ -188,12 +188,12 @@ func (im *InstanceManager) CheckOnce(instances []Instance, checks []Checker) (bo
 }
 
 func (im *InstanceManager) NewLocalAuthor() Instance {
-	i, _ := im.NewByURL(URLLocalAuthor)
+	i, _ := im.NewByURL(instance.URLLocalAuthor)
 	return *i
 }
 
 func (im *InstanceManager) NewLocalPublish() Instance {
-	i, _ := im.NewByURL(URLLocalPublish)
+	i, _ := im.NewByURL(instance.URLLocalPublish)
 	return *i
 }
 
@@ -216,7 +216,7 @@ func (im *InstanceManager) NewByURL(url string) (*Instance, error) {
 	if len(classifier) > 0 {
 		parts = append(parts, classifier)
 	}
-	id := strings.Join(parts, IDDelimiter)
+	id := strings.Join(parts, instance.IDDelimiter)
 
 	return im.New(id, url, user, password), nil
 }

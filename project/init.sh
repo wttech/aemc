@@ -12,9 +12,6 @@ DEFAULT_DIR="${AEM_DIR}/default"
 DEFAULT_CONFIG_DIR="${DEFAULT_DIR}/etc"
 LIB_DIR="${HOME_DIR}/lib"
 
-CONFIG_FILE="${HOME_DIR}/etc/aem.yml"
-SETUP_FILE="${SCRIPT_DIR}/setup.sh"
-
 if [ -f "$AEM_WRAPPER" ]; then
   echo "The project contains already AEM Compose!"
   exit 1
@@ -36,32 +33,13 @@ curl -s "${SOURCE_URL}/${SCRIPT_DIR}/up.sh" -o "${SCRIPT_DIR}/up.sh"
 curl -s "${SOURCE_URL}/${AEM_DIR}/api.sh" -o "${AEM_DIR}/api.sh"
 curl -s "${SOURCE_URL}/${AEM_WRAPPER}" -o "${AEM_WRAPPER}"
 
-echo "Downloading & Running AEM Compose CLI"
+echo "Downloading & Testing AEM Compose CLI"
 echo ""
 
 chmod +x "${AEM_WRAPPER}"
 sh ${AEM_WRAPPER} version
 
-echo "Scaffolding AEM Compose configuration file"
+echo "Success! Now initialize AEM Compose by running the command:"
 echo ""
 
-./${AEM_WRAPPER} config init
-
-echo "Initialized AEM Compose"
-echo ""
-
-echo "The next step is providing AEM files (JAR or SDK ZIP, license) to directory '${LIB_DIR}'"
-echo "Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '${CONFIG_FILE}'"
-echo "Later on, remember to customise AEM instance setup in provisioning file '${SETUP_FILE}' for service pack installation, application build, etc."
-echo "To avoid problems with IDE performance, make sure to exclude from indexing the directory '${HOME_DIR}'"
-echo "Finally, use control scripts to manage AEM instances:"
-echo ""
-
-echo "sh aemw [setup|resetup|up|down|restart]"
-
-echo ""
-echo "It is also possible to run individual AEM Compose CLI commands separately."
-echo "Discover available commands by running:"
-echo ""
-
-echo "sh aemw --help"
+echo "sh ${AEM_WRAPPER} init"

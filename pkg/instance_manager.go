@@ -282,6 +282,9 @@ func (im *InstanceManager) configureInstances(config *cfg.Config) {
 			}
 			if i.IsLocal() {
 				if len(iCfg.RunModes) > 0 {
+					if len(iCfg.StartOpts) > 0 {
+						i.local.StartOpts = iCfg.StartOpts
+					}
 					if len(iCfg.JVMOpts) > 0 {
 						i.local.JvmOpts = iCfg.JVMOpts
 					}

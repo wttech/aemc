@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/cryptox"
 	"github.com/wttech/aemc/pkg/common/execx"
 	"github.com/wttech/aemc/pkg/common/filex"
@@ -24,9 +25,10 @@ import (
 type LocalInstance struct {
 	instance *Instance
 
-	Version  string
-	JvmOpts  []string
-	RunModes []string
+	Version   string
+	JvmOpts   []string
+	StartOpts []string
+	RunModes  []string
 }
 
 type LocalInstanceState struct {
@@ -42,7 +44,7 @@ const (
 	LocalInstanceScriptStatus    = "status"
 	LocalInstanceBackupExtension = "aemb.tar.zst"
 	LocalInstanceUser            = "admin"
-	LocalInstanceWorkDirName     = "aem-compose"
+	LocalInstanceWorkDirName     = common.AppId
 )
 
 func (li LocalInstance) Instance() *Instance {
@@ -52,8 +54,12 @@ func (li LocalInstance) Instance() *Instance {
 func NewLocal(i *Instance) *LocalInstance {
 	li := &LocalInstance{instance: i}
 	li.Version = "1"
-	li.JvmOpts = []string{"-server", "-Xmx1024m", "-Djava.awt.headless=true"}
-	li.RunModes = []string{}
+	li.StartOpts = []string{}
+	li.RunModes = []string{"local"}
+	li.JvmOpts = []string{
+		"-Djava.io.tmpdir=" + pathx.Abs(common.TmpDir),
+		"-Duser.language=en", "-Duser.country=US", "-Duser.timezone=UTC", "-Duser.name=" + common.AppId,
+	}
 	return li
 }
 
@@ -424,6 +430,7 @@ func (li LocalInstance) awaitAuth() error {
 		return nil
 	}
 	// TODO 'local_author | auth not ready (1/588=2%): xtg'
+	// TODO at first await reachable (with the same message), then check auth
 	return li.Await("auth ready", func() bool {
 		_, err := li.instance.osgi.bundleManager.List()
 		return err == nil
@@ -498,7 +505,7 @@ func (li LocalInstance) Delete() error {
 	if li.IsRunning() {
 		return fmt.Errorf("cannot delete instance as it is running")
 	}
-	log.Infof("deleting instance '%s' ", li.instance.ID())
+	log.Infof("deleting instance '%s'", li.instance.ID())
 	if err := pathx.Delete(li.Dir()); err != nil {
 		return fmt.Errorf("cannot delete instance properly: %w", err)
 
@@ -521,6 +528,7 @@ func (li LocalInstance) binScriptCommand(name string, verbose bool) *exec.Cmd {
 		"CQ_PORT="+li.instance.http.Port(),
 		"CQ_RUNMODE="+li.instance.local.RunModesString(),
 		"CQ_JVM_OPTS="+li.instance.local.JVMOptsString(),
+		"CQ_START_OPTS"+li.instance.local.StartOptsString(),
 	)
 	if verbose {
 		li.instance.manager.aem.CommandOutput(cmd)
@@ -539,11 +547,15 @@ func (li LocalInstance) JVMOptsString() string {
 	result := append([]string{}, li.JvmOpts...)
 
 	// at the first boot admin password could be customized via property, at the next boot only via Oak Run
-	if !li.IsInitialized() {
-		result = append(result, fmt.Sprintf("-Dadmin.password=%s", li.instance.password))
+	if !li.IsInitialized() && li.instance.password != instance.PasswordDefault {
+		result = append(result, fmt.Sprintf("-Dadmin.password='%s'", li.instance.password))
 	}
 	sort.Strings(result)
 	return strings.Join(result, " ")
+}
+
+func (li LocalInstance) StartOptsString() string {
+	return strings.Join(li.StartOpts, " ")
 }
 
 func (li LocalInstance) OutOfDate() bool {

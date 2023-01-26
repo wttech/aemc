@@ -1,6 +1,8 @@
 package common
 
 const (
+	AppId          = "aem-compose"
+	AppName        = "AEM Compose"
 	MainDir        = "aem"
 	HomeDirName    = "home"
 	HomeDir        = MainDir + "/" + HomeDirName

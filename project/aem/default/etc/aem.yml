@@ -109,7 +109,7 @@ instance:
 # Java options used to launch AEM instances
 java:
   # Java JRE/JDK location
-  home_dir: {{ .Env.JAVA_HOME }}
+  home_dir: "{{ .Env.JAVA_HOME }}"
   # Validate if following Java version constraints are met
   version_constraints: ">= 11, < 12"
 

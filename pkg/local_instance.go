@@ -405,27 +405,38 @@ func (li LocalInstance) Kill() error {
 	return nil
 }
 
-func (li LocalInstance) Await(state string, condition func() bool, timeout time.Duration) error {
+func (li LocalInstance) Await(stateChecker func() error, timeout time.Duration) error {
 	started := time.Now()
 	for {
-		if condition() {
+		err := stateChecker()
+		if err == nil {
 			break
 		}
 		if time.Now().After(started.Add(timeout)) {
-			return fmt.Errorf("instance '%s' awaiting state '%s' reached timeout after %s", state, li.Instance().ID(), timeout)
+			return fmt.Errorf("instance '%s' awaiting reached timeout after %s", li.Instance().ID(), timeout)
 		}
-		log.Infof("instance '%s' is awaiting state '%s'", li.instance.ID(), state)
+		log.Infof("%s | %s", li.instance.ID(), err)
 		time.Sleep(time.Second * 5)
 	}
 	return nil
 }
 
 func (li LocalInstance) AwaitRunning() error {
-	return li.Await("running", func() bool { return li.IsRunning() }, time.Minute*30)
+	return li.Await(func() error {
+		if !li.IsRunning() {
+			return fmt.Errorf("not yet running")
+		}
+		return nil
+	}, time.Minute*30)
 }
 
 func (li LocalInstance) AwaitNotRunning() error {
-	return li.Await("not running", func() bool { return !li.IsRunning() }, time.Minute*10)
+	return li.Await(func() error {
+		if li.IsRunning() {
+			return fmt.Errorf("still running")
+		}
+		return nil
+	}, time.Minute*10)
 }
 
 // awaitAuth waits for a custom password to be in use (initially the default one is used instead)
@@ -433,12 +444,33 @@ func (li LocalInstance) awaitAuth() error {
 	if li.IsInitialized() || li.instance.password == instance.PasswordDefault {
 		return nil
 	}
-	// TODO 'local_author | auth not ready (1/588=2%): xtg'
-	// TODO at first await reachable (with the same message), then check auth
-	return li.Await("auth ready", func() bool {
+
+	log.Infof("awaiting auth on instance '%s'", li.instance.ID())
+	err := li.Await(func() error {
+		address := fmt.Sprintf("%s:%s", li.instance.http.Hostname(), li.instance.http.Port())
+		reachable, _ := netx.IsReachable(li.instance.http.Hostname(), li.instance.http.Port(), time.Second*3)
+		if !reachable {
+			return fmt.Errorf("not reachable (%s)", address)
+		}
 		_, err := li.instance.osgi.bundleManager.List()
-		return err == nil
+		if err != nil {
+			defaultInstance, err := li.instance.manager.NewByURL(li.instance.http.BaseURL())
+			if err != nil {
+				return err
+			}
+			bundles, err := defaultInstance.osgi.bundleManager.List()
+			if err != nil {
+				return err
+			}
+			return fmt.Errorf("starting bundles (%s)", bundles.StablePercent())
+		}
+		return nil
 	}, time.Minute*10)
+	if err != nil {
+		return err
+	}
+	log.Infof("awaited auth on instance '%s'", li.instance.ID())
+	return nil
 }
 
 type LocalStatus int
@@ -552,7 +584,7 @@ func (li LocalInstance) JVMOptsString() string {
 
 	// at the first boot admin password could be customized via property, at the next boot only via Oak Run
 	if !li.IsInitialized() && li.instance.password != instance.PasswordDefault {
-		result = append(result, fmt.Sprintf("-Dadmin.password='%s'", li.instance.password))
+		result = append(result, fmt.Sprintf("-Dadmin.password=%s", li.instance.password))
 	}
 	sort.Strings(result)
 	return strings.Join(result, " ")

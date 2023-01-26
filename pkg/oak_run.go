@@ -102,15 +102,22 @@ func (or OakRun) SetPassword(instanceDir string, user string, password string) e
 
 func (or OakRun) RunScript(instanceDir string, scriptFile string) error {
 	storeDir := fmt.Sprintf("%s/%s", instanceDir, or.StorePath)
-	// TODO https://issues.apache.org/jira/browse/OAK-5961 (handle JAnsi problem)
-	cmd := exec.Command("java",
-		"-Djava.io.tmpdir=aem/home/tmp",
+	cmd := exec.Command(or.localOpts.manager.aem.javaOpts.Executable(),
+		"-Djava.io.tmpdir="+or.localOpts.manager.aem.baseOpts.TmpDir,
 		"-jar", or.JarFile(),
 		"console", storeDir, "--read-write", fmt.Sprintf(":load %s", scriptFile),
 	)
-	or.localOpts.manager.aem.CommandOutput(cmd)
-	if err := cmd.Run(); err != nil {
+	// TODO <https://github.com/wttech/aemc/issues/49>
+	/*
+		or.localOpts.manager.aem.CommandOutput(cmd)
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("cannot run Oak Run script '%s': %w", scriptFile, err)
+		}
+	*/
+	bytes, err := cmd.CombinedOutput()
+	if err != nil {
 		return fmt.Errorf("cannot run Oak Run script '%s': %w", scriptFile, err)
 	}
+	log.Debugf("output of Oak Run script '%s':\n%s", scriptFile, string(bytes))
 	return nil
 }

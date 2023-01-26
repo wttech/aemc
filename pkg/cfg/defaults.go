@@ -20,6 +20,8 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("instance.processing_mode", instance.ProcessingAuto)
 
+	v.SetDefault("instance.check.warmup", "1s")
+	v.SetDefault("instance.check.interval", "5s")
 	v.SetDefault("instance.check.done_threshold", 5)
 	v.SetDefault("instance.check.installer.state", true)
 	v.SetDefault("instance.check.installer.pause", true)

@@ -31,8 +31,9 @@ func (c *CLI) configListCmd() *cobra.Command {
 
 func (c *CLI) configInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "init",
-		Short: "Initialize configuration",
+		Use:     "initialize",
+		Aliases: []string{"init"},
+		Short:   "Initialize configuration",
 		Run: func(cmd *cobra.Command, args []string) {
 			err := c.config.Initialize()
 			if err != nil {

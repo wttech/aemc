@@ -19,11 +19,6 @@ func (c *CLI) initCmd() *cobra.Command {
 					return
 				}
 			}
-			if err := c.aem.InstanceManager().LocalOpts.OakRun.Prepare(); err != nil {
-				c.Error(err)
-				return
-			}
-
 			c.SetOutput("gettingStarted", strings.Join([]string{
 				"The next step is providing AEM files (JAR or SDK ZIP, license) to directory '" + common.LibDir + "'.",
 				"Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '" + cfg.FileDefault + "'.",

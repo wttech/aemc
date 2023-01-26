@@ -73,9 +73,9 @@ instance:
   # Managed locally (set up automatically)
   local:
     # Current runtime dir (Sling launchpad, JCR repository)
-    unpack_dir: "aem/home/data/instance"
+    unpack_dir: "aem/home/var/instance"
     # Archived runtime dir (AEM backup files '*.aemb.zst')
-    backup_dir: "aem/home/data/backup"
+    backup_dir: "aem/home/var/backup"
 
     # Oak Run tool options (offline instance management)
     oakrun:

@@ -14,7 +14,7 @@ const (
 	LocationRemote       = "remote"
 	RoleAuthorPortSuffix = "02"
 	ClassifierDefault    = ""
-	AemVersionUnknown    = "unknown"
+	AemVersionUnknown    = "<unknown>"
 )
 
 type ProcessingMode string

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/wttech/aemc/pkg/common/filex"
-	"github.com/wttech/aemc/pkg/common/pathx"
 	"reflect"
 	"text/template"
 )
@@ -31,10 +30,6 @@ var funcMap = template.FuncMap{
 			return value
 		}
 		return value
-	},
-	"pathabs": func(path string) string {
-		defer recovery()
-		return pathx.Abs(path)
 	},
 }
 

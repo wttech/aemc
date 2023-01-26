@@ -53,6 +53,26 @@ func (im *InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
 	return result
 }
 
+func (o *LocalOpts) Initialize() error {
+	if err := pathx.Ensure(o.manager.aem.baseOpts.TmpDir); err != nil {
+		return err
+	}
+	distFile, err := o.Quickstart.FindDistFile()
+	if err != nil {
+		return err
+	}
+	if IsSdkFile(distFile) {
+		err := o.Sdk.Prepare(distFile)
+		if err != nil {
+			return err
+		}
+	}
+	if err := o.OakRun.Prepare(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (o *LocalOpts) Validate() error {
 	if err := o.validateUnpackDir(); err != nil {
 		return err
@@ -150,19 +170,9 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 
 	created := []Instance{}
 
-	distFile, err := im.LocalOpts.Quickstart.FindDistFile()
-	if err != nil {
+	if err := im.LocalOpts.Initialize(); err != nil {
 		return created, err
 	}
-	if IsSdkFile(distFile) {
-		err := im.LocalOpts.Sdk.Prepare(distFile)
-		if err != nil {
-			return created, err
-		}
-	}
-
-	im.LocalOpts.OakRun.Prepare()
-
 	for _, i := range instances {
 		if !i.local.IsCreated() {
 			err := i.local.Create()

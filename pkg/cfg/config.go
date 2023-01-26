@@ -91,7 +91,10 @@ func readFromFile(v *viper.Viper) {
 		log.Fatalf("cannot parse AEM config file '%s': %s", file, err)
 		return
 	}
-	data := map[string]any{"Env": osx.EnvVars()}
+	data := map[string]any{
+		"Env":  osx.EnvVars(),
+		"Path": pathx.Abs("."),
+	}
 	var tplOut bytes.Buffer
 	if err = tpl.Execute(&tplOut, data); err != nil {
 		log.Fatalf("cannot render AEM config template properly '%s': %s", file, err)

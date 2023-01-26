@@ -281,19 +281,12 @@ func (im *InstanceManager) configureInstances(config *cfg.Config) {
 				i.password = iCfg.Password
 			}
 			if i.IsLocal() {
-				if len(iCfg.RunModes) > 0 {
-					if len(iCfg.StartOpts) > 0 {
-						i.local.StartOpts = iCfg.StartOpts
-					}
-					if len(iCfg.JVMOpts) > 0 {
-						i.local.JvmOpts = iCfg.JVMOpts
-					}
-					if len(iCfg.RunModes) > 0 {
-						i.local.RunModes = iCfg.RunModes
-					}
-					if len(iCfg.Version) > 0 {
-						i.local.Version = iCfg.Version
-					}
+				i.local.StartOpts = iCfg.StartOpts
+				i.local.JvmOpts = iCfg.JVMOpts
+				i.local.RunModes = iCfg.RunModes
+
+				if len(iCfg.Version) > 0 {
+					i.local.Version = iCfg.Version
 				}
 			}
 			defined = append(defined, *i)

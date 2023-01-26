@@ -28,7 +28,7 @@ func (c *CLI) fileFindCmd() *cobra.Command {
 		Short:   "Find file by pattern",
 		Run: func(cmd *cobra.Command, args []string) {
 			file, _ := cmd.Flags().GetString("file")
-			fileGlobbed, err := pathx.GlobOne(file)
+			fileGlobbed, err := pathx.GlobSome(file)
 			if err != nil {
 				c.Error(err)
 				return

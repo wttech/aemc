@@ -14,6 +14,10 @@ type AppManager struct {
 	SourcesIgnored []string
 }
 
+const (
+	AppChecksumFileSuffix = ".build.md5"
+)
+
 func NewAppManager(aem *Aem) *AppManager {
 	result := new(AppManager)
 	result.aem = aem
@@ -61,39 +65,45 @@ func (am *AppManager) Build(command string) error {
 	return nil
 }
 
-func (am *AppManager) BuildWithChanged(command string, file string, sourcePaths []string) (bool, error) {
-	fileExists, err := pathx.ExistsStrict(file)
-	if err != nil {
-		return false, err
-	}
-	checksumFile := file + ".build.md5"
-	checksumExists, err := pathx.ExistsStrict(checksumFile)
-	if err != nil {
-		return false, err
-	}
-	checksumPrevious := ""
-	if checksumExists {
-		checksumPrevious, err = filex.ReadString(checksumFile)
+func (am *AppManager) BuildWithChanged(command string, filePattern string, sourcePaths []string) (string, bool, error) {
+	file, err := pathx.GlobOne(filePattern)
+	if file != "" {
+		checksumFile := file + AppChecksumFileSuffix
+		checksumExists, err := pathx.ExistsStrict(checksumFile)
 		if err != nil {
-			return false, err
+			return file, false, err
 		}
-	}
-	checksumCurrent, err := filex.ChecksumPaths(sourcePaths, am.SourcesIgnored)
-	if err != nil {
-		return false, err
-	}
-	upToDate := fileExists && checksumPrevious == checksumCurrent
-	if upToDate {
-		return false, nil
+		checksumPrevious := ""
+		if checksumExists {
+			checksumPrevious, err = filex.ReadString(checksumFile)
+			if err != nil {
+				return file, false, err
+			}
+		}
+		checksumCurrent, err := filex.ChecksumPaths(sourcePaths, am.SourcesIgnored)
+		if err != nil {
+			return file, false, err
+		}
+		if checksumPrevious == checksumCurrent {
+			return file, false, nil
+		}
 	}
 	err = am.Build(command)
 	if err != nil {
-		return false, err
+		return "", false, err
 	}
-	if err = filex.WriteString(checksumFile, checksumCurrent); err != nil {
-		return false, err
+	file, err = pathx.GlobSome(filePattern)
+	if err != nil {
+		return "", false, err
 	}
-	return true, nil
+	checksumCurrent, err := filex.ChecksumPaths(sourcePaths, am.SourcesIgnored)
+	if err != nil {
+		return file, false, err
+	}
+	if err = filex.WriteString(file+AppChecksumFileSuffix, checksumCurrent); err != nil {
+		return file, false, err
+	}
+	return file, true, nil
 }
 
 func (am *AppManager) Configure(config *cfg.Config) {

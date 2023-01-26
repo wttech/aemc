@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
-	"github.com/wttech/aemc/pkg/common/pathx"
 )
 
 func (c *CLI) appCmd() *cobra.Command {
@@ -22,26 +21,21 @@ func (c *CLI) appBuildCmd() *cobra.Command {
 		Short: "Build application only when needed",
 		Run: func(cmd *cobra.Command, args []string) {
 			command, _ := cmd.Flags().GetString("command")
-			file, _ := cmd.Flags().GetString("file")
-			fileGlobbed, err := pathx.GlobOne(file)
-			if err != nil {
-				c.Error(err)
-				return
-			}
+			filePattern, _ := cmd.Flags().GetString("file")
 			appManager := c.aem.AppManager()
 
 			sourcePaths, _ := cmd.Flags().GetStringSlice("sources")
 			sourcesIgnoredExtra, _ := cmd.Flags().GetStringSlice("sources-ignored")
 			appManager.SourcesIgnored = lo.Uniq(append(appManager.SourcesIgnored, sourcesIgnoredExtra...))
 
-			changed, err := appManager.BuildWithChanged(command, fileGlobbed, sourcePaths)
+			file, changed, err := appManager.BuildWithChanged(command, filePattern, sourcePaths)
 			if err != nil {
 				c.Error(err)
 				return
 			}
 
 			c.SetOutput("command", command)
-			c.SetOutput("file", fileGlobbed)
+			c.SetOutput("file", file)
 			c.SetOutput("sources", sourcePaths)
 
 			if changed {

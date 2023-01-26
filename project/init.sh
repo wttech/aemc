@@ -4,11 +4,15 @@ VERSION=${AEMC_VERSION:-"0.11.2"}
 SOURCE_URL="https://raw.githubusercontent.com/wttech/aemc/v${VERSION}/project"
 
 AEM_WRAPPER="aemw"
+
 AEM_DIR="aem"
 SCRIPT_DIR="${AEM_DIR}/script"
 HOME_DIR="${AEM_DIR}/home"
+DEFAULT_DIR="${AEM_DIR}/default"
+DEFAULT_CONFIG_DIR="${DEFAULT_DIR}/etc"
 LIB_DIR="${HOME_DIR}/lib"
-CONFIG_FILE="${HOME_DIR}/aem.yml"
+
+CONFIG_FILE="${HOME_DIR}/etc/aem.yml"
 SETUP_FILE="${SCRIPT_DIR}/setup.sh"
 
 if [ -f "$AEM_WRAPPER" ]; then
@@ -19,7 +23,9 @@ fi
 echo "Downloading AEM Compose Files"
 echo ""
 
-mkdir -p "$SCRIPT_DIR" "$HOME_DIR"
+mkdir -p "${SCRIPT_DIR}" "${HOME_DIR}" "${DEFAULT_CONFIG_DIR}" "${LIB_DIR}"
+
+curl -s "${SOURCE_URL}/${DEFAULT_CONFIG_DIR}/aem.yml" -o "${DEFAULT_CONFIG_DIR}/aem.yml"
 curl -s "${SOURCE_URL}/${SCRIPT_DIR}/deploy.sh" -o "${SCRIPT_DIR}/deploy.sh"
 curl -s "${SOURCE_URL}/${SCRIPT_DIR}/destroy.sh" -o "${SCRIPT_DIR}/destroy.sh"
 curl -s "${SOURCE_URL}/${SCRIPT_DIR}/down.sh" -o "${SCRIPT_DIR}/down.sh"
@@ -40,11 +46,6 @@ echo "Scaffolding AEM Compose configuration file"
 echo ""
 
 ./${AEM_WRAPPER} config init
-
-echo "Creating AEM Compose directories"
-echo ""
-
-mkdir -p "$LIB_DIR"
 
 echo "Initialized AEM Compose"
 echo ""

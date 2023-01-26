@@ -148,7 +148,7 @@ func (li LocalInstance) createLock() osx.Lock[localInstanceCreateLock] {
 }
 
 type localInstanceCreateLock struct {
-	Created time.Time
+	Created time.Time `yaml:"created"`
 }
 
 func (li LocalInstance) unpackJarFile() error {
@@ -301,11 +301,11 @@ func (li LocalInstance) startLock() osx.Lock[localInstanceStartLock] {
 }
 
 type localInstanceStartLock struct {
-	Version  string
-	JVMOpts  string
-	RunModes string
-	HTTPPort string
-	Password string
+	Version  string `yaml:"version"`
+	JVMOpts  string `yaml:"jvm_opts"`
+	RunModes string `yaml:"run_modes"`
+	HTTPPort string `yaml:"http_port"`
+	Password string `yaml:"password"`
 }
 
 func (li LocalInstance) Stop() error {

@@ -2,7 +2,6 @@ package cfg
 
 import (
 	"bytes"
-	_ "embed"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -18,11 +17,13 @@ import (
 )
 
 const (
-	EnvPrefix         = "AEM"
-	InputStdin        = "STDIN"
-	OutputFileDefault = common.HomeDir + "/aem.log"
-	FilePathDefault   = common.HomeDir + "/aem.yml"
-	FilePathEnvVar    = "AEM_CONFIG_FILE"
+	EnvPrefix           = "AEM"
+	InputStdin          = "STDIN"
+	OutputFileDefault   = common.LogDir + "/aem.log"
+	FileDefault         = common.ConfigDir + "/aem.yml"
+	FileEnvVar          = "AEM_CONFIG_FILE"
+	TemplateFileDefault = common.DefaultDir + "/" + common.ConfigDirName + "/aem.yml"
+	TemplateFileEnvVar  = "AEM_CONFIG_TEMPLATE"
 )
 
 // Config defines a place for managing input configuration from various sources (YML file, env vars, etc)
@@ -102,53 +103,48 @@ func readFromFile(v *viper.Viper) {
 }
 
 func File() string {
-	path := os.Getenv(FilePathEnvVar)
-	if len(path) == 0 {
-		path = FilePathDefault
+	path := os.Getenv(FileEnvVar)
+	if path == "" {
+		path = FileDefault
 	}
 	return path
 }
 
-func (c *Config) ConfigureLogger() {
-	log.SetFormatter(&log.TextFormatter{
-		TimestampFormat: c.values.Log.TimestampFormat,
-		FullTimestamp:   c.values.Log.FullTimestamp,
-	})
-
-	level, err := log.ParseLevel(c.values.Log.Level)
-	if err != nil {
-		log.Fatalf("unsupported log level specified: '%s'", c.values.Log.Level)
+func TemplateFile() string {
+	path := os.Getenv(TemplateFileEnvVar)
+	if path == "" {
+		path = TemplateFileDefault
 	}
-	log.SetLevel(level)
+	return path
 }
 
-//go:embed aem.yml
-var configYml string
-
-func renderConfigYml() (string, error) {
-	tplParsed, err := tplx.New("config-tpl").Delims("[[", "]]").Parse(configYml)
-	if err != nil {
-		return "", err
-	}
-	var tplOutput bytes.Buffer
-	if err := tplParsed.Execute(&tplOutput, map[string]any{}); err != nil {
-		return "", err
-	}
-	return tplOutput.String(), nil
+func (c *Config) IsInitialized() bool {
+	return pathx.Exists(File())
 }
 
-func (c *Config) Init() error {
+func (c *Config) Initialize() error {
 	file := File()
 	if pathx.Exists(file) {
 		return fmt.Errorf("config file already exists: '%s'", file)
 	}
-
-	configYmlRendered, err := renderConfigYml()
-	if err != nil {
-		return fmt.Errorf("cannot render initial config file from template: '%w'", err)
+	templateFile := TemplateFile()
+	if !pathx.Exists(templateFile) {
+		return fmt.Errorf("config file template does not exist: '%s'", templateFile)
 	}
-	if err = filex.WriteString(file, configYmlRendered); err != nil {
-		return fmt.Errorf("cannot create initial config file '%s': '%w'", file, err)
+	ymlTplStr, err := filex.ReadString(templateFile)
+	if err != nil {
+		return err
+	}
+	ymlTplParsed, err := tplx.New("config-tpl").Delims("[[", "]]").Parse(ymlTplStr)
+	if err != nil {
+		return fmt.Errorf("cannot parse config file template '%s': '%w'", templateFile, err)
+	}
+	var yml bytes.Buffer
+	if err := ymlTplParsed.Execute(&yml, map[string]any{ /* TODO future hook (not sure if needed or not */ }); err != nil {
+		return fmt.Errorf("cannot render config file template '%s': '%w'", templateFile, err)
+	}
+	if err = filex.WriteString(file, yml.String()); err != nil {
+		return fmt.Errorf("cannot save config file '%s': '%w'", file, err)
 	}
 	return nil
 }
@@ -157,7 +153,18 @@ func InputFormats() []string {
 	return []string{fmtx.YML, fmtx.JSON}
 }
 
-// OutputFormats returns all available output formats
 func OutputFormats() []string {
 	return []string{fmtx.Text, fmtx.YML, fmtx.JSON, fmtx.None}
+}
+
+func (c *Config) ConfigureLogger() {
+	log.SetFormatter(&log.TextFormatter{
+		TimestampFormat: c.values.Log.TimestampFormat,
+		FullTimestamp:   c.values.Log.FullTimestamp,
+	})
+	level, err := log.ParseLevel(c.values.Log.Level)
+	if err != nil {
+		log.Fatalf("unsupported log level specified: '%s'", c.values.Log.Level)
+	}
+	log.SetLevel(level)
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg/cfg"
 )
@@ -35,9 +34,9 @@ func (c *CLI) configInitCmd() *cobra.Command {
 		Use:   "init",
 		Short: "Initialize configuration",
 		Run: func(cmd *cobra.Command, args []string) {
-			err := c.config.Init()
+			err := c.config.Initialize()
 			if err != nil {
-				c.Fail(fmt.Sprintf("cannot initialize config: %s", err))
+				c.Error(err)
 				return
 			}
 			c.SetOutput("path", cfg.File())

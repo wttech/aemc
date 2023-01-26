@@ -280,8 +280,8 @@ func (pm *PackageManager) deployLock(file string, checksum string) osx.Lock[pack
 }
 
 type packageDeployLock struct {
-	Deployed time.Time
-	Checksum string
+	Deployed time.Time `yaml:"deployed"`
+	Checksum string    `yaml:"checksum"`
 }
 
 func (pm *PackageManager) Uninstall(remotePath string) error {

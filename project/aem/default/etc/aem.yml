@@ -11,11 +11,13 @@ instance:
       user: admin
       password: admin
       run_modes: [ local ]
+      jvm_opts: -Djava.io.tmpdir=aem/home/tmp -Duser.timezone=UTC -Duser.language=en-EN
     local_publish:
       http_url: http://127.0.0.1:4503
       user: admin
       password: admin
       run_modes: [ local ]
+      jvm_opts: -Djava.io.tmpdir=aem/home/tmp -Duser.timezone=UTC -Duser.language=en-EN
 
   # Filters for defined
   filter:
@@ -77,7 +79,8 @@ instance:
 
     # Oak Run tool options (offline instance management)
     oakrun:
-      source: "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.46.0/oak-run-1.46.0.jar"
+      download_url: "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.44.0/oak-run-1.44.0.jar"
+      store_path: "crx-quickstart/repository/segmentstore"
 
     # Source files
     quickstart:
@@ -148,4 +151,4 @@ input:
 
 output:
   format: text
-  file: aem/home/aem.log
+  file: aem/home/var/log/aem.log

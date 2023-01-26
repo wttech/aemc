@@ -32,10 +32,7 @@ func ProcessingModes() []string {
 //go:embed resource/cbp.exe
 var CbpExecutable []byte
 
-//go:embed resource/oak-run-1.42.0.jar
-var OakRunJar []byte
-
-//go:embed resource/oak-run_set-password.groovy
+//go:embed resource/oak-run/set-password.groovy
 var OakRunSetPassword string
 
 type Role string

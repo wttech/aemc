@@ -3,7 +3,6 @@ package pkg
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/httpx"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
@@ -14,28 +13,27 @@ import (
 )
 
 const (
-	OakRunSourceEmbedded = "embedded/oak-run-1.42.0.jar"
-	OakRunToolDirName    = "oak-run"
+	OakRunToolDirName = "oak-run"
 )
 
 func NewOakRun(localOpts *LocalOpts) *OakRun {
 	return &OakRun{
 		localOpts: localOpts,
 
-		Source:    OakRunSourceEmbedded,
-		StorePath: "crx-quickstart/repository/segmentstore",
+		DownloadURL: "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.44.0/oak-run-1.44.0.jar",
+		StorePath:   "crx-quickstart/repository/segmentstore",
 	}
 }
 
 type OakRun struct {
 	localOpts *LocalOpts
 
-	Source    string
-	StorePath string
+	DownloadURL string
+	StorePath   string
 }
 
 type OakRunLock struct {
-	Source string
+	DownloadURL string `yaml:"download_url"`
 }
 
 func (or OakRun) Dir() string {
@@ -43,7 +41,7 @@ func (or OakRun) Dir() string {
 }
 
 func (or OakRun) lock() osx.Lock[OakRunLock] {
-	return osx.NewLock(or.Dir()+"/lock/create.yml", func() OakRunLock { return OakRunLock{Source: or.Source} })
+	return osx.NewLock(or.Dir()+"/lock/create.yml", func() OakRunLock { return OakRunLock{DownloadURL: or.DownloadURL} })
 }
 
 func (or OakRun) Prepare() error {
@@ -54,10 +52,10 @@ func (or OakRun) Prepare() error {
 		return err
 	}
 	if upToDate {
-		log.Debugf("existing instance Oak Run '%s' is up-to-date", lock.DataCurrent().Source)
+		log.Debugf("existing instance Oak Run '%s' is up-to-date", lock.DataCurrent().DownloadURL)
 		return nil
 	}
-	log.Infof("preparing new instance Oak Run '%s'", lock.DataCurrent().Source)
+	log.Infof("preparing new instance Oak Run '%s'", lock.DataCurrent().DownloadURL)
 	err = or.prepare()
 	if err != nil {
 		return err
@@ -66,57 +64,50 @@ func (or OakRun) Prepare() error {
 	if err != nil {
 		return err
 	}
-	log.Infof("prepared new instance OakRun '%s'", lock.DataCurrent().Source)
+	log.Infof("prepared new instance OakRun '%s'", lock.DataCurrent().DownloadURL)
 
 	return nil
 }
 
 func (or OakRun) JarFile() string {
-	return pathx.Abs(fmt.Sprintf("%s/%s", or.Dir(), filepath.Base(or.Source)))
+	return pathx.Abs(fmt.Sprintf("%s/%s", or.Dir(), filepath.Base(or.DownloadURL)))
 }
 
 func (or OakRun) prepare() error {
 	jarFile := or.JarFile()
-	if or.Source == OakRunSourceEmbedded {
-		log.Infof("copying embedded Oak Run JAR to file '%s'", jarFile)
-		if err := filex.Write(jarFile, instance.OakRunJar); err != nil {
-			return fmt.Errorf("cannot embedded Oak Run JAR to file '%s': %s", jarFile, err)
-		}
-		log.Infof("copied embedded Oak Run JAR to file '%s'", jarFile)
-	} else {
-		log.Infof("downloading Oak Run JAR from URL '%s' to file '%s'", or.Source, jarFile)
-		if err := httpx.DownloadOnce(or.Source, jarFile); err != nil {
-			return err
-		}
-		log.Infof("downloaded Oak Run JAR from URL '%s' to file '%s'", or.Source, jarFile)
+	log.Infof("downloading Oak Run JAR from URL '%s' to file '%s'", or.DownloadURL, jarFile)
+	if err := httpx.DownloadOnce(or.DownloadURL, jarFile); err != nil {
+		return err
 	}
+	log.Infof("downloaded Oak Run JAR from URL '%s' to file '%s'", or.DownloadURL, jarFile)
 	return nil
 }
 
 func (or OakRun) SetPassword(instanceDir string, user string, password string) error {
 	log.Infof("password setting for user '%s' on instance at dir '%s'", user, instanceDir)
-	if err := or.RunScript(instanceDir, "set-password", instance.OakRunSetPassword, map[string]any{"User": user, "Password": password}); err != nil {
+
+	scriptFile := fmt.Sprintf("%s/%s/tmp/oak-run/set-password.groovy", instanceDir, LocalInstanceWorkDirName)
+	if err := tplx.RenderFile(scriptFile, instance.OakRunSetPassword, map[string]any{"User": user, "Password": password}); err != nil {
+		return err
+	}
+	defer func() {
+		pathx.DeleteIfExists(scriptFile)
+	}()
+	if err := or.RunScript(instanceDir, scriptFile); err != nil {
 		return err
 	}
 	log.Infof("password set for user '%s' on instance at dir '%s'", user, instanceDir)
 	return nil
 }
 
-func (or OakRun) RunScript(instanceDir string, scriptName, scriptTpl string, scriptData map[string]any) error {
-	scriptContent, err := tplx.RenderString(scriptTpl, scriptData)
-	if err != nil {
-		return err
-	}
-	scriptFile := fmt.Sprintf("%s/%s/tmp/oak-run/%s.groovy", instanceDir, LocalInstanceWorkDirName, scriptName)
-	if err := filex.WriteString(scriptFile, scriptContent); err != nil {
-		return fmt.Errorf("cannot save Oak Run script '%s': %w", scriptFile, err)
-	}
-	defer func() {
-		pathx.DeleteIfExists(scriptFile)
-	}()
+func (or OakRun) RunScript(instanceDir string, scriptFile string) error {
 	storeDir := fmt.Sprintf("%s/%s", instanceDir, or.StorePath)
 	// TODO https://issues.apache.org/jira/browse/OAK-5961 (handle JAnsi problem)
-	cmd := exec.Command("java", "-jar", or.JarFile(), "console", storeDir, "--read-write", fmt.Sprintf(":load %s", scriptFile))
+	cmd := exec.Command("java",
+		"-Djava.io.tmpdir=aem/home/tmp",
+		"-jar", or.JarFile(),
+		"console", storeDir, "--read-write", fmt.Sprintf(":load %s", scriptFile),
+	)
 	or.localOpts.manager.aem.CommandOutput(cmd)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot run Oak Run script '%s': %w", scriptFile, err)

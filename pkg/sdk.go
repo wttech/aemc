@@ -27,7 +27,7 @@ func (s Sdk) Dir() string {
 }
 
 type SdkLock struct {
-	Version string
+	Version string `yaml:"version"`
 }
 
 func (s Sdk) lock(zipFile string) osx.Lock[SdkLock] {

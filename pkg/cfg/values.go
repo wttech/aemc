@@ -95,6 +95,10 @@ type ConfigValues struct {
 				DistFile    string `mapstructure:"dist_file" yaml:"dist_file"`
 				LicenseFile string `mapstructure:"license_file" yaml:"license_file"`
 			} `mapstructure:"quickstart" yaml:"quickstart"`
+			OakRun struct {
+				DownloadURL string `mapstructure:"download_url" yaml:"download_url"`
+				StorePath   string `mapstructure:"store_path" yaml:"store_path"`
+			} `mapstructure:"oak_run" yaml:"oak_run"`
 		} `mapstructure:"local" yaml:"local"`
 
 		Package struct {

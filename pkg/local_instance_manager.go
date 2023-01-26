@@ -7,6 +7,7 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/cfg"
+	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/timex"
@@ -17,12 +18,11 @@ import (
 )
 
 const (
-	UnpackDir       = "aem/home/data/instance"
-	BackupDir       = "aem/home/data/backup"
-	ToolDir         = "aem/home/opt"
-	LibDir          = "aem/home/lib"
-	DistFile        = LibDir + "/aem-sdk-quickstart.jar"
-	LicenseFile     = LibDir + "/" + LicenseFilename
+	UnpackDir = common.VarDir + "/instance"
+	BackupDir = common.VarDir + "/backup"
+
+	DistFile        = common.LibDir + "/aem-sdk-quickstart.jar"
+	LicenseFile     = common.LibDir + "/" + LicenseFilename
 	LicenseFilename = "license.properties"
 )
 
@@ -43,8 +43,8 @@ func (im *InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
 		manager: manager,
 
 		UnpackDir:  UnpackDir,
-		ToolDir:    ToolDir,
 		BackupDir:  BackupDir,
+		ToolDir:    common.ToolDir,
 		JavaOpts:   im.aem.javaOpts,
 		Quickstart: NewQuickstart(),
 	}
@@ -471,5 +471,11 @@ func (im *InstanceManager) configureLocalOpts(config *cfg.Config) {
 	}
 	if len(opts.Quickstart.LicenseFile) > 0 {
 		im.LocalOpts.Quickstart.LicenseFile = opts.Quickstart.LicenseFile
+	}
+	if len(opts.OakRun.DownloadURL) > 0 {
+		im.LocalOpts.OakRun.DownloadURL = opts.OakRun.DownloadURL
+	}
+	if len(opts.OakRun.StorePath) > 0 {
+		im.LocalOpts.OakRun.StorePath = opts.OakRun.StorePath
 	}
 }

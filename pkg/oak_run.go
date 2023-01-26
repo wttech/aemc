@@ -52,10 +52,10 @@ func (or OakRun) Prepare() error {
 		return err
 	}
 	if upToDate {
-		log.Debugf("existing instance Oak Run '%s' is up-to-date", lock.DataCurrent().DownloadURL)
+		log.Debugf("existing OakRun '%s' is up-to-date", lock.DataCurrent().DownloadURL)
 		return nil
 	}
-	log.Infof("preparing new instance Oak Run '%s'", lock.DataCurrent().DownloadURL)
+	log.Infof("preparing new OakRun '%s'", lock.DataCurrent().DownloadURL)
 	err = or.prepare()
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func (or OakRun) Prepare() error {
 	if err != nil {
 		return err
 	}
-	log.Infof("prepared new instance OakRun '%s'", lock.DataCurrent().DownloadURL)
+	log.Infof("prepared new OakRun '%s'", lock.DataCurrent().DownloadURL)
 
 	return nil
 }

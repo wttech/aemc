@@ -125,7 +125,7 @@ func (li LocalInstance) LicenseFile() string {
 }
 
 func (li LocalInstance) Create() error {
-	log.Infof("creating instance '%s' ", li.instance.ID())
+	log.Infof("creating instance '%s'", li.instance.ID())
 	if err := pathx.DeleteIfExists(li.Dir()); err != nil {
 		return fmt.Errorf("cannot clean up dir for instance '%s': %w", li.instance.ID(), err)
 	}
@@ -147,7 +147,7 @@ func (li LocalInstance) Create() error {
 	if err := li.createLock().Lock(); err != nil {
 		return err
 	}
-	log.Infof("created instance '%s' ", li.instance.ID())
+	log.Infof("created instance '%s'", li.instance.ID())
 	return nil
 }
 
@@ -237,7 +237,7 @@ func (li LocalInstance) Start() error {
 	if err := li.updateAuth(); err != nil {
 		return err
 	}
-	log.Infof("starting instance '%s' ", li.instance.ID())
+	log.Infof("starting instance '%s'", li.instance.ID())
 	if err := li.checkPortsOpen(); err != nil {
 		return err
 	}
@@ -252,7 +252,7 @@ func (li LocalInstance) Start() error {
 	if err := li.startLock().Lock(); err != nil {
 		return err
 	}
-	log.Infof("started instance '%s' ", li.instance.ID())
+	log.Infof("started instance '%s'", li.instance.ID())
 	return nil
 }
 
@@ -322,13 +322,13 @@ func (li LocalInstance) Stop() error {
 	if !li.IsCreated() {
 		return fmt.Errorf("cannot stop instance as it is not created")
 	}
-	log.Infof("stopping instance '%s' ", li.instance.ID())
+	log.Infof("stopping instance '%s'", li.instance.ID())
 	// TODO enforce 'java' to be always from JAVA_PATH (update $PATH var accordingly)
 	cmd := li.binScriptCommand(LocalInstanceScriptStop, true)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute stop script for instance '%s': %w", li.instance.ID(), err)
 	}
-	log.Infof("stopped instance '%s' ", li.instance.ID())
+	log.Infof("stopped instance '%s'", li.instance.ID())
 	return nil
 }
 
@@ -343,12 +343,12 @@ func (li LocalInstance) StopAndAwait() error {
 }
 
 func (li LocalInstance) Clean() error {
-	log.Infof("cleaning instance '%s' ", li.instance.ID())
+	log.Infof("cleaning instance '%s'", li.instance.ID())
 	err := pathx.DeleteIfExists(li.pidFile())
 	if err != nil {
 		return err
 	}
-	log.Infof("cleaned instance '%s' ", li.instance.ID())
+	log.Infof("cleaned instance '%s'", li.instance.ID())
 	return nil
 }
 
@@ -380,7 +380,7 @@ func (li LocalInstance) IsKillable() bool {
 }
 
 func (li LocalInstance) Kill() error {
-	log.Infof("killing instance '%s' ", li.instance.ID())
+	log.Infof("killing instance '%s'", li.instance.ID())
 	pid, err := li.PID()
 	if err != nil {
 		return err
@@ -401,7 +401,7 @@ func (li LocalInstance) Kill() error {
 	if err := pathx.DeleteIfExists(file); err != nil {
 		return fmt.Errorf("cannot delete PID file '%s' for instance '%s': %w", file, li.instance.ID(), err)
 	}
-	log.Infof("killed instance '%s' ", li.instance.ID())
+	log.Infof("killed instance '%s'", li.instance.ID())
 	return nil
 }
 
@@ -514,7 +514,7 @@ func (li LocalInstance) Delete() error {
 		return fmt.Errorf("cannot delete instance properly: %w", err)
 
 	}
-	log.Infof("deleted instance '%s' ", li.instance.ID())
+	log.Infof("deleted instance '%s'", li.instance.ID())
 	return nil
 }
 

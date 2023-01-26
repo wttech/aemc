@@ -44,10 +44,10 @@ func (s Sdk) Prepare(zipFile string) error {
 		return err
 	}
 	if upToDate {
-		log.Debugf("existing instance SDK '%s' is up-to-date", lock.DataCurrent().Version)
+		log.Debugf("existing SDK '%s' is up-to-date", lock.DataCurrent().Version)
 		return nil
 	}
-	log.Infof("preparing new instance SDK '%s'", lock.DataCurrent().Version)
+	log.Infof("preparing new SDK '%s'", lock.DataCurrent().Version)
 	err = s.prepare(zipFile)
 	if err != nil {
 		return err
@@ -56,7 +56,7 @@ func (s Sdk) Prepare(zipFile string) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("prepared new instance SDK '%s'", lock.DataCurrent().Version)
+	log.Infof("prepared new SDK '%s'", lock.DataCurrent().Version)
 
 	jar, err := s.QuickstartJar()
 	if err != nil {

@@ -35,6 +35,8 @@ type InstanceState struct {
 	ID         string   `yaml:"id" json:"id"`
 	URL        string   `json:"url" json:"url"`
 	Attributes []string `yaml:"attributes" json:"attributes"`
+	RunModes   []string `yaml:"run_modes" json:"runModes"`
+	AemVersion string   `yaml:"aem_version" json:"aemVersion"`
 }
 
 func (i Instance) State() InstanceState {
@@ -42,6 +44,8 @@ func (i Instance) State() InstanceState {
 		ID:         i.id,
 		URL:        i.http.BaseURL(),
 		Attributes: i.Attributes(),
+		AemVersion: i.AemVersion(),
+		RunModes:   i.RunModes(),
 	}
 }
 
@@ -185,6 +189,15 @@ func (i Instance) AemVersion() string {
 	return version
 }
 
+func (i Instance) RunModes() []string {
+	runModes, err := i.status.RunModes()
+	if err != nil {
+		log.Debugf("cannot determine run modes of instance '%s': %s", i.id, err)
+		return []string{}
+	}
+	return runModes
+}
+
 func (i Instance) Now() time.Time {
 	return time.Now().In(i.TimeLocation())
 }
@@ -238,6 +251,7 @@ func (i Instance) MarshalText() string {
 		"http url":    state.URL,
 		"attributes":  state.Attributes,
 		"aem version": i.AemVersion(),
+		"run modes":   i.RunModes(),
 	}
 	if i.IsLocal() {
 		l := i.Local()

@@ -35,6 +35,8 @@ type LocalInstanceState struct {
 	ID         string   `yaml:"id" json:"id"`
 	URL        string   `json:"url" json:"url"`
 	Attributes []string `yaml:"attributes" json:"attributes"`
+	RunModes   []string `yaml:"run_modes" json:"runModes"`
+	AemVersion string   `yaml:"aem_version" json:"aemVersion"`
 	Dir        string   `yaml:"dir" json:"dir"`
 }
 
@@ -68,6 +70,8 @@ func (li LocalInstance) State() LocalInstanceState {
 		ID:         li.instance.id,
 		URL:        li.instance.http.BaseURL(),
 		Attributes: li.instance.Attributes(),
+		AemVersion: li.instance.AemVersion(),
+		RunModes:   li.instance.RunModes(),
 		Dir:        li.Dir(),
 	}
 }

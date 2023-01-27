@@ -9,9 +9,9 @@
       <option name="useCurrentConnection" value="false" />
     </EXTENSION>
     <kind value="DIRECTORY" />
+    <filePath value="$PROJECT_DIR$/cmd/aem/main.go" />
     <package value="github.com/wttech/aemc" />
     <directory value="$PROJECT_DIR$/cmd/aem" />
-    <filePath value="$PROJECT_DIR$/cmd/aem/main.go" />
     <method v="2" />
   </configuration>
 </component>

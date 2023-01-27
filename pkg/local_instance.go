@@ -116,10 +116,6 @@ func (li LocalInstance) binCbpExecutable() string {
 	return pathx.Normalize(fmt.Sprintf("%s/bin/cbp.exe", li.WorkDir()))
 }
 
-func (li LocalInstance) DebugPort() string {
-	return "1" + li.instance.http.Port()
-}
-
 func (li LocalInstance) LicenseFile() string {
 	return li.Dir() + "/" + LicenseFilename
 }
@@ -285,10 +281,7 @@ func (li LocalInstance) updateAuth() error {
 
 func (li LocalInstance) checkPortsOpen() error {
 	host := li.instance.http.Hostname()
-	ports := []string{
-		li.instance.http.Port(),
-		li.DebugPort(),
-	}
+	ports := []string{li.instance.http.Port()}
 	for _, port := range ports {
 		reachable, _ := netx.IsReachable(host, port, time.Second*3)
 		if reachable {

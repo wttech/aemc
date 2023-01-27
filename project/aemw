@@ -1,10 +1,12 @@
 #!/usr/bin/env sh
 
-. aem/api.sh
+AEM_DIR="aem"
+
+. ${AEM_DIR}/api.sh
 
 COMMAND_DEFAULT=${AEMC_COMMAND_DEFAULT:-"setup"}
 COMMAND="${1:-${COMMAND_DEFAULT}}"
-SCRIPT="aem/script/${COMMAND}.sh"
+SCRIPT="${AEM_DIR}/script/${COMMAND}.sh"
 
 if [ -f "$SCRIPT" ]; then
   export AEM_OUTPUT_FORMAT=${AEM_OUTPUT_FORMAT:-none}
@@ -12,9 +14,9 @@ if [ -f "$SCRIPT" ]; then
 
   STARTED_TIMESTAMP=$(date +%s)
   step "script '${COMMAND}' started"
-  step "check progress using command 'tail -f aem/home/aem.log'"
+  step "check progress using command 'tail -f ${AEM_DIR}/home/aem.log'"
 
-  # shellcheck source=aem/*.sh
+  # shellcheck source=${AEM_DIR}/*.sh
   . "${SCRIPT}"
 
   ENDED_TIMESTAMP=$(date +%s)

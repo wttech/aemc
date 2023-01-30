@@ -45,13 +45,16 @@ type LocalInstanceState struct {
 }
 
 const (
-	LocalInstanceScriptStart     = "start"
-	LocalInstanceScriptStop      = "stop"
-	LocalInstanceScriptStatus    = "status"
-	LocalInstanceBackupExtension = "aemb.tar.zst"
-	LocalInstanceUser            = "admin"
-	LocalInstanceWorkDirName     = common.AppId
-	LocalInstanceNameCommon      = "common"
+	LocalInstanceScriptStart           = "start"
+	LocalInstanceScriptStop            = "stop"
+	LocalInstanceScriptStatus          = "status"
+	LocalInstanceBackupExtension       = "aemb.tar.zst"
+	LocalInstanceUser                  = "admin"
+	LocalInstanceWorkDirName           = common.AppId
+	LocalInstanceNameCommon            = "common"
+	LocalInstanceSecretsDir            = "conf/secret"
+	LocalInstanceSecretsSlingProp      = "org.apache.felix.configadmin.plugin.interpolation.secretsdir"
+	LocalInstanceSecretsSlingPropValue = "${sling.home}/" + LocalInstanceSecretsDir
 )
 
 func (li LocalInstance) Instance() *Instance {
@@ -284,44 +287,54 @@ func (li LocalInstance) StartAndAwait() error {
 }
 
 func (li LocalInstance) update() error {
-	if !li.IsInitialized() {
-		return nil
-	}
-	state, err := li.startLock().State()
-	if err != nil {
-		return err
-	}
-	if state.Locked.Password != state.Current.Password {
-		if err := li.Opts().OakRun.SetPassword(li.Dir(), LocalInstanceUser, li.instance.password); err != nil {
-			return err
-		}
-	}
-	if state.Locked.Overrides != state.Current.Overrides {
+	if !li.IsInitialized() { // first boot
 		if err := li.copyOverrideDirs(); err != nil {
 			return err
 		}
-	}
-	if state.Locked.SecretVars != state.Current.SecretVars {
 		if err := li.recreateSecretsDir(); err != nil {
 			return err
+		}
+	} else { // next boot
+		state, err := li.startLock().State()
+		if err != nil {
+			return err
+		}
+		if state.Locked.Password != state.Current.Password {
+			if err := li.setPassword(); err != nil {
+				return err
+			}
+		}
+		if state.Locked.Overrides != state.Current.Overrides {
+			if err := li.copyOverrideDirs(); err != nil {
+				return err
+			}
+		}
+		if state.Locked.SecretVars != state.Current.SecretVars {
+			if err := li.recreateSecretsDir(); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
+func (li LocalInstance) setPassword() error {
+	return li.Opts().OakRun.SetPassword(li.Dir(), LocalInstanceUser, li.instance.password)
+}
+
 func (li LocalInstance) copyOverrideDirs() error {
 	for _, src := range lo.Filter(li.OverrideDirs(), func(s string, _ int) bool { return pathx.Exists(s) }) {
-		log.Infof("copying instance override files from  '%s' to '%s'", src, li.Dir())
+		log.Infof("copying instance override files from dir '%s' to '%s'", src, li.Dir())
 		if err := filex.CopyDir(src, li.Dir()); err != nil {
 			return err
 		}
-		log.Infof("copied instance override files from  '%s' to '%s'", src, li.Dir())
+		log.Infof("copied instance override files from dir '%s' to '%s'", src, li.Dir())
 	}
 	return nil
 }
 
 func (li LocalInstance) secretsDir() string {
-	return fmt.Sprintf("%s/conf/secret", li.WorkDir())
+	return fmt.Sprintf("%s/%s", li.QuickstartDir(), LocalInstanceSecretsDir)
 }
 
 func (li LocalInstance) slingPropertiesFile() string {
@@ -336,17 +349,16 @@ func (li LocalInstance) recreateSecretsDir() error {
 	if len(li.SecretVars) > 0 {
 		log.Infof("configuring instance secret vars in dir '%s'", dir)
 		file := li.slingPropertiesFile()
-		contentExpected := strings.TrimSpace(instance.SlingProperties)
 		if pathx.Exists(file) {
 			contentActual, err := filex.ReadString(file)
 			if err != nil {
 				return err
 			}
-			if !strings.Contains(contentActual, contentExpected) { // TODO copy on create! it's too late after starting; check if Sling expands the path
-				return fmt.Errorf("existing Sling properties file '%s' needs following line to support secret vars':\n%s", file, contentExpected)
+			if !strings.Contains(contentActual, LocalInstanceSecretsSlingProp+"=") {
+				return fmt.Errorf("existing Sling properties file '%s' needs to reference dir '%s' by prop '%s' to support secret vars", file, dir, LocalInstanceSecretsSlingProp)
 			}
 		} else {
-			if err := filex.WriteString(li.slingPropertiesFile(), contentExpected); err != nil {
+			if err := filex.WriteString(li.slingPropertiesFile(), fmt.Sprintf("%s=%s", LocalInstanceSecretsSlingProp, LocalInstanceSecretsSlingPropValue)); err != nil {
 				return err
 			}
 		}

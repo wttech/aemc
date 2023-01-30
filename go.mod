@@ -13,6 +13,7 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/olekukonko/tablewriter v0.0.5
+	github.com/otiai10/copy v1.9.0
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/samber/lo v1.33.0
 	github.com/segmentio/textio v1.2.0

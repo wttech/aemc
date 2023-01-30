@@ -8,6 +8,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/netx"
 	"github.com/wttech/aemc/pkg/common/pathx"
+	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/instance"
 	"os"
@@ -25,28 +26,35 @@ import (
 type LocalInstance struct {
 	instance *Instance
 
-	Version   string
-	JvmOpts   []string
-	StartOpts []string
-	RunModes  []string
+	Version    string
+	JvmOpts    []string
+	StartOpts  []string
+	RunModes   []string
+	EnvVars    []string
+	SecretVars []string
 }
 
 type LocalInstanceState struct {
-	ID         string   `yaml:"id" json:"id"`
-	URL        string   `json:"url" json:"url"`
-	Attributes []string `yaml:"attributes" json:"attributes"`
-	RunModes   []string `yaml:"run_modes" json:"runModes"`
-	AemVersion string   `yaml:"aem_version" json:"aemVersion"`
-	Dir        string   `yaml:"dir" json:"dir"`
+	ID           string   `yaml:"id" json:"id"`
+	URL          string   `json:"url" json:"url"`
+	AemVersion   string   `yaml:"aem_version" json:"aemVersion"`
+	Attributes   []string `yaml:"attributes" json:"attributes"`
+	RunModes     []string `yaml:"run_modes" json:"runModes"`
+	HealthChecks []string `yaml:"health_checks" json:"healthChecks"`
+	Dir          string   `yaml:"dir" json:"dir"`
 }
 
 const (
-	LocalInstanceScriptStart     = "start"
-	LocalInstanceScriptStop      = "stop"
-	LocalInstanceScriptStatus    = "status"
-	LocalInstanceBackupExtension = "aemb.tar.zst"
-	LocalInstanceUser            = "admin"
-	LocalInstanceWorkDirName     = common.AppId
+	LocalInstanceScriptStart           = "start"
+	LocalInstanceScriptStop            = "stop"
+	LocalInstanceScriptStatus          = "status"
+	LocalInstanceBackupExtension       = "aemb.tar.zst"
+	LocalInstanceUser                  = "admin"
+	LocalInstanceWorkDirName           = common.AppId
+	LocalInstanceNameCommon            = "common"
+	LocalInstanceSecretsDir            = "conf/secret"
+	LocalInstanceSecretsSlingProp      = "org.apache.felix.configadmin.plugin.interpolation.secretsdir"
+	LocalInstanceSecretsSlingPropValue = "${sling.home}/" + LocalInstanceSecretsDir
 )
 
 func (li LocalInstance) Instance() *Instance {
@@ -62,17 +70,20 @@ func NewLocal(i *Instance) *LocalInstance {
 		"-Djava.io.tmpdir=" + pathx.Abs(common.TmpDir),
 		"-Duser.language=en", "-Duser.country=US", "-Duser.timezone=UTC", "-Duser.name=" + common.AppId,
 	}
+	li.EnvVars = []string{}
+	li.SecretVars = []string{}
 	return li
 }
 
 func (li LocalInstance) State() LocalInstanceState {
 	return LocalInstanceState{
-		ID:         li.instance.id,
-		URL:        li.instance.http.BaseURL(),
-		Attributes: li.instance.Attributes(),
-		AemVersion: li.instance.AemVersion(),
-		RunModes:   li.instance.RunModes(),
-		Dir:        li.Dir(),
+		ID:           li.instance.id,
+		URL:          li.instance.http.BaseURL(),
+		Attributes:   li.instance.Attributes(),
+		AemVersion:   li.instance.AemVersion(),
+		RunModes:     li.instance.RunModes(),
+		HealthChecks: li.instance.HealthChecks(),
+		Dir:          li.Dir(),
 	}
 }
 
@@ -96,8 +107,21 @@ func (li LocalInstance) WorkDir() string {
 	return fmt.Sprintf("%s/%s", li.Dir(), LocalInstanceWorkDirName)
 }
 
+func (li LocalInstance) OverrideDirs() []string {
+	return lo.Map([]string{
+		fmt.Sprintf("%s/%s", li.Opts().OverrideDir, LocalInstanceNameCommon),
+		fmt.Sprintf("%s/%s", li.Opts().OverrideDir, li.Name()),
+	}, func(p string, _ int) string {
+		return pathx.Normalize(pathx.Abs(p))
+	})
+}
+
+func (li LocalInstance) overrideDirsChecksum() (string, error) {
+	return filex.ChecksumPaths(lo.Filter(li.OverrideDirs(), func(d string, _ int) bool { return pathx.Exists(d) }), []string{})
+}
+
 func (li LocalInstance) LockDir() string {
-	return fmt.Sprintf("%s/lock", li.WorkDir())
+	return fmt.Sprintf("%s/%s/lock", li.WorkDir(), common.VarDirName)
 }
 
 func (li LocalInstance) QuickstartDir() string {
@@ -148,8 +172,8 @@ func (li LocalInstance) Create() error {
 }
 
 func (li LocalInstance) createLock() osx.Lock[localInstanceCreateLock] {
-	return osx.NewLock(fmt.Sprintf("%s/create.yml", li.LockDir()), func() localInstanceCreateLock {
-		return localInstanceCreateLock{Created: time.Now()}
+	return osx.NewLock(fmt.Sprintf("%s/create.yml", li.LockDir()), func() (localInstanceCreateLock, error) {
+		return localInstanceCreateLock{Created: time.Now()}, nil
 	})
 }
 
@@ -230,7 +254,7 @@ func (li LocalInstance) Start() error {
 	if !li.IsCreated() {
 		return fmt.Errorf("cannot start instance '%s' as it is not created", li.instance.ID())
 	}
-	if err := li.updateAuth(); err != nil {
+	if err := li.update(); err != nil {
 		return err
 	}
 	log.Infof("starting instance '%s'", li.instance.ID())
@@ -262,19 +286,90 @@ func (li LocalInstance) StartAndAwait() error {
 	return nil
 }
 
-func (li LocalInstance) updateAuth() error {
-	if !li.IsInitialized() {
-		return nil
-	}
-	lock := li.startLock()
-	data, err := lock.DataLocked()
-	if err != nil {
-		return err
-	}
-	if data.Password != lock.DataCurrent().Password {
-		if err := li.Opts().OakRun.SetPassword(li.Dir(), LocalInstanceUser, li.instance.password); err != nil {
+func (li LocalInstance) update() error {
+	if !li.IsInitialized() { // first boot
+		if err := li.copyOverrideDirs(); err != nil {
 			return err
 		}
+		if err := li.recreateSecretsDir(); err != nil {
+			return err
+		}
+	} else { // next boot
+		state, err := li.startLock().State()
+		if err != nil {
+			return err
+		}
+		if state.Locked.Password != state.Current.Password {
+			if err := li.setPassword(); err != nil {
+				return err
+			}
+		}
+		if state.Locked.Overrides != state.Current.Overrides {
+			if err := li.copyOverrideDirs(); err != nil {
+				return err
+			}
+		}
+		if state.Locked.SecretVars != state.Current.SecretVars {
+			if err := li.recreateSecretsDir(); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (li LocalInstance) setPassword() error {
+	return li.Opts().OakRun.SetPassword(li.Dir(), LocalInstanceUser, li.instance.password)
+}
+
+func (li LocalInstance) copyOverrideDirs() error {
+	for _, src := range lo.Filter(li.OverrideDirs(), func(s string, _ int) bool { return pathx.Exists(s) }) {
+		log.Infof("copying instance override files from dir '%s' to '%s'", src, li.Dir())
+		if err := filex.CopyDir(src, li.Dir()); err != nil {
+			return err
+		}
+		log.Infof("copied instance override files from dir '%s' to '%s'", src, li.Dir())
+	}
+	return nil
+}
+
+func (li LocalInstance) secretsDir() string {
+	return fmt.Sprintf("%s/%s", li.QuickstartDir(), LocalInstanceSecretsDir)
+}
+
+func (li LocalInstance) slingPropertiesFile() string {
+	return fmt.Sprintf("%s/conf/sling.properties", li.QuickstartDir())
+}
+
+func (li LocalInstance) recreateSecretsDir() error {
+	dir := li.secretsDir()
+	if err := pathx.DeleteIfExists(dir); err != nil {
+		return err
+	}
+	if len(li.SecretVars) > 0 {
+		log.Infof("configuring instance secret vars in dir '%s'", dir)
+		file := li.slingPropertiesFile()
+		if pathx.Exists(file) {
+			contentActual, err := filex.ReadString(file)
+			if err != nil {
+				return err
+			}
+			if !strings.Contains(contentActual, LocalInstanceSecretsSlingProp+"=") {
+				return fmt.Errorf("existing Sling properties file '%s' needs to reference dir '%s' by prop '%s' to support secret vars", file, dir, LocalInstanceSecretsSlingProp)
+			}
+		} else {
+			if err := filex.WriteString(li.slingPropertiesFile(), fmt.Sprintf("%s=%s", LocalInstanceSecretsSlingProp, LocalInstanceSecretsSlingPropValue)); err != nil {
+				return err
+			}
+		}
+		for _, secretVar := range li.SecretVars {
+			k := stringsx.Before(secretVar, "=")
+			v := stringsx.After(secretVar, "=")
+			if err := filex.WriteString(fmt.Sprintf("%s/%s", dir, k), v); err != nil {
+				return err
+			}
+		}
+		log.Infof("configured instance secret vars in dir '%s'", dir)
 	}
 	return nil
 }
@@ -292,23 +387,34 @@ func (li LocalInstance) checkPortsOpen() error {
 }
 
 func (li LocalInstance) startLock() osx.Lock[localInstanceStartLock] {
-	return osx.NewLock(fmt.Sprintf("%s/start.yml", li.LockDir()), func() localInstanceStartLock {
-		return localInstanceStartLock{
-			Version:  li.Version,
-			HTTPPort: li.instance.HTTP().Port(),
-			RunModes: strings.Join(li.RunModes, ","),
-			JVMOpts:  strings.Join(li.JvmOpts, " "),
-			Password: cryptox.HashString(li.instance.password),
+	return osx.NewLock(fmt.Sprintf("%s/start.yml", li.LockDir()), func() (localInstanceStartLock, error) {
+		var zero localInstanceStartLock
+		overrides, err := li.overrideDirsChecksum()
+		if err != nil {
+			return zero, err
 		}
+		return localInstanceStartLock{
+			Version:    li.Version,
+			HTTPPort:   li.instance.HTTP().Port(),
+			RunModes:   strings.Join(li.RunModes, ","),
+			JVMOpts:    strings.Join(li.JvmOpts, " "),
+			Password:   cryptox.HashString(li.instance.password),
+			EnvVars:    strings.Join(li.EnvVars, ","),
+			SecretVars: cryptox.HashString(strings.Join(li.SecretVars, ",")),
+			Overrides:  overrides,
+		}, nil
 	})
 }
 
 type localInstanceStartLock struct {
-	Version  string `yaml:"version"`
-	JVMOpts  string `yaml:"jvm_opts"`
-	RunModes string `yaml:"run_modes"`
-	HTTPPort string `yaml:"http_port"`
-	Password string `yaml:"password"`
+	Version    string `yaml:"version"`
+	JVMOpts    string `yaml:"jvm_opts"`
+	RunModes   string `yaml:"run_modes"`
+	HTTPPort   string `yaml:"http_port"`
+	Password   string `yaml:"password"`
+	Overrides  string `yaml:"overrides"`
+	EnvVars    string `yaml:"env_vars"`
+	SecretVars string `yaml:"secret_vars"`
 }
 
 func (li LocalInstance) Stop() error {
@@ -552,13 +658,17 @@ func (li LocalInstance) binScriptCommand(name string, verbose bool) *exec.Cmd {
 	}
 	cmd := execx.CommandShell(args)
 	cmd.Dir = li.Dir()
-	cmd.Env = append(os.Environ(),
+
+	env := append(os.Environ(),
 		"JAVA_HOME="+pathx.Abs(li.Opts().JavaOpts.HomeDir),
 		"CQ_PORT="+li.instance.http.Port(),
 		"CQ_RUNMODE="+li.instance.local.RunModesString(),
 		"CQ_JVM_OPTS="+li.instance.local.JVMOptsString(),
-		"CQ_START_OPTS"+li.instance.local.StartOptsString(),
+		"CQ_START_OPTS="+li.instance.local.StartOptsString(),
 	)
+	env = append(env, li.EnvVars...)
+	cmd.Env = env
+
 	if verbose {
 		li.instance.manager.aem.CommandOutput(cmd)
 	}
@@ -592,13 +702,12 @@ func (li LocalInstance) OutOfDate() bool {
 }
 
 func (li LocalInstance) UpToDate() bool {
-	lock := li.startLock()
-	upToDate, err := lock.IsUpToDate()
+	check, err := li.startLock().State()
 	if err != nil {
 		log.Debugf("cannot check if instance '%s' is up-to-date: %s", li.instance.ID(), err)
 		return false
 	}
-	return upToDate
+	return check.UpToDate
 }
 
 func (li LocalInstance) pidFile() string {

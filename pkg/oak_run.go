@@ -41,21 +41,20 @@ func (or OakRun) Dir() string {
 }
 
 func (or OakRun) lock() osx.Lock[OakRunLock] {
-	return osx.NewLock(or.Dir()+"/lock/create.yml", func() OakRunLock { return OakRunLock{DownloadURL: or.DownloadURL} })
+	return osx.NewLock(or.Dir()+"/lock/create.yml", func() (OakRunLock, error) { return OakRunLock{DownloadURL: or.DownloadURL}, nil })
 }
 
 func (or OakRun) Prepare() error {
 	lock := or.lock()
-
-	upToDate, err := lock.IsUpToDate()
+	check, err := lock.State()
 	if err != nil {
 		return err
 	}
-	if upToDate {
-		log.Debugf("existing OakRun '%s' is up-to-date", lock.DataCurrent().DownloadURL)
+	if check.UpToDate {
+		log.Debugf("existing OakRun '%s' is up-to-date", or.DownloadURL)
 		return nil
 	}
-	log.Infof("preparing new OakRun '%s'", lock.DataCurrent().DownloadURL)
+	log.Infof("preparing new OakRun '%s'", or.DownloadURL)
 	err = or.prepare()
 	if err != nil {
 		return err
@@ -64,7 +63,7 @@ func (or OakRun) Prepare() error {
 	if err != nil {
 		return err
 	}
-	log.Infof("prepared new OakRun '%s'", lock.DataCurrent().DownloadURL)
+	log.Infof("prepared new OakRun '%s'", or.DownloadURL)
 
 	return nil
 }

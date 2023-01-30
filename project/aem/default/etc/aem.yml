@@ -18,6 +18,10 @@ instance:
         - '-Duser.country=US'
         - '-Duser.timezone=UTC'
       start_opts: []
+      secret_vars:
+        - 'ACME_SECRET=value'
+      env_vars:
+        - 'ACME_VAR=value'
     local_publish:
       http_url: http://127.0.0.1:4503
       user: admin
@@ -30,6 +34,10 @@ instance:
         - '-Duser.country=US'
         - '-Duser.timezone=UTC'
       start_opts: []
+      secret_vars:
+        - 'ACME_SECRET=value'
+      env_vars:
+        - 'ACME_VAR=value'
 
   # Filters for defined
   filter:

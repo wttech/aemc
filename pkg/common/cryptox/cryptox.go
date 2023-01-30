@@ -36,3 +36,12 @@ func HashString(text string) string {
 	_, _ = io.WriteString(hash, text)
 	return fmt.Sprintf("%x", hash.Sum(nil))
 }
+
+func HashMap(values map[string]string) string {
+	hash := sha256.New()
+	for k, v := range values {
+		_, _ = io.WriteString(hash, k)
+		_, _ = io.WriteString(hash, v)
+	}
+	return fmt.Sprintf("%x", hash.Sum(nil))
+}

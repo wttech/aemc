@@ -10,7 +10,6 @@ import (
 	nurl "net/url"
 	"sort"
 	"strings"
-	"time"
 )
 
 type InstanceManager struct {
@@ -92,99 +91,6 @@ func (im *InstanceManager) Authors() []Instance {
 
 func (im *InstanceManager) Publishes() []Instance {
 	return lo.Filter(im.All(), func(i Instance, _ int) bool { return i.IsPublish() })
-}
-
-type CheckOpts struct {
-	Warmup        time.Duration
-	Interval      time.Duration
-	DoneThreshold int
-	DoneNever     bool
-	AwaitStrict   bool
-
-	Reachable           ReachableHTTPChecker
-	BundleStable        BundleStableChecker
-	EventStable         EventStableChecker
-	Installer           InstallerChecker
-	AwaitStartedTimeout TimeoutChecker
-	Unreachable         ReachableHTTPChecker
-	StatusStopped       StatusStoppedChecker
-	AwaitStoppedTimeout TimeoutChecker
-}
-
-func (im *InstanceManager) NewCheckOpts() *CheckOpts {
-	return &CheckOpts{
-		Warmup:        time.Second * 1,
-		Interval:      time.Second * 5,
-		DoneThreshold: 3,
-
-		Reachable:           NewReachableChecker(true),
-		BundleStable:        NewBundleStableChecker(),
-		EventStable:         NewEventStableChecker(),
-		AwaitStartedTimeout: NewTimeoutChecker("started", time.Minute*10),
-		Installer:           NewInstallerChecker(),
-		StatusStopped:       NewStatusStoppedChecker(),
-		AwaitStoppedTimeout: NewTimeoutChecker("stopped", time.Minute*5),
-		Unreachable:         NewReachableChecker(false),
-	}
-}
-
-func (im *InstanceManager) Check(instances []Instance, opts *CheckOpts, checks []Checker) error {
-	if len(instances) == 0 {
-		log.Infof("no instances to check")
-		return nil
-	}
-	time.Sleep(opts.Warmup)
-	doneTimes := 0
-	for {
-		done, err := im.CheckOnce(instances, checks)
-		if err != nil {
-			return err
-		}
-		if done {
-			if !opts.DoneNever {
-				doneTimes++
-				if doneTimes <= opts.DoneThreshold {
-					log.Infof("instances checked (%d/%d) '%s'", doneTimes, opts.DoneThreshold, InstanceIds(instances))
-				}
-				if doneTimes == opts.DoneThreshold {
-					break
-				}
-			}
-		} else {
-			doneTimes = 0
-		}
-		time.Sleep(opts.Interval)
-	}
-	return nil
-}
-
-func (im *InstanceManager) CheckOnce(instances []Instance, checks []Checker) (bool, error) {
-	instanceResults, err := InstanceProcess(im.aem, instances, func(i Instance) ([]CheckResult, error) {
-		var results []CheckResult
-		for _, check := range checks {
-			result := check.Check(i)
-			results = append(results, result)
-			if result.abort {
-				log.Fatalf("%s | %s", i.ID(), result.message)
-			}
-			if result.err != nil {
-				log.Infof("%s | %s", i.ID(), result.err)
-			} else if len(result.message) > 0 {
-				log.Infof("%s | %s", i.ID(), result.message)
-			}
-			if !result.ok && check.Spec().Mandatory {
-				break
-			}
-		}
-		return results, nil
-	})
-	if err != nil {
-		return false, nil
-	}
-	ok := lo.EveryBy(instanceResults, func(results []CheckResult) bool {
-		return lo.EveryBy(results, func(result CheckResult) bool { return result.ok })
-	})
-	return ok, nil
 }
 
 func (im *InstanceManager) NewLocalAuthor() Instance {
@@ -284,6 +190,8 @@ func (im *InstanceManager) configureInstances(config *cfg.Config) {
 				i.local.StartOpts = iCfg.StartOpts
 				i.local.JvmOpts = iCfg.JVMOpts
 				i.local.RunModes = iCfg.RunModes
+				i.local.EnvVars = iCfg.EnvVars
+				i.local.SecretVars = iCfg.SecretVars
 
 				if len(iCfg.Version) > 0 {
 					i.local.Version = iCfg.Version

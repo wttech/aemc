@@ -224,13 +224,13 @@ func (pm *PackageManager) deploySnapshot(localPath string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	lock := pm.deployLock(localPath, checksum)
 	deployed, err := pm.IsDeployed(localPath)
 	if err != nil {
 		return false, err
 	}
+	var lock = pm.deployLock(localPath, checksum)
 	if deployed && pm.SnapshotDeploySkipping && lock.IsLocked() {
-		lockData, err := lock.DataLocked()
+		lockData, err := lock.Locked()
 		if err != nil {
 			return false, err
 		}
@@ -271,11 +271,8 @@ func (pm *PackageManager) Deploy(localPath string) error {
 
 func (pm *PackageManager) deployLock(file string, checksum string) osx.Lock[packageDeployLock] {
 	name := filepath.Base(file)
-	return osx.NewLock(fmt.Sprintf("%s/package/deploy/%s.yml", pm.instance.local.LockDir(), name), func() packageDeployLock {
-		return packageDeployLock{
-			Deployed: time.Now(),
-			Checksum: checksum,
-		}
+	return osx.NewLock(fmt.Sprintf("%s/package/deploy/%s.yml", pm.instance.local.LockDir(), name), func() (packageDeployLock, error) {
+		return packageDeployLock{Deployed: time.Now(), Checksum: checksum}, nil
 	})
 }
 

@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	"github.com/codingsince1985/checksum"
+	cpy "github.com/otiai10/copy"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"io"
 	"io/fs"
@@ -98,6 +99,20 @@ func Copy(sourcePath, destinationPath string) error {
 	return err
 }
 
+func CopyDir(src, dest string) error {
+	exists, err := pathx.ExistsStrict(src)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("cannot copy dir from '%s' to '%s' as source does not exist", src, dest)
+	}
+	if err := pathx.Ensure(filepath.Dir(dest)); err != nil {
+		return err
+	}
+	return cpy.Copy(src, dest)
+}
+
 func ChecksumPath(path string, pathIgnored []string) (string, error) {
 	dir, err := pathx.IsDirStrict(path)
 	if err != nil {
@@ -138,6 +153,7 @@ func ChecksumDir(dir string, pathIgnored []string) (string, error) {
 			if err != nil {
 				return err
 			}
+			_, _ = io.WriteString(hash, path)
 			_, _ = io.WriteString(hash, fileSum)
 		}
 		return nil

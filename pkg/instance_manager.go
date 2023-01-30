@@ -190,6 +190,8 @@ func (im *InstanceManager) configureInstances(config *cfg.Config) {
 				i.local.StartOpts = iCfg.StartOpts
 				i.local.JvmOpts = iCfg.JVMOpts
 				i.local.RunModes = iCfg.RunModes
+				i.local.EnvVars = iCfg.EnvVars
+				i.local.SecretVars = iCfg.SecretVars
 
 				if len(iCfg.Version) > 0 {
 					i.local.Version = iCfg.Version

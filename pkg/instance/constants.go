@@ -35,6 +35,9 @@ var CbpExecutable []byte
 //go:embed resource/oak-run/set-password.groovy
 var OakRunSetPassword string
 
+//go:embed resource/crx-quickstart/conf/sling.properties
+var SlingProperties string
+
 type Role string
 
 const (

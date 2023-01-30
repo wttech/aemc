@@ -8,6 +8,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/netx"
 	"github.com/wttech/aemc/pkg/common/pathx"
+	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/instance"
 	"os"
@@ -25,10 +26,12 @@ import (
 type LocalInstance struct {
 	instance *Instance
 
-	Version   string
-	JvmOpts   []string
-	StartOpts []string
-	RunModes  []string
+	Version    string
+	JvmOpts    []string
+	StartOpts  []string
+	RunModes   []string
+	EnvVars    []string
+	SecretVars []string
 }
 
 type LocalInstanceState struct {
@@ -64,6 +67,8 @@ func NewLocal(i *Instance) *LocalInstance {
 		"-Djava.io.tmpdir=" + pathx.Abs(common.TmpDir),
 		"-Duser.language=en", "-Duser.country=US", "-Duser.timezone=UTC", "-Duser.name=" + common.AppId,
 	}
+	li.EnvVars = []string{}
+	li.SecretVars = []string{}
 	return li
 }
 
@@ -113,7 +118,7 @@ func (li LocalInstance) overrideDirsChecksum() (string, error) {
 }
 
 func (li LocalInstance) LockDir() string {
-	return fmt.Sprintf("%s/lock", li.WorkDir())
+	return fmt.Sprintf("%s/%s/lock", li.WorkDir(), common.VarDirName)
 }
 
 func (li LocalInstance) QuickstartDir() string {
@@ -246,7 +251,7 @@ func (li LocalInstance) Start() error {
 	if !li.IsCreated() {
 		return fmt.Errorf("cannot start instance '%s' as it is not created", li.instance.ID())
 	}
-	if err := li.updateAuth(); err != nil {
+	if err := li.update(); err != nil {
 		return err
 	}
 	log.Infof("starting instance '%s'", li.instance.ID())
@@ -278,7 +283,7 @@ func (li LocalInstance) StartAndAwait() error {
 	return nil
 }
 
-func (li LocalInstance) updateAuth() error {
+func (li LocalInstance) update() error {
 	if !li.IsInitialized() {
 		return nil
 	}
@@ -290,6 +295,69 @@ func (li LocalInstance) updateAuth() error {
 		if err := li.Opts().OakRun.SetPassword(li.Dir(), LocalInstanceUser, li.instance.password); err != nil {
 			return err
 		}
+	}
+	if state.Locked.Overrides != state.Current.Overrides {
+		if err := li.copyOverrideDirs(); err != nil {
+			return err
+		}
+	}
+	if state.Locked.SecretVars != state.Current.SecretVars {
+		if err := li.recreateSecretsDir(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (li LocalInstance) copyOverrideDirs() error {
+	for _, src := range lo.Filter(li.OverrideDirs(), func(s string, _ int) bool { return pathx.Exists(s) }) {
+		log.Infof("copying instance override files from  '%s' to '%s'", src, li.Dir())
+		if err := filex.CopyDir(src, li.Dir()); err != nil {
+			return err
+		}
+		log.Infof("copied instance override files from  '%s' to '%s'", src, li.Dir())
+	}
+	return nil
+}
+
+func (li LocalInstance) secretsDir() string {
+	return fmt.Sprintf("%s/conf/secret", li.WorkDir())
+}
+
+func (li LocalInstance) slingPropertiesFile() string {
+	return fmt.Sprintf("%s/conf/sling.properties", li.QuickstartDir())
+}
+
+func (li LocalInstance) recreateSecretsDir() error {
+	dir := li.secretsDir()
+	if err := pathx.DeleteIfExists(dir); err != nil {
+		return err
+	}
+	if len(li.SecretVars) > 0 {
+		log.Infof("configuring instance secret vars in dir '%s'", dir)
+		file := li.slingPropertiesFile()
+		contentExpected := strings.TrimSpace(instance.SlingProperties)
+		if pathx.Exists(file) {
+			contentActual, err := filex.ReadString(file)
+			if err != nil {
+				return err
+			}
+			if !strings.Contains(contentActual, contentExpected) { // TODO copy on create! it's too late after starting; check if Sling expands the path
+				return fmt.Errorf("existing Sling properties file '%s' needs following line to support secret vars':\n%s", file, contentExpected)
+			}
+		} else {
+			if err := filex.WriteString(li.slingPropertiesFile(), contentExpected); err != nil {
+				return err
+			}
+		}
+		for _, secretVar := range li.SecretVars {
+			k := stringsx.Before(secretVar, "=")
+			v := stringsx.After(secretVar, "=")
+			if err := filex.WriteString(fmt.Sprintf("%s/%s", dir, k), v); err != nil {
+				return err
+			}
+		}
+		log.Infof("configured instance secret vars in dir '%s'", dir)
 	}
 	return nil
 }
@@ -314,23 +382,27 @@ func (li LocalInstance) startLock() osx.Lock[localInstanceStartLock] {
 			return zero, err
 		}
 		return localInstanceStartLock{
-			Version:   li.Version,
-			HTTPPort:  li.instance.HTTP().Port(),
-			RunModes:  strings.Join(li.RunModes, ","),
-			JVMOpts:   strings.Join(li.JvmOpts, " "),
-			Password:  cryptox.HashString(li.instance.password),
-			Overrides: overrides,
+			Version:    li.Version,
+			HTTPPort:   li.instance.HTTP().Port(),
+			RunModes:   strings.Join(li.RunModes, ","),
+			JVMOpts:    strings.Join(li.JvmOpts, " "),
+			Password:   cryptox.HashString(li.instance.password),
+			EnvVars:    strings.Join(li.EnvVars, ","),
+			SecretVars: cryptox.HashString(strings.Join(li.SecretVars, ",")),
+			Overrides:  overrides,
 		}, nil
 	})
 }
 
 type localInstanceStartLock struct {
-	Version   string `yaml:"version"`
-	JVMOpts   string `yaml:"jvm_opts"`
-	RunModes  string `yaml:"run_modes"`
-	HTTPPort  string `yaml:"http_port"`
-	Password  string `yaml:"password"`
-	Overrides string `yaml:"overrides"`
+	Version    string `yaml:"version"`
+	JVMOpts    string `yaml:"jvm_opts"`
+	RunModes   string `yaml:"run_modes"`
+	HTTPPort   string `yaml:"http_port"`
+	Password   string `yaml:"password"`
+	Overrides  string `yaml:"overrides"`
+	EnvVars    string `yaml:"env_vars"`
+	SecretVars string `yaml:"secret_vars"`
 }
 
 func (li LocalInstance) Stop() error {
@@ -574,13 +646,17 @@ func (li LocalInstance) binScriptCommand(name string, verbose bool) *exec.Cmd {
 	}
 	cmd := execx.CommandShell(args)
 	cmd.Dir = li.Dir()
-	cmd.Env = append(os.Environ(),
+
+	env := append(os.Environ(),
 		"JAVA_HOME="+pathx.Abs(li.Opts().JavaOpts.HomeDir),
 		"CQ_PORT="+li.instance.http.Port(),
 		"CQ_RUNMODE="+li.instance.local.RunModesString(),
 		"CQ_JVM_OPTS="+li.instance.local.JVMOptsString(),
-		"CQ_START_OPTS"+li.instance.local.StartOptsString(),
+		"CQ_START_OPTS="+li.instance.local.StartOptsString(),
 	)
+	env = append(env, li.EnvVars...)
+	cmd.Env = env
+
 	if verbose {
 		li.instance.manager.aem.CommandOutput(cmd)
 	}

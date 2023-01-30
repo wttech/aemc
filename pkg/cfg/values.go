@@ -39,13 +39,15 @@ type ConfigValues struct {
 		ConfigURL string `mapstructure:"config_url" yaml:"config_url"`
 
 		Config map[string]struct {
-			HTTPURL   string   `mapstructure:"http_url" yaml:"http_url"`
-			User      string   `mapstructure:"user"`
-			Password  string   `mapstructure:"password"`
-			StartOpts []string `mapstructure:"start_opts" yaml:"start_opts"`
-			JVMOpts   []string `mapstructure:"jvm_opts" yaml:"jvm_opts"`
-			RunModes  []string `mapstructure:"run_modes" yaml:"run_modes"`
-			Version   string   `mapstructure:"version" yaml:"version"`
+			HTTPURL    string   `mapstructure:"http_url" yaml:"http_url"`
+			User       string   `mapstructure:"user"`
+			Password   string   `mapstructure:"password"`
+			StartOpts  []string `mapstructure:"start_opts" yaml:"start_opts"`
+			JVMOpts    []string `mapstructure:"jvm_opts" yaml:"jvm_opts"`
+			RunModes   []string `mapstructure:"run_modes" yaml:"run_modes"`
+			EnvVars    []string `mapstructure:"env_vars" yaml:"env_vars"`
+			SecretVars []string `mapstructure:"secret_vars" yaml:"secret_vars"`
+			Version    string   `mapstructure:"version" yaml:"version"`
 		} `mapstructure:"config" yaml:"config"`
 
 		Filter struct {

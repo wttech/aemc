@@ -32,20 +32,22 @@ type Instance struct {
 }
 
 type InstanceState struct {
-	ID         string   `yaml:"id" json:"id"`
-	URL        string   `json:"url" json:"url"`
-	Attributes []string `yaml:"attributes" json:"attributes"`
-	RunModes   []string `yaml:"run_modes" json:"runModes"`
-	AemVersion string   `yaml:"aem_version" json:"aemVersion"`
+	ID           string   `yaml:"id" json:"id"`
+	URL          string   `json:"url" json:"url"`
+	AemVersion   string   `yaml:"aem_version" json:"aemVersion"`
+	Attributes   []string `yaml:"attributes" json:"attributes"`
+	RunModes     []string `yaml:"run_modes" json:"runModes"`
+	HealthChecks []string `yaml:"health_checks" json:"healthChecks"`
 }
 
 func (i Instance) State() InstanceState {
 	return InstanceState{
-		ID:         i.id,
-		URL:        i.http.BaseURL(),
-		Attributes: i.Attributes(),
-		AemVersion: i.AemVersion(),
-		RunModes:   i.RunModes(),
+		ID:           i.id,
+		URL:          i.http.BaseURL(),
+		AemVersion:   i.AemVersion(),
+		Attributes:   i.Attributes(),
+		RunModes:     i.RunModes(),
+		HealthChecks: i.HealthChecks(),
 	}
 }
 
@@ -225,6 +227,25 @@ func (i Instance) Attributes() []string {
 	return result
 }
 
+func (i Instance) HealthChecks() []string {
+	checks := []Checker{
+		i.manager.CheckOpts.Reachable,
+		i.manager.CheckOpts.BundleStable,
+		i.manager.CheckOpts.EventStable,
+		i.manager.CheckOpts.Installer,
+	}
+	var messages []string
+	for _, check := range checks {
+		result := check.Check(i)
+		if result.message != "" {
+			messages = append(messages, result.message)
+		} else if result.err != nil {
+			messages = append(messages, fmt.Sprintf("%s", result.err))
+		}
+	}
+	return messages
+}
+
 func (i Instance) String() string {
 	return fmt.Sprintf("instance '%s' (url: %s, attrs: %s)", i.id, i.HTTP().BaseURL(), strings.Join(i.Attributes(), ", "))
 }
@@ -248,10 +269,11 @@ func (i Instance) MarshalText() string {
 	sb := bytes.NewBufferString("")
 	sb.WriteString(fmt.Sprintf("ID '%s'\n", state.ID))
 	props := map[string]any{
-		"http url":    state.URL,
-		"attributes":  state.Attributes,
-		"aem version": i.AemVersion(),
-		"run modes":   i.RunModes(),
+		"http url":      state.URL,
+		"attributes":    state.Attributes,
+		"aem version":   i.AemVersion(),
+		"health checks": i.HealthChecks(),
+		"run modes":     i.RunModes(),
 	}
 	if i.IsLocal() {
 		l := i.Local()

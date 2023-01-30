@@ -31,23 +31,23 @@ type SdkLock struct {
 }
 
 func (s Sdk) lock(zipFile string) osx.Lock[SdkLock] {
-	return osx.NewLock(s.Dir()+"/lock/create.yml", func() SdkLock {
-		return SdkLock{Version: pathx.NameWithoutExt(zipFile)}
+	return osx.NewLock(s.Dir()+"/lock/create.yml", func() (SdkLock, error) {
+		return SdkLock{Version: pathx.NameWithoutExt(zipFile)}, nil
 	})
 }
 
 func (s Sdk) Prepare(zipFile string) error {
 	lock := s.lock(zipFile)
 
-	upToDate, err := lock.IsUpToDate()
+	check, err := lock.State()
 	if err != nil {
 		return err
 	}
-	if upToDate {
-		log.Debugf("existing SDK '%s' is up-to-date", lock.DataCurrent().Version)
+	if check.UpToDate {
+		log.Debugf("existing SDK '%s' is up-to-date", check.Current.Version)
 		return nil
 	}
-	log.Infof("preparing new SDK '%s'", lock.DataCurrent().Version)
+	log.Infof("preparing new SDK '%s'", check.Current.Version)
 	err = s.prepare(zipFile)
 	if err != nil {
 		return err
@@ -56,13 +56,13 @@ func (s Sdk) Prepare(zipFile string) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("prepared new SDK '%s'", lock.DataCurrent().Version)
+	log.Infof("prepared new SDK '%s'", check.Current.Version)
 
 	jar, err := s.QuickstartJar()
 	if err != nil {
 		return err
 	}
-	log.Debugf("found JAR '%s' in unpacked SDK '%s'", jar, lock.DataCurrent().Version)
+	log.Debugf("found JAR '%s' in unpacked SDK '%s'", jar, check.Current.Version)
 
 	return nil
 }

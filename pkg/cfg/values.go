@@ -88,9 +88,10 @@ type ConfigValues struct {
 		} `mapstructure:"check" yaml:"check"`
 
 		Local struct {
-			UnpackDir string `mapstructure:"unpack_dir" yaml:"unpack_dir"`
-			ToolDir   string `mapstructure:"tool_dir" yaml:"tool_dir"`
-			BackupDir string `mapstructure:"backup_dir" yaml:"backup_dir"`
+			UnpackDir   string `mapstructure:"unpack_dir" yaml:"unpack_dir"`
+			BackupDir   string `mapstructure:"backup_dir" yaml:"backup_dir"`
+			OverrideDir string `mapstructure:"override_dir" yaml:"override_dir"`
+			ToolDir     string `mapstructure:"tool_dir" yaml:"tool_dir"`
 
 			Quickstart struct {
 				DistFile    string `mapstructure:"dist_file" yaml:"dist_file"`

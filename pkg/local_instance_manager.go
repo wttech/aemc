@@ -18,8 +18,9 @@ import (
 )
 
 const (
-	UnpackDir = common.VarDir + "/instance"
-	BackupDir = common.VarDir + "/backup"
+	UnpackDir   = common.VarDir + "/instance"
+	BackupDir   = common.VarDir + "/backup"
+	OverrideDir = common.DefaultDir + "/" + common.VarDirName + "/instance"
 
 	DistFile        = common.LibDir + "/aem-sdk-quickstart.jar"
 	LicenseFile     = common.LibDir + "/" + LicenseFilename
@@ -29,24 +30,26 @@ const (
 type LocalOpts struct {
 	manager *InstanceManager
 
-	UnpackDir  string
-	ToolDir    string
-	BackupDir  string
-	JavaOpts   *java.Opts
-	OakRun     *OakRun
-	Quickstart *Quickstart
-	Sdk        *Sdk
+	UnpackDir   string
+	BackupDir   string
+	OverrideDir string
+	ToolDir     string
+	JavaOpts    *java.Opts
+	OakRun      *OakRun
+	Quickstart  *Quickstart
+	Sdk         *Sdk
 }
 
 func (im *InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
 	result := &LocalOpts{
 		manager: manager,
 
-		UnpackDir:  UnpackDir,
-		BackupDir:  BackupDir,
-		ToolDir:    common.ToolDir,
-		JavaOpts:   im.aem.javaOpts,
-		Quickstart: NewQuickstart(),
+		UnpackDir:   UnpackDir,
+		BackupDir:   BackupDir,
+		OverrideDir: OverrideDir,
+		ToolDir:     common.ToolDir,
+		JavaOpts:    im.aem.javaOpts,
+		Quickstart:  NewQuickstart(),
 	}
 	result.Sdk = NewSdk(result)
 	result.OakRun = NewOakRun(result)
@@ -353,48 +356,6 @@ func (im *InstanceManager) Delete(instances []Instance) ([]Instance, error) {
 	return deleted, nil
 }
 
-func (im *InstanceManager) AwaitStartedOne(instance Instance) error {
-	return im.AwaitStarted([]Instance{instance})
-}
-
-func (im *InstanceManager) AwaitStartedAll() error {
-	return im.AwaitStarted(im.All())
-}
-
-func (im *InstanceManager) AwaitStarted(instances []Instance) error {
-	if len(instances) == 0 {
-		return nil
-	}
-	log.Infof("awaiting up instance(s) '%s'", InstanceIds(instances))
-	return im.Check(instances, im.CheckOpts, []Checker{
-		im.CheckOpts.AwaitStartedTimeout,
-		im.CheckOpts.Reachable,
-		im.CheckOpts.BundleStable,
-		im.CheckOpts.EventStable,
-		im.CheckOpts.Installer,
-	})
-}
-
-func (im *InstanceManager) AwaitStoppedOne(instance Instance) error {
-	return im.AwaitStopped([]Instance{instance})
-}
-
-func (im *InstanceManager) AwaitStoppedAll() error {
-	return im.AwaitStopped(im.Locals())
-}
-
-func (im *InstanceManager) AwaitStopped(instances []Instance) error {
-	if len(instances) == 0 {
-		return nil
-	}
-	log.Infof("awaiting down instance(s) '%s'", InstanceIds(instances))
-	return im.Check(instances, im.CheckOpts, []Checker{
-		im.CheckOpts.AwaitStoppedTimeout,
-		im.CheckOpts.StatusStopped,
-		im.CheckOpts.Unreachable,
-	})
-}
-
 func (im *InstanceManager) Clean(instances []Instance) ([]Instance, error) {
 	log.Infof("cleaning instance(s) '%s'", InstanceIds(instances))
 
@@ -470,11 +431,14 @@ func (im *InstanceManager) configureLocalOpts(config *cfg.Config) {
 	if len(opts.UnpackDir) > 0 {
 		im.LocalOpts.UnpackDir = opts.UnpackDir
 	}
-	if len(opts.ToolDir) > 0 {
-		im.LocalOpts.ToolDir = opts.ToolDir
-	}
 	if len(opts.BackupDir) > 0 {
 		im.LocalOpts.BackupDir = opts.BackupDir
+	}
+	if len(opts.OverrideDir) > 0 {
+		im.LocalOpts.OverrideDir = opts.OverrideDir
+	}
+	if len(opts.ToolDir) > 0 {
+		im.LocalOpts.ToolDir = opts.ToolDir
 	}
 	if len(opts.Quickstart.DistFile) > 0 {
 		im.LocalOpts.Quickstart.DistFile = opts.Quickstart.DistFile

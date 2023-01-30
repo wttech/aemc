@@ -32,12 +32,13 @@ type LocalInstance struct {
 }
 
 type LocalInstanceState struct {
-	ID         string   `yaml:"id" json:"id"`
-	URL        string   `json:"url" json:"url"`
-	Attributes []string `yaml:"attributes" json:"attributes"`
-	RunModes   []string `yaml:"run_modes" json:"runModes"`
-	AemVersion string   `yaml:"aem_version" json:"aemVersion"`
-	Dir        string   `yaml:"dir" json:"dir"`
+	ID           string   `yaml:"id" json:"id"`
+	URL          string   `json:"url" json:"url"`
+	AemVersion   string   `yaml:"aem_version" json:"aemVersion"`
+	Attributes   []string `yaml:"attributes" json:"attributes"`
+	RunModes     []string `yaml:"run_modes" json:"runModes"`
+	HealthChecks []string `yaml:"health_checks" json:"healthChecks"`
+	Dir          string   `yaml:"dir" json:"dir"`
 }
 
 const (
@@ -47,6 +48,7 @@ const (
 	LocalInstanceBackupExtension = "aemb.tar.zst"
 	LocalInstanceUser            = "admin"
 	LocalInstanceWorkDirName     = common.AppId
+	LocalInstanceNameCommon      = "common"
 )
 
 func (li LocalInstance) Instance() *Instance {
@@ -67,12 +69,13 @@ func NewLocal(i *Instance) *LocalInstance {
 
 func (li LocalInstance) State() LocalInstanceState {
 	return LocalInstanceState{
-		ID:         li.instance.id,
-		URL:        li.instance.http.BaseURL(),
-		Attributes: li.instance.Attributes(),
-		AemVersion: li.instance.AemVersion(),
-		RunModes:   li.instance.RunModes(),
-		Dir:        li.Dir(),
+		ID:           li.instance.id,
+		URL:          li.instance.http.BaseURL(),
+		Attributes:   li.instance.Attributes(),
+		AemVersion:   li.instance.AemVersion(),
+		RunModes:     li.instance.RunModes(),
+		HealthChecks: li.instance.HealthChecks(),
+		Dir:          li.Dir(),
 	}
 }
 
@@ -94,6 +97,19 @@ func (li LocalInstance) Dir() string {
 
 func (li LocalInstance) WorkDir() string {
 	return fmt.Sprintf("%s/%s", li.Dir(), LocalInstanceWorkDirName)
+}
+
+func (li LocalInstance) OverrideDirs() []string {
+	return lo.Map([]string{
+		fmt.Sprintf("%s/%s", li.Opts().OverrideDir, LocalInstanceNameCommon),
+		fmt.Sprintf("%s/%s", li.Opts().OverrideDir, li.Name()),
+	}, func(p string, _ int) string {
+		return pathx.Normalize(pathx.Abs(p))
+	})
+}
+
+func (li LocalInstance) overrideDirsChecksum() (string, error) {
+	return filex.ChecksumPaths(lo.Filter(li.OverrideDirs(), func(d string, _ int) bool { return pathx.Exists(d) }), []string{})
 }
 
 func (li LocalInstance) LockDir() string {
@@ -148,8 +164,8 @@ func (li LocalInstance) Create() error {
 }
 
 func (li LocalInstance) createLock() osx.Lock[localInstanceCreateLock] {
-	return osx.NewLock(fmt.Sprintf("%s/create.yml", li.LockDir()), func() localInstanceCreateLock {
-		return localInstanceCreateLock{Created: time.Now()}
+	return osx.NewLock(fmt.Sprintf("%s/create.yml", li.LockDir()), func() (localInstanceCreateLock, error) {
+		return localInstanceCreateLock{Created: time.Now()}, nil
 	})
 }
 
@@ -266,12 +282,11 @@ func (li LocalInstance) updateAuth() error {
 	if !li.IsInitialized() {
 		return nil
 	}
-	lock := li.startLock()
-	data, err := lock.DataLocked()
+	state, err := li.startLock().State()
 	if err != nil {
 		return err
 	}
-	if data.Password != lock.DataCurrent().Password {
+	if state.Locked.Password != state.Current.Password {
 		if err := li.Opts().OakRun.SetPassword(li.Dir(), LocalInstanceUser, li.instance.password); err != nil {
 			return err
 		}
@@ -292,23 +307,30 @@ func (li LocalInstance) checkPortsOpen() error {
 }
 
 func (li LocalInstance) startLock() osx.Lock[localInstanceStartLock] {
-	return osx.NewLock(fmt.Sprintf("%s/start.yml", li.LockDir()), func() localInstanceStartLock {
-		return localInstanceStartLock{
-			Version:  li.Version,
-			HTTPPort: li.instance.HTTP().Port(),
-			RunModes: strings.Join(li.RunModes, ","),
-			JVMOpts:  strings.Join(li.JvmOpts, " "),
-			Password: cryptox.HashString(li.instance.password),
+	return osx.NewLock(fmt.Sprintf("%s/start.yml", li.LockDir()), func() (localInstanceStartLock, error) {
+		var zero localInstanceStartLock
+		overrides, err := li.overrideDirsChecksum()
+		if err != nil {
+			return zero, err
 		}
+		return localInstanceStartLock{
+			Version:   li.Version,
+			HTTPPort:  li.instance.HTTP().Port(),
+			RunModes:  strings.Join(li.RunModes, ","),
+			JVMOpts:   strings.Join(li.JvmOpts, " "),
+			Password:  cryptox.HashString(li.instance.password),
+			Overrides: overrides,
+		}, nil
 	})
 }
 
 type localInstanceStartLock struct {
-	Version  string `yaml:"version"`
-	JVMOpts  string `yaml:"jvm_opts"`
-	RunModes string `yaml:"run_modes"`
-	HTTPPort string `yaml:"http_port"`
-	Password string `yaml:"password"`
+	Version   string `yaml:"version"`
+	JVMOpts   string `yaml:"jvm_opts"`
+	RunModes  string `yaml:"run_modes"`
+	HTTPPort  string `yaml:"http_port"`
+	Password  string `yaml:"password"`
+	Overrides string `yaml:"overrides"`
 }
 
 func (li LocalInstance) Stop() error {
@@ -592,13 +614,12 @@ func (li LocalInstance) OutOfDate() bool {
 }
 
 func (li LocalInstance) UpToDate() bool {
-	lock := li.startLock()
-	upToDate, err := lock.IsUpToDate()
+	check, err := li.startLock().State()
 	if err != nil {
 		log.Debugf("cannot check if instance '%s' is up-to-date: %s", li.instance.ID(), err)
 		return false
 	}
-	return upToDate
+	return check.UpToDate
 }
 
 func (li LocalInstance) pidFile() string {

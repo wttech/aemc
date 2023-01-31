@@ -47,6 +47,7 @@ type ConfigValues struct {
 			RunModes   []string `mapstructure:"run_modes" yaml:"run_modes"`
 			EnvVars    []string `mapstructure:"env_vars" yaml:"env_vars"`
 			SecretVars []string `mapstructure:"secret_vars" yaml:"secret_vars"`
+			SlingProps []string `mapstructure:"sling_props" yaml:"sling_props"`
 			Version    string   `mapstructure:"version" yaml:"version"`
 		} `mapstructure:"config" yaml:"config"`
 

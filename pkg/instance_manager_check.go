@@ -42,7 +42,7 @@ func (im *InstanceManager) NewCheckOpts() *CheckOpts {
 
 func (im *InstanceManager) CheckUntilDone(instances []Instance, opts *CheckOpts, checks []Checker) error {
 	if len(instances) == 0 {
-		log.Infof("no instances to check")
+		log.Debugf("no instances to check")
 		return nil
 	}
 	time.Sleep(opts.Warmup)

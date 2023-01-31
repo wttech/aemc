@@ -347,18 +347,20 @@ func (li LocalInstance) secretsDir() string {
 }
 
 func (li LocalInstance) recreateSlingPropsFile() error {
+	filePath := fmt.Sprintf("%s/conf/sling.properties", li.QuickstartDir())
+	log.Infof("configuring instance Sling properties in file '%s'", filePath)
 	propsCombined := append(li.SlingProps, "org.apache.felix.configadmin.plugin.interpolation.secretsdir=${sling.home}/"+LocalInstanceSecretsDir)
 	propsLoaded, err := properties.LoadString(strings.Join(propsCombined, "\n"))
 	if err != nil {
 		return fmt.Errorf("cannot parse Sling properties of instance '%s'", li.instance.ID())
 	}
-	filePath := fmt.Sprintf("%s/conf/sling.properties", li.QuickstartDir())
 	file, err := os.Create(filePath)
 	defer file.Close()
 	_, err = propsLoaded.Write(file, properties.ISO_8859_1)
 	if err != nil {
 		return fmt.Errorf("cannot save Sling properties file '%s'", filePath)
 	}
+	log.Infof("configured instance Sling properties in file '%s'", filePath)
 	return nil
 }
 

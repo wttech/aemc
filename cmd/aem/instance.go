@@ -12,6 +12,8 @@ func (c *CLI) instanceCmd() *cobra.Command {
 		Aliases: []string{"inst"},
 		Short:   "Manages AEM instance(s)",
 	}
+	cmd.AddCommand(c.instanceLaunchCmd())
+	cmd.AddCommand(c.instanceTerminateCmd())
 	cmd.AddCommand(c.instanceCreateCmd())
 	cmd.AddCommand(c.instanceStartCmd())
 	cmd.AddCommand(c.instanceStopCmd())
@@ -22,6 +24,70 @@ func (c *CLI) instanceCmd() *cobra.Command {
 	cmd.AddCommand(c.instanceAwaitCmd())
 	cmd.AddCommand(c.instanceBackupCmd())
 	return cmd
+}
+
+func (c *CLI) instanceLaunchCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:     "launch",
+		Short:   "Creates then starts AEM instance(s)",
+		Aliases: []string{"run"},
+		Run: func(cmd *cobra.Command, args []string) {
+			localInstances, err := c.aem.InstanceManager().SomeLocals()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			createdInstances, err := c.aem.InstanceManager().Create(localInstances)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("created", createdInstances)
+			startedInstances, err := c.aem.InstanceManager().Start(localInstances)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("started", startedInstances)
+			if len(createdInstances) > 0 || len(startedInstances) > 0 {
+				c.Changed(fmt.Sprintf("launched instance(s) (%d created, %d started)", len(createdInstances), len(startedInstances)))
+			} else {
+				c.Ok("no instance(s) to launch")
+			}
+		},
+	}
+}
+
+func (c *CLI) instanceTerminateCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:     "terminate",
+		Aliases: []string{"abort"},
+		Short:   "Stops then deletes AEM instance(s)",
+		Run: func(cmd *cobra.Command, args []string) {
+			localInstances, err := c.aem.InstanceManager().SomeLocals()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			stoppedInstances, err := c.aem.InstanceManager().Stop(localInstances)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("stopped", stoppedInstances)
+			deletedInstances, err := c.aem.InstanceManager().Delete(localInstances)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("deleted", deletedInstances)
+			if len(stoppedInstances) > 0 || len(deletedInstances) > 0 {
+				c.Changed(fmt.Sprintf("teminated instance(s) (%d stopped, %d deleted)", len(stoppedInstances), len(deletedInstances)))
+			} else {
+				c.Ok("no instance(s) to terminate")
+			}
+		},
+	}
 }
 
 func (c *CLI) instanceCreateCmd() *cobra.Command {

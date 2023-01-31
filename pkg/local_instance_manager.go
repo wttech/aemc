@@ -37,7 +37,7 @@ type LocalOpts struct {
 	JavaOpts    *java.Opts
 	OakRun      *OakRun
 	Quickstart  *Quickstart
-	Sdk         *Sdk
+	SDK         *SDK
 }
 
 func (im *InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
@@ -51,7 +51,7 @@ func (im *InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
 		JavaOpts:    im.aem.javaOpts,
 		Quickstart:  NewQuickstart(),
 	}
-	result.Sdk = NewSdk(result)
+	result.SDK = NewSDK(result)
 	result.OakRun = NewOakRun(result)
 	return result
 }
@@ -60,12 +60,15 @@ func (o *LocalOpts) Initialize() error {
 	if err := pathx.Ensure(o.manager.aem.baseOpts.TmpDir); err != nil {
 		return err
 	}
+	if err := o.JavaOpts.Prepare(); err != nil {
+		return err
+	}
 	distFile, err := o.Quickstart.FindDistFile()
 	if err != nil {
 		return err
 	}
 	if IsSdkFile(distFile) {
-		err := o.Sdk.Prepare(distFile)
+		err := o.SDK.Prepare(distFile)
 		if err != nil {
 			return err
 		}
@@ -111,7 +114,7 @@ func (o *LocalOpts) Jar() (string, error) {
 		return "", err
 	}
 	if IsSdkFile(distFile) {
-		return o.Sdk.QuickstartJar()
+		return o.SDK.QuickstartJar()
 	}
 	return o.Quickstart.FindDistFile()
 }
@@ -166,7 +169,7 @@ func (im *InstanceManager) CreateAll() ([]Instance, error) {
 }
 
 func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
-	err := im.LocalValidate()
+	err := im.LocalValidate() // TODO LocalOpts.Initialize() is setting up JDK (validate should be done after?)
 	if err != nil {
 		return nil, err
 	}

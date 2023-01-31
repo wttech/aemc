@@ -4,7 +4,12 @@ import (
 	"fmt"
 	"github.com/hashicorp/go-version"
 	"github.com/samber/lo"
+	log "github.com/sirupsen/logrus"
+	"github.com/wttech/aemc/pkg/base"
 	"github.com/wttech/aemc/pkg/cfg"
+	"github.com/wttech/aemc/pkg/common"
+	"github.com/wttech/aemc/pkg/common/filex"
+	"github.com/wttech/aemc/pkg/common/httpx"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
@@ -14,21 +19,83 @@ import (
 )
 
 type Opts struct {
+	baseOpts *base.Opts
+
+	DownloadUrl        string
 	HomeDir            string
 	VersionConstraints version.Constraints
 }
 
-func NewOpts() *Opts {
+func NewOpts(baseOpts *base.Opts) *Opts {
 	return &Opts{
-		HomeDir:            os.Getenv("JAVA_HOME"),
+		baseOpts: baseOpts,
+
+		DownloadUrl:        determineDownloadUrl(),
+		HomeDir:            "",
 		VersionConstraints: version.MustConstraints(version.NewConstraint(">= 11, < 12")),
 	}
 }
 
-func (o *Opts) Validate() error {
-	if len(o.HomeDir) == 0 {
-		return fmt.Errorf("java home dir is not set; fix it by setting config property 'java.home_dir' or environment variable 'JAVA_HOME'")
+type DownloadLock struct {
+	URL string `yaml:"url"`
+}
+
+// TODO infer basing on GOARCH and GOOS <https://github.com/adoptium/temurin11-binaries/releases>
+func determineDownloadUrl() string {
+	return "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.17%2B8/OpenJDK11U-jdk_x64_mac_hotspot_11.0.17_8.tar.gz"
+}
+
+func (o *Opts) downloadLock() osx.Lock[DownloadLock] {
+	return osx.NewLock(o.downloadDir()+"/lock/create.yml", func() (DownloadLock, error) {
+		return DownloadLock{URL: o.DownloadUrl}, nil
+	})
+}
+func (o *Opts) downloadDir() string {
+	return common.ToolDir + "/java" // TODO make it configurable
+}
+
+func (o *Opts) downloadJdkDir() string {
+	return o.downloadDir() + "/jdk"
+}
+
+func (o *Opts) Prepare() error {
+	if o.HomeDir != "" {
+		log.Debugf("skipping preparing JDK as explicit home dir is defined '%s'", o.HomeDir)
+		return nil
 	}
+	lock := o.downloadLock()
+	check, err := lock.State()
+	if err != nil {
+		return err
+	}
+	if check.UpToDate {
+		log.Debugf("existing JDK '%s' is up-to-date", check.Locked.URL)
+		return nil
+	}
+	log.Infof("preparing new JDK '%s'", o.DownloadUrl)
+	archiveFile := o.downloadDir() + "/" + httpx.FileNameFromUrl(o.DownloadUrl)
+	if err := httpx.DownloadOnce(o.DownloadUrl, o.downloadDir()+"/"+archiveFile); err != nil {
+		return err
+	}
+	_, err = filex.UnarchiveWithChanged(archiveFile, o.downloadJdkDir())
+	if err != nil {
+		return err
+	}
+	if err := lock.Lock(); err != nil {
+		return err
+	}
+	log.Infof("prepared new SDK '%s'", o.DownloadUrl)
+	return nil
+}
+
+func (o *Opts) Dir() string {
+	if o.HomeDir != "" {
+		return pathx.Abs(o.HomeDir)
+	}
+	return o.downloadJdkDir()
+}
+
+func (o *Opts) Validate() error {
 	if !pathx.Exists(o.Executable()) {
 		return fmt.Errorf("java executable '%s' does not exist", o.Executable())
 	}

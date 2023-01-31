@@ -24,7 +24,7 @@ func NewAem() *Aem {
 	result := new(Aem)
 	result.output = os.Stdout
 	result.baseOpts = base.NewOpts()
-	result.javaOpts = java.NewOpts()
+	result.javaOpts = java.NewOpts(result.baseOpts)
 	result.instanceManager = NewInstanceManager(result)
 	result.appManager = NewAppManager(result)
 	return result

@@ -22,6 +22,7 @@ instance:
         - 'ACME_SECRET=value'
       env_vars:
         - 'ACME_VAR=value'
+      sling_props: []
     local_publish:
       http_url: http://127.0.0.1:4503
       user: admin
@@ -38,6 +39,7 @@ instance:
         - 'ACME_SECRET=value'
       env_vars:
         - 'ACME_VAR=value'
+      sling_props: []
 
   # Filters for defined
   filter:

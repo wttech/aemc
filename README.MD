@@ -53,12 +53,16 @@ Main features:
 - deploying AEM packages with:
   - automatic workflow toggling - avoiding DAM asset renditions regeneration
   - advanced snapshot handling - avoiding redeploying the same package by checksum verification
-  - instance health checking
+  - customizable instance health checking
 - building AEM packages with:
   - source code change detection - avoiding rebuilding application when it is not needed 
 - making AEM instance backups (with restoring)
   - advanced archive format to speed up performance and storage efficiency ([ZSTD](https://github.com/facebook/zstd) used by default)
   - instance state aware - stopping, archiving then starting again AEM instances automatically (if needed)
+
+Worth knowing:
+
+- On Windows use it with [Git Bash](https://gitforwindows.org/) ([CMD](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/cmd) and [PowerShell](https://learn.microsoft.com/en-us/powershell/scripting/overview) are not supported nor tested)
 
 ![CLI Screenshot](docs/cli-demo.gif)
 

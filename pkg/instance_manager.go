@@ -192,6 +192,7 @@ func (im *InstanceManager) configureInstances(config *cfg.Config) {
 				i.local.RunModes = iCfg.RunModes
 				i.local.EnvVars = iCfg.EnvVars
 				i.local.SecretVars = iCfg.SecretVars
+				i.local.SlingProps = iCfg.SlingProps
 
 				if len(iCfg.Version) > 0 {
 					i.local.Version = iCfg.Version

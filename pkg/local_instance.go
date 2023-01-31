@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"github.com/magiconair/properties"
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/cryptox"
 	"github.com/wttech/aemc/pkg/common/execx"
@@ -32,6 +33,7 @@ type LocalInstance struct {
 	RunModes   []string
 	EnvVars    []string
 	SecretVars []string
+	SlingProps []string
 }
 
 type LocalInstanceState struct {
@@ -45,16 +47,14 @@ type LocalInstanceState struct {
 }
 
 const (
-	LocalInstanceScriptStart           = "start"
-	LocalInstanceScriptStop            = "stop"
-	LocalInstanceScriptStatus          = "status"
-	LocalInstanceBackupExtension       = "aemb.tar.zst"
-	LocalInstanceUser                  = "admin"
-	LocalInstanceWorkDirName           = common.AppId
-	LocalInstanceNameCommon            = "common"
-	LocalInstanceSecretsDir            = "conf/secret"
-	LocalInstanceSecretsSlingProp      = "org.apache.felix.configadmin.plugin.interpolation.secretsdir"
-	LocalInstanceSecretsSlingPropValue = "${sling.home}/" + LocalInstanceSecretsDir
+	LocalInstanceScriptStart     = "start"
+	LocalInstanceScriptStop      = "stop"
+	LocalInstanceScriptStatus    = "status"
+	LocalInstanceBackupExtension = "aemb.tar.zst"
+	LocalInstanceUser            = "admin"
+	LocalInstanceWorkDirName     = common.AppId
+	LocalInstanceNameCommon      = "common"
+	LocalInstanceSecretsDir      = "conf/secret"
 )
 
 func (li LocalInstance) Instance() *Instance {
@@ -72,6 +72,7 @@ func NewLocal(i *Instance) *LocalInstance {
 	}
 	li.EnvVars = []string{}
 	li.SecretVars = []string{}
+	li.SlingProps = []string{}
 	return li
 }
 
@@ -291,6 +292,9 @@ func (li LocalInstance) update() error {
 		if err := li.copyOverrideDirs(); err != nil {
 			return err
 		}
+		if err := li.recreateSlingPropsFile(); err != nil {
+			return err
+		}
 		if err := li.recreateSecretsDir(); err != nil {
 			return err
 		}
@@ -306,6 +310,11 @@ func (li LocalInstance) update() error {
 		}
 		if state.Locked.Overrides != state.Current.Overrides {
 			if err := li.copyOverrideDirs(); err != nil {
+				return err
+			}
+		}
+		if state.Locked.SlingProps != state.Current.SlingProps {
+			if err := li.recreateSlingPropsFile(); err != nil {
 				return err
 			}
 		}
@@ -337,8 +346,20 @@ func (li LocalInstance) secretsDir() string {
 	return fmt.Sprintf("%s/%s", li.QuickstartDir(), LocalInstanceSecretsDir)
 }
 
-func (li LocalInstance) slingPropertiesFile() string {
-	return fmt.Sprintf("%s/conf/sling.properties", li.QuickstartDir())
+func (li LocalInstance) recreateSlingPropsFile() error {
+	propsCombined := append(li.SlingProps, "org.apache.felix.configadmin.plugin.interpolation.secretsdir=${sling.home}/"+LocalInstanceSecretsDir)
+	propsLoaded, err := properties.LoadString(strings.Join(propsCombined, "\n"))
+	if err != nil {
+		return fmt.Errorf("cannot parse Sling properties of instance '%s'", li.instance.ID())
+	}
+	filePath := fmt.Sprintf("%s/conf/sling.properties", li.QuickstartDir())
+	file, err := os.Create(filePath)
+	defer file.Close()
+	_, err = propsLoaded.Write(file, properties.ISO_8859_1)
+	if err != nil {
+		return fmt.Errorf("cannot save Sling properties file '%s'", filePath)
+	}
+	return nil
 }
 
 func (li LocalInstance) recreateSecretsDir() error {
@@ -348,20 +369,6 @@ func (li LocalInstance) recreateSecretsDir() error {
 	}
 	if len(li.SecretVars) > 0 {
 		log.Infof("configuring instance secret vars in dir '%s'", dir)
-		file := li.slingPropertiesFile()
-		if pathx.Exists(file) {
-			contentActual, err := filex.ReadString(file)
-			if err != nil {
-				return err
-			}
-			if !strings.Contains(contentActual, LocalInstanceSecretsSlingProp+"=") {
-				return fmt.Errorf("existing Sling properties file '%s' needs to reference dir '%s' by prop '%s' to support secret vars", file, dir, LocalInstanceSecretsSlingProp)
-			}
-		} else {
-			if err := filex.WriteString(li.slingPropertiesFile(), fmt.Sprintf("%s=%s", LocalInstanceSecretsSlingProp, LocalInstanceSecretsSlingPropValue)); err != nil {
-				return err
-			}
-		}
 		for _, secretVar := range li.SecretVars {
 			k := stringsx.Before(secretVar, "=")
 			v := stringsx.After(secretVar, "=")
@@ -401,6 +408,7 @@ func (li LocalInstance) startLock() osx.Lock[localInstanceStartLock] {
 			Password:   cryptox.HashString(li.instance.password),
 			EnvVars:    strings.Join(li.EnvVars, ","),
 			SecretVars: cryptox.HashString(strings.Join(li.SecretVars, ",")),
+			SlingProps: strings.Join(li.SlingProps, ","),
 			Overrides:  overrides,
 		}, nil
 	})
@@ -415,6 +423,7 @@ type localInstanceStartLock struct {
 	Overrides  string `yaml:"overrides"`
 	EnvVars    string `yaml:"env_vars"`
 	SecretVars string `yaml:"secret_vars"`
+	SlingProps string `yaml:"sling_props"`
 }
 
 func (li LocalInstance) Stop() error {

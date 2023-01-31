@@ -17,7 +17,6 @@ LIB_DIR="${HOME_DIR}/lib"
 
 DEFAULT_DIR="${AEM_DIR}/default"
 DEFAULT_CONFIG_DIR="${DEFAULT_DIR}/etc"
-DEFAULT_INSTANCE_CONFIG_DIR="${DEFAULT_DIR}/var/instance/common/crx-quickstart/conf"
 
 echo "Downloading AEM Compose Files"
 echo ""
@@ -33,17 +32,14 @@ curl -s "${SOURCE_URL}/${SCRIPT_DIR}/restart.sh" -o "${SCRIPT_DIR}/restart.sh"
 curl -s "${SOURCE_URL}/${SCRIPT_DIR}/setup.sh" -o "${SCRIPT_DIR}/setup.sh"
 curl -s "${SOURCE_URL}/${SCRIPT_DIR}/up.sh" -o "${SCRIPT_DIR}/up.sh"
 
-mkdir -p "${LIB_DIR}"
-
 mkdir -p "${DEFAULT_CONFIG_DIR}"
 curl -s "${SOURCE_URL}/${DEFAULT_CONFIG_DIR}/aem.yml" -o "${DEFAULT_CONFIG_DIR}/aem.yml"
-
-mkdir -p "${DEFAULT_INSTANCE_CONFIG_DIR}"
-curl -s "${SOURCE_URL}/${DEFAULT_INSTANCE_CONFIG_DIR}/sling.properties" -o "${DEFAULT_INSTANCE_CONFIG_DIR}/sling.properties"
 
 mkdir -p "${AEM_DIR}"
 curl -s "${SOURCE_URL}/${AEM_DIR}/api.sh" -o "${AEM_DIR}/api.sh"
 curl -s "${SOURCE_URL}/${AEM_WRAPPER}" -o "${AEM_WRAPPER}"
+
+mkdir -p "${LIB_DIR}"
 
 echo "Downloading & Testing AEM Compose CLI"
 echo ""

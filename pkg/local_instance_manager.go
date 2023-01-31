@@ -199,12 +199,16 @@ func (im *InstanceManager) StartAll() ([]Instance, error) {
 }
 
 func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
+	if len(instances) == 0 {
+		log.Infof("no instances to start")
+		return nil, nil
+	}
 	err := im.LocalValidate()
 	if err != nil {
 		return nil, err
 	}
 
-	log.Infof("checking started & out-of-date instance(s)")
+	log.Infof("checking started & out-of-date instance(s) '%s'", InstanceIds(instances))
 
 	var outdated []Instance
 	for _, i := range instances {
@@ -223,7 +227,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		return outdated, err
 	}
 
-	log.Infof("starting instance(s)")
+	log.Infof("starting instance(s) '%s'", InstanceIds(instances))
 
 	started := []Instance{}
 	for _, i := range instances {
@@ -259,12 +263,16 @@ func (im *InstanceManager) StopAll() ([]Instance, error) {
 }
 
 func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
+	if len(instances) == 0 {
+		log.Infof("no instances to stop")
+		return nil, nil
+	}
 	err := im.LocalValidate()
 	if err != nil {
 		return nil, err
 	}
 
-	log.Info("stopping instance(s)")
+	log.Infof("stopping instance(s) '%s'", InstanceIds(instances))
 
 	stopped := []Instance{}
 	for _, i := range instances {
@@ -338,6 +346,10 @@ func (im *InstanceManager) DeleteAll() ([]Instance, error) {
 }
 
 func (im *InstanceManager) Delete(instances []Instance) ([]Instance, error) {
+	if len(instances) == 0 {
+		log.Infof("no instances to delete")
+		return nil, nil
+	}
 	// im.LocalValidate()
 
 	log.Infof("deleting instance(s) '%s'", InstanceIds(instances))
@@ -357,6 +369,11 @@ func (im *InstanceManager) Delete(instances []Instance) ([]Instance, error) {
 }
 
 func (im *InstanceManager) Clean(instances []Instance) ([]Instance, error) {
+	if len(instances) == 0 {
+		log.Infof("no instances to clean")
+		return nil, nil
+	}
+
 	log.Infof("cleaning instance(s) '%s'", InstanceIds(instances))
 
 	cleaned := []Instance{}

@@ -49,6 +49,22 @@ func (o *Opts) Executable() string {
 	return pathx.Normalize(o.HomeDir) + "/bin/java"
 }
 
+func (o *Opts) Env() []string {
+	javaDir := pathx.Abs(o.HomeDir)
+	javaPath := javaDir + "/bin"
+	others := osx.EnvVarsWithout("PATH", "JAVA_HOME")
+	return append([]string{
+		"PATH=" + javaPath + ":" + os.Getenv("PATH"),
+		"JAVA_HOME=" + javaDir,
+	}, others...)
+}
+
+func (o *Opts) Command(args ...string) *exec.Cmd {
+	cmd := exec.Command(o.Executable(), args...)
+	cmd.Env = o.Env()
+	return cmd
+}
+
 func (o *Opts) CurrentVersion() (*version.Version, error) {
 	currentText, err := o.readCurrentVersion()
 	if err != nil {
@@ -62,7 +78,7 @@ func (o *Opts) CurrentVersion() (*version.Version, error) {
 }
 
 func (o *Opts) readCurrentVersion() (string, error) {
-	bytes, err := exec.Command(o.Executable(), "-version").CombinedOutput()
+	bytes, err := o.Command("-version").CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("cannot check java version properly: %w", err)
 	}

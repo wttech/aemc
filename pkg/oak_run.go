@@ -8,7 +8,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/tplx"
 	"github.com/wttech/aemc/pkg/instance"
-	"os/exec"
 	"path/filepath"
 )
 
@@ -101,7 +100,7 @@ func (or OakRun) SetPassword(instanceDir string, user string, password string) e
 
 func (or OakRun) RunScript(instanceDir string, scriptFile string) error {
 	storeDir := fmt.Sprintf("%s/%s", instanceDir, or.StorePath)
-	cmd := exec.Command(or.localOpts.manager.aem.javaOpts.Executable(),
+	cmd := or.localOpts.JavaOpts.Command(
 		"-Djava.io.tmpdir="+pathx.Abs(or.localOpts.manager.aem.baseOpts.TmpDir),
 		"-jar", or.JarFile(),
 		"console", storeDir, "--read-write", fmt.Sprintf(":load %s", scriptFile),

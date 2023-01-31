@@ -188,7 +188,7 @@ func (li LocalInstance) unpackJarFile() error {
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command(pathx.Abs(li.Opts().JavaOpts.Executable()), "-jar", pathx.Abs(jar), "-unpack")
+	cmd := li.Opts().JavaOpts.Command("-jar", pathx.Abs(jar), "-unpack")
 	cmd.Dir = li.Dir()
 	li.instance.manager.aem.CommandOutput(cmd)
 	if err := cmd.Run(); err != nil {
@@ -262,7 +262,6 @@ func (li LocalInstance) Start() error {
 	if err := li.checkPortsOpen(); err != nil {
 		return err
 	}
-	// TODO enforce 'java' to be always from JAVA_PATH (update $PATH var accordingly)
 	cmd := li.binScriptCommand(LocalInstanceScriptStart, true)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute start script for instance '%s': %w", li.instance.ID(), err)
@@ -433,7 +432,6 @@ func (li LocalInstance) Stop() error {
 		return fmt.Errorf("cannot stop instance as it is not created")
 	}
 	log.Infof("stopping instance '%s'", li.instance.ID())
-	// TODO enforce 'java' to be always from JAVA_PATH (update $PATH var accordingly)
 	cmd := li.binScriptCommand(LocalInstanceScriptStop, true)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute stop script for instance '%s': %w", li.instance.ID(), err)
@@ -669,9 +667,7 @@ func (li LocalInstance) binScriptCommand(name string, verbose bool) *exec.Cmd {
 	}
 	cmd := execx.CommandShell(args)
 	cmd.Dir = li.Dir()
-
-	env := append(os.Environ(),
-		"JAVA_HOME="+pathx.Abs(li.Opts().JavaOpts.HomeDir),
+	env := append(li.Opts().JavaOpts.Env(),
 		"CQ_PORT="+li.instance.http.Port(),
 		"CQ_RUNMODE="+li.instance.local.RunModesString(),
 		"CQ_JVM_OPTS="+li.instance.local.JVMOptsString(),
@@ -679,7 +675,6 @@ func (li LocalInstance) binScriptCommand(name string, verbose bool) *exec.Cmd {
 	)
 	env = append(env, li.EnvVars...)
 	cmd.Env = env
-
 	if verbose {
 		li.instance.manager.aem.CommandOutput(cmd)
 	}

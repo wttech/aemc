@@ -43,6 +43,23 @@ Key assumptions:
 - Self-describing, both machine & human-readable 
 - Multiple input & output formats (text/yaml/json)
 
+Main features:
+
+- easy & declarative setup of:
+  - AEM instances (run modes, JVM & start opts, env & secret vars, Sling props, custom admin password)
+  - OSGi (configurations, bundles, components)
+  - replication agents 
+  - any repository nodes
+- deploying AEM packages with:
+  - automatic workflow toggling - avoiding DAM asset renditions regeneration
+  - advanced snapshot handling - avoiding redeploying the same package by checksum verification
+  - instance health checking
+- building AEM packages with:
+  - source code change detection - avoiding rebuilding application when it is not needed 
+- making AEM instance backups (with restoring)
+  - advanced archive format to speed up performance and storage efficiency ([ZSTD](https://github.com/facebook/zstd) used by default)
+  - instance state aware - stopping, archiving then starting again AEM instances automatically (if needed)
+
 ![CLI Screenshot](docs/cli-demo.gif)
 
 ## CLI - AEM Project Quickstart

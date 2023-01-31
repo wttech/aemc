@@ -176,6 +176,9 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 	if err := im.LocalOpts.Initialize(); err != nil {
 		return created, err
 	}
+
+	log.Infof("creating instance(s) '%s'", InstanceIds(instances))
+
 	for _, i := range instances {
 		if !i.local.IsCreated() {
 			err := i.local.Create()
@@ -200,8 +203,8 @@ func (im *InstanceManager) StartAll() ([]Instance, error) {
 
 func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 	if len(instances) == 0 {
-		log.Infof("no instances to start")
-		return nil, nil
+		log.Debugf("no instances to start")
+		return []Instance{}, nil
 	}
 	err := im.LocalValidate()
 	if err != nil {
@@ -264,12 +267,12 @@ func (im *InstanceManager) StopAll() ([]Instance, error) {
 
 func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 	if len(instances) == 0 {
-		log.Infof("no instances to stop")
-		return nil, nil
+		log.Debugf("no instances to stop")
+		return []Instance{}, nil
 	}
 	err := im.LocalValidate()
 	if err != nil {
-		return nil, err
+		return []Instance{}, err
 	}
 
 	log.Infof("stopping instance(s) '%s'", InstanceIds(instances))
@@ -347,8 +350,8 @@ func (im *InstanceManager) DeleteAll() ([]Instance, error) {
 
 func (im *InstanceManager) Delete(instances []Instance) ([]Instance, error) {
 	if len(instances) == 0 {
-		log.Infof("no instances to delete")
-		return nil, nil
+		log.Debugf("no instances to delete")
+		return []Instance{}, nil
 	}
 	// im.LocalValidate()
 
@@ -370,8 +373,8 @@ func (im *InstanceManager) Delete(instances []Instance) ([]Instance, error) {
 
 func (im *InstanceManager) Clean(instances []Instance) ([]Instance, error) {
 	if len(instances) == 0 {
-		log.Infof("no instances to clean")
-		return nil, nil
+		log.Debugf("no instances to clean")
+		return []Instance{}, nil
 	}
 
 	log.Infof("cleaning instance(s) '%s'", InstanceIds(instances))

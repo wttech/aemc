@@ -6,6 +6,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	nurl "net/url"
 	"reflect"
+	"time"
 )
 
 // HTTP Simplifies making requests to AEM instance. Handles authentication and URI auto-escaping.
@@ -31,6 +32,16 @@ func newInstanceHTTPClient(baseURL string) *resty.Client {
 
 func (hc *HTTP) Request() *resty.Request {
 	return hc.client.R().SetBasicAuth(hc.instance.User(), hc.instance.Password())
+}
+
+func (hc *HTTP) RequestWithOptions(options func(client *resty.Client)) *resty.Request {
+	client := newInstanceHTTPClient(hc.BaseURL()).SetBasicAuth(hc.instance.User(), hc.instance.Password())
+	options(client)
+	return client.R()
+}
+
+func (hc *HTTP) RequestWithTimeout(timeout time.Duration) *resty.Request {
+	return hc.RequestWithOptions(func(client *resty.Client) { client.SetTimeout(timeout) })
 }
 
 func (hc *HTTP) RequestFormData(props map[string]any) *resty.Request {

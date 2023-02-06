@@ -62,7 +62,7 @@ func (sm Status) SlingProps() (map[string]string, error) {
 }
 
 func (sm Status) SlingSettings() (map[string]string, error) {
-	response, err := sm.instance.http.Request().Get(SlingSettingsPath)
+	response, err := sm.instance.http.RequestWithTimeout(time.Millisecond * 300).Get(SlingSettingsPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read Sling settings on instance '%s'", sm.instance.id)
 	}
@@ -114,7 +114,7 @@ func (sm Status) RunModes() ([]string, error) {
 }
 
 func (sm Status) AemVersion() (string, error) {
-	response, err := sm.instance.http.Request().Get(SystemProductInfoPath)
+	response, err := sm.instance.http.RequestWithTimeout(time.Millisecond * 300).Get(SystemProductInfoPath)
 	if err != nil {
 		return instance.AemVersionUnknown, fmt.Errorf("cannot read system product info on instance '%s'", sm.instance.id)
 	}

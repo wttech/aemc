@@ -124,7 +124,7 @@ func (sm Status) AemVersion() (string, error) {
 	}
 	lines := string(bytes)
 	for _, line := range strings.Split(lines, "\n") {
-		matches := aemVersionRegex.FindStringSubmatch(line)
+		matches := aemVersionRegex.FindStringSubmatch(strings.TrimSuffix(line, "\r"))
 		if matches != nil {
 			return matches[1], nil
 		}

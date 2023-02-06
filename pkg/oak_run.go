@@ -100,11 +100,14 @@ func (or OakRun) SetPassword(instanceDir string, user string, password string) e
 
 func (or OakRun) RunScript(instanceDir string, scriptFile string) error {
 	storeDir := fmt.Sprintf("%s/%s", instanceDir, or.StorePath)
-	cmd := or.localOpts.JavaOpts.Command(
+	cmd, err := or.localOpts.JavaOpts.Command(
 		"-Djava.io.tmpdir="+pathx.Abs(or.localOpts.manager.aem.baseOpts.TmpDir),
 		"-jar", or.JarFile(),
 		"console", storeDir, "--read-write", fmt.Sprintf(":load %s", scriptFile),
 	)
+	if err != nil {
+		return err
+	}
 	bytes, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Error(string(bytes))

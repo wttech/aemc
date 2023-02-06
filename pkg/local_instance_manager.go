@@ -57,6 +57,9 @@ func (im *InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
 }
 
 func (o *LocalOpts) Initialize() error {
+	if err := o.validateUnpackDir(); err != nil {
+		return err
+	}
 	if err := pathx.Ensure(o.manager.aem.baseOpts.TmpDir); err != nil {
 		return err
 	}
@@ -72,21 +75,13 @@ func (o *LocalOpts) Initialize() error {
 		if err != nil {
 			return err
 		}
+	} else {
+		_, err = o.Quickstart.FindLicenseFile()
+		if err != nil {
+			return err
+		}
 	}
 	if err := o.OakRun.Prepare(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (o *LocalOpts) Validate() error {
-	if err := o.validateUnpackDir(); err != nil {
-		return err
-	}
-	if err := o.JavaOpts.Validate(); err != nil {
-		return err
-	}
-	if err := o.Quickstart.Validate(); err != nil {
 		return err
 	}
 	return nil
@@ -135,18 +130,6 @@ type Quickstart struct {
 	LicenseFile string
 }
 
-func (o *Quickstart) Validate() error {
-	_, err := o.FindDistFile()
-	if err != nil {
-		return err
-	}
-	_, err = o.FindLicenseFile()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (o *Quickstart) FindDistFile() (string, error) {
 	return pathx.GlobSome(o.DistFile)
 }
@@ -155,33 +138,16 @@ func (o *Quickstart) FindLicenseFile() (string, error) {
 	return pathx.GlobSome(o.LicenseFile)
 }
 
-// LocalValidate checks prerequisites needed to manage local instances
-func (im *InstanceManager) LocalValidate() error {
-	err := im.LocalOpts.Validate()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (im *InstanceManager) CreateAll() ([]Instance, error) {
 	return im.Create(im.Locals())
 }
 
 func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
-	err := im.LocalValidate() // TODO LocalOpts.Initialize() is setting up JDK (validate should be done after?)
-	if err != nil {
-		return nil, err
-	}
-
 	created := []Instance{}
-
 	if err := im.LocalOpts.Initialize(); err != nil {
 		return created, err
 	}
-
 	log.Infof("creating instance(s) '%s'", InstanceIds(instances))
-
 	for _, i := range instances {
 		if !i.local.IsCreated() {
 			err := i.local.Create()
@@ -191,7 +157,6 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 			created = append(created, i)
 		}
 	}
-
 	return created, nil
 }
 
@@ -209,9 +174,8 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		log.Debugf("no instances to start")
 		return []Instance{}, nil
 	}
-	err := im.LocalValidate()
-	if err != nil {
-		return nil, err
+	if err := im.LocalOpts.Initialize(); err != nil {
+		return []Instance{}, err
 	}
 
 	log.Infof("checking started & out-of-date instance(s) '%s'", InstanceIds(instances))
@@ -273,8 +237,7 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 		log.Debugf("no instances to stop")
 		return []Instance{}, nil
 	}
-	err := im.LocalValidate()
-	if err != nil {
+	if err := im.LocalOpts.Initialize(); err != nil {
 		return []Instance{}, err
 	}
 
@@ -301,7 +264,7 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 		return nil, err
 	}
 
-	_, err = im.Clean(stopped)
+	_, err := im.Clean(stopped)
 	if err != nil {
 		return nil, err
 	}
@@ -319,9 +282,8 @@ func (im *InstanceManager) KillAll() ([]Instance, error) {
 }
 
 func (im *InstanceManager) Kill(instances []Instance) ([]Instance, error) {
-	err := im.LocalValidate()
-	if err != nil {
-		return nil, err
+	if err := im.LocalOpts.Initialize(); err != nil {
+		return []Instance{}, err
 	}
 
 	log.Infof("killing instance(s) '%s'", InstanceIds(instances))

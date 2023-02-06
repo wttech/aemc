@@ -115,7 +115,7 @@ func (o *Opts) download() error {
 	if err := lock.Lock(); err != nil {
 		return err
 	}
-	log.Infof("downloaded new SDK '%s'", o.DownloadURL)
+	log.Infof("downloaded new JDK '%s'", o.DownloadURL)
 	return nil
 }
 

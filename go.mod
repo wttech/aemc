@@ -11,6 +11,7 @@ require (
 	github.com/gobwas/glob v0.2.3
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/go-version v1.6.0
+	github.com/magiconair/properties v1.8.7
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/otiai10/copy v1.9.0
@@ -39,7 +40,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/klauspost/compress v1.15.5 // indirect
 	github.com/klauspost/pgzip v1.2.5 // indirect
-	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/nwaples/rardecode v1.1.0 // indirect

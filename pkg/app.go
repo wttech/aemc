@@ -57,8 +57,12 @@ func NewAppManager(aem *Aem) *AppManager {
 
 func (am *AppManager) Build(command string) error {
 	cmd := execx.CommandString(command)
-	cmd.Stdout = am.aem.output
-	cmd.Stderr = am.aem.output
+	env, err := am.aem.javaOpts.Env()
+	if err != nil {
+		return err
+	}
+	cmd.Env = env
+	am.aem.CommandOutput(cmd)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot execute build command '%s': %w", command, err)
 	}

@@ -14,29 +14,29 @@ const (
 	SdkToolDirName = "sdk"
 )
 
-func NewSdk(localOpts *LocalOpts) *Sdk {
-	return &Sdk{localOpts: localOpts}
+func NewSDK(localOpts *LocalOpts) *SDK {
+	return &SDK{localOpts: localOpts}
 }
 
-type Sdk struct {
+type SDK struct {
 	localOpts *LocalOpts
 }
 
-func (s Sdk) Dir() string {
+func (s SDK) Dir() string {
 	return s.localOpts.ToolDir + "/" + SdkToolDirName
 }
 
-type SdkLock struct {
+type SDKLock struct {
 	Version string `yaml:"version"`
 }
 
-func (s Sdk) lock(zipFile string) osx.Lock[SdkLock] {
-	return osx.NewLock(s.Dir()+"/lock/create.yml", func() (SdkLock, error) {
-		return SdkLock{Version: pathx.NameWithoutExt(zipFile)}, nil
+func (s SDK) lock(zipFile string) osx.Lock[SDKLock] {
+	return osx.NewLock(s.Dir()+"/lock/create.yml", func() (SDKLock, error) {
+		return SDKLock{Version: pathx.NameWithoutExt(zipFile)}, nil
 	})
 }
 
-func (s Sdk) Prepare(zipFile string) error {
+func (s SDK) Prepare(zipFile string) error {
 	lock := s.lock(zipFile)
 
 	check, err := lock.State()
@@ -67,7 +67,7 @@ func (s Sdk) Prepare(zipFile string) error {
 	return nil
 }
 
-func (s Sdk) prepare(zipFile string) error {
+func (s SDK) prepare(zipFile string) error {
 	err := pathx.Delete(s.Dir())
 	if err != nil {
 		return err
@@ -83,7 +83,7 @@ func (s Sdk) prepare(zipFile string) error {
 	return nil
 }
 
-func (s Sdk) unpackSdk(zipFile string) error {
+func (s SDK) unpackSdk(zipFile string) error {
 	log.Infof("unpacking SDK ZIP '%s' to dir '%s'", zipFile, s.Dir())
 	err := filex.Unarchive(zipFile, s.Dir())
 	if err != nil {
@@ -93,23 +93,23 @@ func (s Sdk) unpackSdk(zipFile string) error {
 	return nil
 }
 
-func (s Sdk) QuickstartJar() (string, error) {
+func (s SDK) QuickstartJar() (string, error) {
 	return s.findFile("*-quickstart-*.jar")
 }
 
-func (s Sdk) DispatcherDir() string {
+func (s SDK) DispatcherDir() string {
 	return s.Dir() + "/dispatcher"
 }
 
-func (s Sdk) dispatcherToolsUnixScript() (string, error) {
+func (s SDK) dispatcherToolsUnixScript() (string, error) {
 	return s.findFile("*-dispatcher-tools-*-unix.sh")
 }
 
-func (s Sdk) dispatcherToolsWindowsZip() (string, error) {
+func (s SDK) dispatcherToolsWindowsZip() (string, error) {
 	return s.findFile("*-dispatcher-tools-*-windows.zip")
 }
 
-func (s Sdk) findFile(pattern string) (string, error) {
+func (s SDK) findFile(pattern string) (string, error) {
 	paths, err := filepath.Glob(s.Dir() + "/" + pattern)
 	if err != nil {
 		return "", fmt.Errorf("cannot find file matching pattern '%s' in unpacked ZIP dir '%s': %w", pattern, s.Dir(), err)
@@ -121,7 +121,7 @@ func (s Sdk) findFile(pattern string) (string, error) {
 	return jar, nil
 }
 
-func (s Sdk) unpackDispatcher() error {
+func (s SDK) unpackDispatcher() error {
 	if osx.IsWindows() {
 		zip, err := s.dispatcherToolsWindowsZip()
 		if err != nil {
@@ -149,6 +149,6 @@ func (s Sdk) unpackDispatcher() error {
 	return nil
 }
 
-func (s Sdk) Destroy() error {
+func (s SDK) Destroy() error {
 	return pathx.Delete(s.Dir())
 }

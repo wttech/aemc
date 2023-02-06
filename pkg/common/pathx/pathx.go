@@ -104,7 +104,7 @@ func GlobSome(pathPattern string) (string, error) {
 		return "", err
 	}
 	if path == "" {
-		return "", fmt.Errorf("cannot find any file matching pattern '%s'", pathPattern)
+		return "", fmt.Errorf("cannot find any path matching pattern '%s'", pathPattern)
 	}
 	return path, nil
 }

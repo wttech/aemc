@@ -5,10 +5,11 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
+	"net/http"
 	"os"
 )
 
-func FileNameFromUrl(url string) string {
+func FileNameFromURL(url string) string {
 	return stringsx.BeforeLast(stringsx.AfterLast(url, "/"), "?")
 }
 
@@ -42,9 +43,13 @@ func DownloadWithOpts(opts DownloadOpts) error {
 	if err := pathx.DeleteIfExists(fileTmp); err != nil {
 		return fmt.Errorf("cannot delete temporary file for downloaded from URL '%s' to '%s': %s", opts.Url, opts.File, err)
 	}
-	_, err := client.NewRequest().SetOutput(fileTmp).Get(opts.Url)
+	defer func() { _ = pathx.DeleteIfExists(fileTmp) }()
+	resp, err := client.NewRequest().SetOutput(fileTmp).Get(opts.Url)
+	if resp.StatusCode() != http.StatusOK {
+		return fmt.Errorf("cannot download file from URL '%s' to '%s': %s", opts.Url, opts.File, resp.Status())
+	}
 	if err != nil {
-		return fmt.Errorf("cannot download file from URL '%s' to '%s': %s", opts.Url, opts.File, err)
+		return fmt.Errorf("cannot download file from URL '%s' to '%s': %w", opts.Url, opts.File, err)
 	}
 	err = os.Rename(fileTmp, opts.File)
 	if err != nil {

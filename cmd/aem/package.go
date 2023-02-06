@@ -434,7 +434,7 @@ func pkgDefineFileAndUrlFlags(cmd *cobra.Command) {
 func (c *CLI) pkgPathByFlags(cmd *cobra.Command) (string, error) {
 	url, _ := cmd.Flags().GetString("url")
 	if len(url) > 0 {
-		fileName := httpx.FileNameFromUrl(url)
+		fileName := httpx.FileNameFromURL(url)
 		if !strings.HasSuffix(fileName, ".zip") {
 			return "", fmt.Errorf("package URL does not contain file name but it should '%s'", url)
 		}

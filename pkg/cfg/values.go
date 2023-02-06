@@ -32,6 +32,7 @@ type ConfigValues struct {
 
 	Java struct {
 		HomeDir            string `mapstructure:"home_dir" yaml:"home_dir"`
+		DownloadURL        string `mapstructure:"download_url" yaml:"download_url"`
 		VersionConstraints string `mapstructure:"version_constraints" yaml:"version_constraints"`
 	}
 

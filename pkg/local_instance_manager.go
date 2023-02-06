@@ -66,7 +66,7 @@ func (o *LocalOpts) Initialize() error {
 		return err
 	}
 	distSDK := IsSdkFile(distFile)
-	if distSDK {
+	if !distSDK {
 		_, err = o.Quickstart.FindLicenseFile()
 		if err != nil {
 			return err

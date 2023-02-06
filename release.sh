@@ -3,9 +3,13 @@
 VERSION=$1
 VERSION_TAG="v$VERSION"
 
+VERSION_CURRENT_TAG=$(git describe --tags --abbrev=0)
+VERSION_CURRENT_TAG="${VERSION_CURRENT_TAG:1}"
+
 if [ -z "$VERSION" ]
 then
       echo "Release version is not specified!"
+      echo "Last released: ${VERSION_CURRENT_TAG}"
       exit 1
 fi
 

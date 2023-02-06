@@ -46,6 +46,7 @@ Key assumptions:
 Main features:
 
 - easy & declarative setup of:
+  - Java only to run AEM,
   - AEM instances (run modes, JVM & start opts, env & secret vars, Sling props, custom admin password)
   - OSGi (configurations, bundles, components)
   - replication agents 

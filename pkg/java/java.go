@@ -57,6 +57,7 @@ func proposeDownloadURL() string {
 	os := strings.NewReplacer("darwin", "mac").Replace(runtime.GOOS)
 	arch := strings.NewReplacer(
 		"x86_64", "x64",
+		"amd64", "x64",
 		"386", "x86-32",
 		// enforce non-ARM Java as some AEM features are not working on ARM (e.g Scene 7)
 		"arm64", "x64",

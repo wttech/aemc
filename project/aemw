@@ -8,7 +8,7 @@ SCRIPT="aem/script/${COMMAND}.sh"
 
 if [ -f "$SCRIPT" ]; then
   export AEM_OUTPUT_FORMAT=${AEM_OUTPUT_FORMAT:-none}
-  export AEM_INSTANCE_PROCESSING_MODE=${AEM_INSTANCE_PROCESSING_MODE:-parallel}
+  export AEM_INSTANCE_PROCESSING_MODE=${AEM_INSTANCE_PROCESSING_MODE:-serial}
 
   STARTED_TIMESTAMP=$(date +%s)
   step "script '${COMMAND}' started"

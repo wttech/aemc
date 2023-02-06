@@ -39,7 +39,7 @@ duration () {
   printf '%d second(s)\n' $S
 }
 
-detectOs () {
+detect_os () {
     case "$(uname)" in
       'Linux')
         echo "linux"
@@ -53,11 +53,11 @@ detectOs () {
     esac
 }
 
-detectArch () {
+detect_arch () {
   uname -m
 }
 
-downloadFile () {
+download_file () {
   URL=$1
   FILE=$2
   if [ ! -f "${FILE}" ]; then
@@ -68,8 +68,8 @@ downloadFile () {
 
 # Download or use installed tool
 
-OS=$(detectOs)
-ARCH=$(detectArch)
+OS=$(detect_os)
+ARCH=$(detect_arch)
 
 AEM_DIR="aem"
 HOME_DIR="${AEM_DIR}/home"
@@ -86,7 +86,7 @@ BIN_EXEC_FILE="${BIN_ARCHIVE_DIR}/${BIN_NAME}"
 if [ "${VERSION}" != "installed" ] ; then
   if [ ! -f "${BIN_EXEC_FILE}" ]; then
     mkdir -p "${BIN_ARCHIVE_DIR}"
-    downloadFile "${BIN_DOWNLOAD_URL}" "${BIN_ARCHIVE_FILE}"
+    download_file "${BIN_DOWNLOAD_URL}" "${BIN_ARCHIVE_FILE}"
     tar -xf "${BIN_ARCHIVE_FILE}" -C "${BIN_ARCHIVE_DIR}"
     chmod +x "${BIN_EXEC_FILE}"
   fi

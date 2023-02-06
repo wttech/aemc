@@ -18,6 +18,7 @@ LIB_DIR="${HOME_DIR}/lib"
 DEFAULT_DIR="${AEM_DIR}/default"
 DEFAULT_CONFIG_DIR="${DEFAULT_DIR}/etc"
 
+echo ""
 echo "Downloading AEM Compose Files"
 echo ""
 

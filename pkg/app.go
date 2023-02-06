@@ -64,7 +64,7 @@ func (am *AppManager) Build(command string) error {
 	cmd.Env = env
 	am.aem.CommandOutput(cmd)
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("cannot execute build command '%s': %w", command, err)
+		return fmt.Errorf("running build command '%s' ended with error: %w", command, err)
 	}
 	return nil
 }

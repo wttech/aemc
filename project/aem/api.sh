@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-VERSION=${AEMC_VERSION:-"0.15.2"}
+VERSION=${AEMC_VERSION:-"0.15.3"}
 
 # Utilities
 

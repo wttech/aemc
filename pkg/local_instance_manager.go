@@ -57,27 +57,30 @@ func (im *InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
 }
 
 func (o *LocalOpts) Initialize() error {
+	// validate phase (fast feedback)
 	if err := o.validateUnpackDir(); err != nil {
-		return err
-	}
-	if err := pathx.Ensure(o.manager.aem.baseOpts.TmpDir); err != nil {
-		return err
-	}
-	if err := o.JavaOpts.Prepare(); err != nil {
 		return err
 	}
 	distFile, err := o.Quickstart.FindDistFile()
 	if err != nil {
 		return err
 	}
-	if IsSdkFile(distFile) {
-		err := o.SDK.Prepare(distFile)
+	distSDK := IsSdkFile(distFile)
+	if distSDK {
+		_, err = o.Quickstart.FindLicenseFile()
 		if err != nil {
 			return err
 		}
-	} else {
-		_, err = o.Quickstart.FindLicenseFile()
-		if err != nil {
+	}
+	// preparation phase
+	if err := o.manager.aem.baseOpts.Prepare(); err != nil {
+		return err
+	}
+	if err := o.JavaOpts.Prepare(); err != nil {
+		return err
+	}
+	if distSDK {
+		if err := o.SDK.Prepare(distFile); err != nil {
 			return err
 		}
 	}

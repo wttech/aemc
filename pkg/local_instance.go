@@ -203,19 +203,19 @@ func (li LocalInstance) unpackJarFile() error {
 func (li LocalInstance) copyLicenseFile() error {
 	source := pathx.Abs(li.Opts().Quickstart.LicenseFile)
 	dest := pathx.Abs(li.LicenseFile())
-	log.Infof("copying license file from '%s' to '%s' for instance '%s'", source, dest, li.instance.ID())
+	log.Infof("copying license file from '%s' to '%s'", source, dest)
 	err := filex.Copy(source, dest)
 	if err != nil {
-		return fmt.Errorf("cannot copy license file for instance '%s': %s", li.instance.ID(), err)
+		return fmt.Errorf("cannot copy license file from '%s' to '%s': %s", source, dest, err)
 	}
 	return nil
 }
 
 func (li LocalInstance) copyCbpExecutable() error {
 	dest := li.binCbpExecutable()
-	log.Infof("copying CBP executable to '%s' for instance '%s'", dest, li.instance.ID())
+	log.Infof("copying CBP executable to '%s'", dest)
 	if err := filex.Write(dest, instance.CbpExecutable); err != nil {
-		return fmt.Errorf("cannot copy CBP executable to '%s' for instance '%s': %s", dest, li.instance.ID(), err)
+		return fmt.Errorf("cannot copy CBP executable to '%s': %s", dest, err)
 	}
 	return nil
 }

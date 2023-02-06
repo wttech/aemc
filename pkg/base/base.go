@@ -2,6 +2,7 @@ package base
 
 import (
 	"github.com/wttech/aemc/pkg/cfg"
+	"github.com/wttech/aemc/pkg/common/pathx"
 )
 
 type Opts struct {
@@ -12,6 +13,10 @@ func NewOpts() *Opts {
 	return &Opts{
 		TmpDir: "aem/home/tmp",
 	}
+}
+
+func (o *Opts) Prepare() error {
+	return pathx.Ensure(o.TmpDir)
 }
 
 func (o *Opts) Configure(config *cfg.Config) {

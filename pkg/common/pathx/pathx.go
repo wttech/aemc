@@ -187,5 +187,5 @@ func Normalize(path string) string {
 }
 
 func Canonical(path string) string {
-	return Abs(strings.ReplaceAll(Normalize(path), "/", Sep()))
+	return Abs(Normalize(path))
 }

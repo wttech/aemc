@@ -159,7 +159,7 @@ func (o *Opts) FindHomeDir() (string, error) {
 	} else {
 		homeDir = o.HomeDir
 	}
-	homeDir = pathx.Abs(homeDir)
+	homeDir = pathx.Canonical(homeDir)
 	if !pathx.Exists(homeDir) {
 		return "", fmt.Errorf("java home dir does not exist at path '%s'", homeDir)
 	}

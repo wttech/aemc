@@ -67,7 +67,7 @@ func NewLocal(i *Instance) *LocalInstance {
 	li.StartOpts = []string{}
 	li.RunModes = []string{"local"}
 	li.JvmOpts = []string{
-		"-Djava.io.tmpdir=" + pathx.Abs(common.TmpDir),
+		"-Djava.io.tmpdir=" + pathx.Canonical(i.manager.aem.baseOpts.TmpDir),
 		"-Duser.language=en", "-Duser.country=US", "-Duser.timezone=UTC", "-Duser.name=" + common.AppId,
 	}
 	li.EnvVars = []string{}
@@ -186,7 +186,7 @@ func (li LocalInstance) unpackJarFile() error {
 	if err != nil {
 		return err
 	}
-	cmd, err := li.Opts().JavaOpts.Command("-jar", pathx.Abs(jar), "-unpack")
+	cmd, err := li.Opts().JavaOpts.Command("-jar", pathx.Canonical(jar), "-unpack")
 	if err != nil {
 		return err
 	}
@@ -199,8 +199,8 @@ func (li LocalInstance) unpackJarFile() error {
 }
 
 func (li LocalInstance) copyLicenseFile() error {
-	source := pathx.Abs(li.Opts().Quickstart.LicenseFile)
-	dest := pathx.Abs(li.LicenseFile())
+	source := pathx.Canonical(li.Opts().Quickstart.LicenseFile)
+	dest := pathx.Canonical(li.LicenseFile())
 	log.Infof("copying license file from '%s' to '%s'", source, dest)
 	err := filex.Copy(source, dest)
 	if err != nil {

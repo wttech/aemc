@@ -91,7 +91,7 @@ func (o *LocalOpts) Initialize() error {
 }
 
 func (o *LocalOpts) validateUnpackDir() error {
-	current := pathx.Abs(o.UnpackDir)
+	current := pathx.Canonical(o.UnpackDir)
 	if strings.Contains(current, " ") {
 		return fmt.Errorf("local instance unpack dir '%s' cannot contain spaces (as shell scripts could run improperly)", current)
 	}
@@ -99,7 +99,7 @@ func (o *LocalOpts) validateUnpackDir() error {
 	if err != nil {
 		return nil // intentionally
 	}
-	deniedDirs := lo.Map([]string{homeDir + "/Desktop", homeDir + "/Documents"}, func(p string, _ int) string { return pathx.Abs(p) })
+	deniedDirs := lo.Map([]string{homeDir + "/Desktop", homeDir + "/Documents"}, func(p string, _ int) string { return pathx.Canonical(p) })
 	if lo.SomeBy(deniedDirs, func(d string) bool { return strings.HasPrefix(current, d) }) {
 		return fmt.Errorf("local instance unpack dir '%s' cannot be located under dirs: %s", current, strings.Join(deniedDirs, ", "))
 	}

@@ -68,7 +68,7 @@ func (or OakRun) Prepare() error {
 }
 
 func (or OakRun) JarFile() string {
-	return pathx.Abs(fmt.Sprintf("%s/%s", or.Dir(), filepath.Base(or.DownloadURL)))
+	return pathx.Canonical(fmt.Sprintf("%s/%s", or.Dir(), filepath.Base(or.DownloadURL)))
 }
 
 func (or OakRun) prepare() error {
@@ -101,7 +101,7 @@ func (or OakRun) SetPassword(instanceDir string, user string, password string) e
 func (or OakRun) RunScript(instanceDir string, scriptFile string) error {
 	storeDir := fmt.Sprintf("%s/%s", instanceDir, or.StorePath)
 	cmd, err := or.localOpts.JavaOpts.Command(
-		"-Djava.io.tmpdir="+pathx.Abs(or.localOpts.manager.aem.baseOpts.TmpDir),
+		"-Djava.io.tmpdir="+pathx.Canonical(or.localOpts.manager.aem.baseOpts.TmpDir),
 		"-jar", or.JarFile(),
 		"console", storeDir, "--read-write", fmt.Sprintf(":load %s", scriptFile),
 	)

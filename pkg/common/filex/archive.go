@@ -24,7 +24,7 @@ func Archive(sourcePath, targetFile string) error {
 			return fmt.Errorf("cannot read dir '%s' to be archived to file '%s': %w", sourcePath, targetFile, err)
 		}
 		sourcePaths = lo.Map(sourceDirEntries, func(e os.DirEntry, _ int) string {
-			return pathx.Normalize(fmt.Sprintf("%s/%s", sourcePath, e.Name()))
+			return pathx.Canonical(fmt.Sprintf("%s/%s", sourcePath, e.Name()))
 		})
 	} else {
 		sourcePaths = []string{sourcePath}

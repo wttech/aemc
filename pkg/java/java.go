@@ -172,9 +172,9 @@ func (o *Opts) Executable() (string, error) {
 		return "", err
 	}
 	if osx.IsWindows() {
-		return homeDir + "/bin/java.exe", nil
+		return pathx.Canonical(homeDir + "/bin/java.exe"), nil
 	}
-	return homeDir + "/bin/java", nil
+	return pathx.Canonical(homeDir + "/bin/java"), nil
 }
 
 func (o *Opts) Env() ([]string, error) {
@@ -182,7 +182,7 @@ func (o *Opts) Env() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	javaPath := homeDir + "/bin"
+	javaPath := pathx.Canonical(homeDir + "/bin")
 	envOthers := osx.EnvVarsWithout("PATH", "JAVA_HOME")
 	envFinal := append([]string{
 		"PATH=" + javaPath + ":" + os.Getenv("PATH"),

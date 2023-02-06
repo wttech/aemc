@@ -101,20 +101,18 @@ func (li LocalInstance) Name() string {
 }
 
 func (li LocalInstance) Dir() string {
-	return pathx.Normalize(pathx.Abs(fmt.Sprintf("%s/%s", li.Opts().UnpackDir, li.Name())))
+	return pathx.Canonical(fmt.Sprintf("%s/%s", li.Opts().UnpackDir, li.Name()))
 }
 
 func (li LocalInstance) WorkDir() string {
-	return fmt.Sprintf("%s/%s", li.Dir(), LocalInstanceWorkDirName)
+	return pathx.Canonical(fmt.Sprintf("%s/%s", li.Dir(), LocalInstanceWorkDirName))
 }
 
 func (li LocalInstance) OverrideDirs() []string {
 	return lo.Map([]string{
 		fmt.Sprintf("%s/%s", li.Opts().OverrideDir, LocalInstanceNameCommon),
 		fmt.Sprintf("%s/%s", li.Opts().OverrideDir, li.Name()),
-	}, func(p string, _ int) string {
-		return pathx.Normalize(pathx.Abs(p))
-	})
+	}, func(p string, _ int) string { return pathx.Canonical(p) })
 }
 
 func (li LocalInstance) overrideDirsChecksum() (string, error) {
@@ -122,27 +120,27 @@ func (li LocalInstance) overrideDirsChecksum() (string, error) {
 }
 
 func (li LocalInstance) LockDir() string {
-	return fmt.Sprintf("%s/%s/lock", li.WorkDir(), common.VarDirName)
+	return pathx.Canonical(fmt.Sprintf("%s/%s/lock", li.WorkDir(), common.VarDirName))
 }
 
 func (li LocalInstance) QuickstartDir() string {
-	return fmt.Sprintf("%s/%s", li.Dir(), "crx-quickstart")
+	return pathx.Canonical(fmt.Sprintf("%s/%s", li.Dir(), "crx-quickstart"))
 }
 
 func (li LocalInstance) binScriptWindows(name string) string {
-	return fmt.Sprintf("%sbin/%s.bat", li.QuickstartDir(), name)
+	return pathx.Canonical(fmt.Sprintf("%s/bin/%s.bat", li.QuickstartDir(), name))
 }
 
 func (li LocalInstance) binScriptUnix(name string) string {
-	return pathx.Normalize(fmt.Sprintf("%s/bin/%s", li.QuickstartDir(), name))
+	return pathx.Canonical(fmt.Sprintf("%s/bin/%s", li.QuickstartDir(), name))
 }
 
 func (li LocalInstance) binCbpExecutable() string {
-	return pathx.Normalize(fmt.Sprintf("%s/bin/cbp.exe", li.WorkDir()))
+	return pathx.Canonical(fmt.Sprintf("%s/bin/cbp.exe", li.WorkDir()))
 }
 
 func (li LocalInstance) LicenseFile() string {
-	return li.Dir() + "/" + LicenseFilename
+	return pathx.Canonical(li.Dir() + "/" + LicenseFilename)
 }
 
 func (li LocalInstance) Create() error {

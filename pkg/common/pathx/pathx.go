@@ -185,3 +185,7 @@ func Sep() string {
 func Normalize(path string) string {
 	return strings.ReplaceAll(path, "\\", "/")
 }
+
+func Canonical(path string) string {
+	return Abs(strings.ReplaceAll(Normalize(path), "/", Sep()))
+}

@@ -61,12 +61,11 @@ func (o *LocalOpts) Initialize() error {
 	if err := o.validateUnpackDir(); err != nil {
 		return err
 	}
-	distFile, err := o.Quickstart.FindDistFile()
+	sdk, err := o.Quickstart.IsDistSDK()
 	if err != nil {
 		return err
 	}
-	distSDK := IsSdkFile(distFile)
-	if !distSDK {
+	if !sdk {
 		_, err = o.Quickstart.FindLicenseFile()
 		if err != nil {
 			return err
@@ -79,8 +78,8 @@ func (o *LocalOpts) Initialize() error {
 	if err := o.JavaOpts.Prepare(); err != nil {
 		return err
 	}
-	if distSDK {
-		if err := o.SDK.Prepare(distFile); err != nil {
+	if sdk {
+		if err := o.SDK.Prepare(); err != nil {
 			return err
 		}
 	}
@@ -107,18 +106,14 @@ func (o *LocalOpts) validateUnpackDir() error {
 }
 
 func (o *LocalOpts) Jar() (string, error) {
-	distFile, err := o.Quickstart.FindDistFile()
+	sdk, err := o.Quickstart.IsDistSDK()
 	if err != nil {
 		return "", err
 	}
-	if IsSdkFile(distFile) {
+	if sdk {
 		return o.SDK.QuickstartJar()
 	}
 	return o.Quickstart.FindDistFile()
-}
-
-func IsSdkFile(path string) bool {
-	return pathx.Ext(path) == "zip"
 }
 
 func NewQuickstart() *Quickstart {
@@ -139,6 +134,14 @@ func (o *Quickstart) FindDistFile() (string, error) {
 
 func (o *Quickstart) FindLicenseFile() (string, error) {
 	return pathx.GlobSome(o.LicenseFile)
+}
+
+func (o *Quickstart) IsDistSDK() (bool, error) {
+	file, err := o.FindDistFile()
+	if err != nil {
+		return false, err
+	}
+	return pathx.Ext(file) == "zip", nil
 }
 
 func (im *InstanceManager) CreateAll() ([]Instance, error) {

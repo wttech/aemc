@@ -36,9 +36,12 @@ func (s SDK) lock(zipFile string) osx.Lock[SDKLock] {
 	})
 }
 
-func (s SDK) Prepare(zipFile string) error {
+func (s SDK) Prepare() error {
+	zipFile, err := s.localOpts.Quickstart.FindDistFile()
+	if err != nil {
+		return err
+	}
 	lock := s.lock(zipFile)
-
 	check, err := lock.State()
 	if err != nil {
 		return err

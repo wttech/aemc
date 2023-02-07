@@ -2,7 +2,7 @@
 
 . aem/api.sh
 
-COMMAND_DEFAULT=${AEMC_COMMAND_DEFAULT:-"setup"}
+COMMAND_DEFAULT=${AEM_CLI_COMMAND_DEFAULT:-"setup"}
 COMMAND="${1:-${COMMAND_DEFAULT}}"
 SCRIPT="aem/script/${COMMAND}.sh"
 

@@ -98,13 +98,13 @@ Ensure having installed [Go](https://go.dev/dl/) then run command:
 Use installed version of the tool instead of the one defined in file *aem/api.sh* by running the following command:
 
 ```shell
-export AEMC_VERSION=installed
+export AEM_CLI_VERSION=installed
 ```
 
 To start using again version from wrapper file, simply unset the environment variable:
 
 ```shell
-unset AEMC_VERSION
+unset AEM_CLI_VERSION
 ```
 
 ## Ansible Collection

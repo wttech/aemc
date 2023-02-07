@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-VERSION=${AEMC_VERSION:-"0.15.3"}
+VERSION=${AEM_CLI_VERSION:-"0.15.3"}
 
 # Utilities
 

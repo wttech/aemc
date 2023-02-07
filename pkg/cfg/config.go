@@ -86,7 +86,7 @@ func readFromFile(v *viper.Viper) {
 		log.Debugf("skipping reading AEM config file as it does not exist '%s'", file)
 		return
 	}
-	tpl, err := tplx.New(filepath.Base(file)).ParseFiles(file)
+	tpl, err := tplx.New(filepath.Base(file)).Delims("[[", "]]").ParseFiles(file)
 	if err != nil {
 		log.Fatalf("cannot parse AEM config file '%s': %s", file, err)
 		return
@@ -134,20 +134,8 @@ func (c *Config) Initialize() error {
 	if !pathx.Exists(templateFile) {
 		return fmt.Errorf("config file template does not exist: '%s'", templateFile)
 	}
-	ymlTplStr, err := filex.ReadString(templateFile)
-	if err != nil {
-		return err
-	}
-	ymlTplParsed, err := tplx.New("config-tpl").Delims("[[", "]]").Parse(ymlTplStr)
-	if err != nil {
-		return fmt.Errorf("cannot parse config file template '%s': '%w'", templateFile, err)
-	}
-	var yml bytes.Buffer
-	if err := ymlTplParsed.Execute(&yml, map[string]any{ /* TODO future hook (not sure if needed or not */ }); err != nil {
-		return fmt.Errorf("cannot render config file template '%s': '%w'", templateFile, err)
-	}
-	if err = filex.WriteString(file, yml.String()); err != nil {
-		return fmt.Errorf("cannot save config file '%s': '%w'", file, err)
+	if err := filex.Copy(templateFile, file); err != nil {
+		return fmt.Errorf("cannot copy config file template: '%w'", err)
 	}
 	return nil
 }

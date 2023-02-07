@@ -199,11 +199,17 @@ func (li LocalInstance) unpackJarFile() error {
 }
 
 func (li LocalInstance) copyLicenseFile() error {
+	sdk, err := li.Opts().Quickstart.IsDistSDK()
+	if err != nil {
+		return err
+	}
+	if sdk {
+		return nil
+	}
 	source := pathx.Canonical(li.Opts().Quickstart.LicenseFile)
 	dest := pathx.Canonical(li.LicenseFile())
 	log.Infof("copying license file from '%s' to '%s'", source, dest)
-	err := filex.Copy(source, dest)
-	if err != nil {
+	if err := filex.Copy(source, dest); err != nil {
 		return fmt.Errorf("cannot copy license file from '%s' to '%s': %s", source, dest, err)
 	}
 	return nil

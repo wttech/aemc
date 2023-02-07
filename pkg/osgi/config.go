@@ -49,7 +49,7 @@ type ConfigList struct {
 
 func (cl ConfigList) MarshalText() string {
 	bs := bytes.NewBufferString("")
-	bs.WriteString(fmtx.TblRows("list", []string{"pid"}, lo.Map(cl.List, func(c ConfigListItem, _ int) map[string]any {
+	bs.WriteString(fmtx.TblRows("list", true, []string{"pid"}, lo.Map(cl.List, func(c ConfigListItem, _ int) map[string]any {
 		return map[string]any{"pid": c.PID}
 	})))
 	return bs.String()

@@ -336,12 +336,11 @@ func (c *CLI) osgiComponentCmd() *cobra.Command {
 		Aliases: []string{"cmp"},
 		Short:   "Manage OSGi components",
 	}
+	cmd.AddCommand(c.osgiComponentListCmd())
+	cmd.AddCommand(c.osgiComponentReadCmd())
 	//cmd.AddCommand(c.osgiComponentEnable())
 	//cmd.AddCommand(c.osgiComponentDisable())
 	//cmd.AddCommand(c.osgiComponentReEnable())
-	cmd.AddCommand(c.osgiComponentListCmd())
-	//cmd.AddCommand(c.osgiComponentReadCmd())
-	//cmd.AddCommand(c.osgiBundleReEnableCmd())
 	return cmd
 }
 
@@ -366,6 +365,37 @@ func (c *CLI) osgiComponentListCmd() *cobra.Command {
 		},
 	}
 	return cmd
+}
+
+func (c *CLI) osgiComponentReadCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "read",
+		Short:   "Read OSGi component details",
+		Aliases: []string{"get", "find"},
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			cmp := osgiComponentFromFlag(cmd, *instance)
+			c.SetOutput("component", cmp)
+			c.Ok("component read")
+		},
+	}
+	osgiComponentDefineFlags(cmd)
+	return cmd
+}
+
+func osgiComponentDefineFlags(cmd *cobra.Command) {
+	cmd.Flags().String("pid", "", "PID")
+	_ = cmd.MarkFlagRequired("pid")
+}
+
+func osgiComponentFromFlag(cmd *cobra.Command, i pkg.Instance) *pkg.OSGiComponent {
+	pid, _ := cmd.Flags().GetString("pid")
+	cmp := i.OSGI().ComponentManager().ByPID(pid)
+	return &cmp
 }
 
 func (c *CLI) osgiConfigCmd() *cobra.Command {

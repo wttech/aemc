@@ -46,11 +46,14 @@ func (c OSGiComponent) State() (*OSGiComponentState, error) {
 		PID:    c.pid,
 		Exists: true,
 		Details: map[string]any{
-			"pid":      data.UID(),
-			"enabled":  data.Enabled,
-			"bundleId": data.BundleID,
-			"state":    data.State,
-			"stateRaw": data.StateRaw,
+			"id":           data.ID,
+			"pid":          data.PID,
+			"name":         data.Name,
+			"bundleId":     data.BundleID,
+			"state":        data.State,
+			"stateRaw":     data.StateRaw,
+			"configurable": data.Configurable,
+			"enabled":      data.Enabled(),
 		},
 	}, nil
 }

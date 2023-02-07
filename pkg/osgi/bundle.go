@@ -63,7 +63,7 @@ func (bl BundleList) MarshalText() string {
 		"resolved":  bl.Resolved(),
 	}))
 	bs.WriteString("\n")
-	bs.WriteString(fmtx.TblRows("list", []string{"symbolic name", "state", "category", "version"}, lo.Map(bl.List, func(b BundleListItem, _ int) map[string]any {
+	bs.WriteString(fmtx.TblRows("list", false, []string{"symbolic name", "state", "category", "version"}, lo.Map(bl.List, func(b BundleListItem, _ int) map[string]any {
 		return map[string]any{
 			"symbolic name": b.SymbolicName,
 			"state":         b.State,

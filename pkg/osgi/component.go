@@ -18,8 +18,9 @@ func (cl ComponentList) MarshalText() string {
 		"total": cl.Total,
 	}))
 	bs.WriteString("\n")
-	bs.WriteString(fmtx.TblRows("list", []string{"pid", "state", "bundle ID"}, lo.Map(cl.List, func(c ComponentListItem, _ int) map[string]any {
+	bs.WriteString(fmtx.TblRows("list", false, []string{"id", "pid", "state", "bundle ID"}, lo.Map(cl.List, func(c ComponentListItem, _ int) map[string]any {
 		return map[string]any{
+			"id":        c.ID,
 			"pid":       c.PID,
 			"state":     c.State,
 			"bundle ID": c.BundleID,

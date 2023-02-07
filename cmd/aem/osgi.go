@@ -338,9 +338,9 @@ func (c *CLI) osgiComponentCmd() *cobra.Command {
 	}
 	cmd.AddCommand(c.osgiComponentListCmd())
 	cmd.AddCommand(c.osgiComponentReadCmd())
-	//cmd.AddCommand(c.osgiComponentEnable())
-	//cmd.AddCommand(c.osgiComponentDisable())
-	//cmd.AddCommand(c.osgiComponentReEnable())
+	cmd.AddCommand(c.osgiComponentEnableCmd())
+	cmd.AddCommand(c.osgiComponentDisableCmd())
+	cmd.AddCommand(c.osgiComponentReenableCmd())
 	return cmd
 }
 
@@ -381,6 +381,132 @@ func (c *CLI) osgiComponentReadCmd() *cobra.Command {
 			cmp := osgiComponentFromFlag(cmd, *instance)
 			c.SetOutput("component", cmp)
 			c.Ok("component read")
+		},
+	}
+	osgiComponentDefineFlags(cmd)
+	return cmd
+}
+
+func (c *CLI) osgiComponentEnableCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "start",
+		Short: "Enable OSGi component",
+		Run: func(cmd *cobra.Command, args []string) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			enabled, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
+				cmp := osgiComponentFromFlag(cmd, instance)
+				changed, err := cmp.EnableWithChanged()
+				if err != nil {
+					return nil, err
+				}
+				if changed {
+					err = cmp.AwaitEnabled()
+					if err != nil {
+						return nil, err
+					}
+				}
+				return map[string]any{
+					"changed":   changed,
+					"instance":  instance,
+					"component": cmp,
+				}, nil
+			})
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("enabled", enabled)
+			if mapsx.HasSome(enabled, "changed", true) {
+				c.Changed("component enabled")
+			} else {
+				c.Ok("component already enabled (up-to-date)")
+			}
+		},
+	}
+	osgiComponentDefineFlags(cmd)
+	return cmd
+}
+
+func (c *CLI) osgiComponentDisableCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "start",
+		Short: "Disable OSGi component",
+		Run: func(cmd *cobra.Command, args []string) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			disabled, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
+				cmp := osgiComponentFromFlag(cmd, instance)
+				changed, err := cmp.DisableWithChanged()
+				if err != nil {
+					return nil, err
+				}
+				if changed {
+					err = cmp.AwaitDisabled()
+					if err != nil {
+						return nil, err
+					}
+				}
+				return map[string]any{
+					"changed":   changed,
+					"instance":  instance,
+					"component": cmp,
+				}, nil
+			})
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("disabled", disabled)
+			if mapsx.HasSome(disabled, "changed", true) {
+				c.Changed("component disabled")
+			} else {
+				c.Ok("component already disabled (up-to-date)")
+			}
+		},
+	}
+	osgiComponentDefineFlags(cmd)
+	return cmd
+}
+
+func (c *CLI) osgiComponentReenableCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "reenable",
+		Short: "Reenable OSGi component",
+		Run: func(cmd *cobra.Command, args []string) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			reenabled, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
+				cmp := osgiComponentFromFlag(cmd, instance)
+				err = cmp.Reenable()
+				if err != nil {
+					return nil, err
+				}
+				err = cmp.AwaitEnabled()
+				if err != nil {
+					c.Error(err)
+				}
+				return map[string]any{
+					"changed":   true,
+					"component": cmp,
+					"instance":  instance,
+				}, nil
+			})
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("reenabled", reenabled)
+			c.Changed("component reenabled")
 		},
 	}
 	osgiComponentDefineFlags(cmd)

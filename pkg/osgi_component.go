@@ -112,7 +112,7 @@ func (c OSGiComponent) Disable() error {
 	return nil
 }
 
-func (c OSGiComponent) ReEnable() error {
+func (c OSGiComponent) Reenable() error {
 	err := c.Disable()
 	if err != nil {
 		return err

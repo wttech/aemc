@@ -50,13 +50,19 @@ func TblMap(caption, keyLabel, valueLabel string, props map[string]any) string {
 	return sb.String()
 }
 
-func TblRows(caption string, header []string, rows []map[string]any) string {
+func TblRows(caption string, enum bool, header []string, rows []map[string]any) string {
 	sb := bytes.NewBufferString("\n")
 	sb.WriteString(fmt.Sprintf("%s\n\n", caption))
-	headerNormalized := []string{"#"}
+	headerNormalized := []string{}
+	if enum {
+		headerNormalized = append(headerNormalized, "#")
+	}
 	headerNormalized = append(headerNormalized, header...)
 	rowsNormalized := lo.Map(rows, func(row map[string]any, index int) []string {
-		rowVals := []string{TblValue(index + 1)}
+		rowVals := []string{}
+		if enum {
+			rowVals = append(rowVals, TblValue(index+1))
+		}
 		for _, header := range header {
 			rowVals = append(rowVals, TblValue(row[header]))
 		}

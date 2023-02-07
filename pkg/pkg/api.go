@@ -47,7 +47,7 @@ func (pl List) String() string {
 }
 
 func (pl List) MarshalText() string {
-	return fmtx.TblRows("list", []string{"group", "name", "version", "size", "installed", "built"}, lo.Map(pl.List, func(item ListItem, _ int) map[string]any {
+	return fmtx.TblRows("list", false, []string{"group", "name", "version", "size", "installed", "built"}, lo.Map(pl.List, func(item ListItem, _ int) map[string]any {
 		return map[string]any{
 			"group":     item.Group,
 			"name":      item.Name,

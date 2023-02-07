@@ -403,7 +403,7 @@ func (fl BackupList) MarshalText() string {
 		"size":  humanize.Bytes(lo.SumBy(fl.Files, func(file BackupFile) uint64 { return file.Size })),
 	}))
 	bs.WriteString("\n")
-	bs.WriteString(fmtx.TblRows("list", []string{"path", "size", "modified"}, lo.Map(fl.Files, func(file BackupFile, _ int) map[string]any {
+	bs.WriteString(fmtx.TblRows("list", false, []string{"path", "size", "modified"}, lo.Map(fl.Files, func(file BackupFile, _ int) map[string]any {
 		return map[string]any{
 			"path":     file.Path,
 			"size":     humanize.Bytes(file.Size),

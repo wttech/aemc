@@ -144,9 +144,9 @@ func (c *CLI) exit() {
 		c.printCommandResult()
 	} else if c.outputFormat == fmtx.Text {
 		if len(c.outputValue) > 0 {
-			c.printOutputValue()
+			c.printOutputDataValue()
 		} else {
-			c.printOutputText()
+			c.printOutputDataAll()
 			c.printCommandResult()
 		}
 	} else {
@@ -170,7 +170,7 @@ func (c *CLI) printCommandResult() {
 }
 
 // TODO allow to print 'changed', 'failed', 'elapsed', 'ended' as well
-func (c *CLI) printOutputValue() {
+func (c *CLI) printOutputDataValue() {
 	value, ok := c.outputResponse.Data[c.outputValue]
 	if !ok {
 		println("<undefined>")
@@ -179,27 +179,27 @@ func (c *CLI) printOutputValue() {
 	}
 }
 
-func (c *CLI) printOutputText() {
-	if c.outputResponse.Data != nil {
-		c.printOutputTextIndented(textio.NewPrefixWriter(os.Stdout, ""), c.outputResponse.Data)
+func (c *CLI) printOutputDataAll() {
+	if len(c.outputResponse.Data) > 0 {
+		c.printOutputDataIndented(textio.NewPrefixWriter(os.Stdout, ""), c.outputResponse.Data)
 	}
 }
 
-func (c *CLI) printOutputTextIndented(writer *textio.PrefixWriter, value any) {
+func (c *CLI) printOutputDataIndented(writer *textio.PrefixWriter, value any) {
 	rv := reflect.ValueOf(value)
 	switch rv.Type().Kind() {
 	case reflect.Slice, reflect.Array:
 		if rv.Len() == 0 {
-			c.printOutputTextIndented(writer, "<empty>")
+			c.printOutputDataIndented(writer, "<empty>")
 		} else {
 			for i := 0; i < rv.Len(); i++ {
 				iv := rv.Index(i).Interface()
-				c.printOutputTextIndented(writer, iv)
+				c.printOutputDataIndented(writer, iv)
 			}
 		}
 	case reflect.Map:
 		if rv.Len() == 0 {
-			c.printOutputTextIndented(writer, "<empty>")
+			c.printOutputDataIndented(writer, "<empty>")
 		} else {
 			dw := textio.NewPrefixWriter(writer, "  ")
 			keys := rv.MapKeys()
@@ -209,7 +209,7 @@ func (c *CLI) printOutputTextIndented(writer *textio.PrefixWriter, value any) {
 			for _, k := range keys {
 				_, _ = writer.WriteString(fmt.Sprintf("%s\n", k)) // TODO camelCase to human
 				mv := rv.MapIndex(k).Interface()
-				c.printOutputTextIndented(dw, mv)
+				c.printOutputDataIndented(dw, mv)
 			}
 		}
 	default:

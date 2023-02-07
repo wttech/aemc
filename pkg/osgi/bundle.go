@@ -63,7 +63,7 @@ func (bl BundleList) MarshalText() string {
 		"resolved":  bl.Resolved(),
 	}))
 	bs.WriteString("\n")
-	bs.WriteString(fmtx.TblRows("list", []string{"symbolic name", "state", "category", "version"}, lo.Map(bl.List, func(b BundleListItem, _ int) map[string]any {
+	bs.WriteString(fmtx.TblRows("list", false, []string{"symbolic name", "state", "category", "version"}, lo.Map(bl.List, func(b BundleListItem, _ int) map[string]any {
 		return map[string]any{
 			"symbolic name": b.SymbolicName,
 			"state":         b.State,
@@ -86,23 +86,23 @@ type BundleListItem struct {
 
 func (b *BundleListItem) Stable() bool {
 	if b.Fragment {
-		return b.StateRaw == int(StateResolved)
+		return b.StateRaw == int(BundleStateRawResolved)
 	}
-	return b.StateRaw == int(StateActive)
+	return b.StateRaw == int(BundleStateRawActive)
 }
 
 func (b BundleListItem) String() string {
 	return fmt.Sprintf("bundle '%s' (state: %s)", b.SymbolicName, b.State)
 }
 
-type StateRaw int
+type BundleStateRaw int
 
 const (
-	StateUninstalled StateRaw = 0x00000001
-	StateInstalled   StateRaw = 0x00000002
-	StateResolved    StateRaw = 0x00000004
-	StateStarting    StateRaw = 0x00000008
-	StateStopping    StateRaw = 0x00000010
-	StateActive      StateRaw = 0x00000020
-	StateUnknown     StateRaw = -1
+	BundleStateRawUninstalled BundleStateRaw = 0x00000001
+	BundleStateRawInstalled   BundleStateRaw = 0x00000002
+	BundleStateRawResolved    BundleStateRaw = 0x00000004
+	BundleStateRawStarting    BundleStateRaw = 0x00000008
+	BundleStateRawStopping    BundleStateRaw = 0x00000010
+	BundleStateRawActive      BundleStateRaw = 0x00000020
+	BundleStateRawUnknown     BundleStateRaw = -1
 )

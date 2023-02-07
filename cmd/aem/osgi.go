@@ -55,8 +55,7 @@ func (c *CLI) osgiBundleInstall() *cobra.Command {
 					return nil, err
 				}
 				if changed {
-					err = bundle.AwaitStarted()
-					if err != nil {
+					if err := bundle.AwaitStarted(); err != nil {
 						return nil, err
 					}
 				}
@@ -190,8 +189,7 @@ func (c *CLI) osgiBundleStartCmd() *cobra.Command {
 					return nil, err
 				}
 				if changed {
-					err = bundle.AwaitStarted()
-					if err != nil {
+					if err = bundle.AwaitStarted(); err != nil {
 						return nil, err
 					}
 				}
@@ -237,8 +235,7 @@ func (c *CLI) osgiBundleStopCmd() *cobra.Command {
 					return nil, err
 				}
 				if changed {
-					err = bundle.AwaitStopped()
-					if err != nil {
+					if err = bundle.AwaitStopped(); err != nil {
 						c.Error(err)
 					}
 				}
@@ -279,12 +276,10 @@ func (c *CLI) osgiBundleRestartCmd() *cobra.Command {
 				if err != nil {
 					return nil, err
 				}
-				err = bundle.Restart()
-				if err != nil {
+				if err = bundle.Restart(); err != nil {
 					return nil, err
 				}
-				err = bundle.AwaitStarted()
-				if err != nil {
+				if err = bundle.AwaitStarted(); err != nil {
 					c.Error(err)
 				}
 				return map[string]any{
@@ -389,7 +384,7 @@ func (c *CLI) osgiComponentReadCmd() *cobra.Command {
 
 func (c *CLI) osgiComponentEnableCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "start",
+		Use:   "enable",
 		Short: "Enable OSGi component",
 		Run: func(cmd *cobra.Command, args []string) {
 			instances, err := c.aem.InstanceManager().Some()
@@ -404,8 +399,7 @@ func (c *CLI) osgiComponentEnableCmd() *cobra.Command {
 					return nil, err
 				}
 				if changed {
-					err = cmp.AwaitEnabled()
-					if err != nil {
+					if err := cmp.AwaitEnabled(); err != nil {
 						return nil, err
 					}
 				}
@@ -433,7 +427,7 @@ func (c *CLI) osgiComponentEnableCmd() *cobra.Command {
 
 func (c *CLI) osgiComponentDisableCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "start",
+		Use:   "disable",
 		Short: "Disable OSGi component",
 		Run: func(cmd *cobra.Command, args []string) {
 			instances, err := c.aem.InstanceManager().Some()
@@ -448,8 +442,7 @@ func (c *CLI) osgiComponentDisableCmd() *cobra.Command {
 					return nil, err
 				}
 				if changed {
-					err = cmp.AwaitDisabled()
-					if err != nil {
+					if err := cmp.AwaitDisabled(); err != nil {
 						return nil, err
 					}
 				}
@@ -487,12 +480,10 @@ func (c *CLI) osgiComponentReenableCmd() *cobra.Command {
 			}
 			reenabled, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				cmp := osgiComponentFromFlag(cmd, instance)
-				err = cmp.Reenable()
-				if err != nil {
+				if err := cmp.Reenable(); err != nil {
 					return nil, err
 				}
-				err = cmp.AwaitEnabled()
-				if err != nil {
+				if err := cmp.AwaitEnabled(); err != nil {
 					c.Error(err)
 				}
 				return map[string]any{
@@ -592,8 +583,7 @@ func (c *CLI) osgiConfigSave() *cobra.Command {
 				return
 			}
 			var props map[string]any
-			err = c.ReadInput(&props)
-			if err != nil {
+			if err := c.ReadInput(&props); err != nil {
 				c.Fail(fmt.Sprintf("cannot save config as input props cannot be parsed: %s", err))
 				return
 			}

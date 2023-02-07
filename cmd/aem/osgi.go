@@ -13,14 +13,16 @@ func (c *CLI) osgiCmd() *cobra.Command {
 		Short: "Communicate with OSGi Framework",
 	}
 	cmd.AddCommand(c.osgiBundleCmd())
+	cmd.AddCommand(c.osgiComponentCmd())
 	cmd.AddCommand(c.osgiConfigCmd())
 	return cmd
 }
 
 func (c *CLI) osgiBundleCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "bundle",
-		Short: "Manage OSGi bundles",
+		Use:     "bundle",
+		Aliases: []string{"bnd"},
+		Short:   "Manage OSGi bundles",
 	}
 	cmd.AddCommand(c.osgiBundleInstall())
 	cmd.AddCommand(c.osgiBundleUninstall())
@@ -326,6 +328,44 @@ func osgiBundleByFlags(cmd *cobra.Command, i pkg.Instance) (*pkg.OSGiBundle, err
 		return bundle, err
 	}
 	return nil, fmt.Errorf("flag 'symbolic-name' or 'file' are required")
+}
+
+func (c *CLI) osgiComponentCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "component",
+		Aliases: []string{"cmp"},
+		Short:   "Manage OSGi components",
+	}
+	//cmd.AddCommand(c.osgiComponentEnable())
+	//cmd.AddCommand(c.osgiComponentDisable())
+	//cmd.AddCommand(c.osgiComponentReEnable())
+	cmd.AddCommand(c.osgiComponentListCmd())
+	//cmd.AddCommand(c.osgiComponentReadCmd())
+	//cmd.AddCommand(c.osgiBundleReEnableCmd())
+	return cmd
+}
+
+func (c *CLI) osgiComponentListCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "list",
+		Short:   "List OSGi components",
+		Aliases: []string{"ls"},
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			bundles, err := instance.OSGI().ComponentManager().List()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("components", bundles)
+			c.Ok("components listed")
+		},
+	}
+	return cmd
 }
 
 func (c *CLI) osgiConfigCmd() *cobra.Command {

@@ -60,7 +60,7 @@ func (s OSGiBundleState) Started() bool {
 }
 
 func (s OSGiBundleState) Stopped() bool {
-	return s.data.StateRaw == int(osgi.StateResolved)
+	return s.data.StateRaw == int(osgi.BundleStateRawResolved)
 }
 
 func (b OSGiBundle) StartWithChanged() (bool, error) {

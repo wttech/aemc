@@ -7,7 +7,7 @@ if [ -f "$AEM_WRAPPER" ]; then
   exit 1
 fi
 
-VERSION=${AEM_CLI_VERSION:-"0.15.3"}
+VERSION=${AEM_CLI_VERSION:-"0.16.0"}
 SOURCE_URL="https://raw.githubusercontent.com/wttech/aemc/v${VERSION}/project"
 
 AEM_DIR="aem"

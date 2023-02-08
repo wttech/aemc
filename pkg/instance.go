@@ -21,7 +21,7 @@ type Instance struct {
 	local          *LocalInstance
 	http           *HTTP
 	status         *Status
-	repository     *Repo
+	repo           *Repo
 	osgi           *OSGi
 	sling          *Sling
 	packageManager *PackageManager
@@ -80,7 +80,7 @@ func (i Instance) Status() *Status {
 }
 
 func (i Instance) Repo() *Repo {
-	return i.repository
+	return i.repo
 }
 
 func (i Instance) OSGI() *OSGi {

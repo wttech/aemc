@@ -15,14 +15,14 @@ import (
 type Repo struct {
 	instance Instance
 
-	propertyChangeIgnored []string
+	PropertyChangeIgnored []string
 }
 
 func NewRepo(res *Instance) *Repo {
 	return &Repo{
 		instance: *res,
 
-		propertyChangeIgnored: []string{"transportPassword"},
+		PropertyChangeIgnored: []string{"transportPassword"},
 	}
 }
 
@@ -109,7 +109,7 @@ func (r Repo) requestFormData(operation string, props map[string]any) *resty.Req
 }
 
 func (r Repo) PropsEqual(current map[string]any, updated map[string]any) bool {
-	return mapsx.EqualIgnoring(current, updated, r.propertyChangeIgnored)
+	return mapsx.EqualIgnoring(current, updated, r.PropertyChangeIgnored)
 }
 
 func propTypeHint(kind reflect.Kind) string {

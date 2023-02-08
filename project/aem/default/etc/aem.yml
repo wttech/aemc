@@ -111,7 +111,16 @@ instance:
       # AEM License properties file
       license_file: "aem/home/lib/license.properties"
 
-  # Package Manager
+  # Status discovery (timezone, AEM version, etc)
+  status:
+    timeout: 500ms
+
+  # JCR Repository
+  repo:
+    property_change_ignored:
+      - "transportPassword" # because AEM encrypts it right after changing by replication agent setup command
+
+  # CRX Package Manager
   package:
     # Force re-uploading/installing of snapshot AEM packages (just built / unreleased)
     snapshot_patterns: [ "**/*-SNAPSHOT.zip" ]

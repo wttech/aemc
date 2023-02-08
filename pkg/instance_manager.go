@@ -137,7 +137,7 @@ func (im *InstanceManager) New(id, url, user, password string) *Instance {
 	}
 	res.http = NewHTTP(res, url)
 	res.status = NewStatus(res)
-	res.repository = NewRepo(res)
+	res.repo = NewRepo(res)
 	res.packageManager = NewPackageManager(res)
 	res.osgi = NewOSGi(res)
 	res.sling = NewSling(res)
@@ -254,13 +254,21 @@ func (im *InstanceManager) configureInstances(config *cfg.Config) {
 }
 
 func configureInstance(inst Instance, config *cfg.Config) {
-	packageOpts := config.Values().Instance.Package
+	instanceOpts := config.Values().Instance
+
+	packageOpts := instanceOpts.Package
 	inst.packageManager.SnapshotDeploySkipping = packageOpts.SnapshotDeploySkipping
 	if packageOpts.SnapshotPatterns != nil {
 		inst.packageManager.SnapshotPatterns = packageOpts.SnapshotPatterns
 	}
 
-	osgiOpts := config.Values().Instance.OSGi
+	statusOpts := instanceOpts.Status
+	inst.status.Timeout = statusOpts.Timeout
+
+	repoOpts := instanceOpts.Repo
+	inst.repo.PropertyChangeIgnored = repoOpts.PropertyChangeIgnored
+
+	osgiOpts := instanceOpts.OSGi
 	inst.osgi.bundleManager.InstallStart = osgiOpts.Bundle.Install.Start
 	inst.osgi.bundleManager.InstallStartLevel = osgiOpts.Bundle.Install.StartLevel
 	inst.osgi.bundleManager.InstallRefreshPackages = osgiOpts.Bundle.Install.RefreshPackages

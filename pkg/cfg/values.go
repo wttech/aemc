@@ -107,6 +107,14 @@ type ConfigValues struct {
 			} `mapstructure:"oak_run" yaml:"oak_run"`
 		} `mapstructure:"local" yaml:"local"`
 
+		Status struct {
+			Timeout time.Duration `mapstructure:"timeout" yaml:"timeout"`
+		} `mapstructure:"status" yaml:"status"`
+
+		Repo struct {
+			PropertyChangeIgnored []string `mapstructure:"property_change_ignored" yaml:"property_change_ignored"`
+		} `mapstructure:"repo" yaml:"repo"`
+
 		Package struct {
 			SnapshotDeploySkipping bool     `mapstructure:"snapshot_deploy_skipping" yaml:"snapshot_deploy_skipping"`
 			SnapshotPatterns       []string `mapstructure:"snapshot_patterns" yaml:"snapshot_patterns"`

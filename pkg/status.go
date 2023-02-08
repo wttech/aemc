@@ -19,24 +19,25 @@ const (
 	SlingPropPath         = "/system/console/status-slingprops.json"
 	SlingSettingsPath     = "/system/console/status-slingsettings.json"
 	SlingSettingRunModes  = "Run Modes"
-	SystemProductInfoPath = "/system/console/status-productinfo.txt"
-	SystemProductInfoRegex
+	SystemProductInfoPath = "/system/console/productinfo"
 )
 
 var (
-	aemVersionRegex = regexp.MustCompile("^ {2}Adobe Experience Manager \\((.*)\\)$")
+	aemVersionRegex = regexp.MustCompile("<td>Adobe Experience Manager \\((.*)\\)<\\/td>")
 )
 
 type Status struct {
 	instance *Instance
+
+	Timeout time.Duration
 }
 
 func NewStatus(res *Instance) *Status {
-	return &Status{instance: res}
+	return &Status{instance: res, Timeout: time.Millisecond * 500}
 }
 
 func (sm Status) SystemProps() (map[string]string, error) {
-	response, err := sm.instance.http.Request().Get(SystemPropPath)
+	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SystemPropPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read system properties on instance '%s'", sm.instance.id)
 	}
@@ -49,7 +50,7 @@ func (sm Status) SystemProps() (map[string]string, error) {
 }
 
 func (sm Status) SlingProps() (map[string]string, error) {
-	response, err := sm.instance.http.Request().Get(SlingPropPath)
+	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SlingPropPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read Sling properties on instance '%s'", sm.instance.id)
 	}
@@ -62,7 +63,7 @@ func (sm Status) SlingProps() (map[string]string, error) {
 }
 
 func (sm Status) SlingSettings() (map[string]string, error) {
-	response, err := sm.instance.http.RequestWithTimeout(time.Millisecond * 300).Get(SlingSettingsPath)
+	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SlingSettingsPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read Sling settings on instance '%s'", sm.instance.id)
 	}
@@ -114,7 +115,7 @@ func (sm Status) RunModes() ([]string, error) {
 }
 
 func (sm Status) AemVersion() (string, error) {
-	response, err := sm.instance.http.RequestWithTimeout(time.Millisecond * 300).Get(SystemProductInfoPath)
+	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SystemProductInfoPath)
 	if err != nil {
 		return instance.AemVersionUnknown, fmt.Errorf("cannot read system product info on instance '%s'", sm.instance.id)
 	}
@@ -122,12 +123,11 @@ func (sm Status) AemVersion() (string, error) {
 	if err != nil {
 		return instance.AemVersionUnknown, fmt.Errorf("cannot read system product info on instance '%s': %w", sm.instance.id, err)
 	}
-	lines := string(bytes)
-	for _, line := range strings.Split(lines, "\n") {
-		matches := aemVersionRegex.FindStringSubmatch(strings.TrimSuffix(line, "\r"))
-		if matches != nil {
-			return matches[1], nil
-		}
+	html := string(bytes)
+	matches := aemVersionRegex.FindStringSubmatch(html)
+	if matches != nil {
+		return matches[1], nil
 	}
+
 	return instance.AemVersionUnknown, nil
 }

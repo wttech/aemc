@@ -324,10 +324,7 @@ func (im *InstanceManager) Delete(instances []Instance) ([]Instance, error) {
 		log.Debugf("no instances to delete")
 		return []Instance{}, nil
 	}
-	// im.LocalValidate()
-
 	log.Infof("deleting instance(s) '%s'", InstanceIds(instances))
-
 	deleted := []Instance{}
 	for _, i := range instances {
 		if i.local.IsCreated() {
@@ -347,9 +344,7 @@ func (im *InstanceManager) Clean(instances []Instance) ([]Instance, error) {
 		log.Debugf("no instances to clean")
 		return []Instance{}, nil
 	}
-
 	log.Infof("cleaning instance(s) '%s'", InstanceIds(instances))
-
 	cleaned := []Instance{}
 	for _, i := range instances {
 		if !i.local.IsRunning() {

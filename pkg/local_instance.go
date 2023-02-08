@@ -14,6 +14,7 @@ import (
 	"github.com/wttech/aemc/pkg/instance"
 	"os"
 	"os/exec"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -143,7 +144,21 @@ func (li LocalInstance) LicenseFile() string {
 	return pathx.Canonical(li.Dir() + "/" + LicenseFilename)
 }
 
+var (
+	LocalInstancePasswordRegex = regexp.MustCompile("^[a-zA-Z0-9_]{5,}$")
+)
+
+func (li LocalInstance) Validate() error {
+	if !LocalInstancePasswordRegex.MatchString(li.instance.password) {
+		return fmt.Errorf("password for instance '%s' need to match regex '%s'", li.instance.ID(), LocalInstancePasswordRegex)
+	}
+	return nil
+}
+
 func (li LocalInstance) Create() error {
+	if err := li.Validate(); err != nil {
+		return err
+	}
 	log.Infof("creating instance '%s'", li.instance.ID())
 	if err := pathx.DeleteIfExists(li.Dir()); err != nil {
 		return fmt.Errorf("cannot clean up dir for instance '%s': %w", li.instance.ID(), err)
@@ -261,6 +276,9 @@ func (li LocalInstance) IsInitialized() bool {
 func (li LocalInstance) Start() error {
 	if !li.IsCreated() {
 		return fmt.Errorf("cannot start instance '%s' as it is not created", li.instance.ID())
+	}
+	if err := li.Validate(); err != nil {
+		return err
 	}
 	if err := li.update(); err != nil {
 		return err
@@ -440,6 +458,9 @@ type localInstanceStartLock struct {
 func (li LocalInstance) Stop() error {
 	if !li.IsCreated() {
 		return fmt.Errorf("cannot stop instance as it is not created")
+	}
+	if err := li.Validate(); err != nil {
+		return err
 	}
 	log.Infof("stopping instance '%s'", li.instance.ID())
 	cmd, err := li.binScriptCommand(LocalInstanceScriptStop, true)

@@ -14,12 +14,13 @@ import (
 )
 
 const (
-	SystemPropPath        = "/system/console/status-System%20Properties.json"
-	SystemPropTimezone    = "user.timezone"
-	SlingPropPath         = "/system/console/status-slingprops.json"
-	SlingSettingsPath     = "/system/console/status-slingsettings.json"
-	SlingSettingRunModes  = "Run Modes"
-	SystemProductInfoPath = "/system/console/productinfo"
+	SystemPropPath          = "/system/console/status-System%20Properties.json"
+	SystemPropTimezone      = "user.timezone"
+	SlingPropPath           = "/system/console/status-slingprops.json"
+	SlingSettingsPath       = "/system/console/status-slingsettings.json"
+	SlingSettingRunModes    = "Run Modes"
+	SystemProductInfoPath   = "/system/console/productinfo"
+	SystemProductInfoMarker = ">Installed Products</th>"
 )
 
 var (
@@ -123,7 +124,7 @@ func (sm Status) AemVersion() (string, error) {
 	if err != nil {
 		return instance.AemVersionUnknown, fmt.Errorf("cannot read system product info on instance '%s': %w", sm.instance.id, err)
 	}
-	html := string(bytes)
+	html := stringsx.AfterLast(string(bytes), SystemProductInfoMarker)
 	matches := aemVersionRegex.FindStringSubmatch(html)
 	if matches != nil {
 		return matches[1], nil

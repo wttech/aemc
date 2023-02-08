@@ -9,6 +9,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/langx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"golang.org/x/exp/maps"
+	"strings"
 )
 
 // RepoNode represents single node in JCR repository
@@ -21,7 +22,7 @@ type RepoNode struct {
 func NewNode(repo Repo, path string) RepoNode {
 	return RepoNode{
 		repo: repo,
-		path: path,
+		path: "/" + strings.Trim(path, "/"),
 	}
 }
 
@@ -95,7 +96,8 @@ func (n RepoNode) Children() ([]RepoNode, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse children of node '%s': %w", n.path, err)
 	}
-	return lo.Map(children.Children, func(child nodeArrayChild, _ int) RepoNode { return n.Child(child.Name) }), nil
+	childrenWithType := lo.Filter(children.Children, func(c nodeArrayChild, _ int) bool { return c.PrimaryType != "" })
+	return lo.Map(childrenWithType, func(child nodeArrayChild, _ int) RepoNode { return n.Child(child.Name) }), nil
 }
 
 type nodeArrayChildren struct {
@@ -103,7 +105,8 @@ type nodeArrayChildren struct {
 }
 
 type nodeArrayChild struct {
-	Name string `json:"__name__"`
+	Name        string `json:"__name__"`
+	PrimaryType string `json:"jcr:primaryType,omitempty"`
 }
 
 func (n RepoNode) Siblings() ([]RepoNode, error) {

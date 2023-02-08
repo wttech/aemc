@@ -23,14 +23,15 @@ func (c *CLI) repoNodeCmd() *cobra.Command {
 		Use:   "node",
 		Short: "CRUD operations on JCR repository",
 	}
-	cmd.AddCommand(c.repoNodeRead())
-	cmd.AddCommand(c.repoNodeSave())
-	cmd.AddCommand(c.repoNodeDelete())
+	cmd.AddCommand(c.repoNodeReadCmd())
+	cmd.AddCommand(c.repoNodeSaveCmd())
+	cmd.AddCommand(c.repoNodeDeleteCmd())
+	cmd.AddCommand(c.repoNodeChildrenCmd())
 
 	return cmd
 }
 
-func (c *CLI) repoNodeRead() *cobra.Command {
+func (c *CLI) repoNodeReadCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "read",
 		Short:   "Read node",
@@ -50,7 +51,32 @@ func (c *CLI) repoNodeRead() *cobra.Command {
 	return cmd
 }
 
-func (c *CLI) repoNodeSave() *cobra.Command {
+func (c *CLI) repoNodeChildrenCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "children",
+		Short:   "Read node children",
+		Aliases: []string{"ls"},
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			node := repoNodeByFlags(cmd, *instance)
+			children, err := node.Children()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("children", children)
+			c.Ok("node children read")
+		},
+	}
+	repoNodeDefineFlags(cmd)
+	return cmd
+}
+
+func (c *CLI) repoNodeSaveCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "save",
 		Short:   "Create or update node",
@@ -95,7 +121,7 @@ func (c *CLI) repoNodeSave() *cobra.Command {
 	return cmd
 }
 
-func (c *CLI) repoNodeDelete() *cobra.Command {
+func (c *CLI) repoNodeDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "delete",
 		Short:   "Delete node",

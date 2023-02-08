@@ -1,14 +1,18 @@
 package pkg
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/go-resty/resty/v2"
+	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/mapsx"
 	"github.com/wttech/aemc/pkg/repo"
 	"net/http"
 	"reflect"
+	"sort"
+	"strings"
 )
 
 // Repo Facade for communicating with JCR repository.
@@ -139,4 +143,26 @@ func (r Repo) handleResponse(action string, resp *resty.Response, err error) err
 		return fmt.Errorf("%s: %s", action, result.ErrorMessage())
 	}
 	return nil
+}
+
+func NewRepoNodeList(nodes []RepoNode) NodeList {
+	var sortedNodes []RepoNode
+	sortedNodes = append(sortedNodes, nodes...)
+	sort.SliceStable(sortedNodes, func(i, j int) bool { return strings.Compare(nodes[i].Name(), nodes[j].Name()) < 0 })
+	return NodeList{Nodes: sortedNodes, Total: len(nodes)}
+}
+
+type NodeList struct {
+	Total int        `json:"total" yaml:"total"`
+	Nodes []RepoNode `json:"nodes" yaml:"nodes"`
+}
+
+func (nl NodeList) MarshalText() string {
+	bs := bytes.NewBufferString("")
+	bs.WriteString(fmtx.TblMap("stats", "stat", "value", map[string]any{"total": len(nl.Nodes)}))
+	bs.WriteString("\n")
+	bs.WriteString(fmtx.TblRows("list", true, []string{"path"}, lo.Map(nl.Nodes, func(node RepoNode, _ int) map[string]any {
+		return map[string]any{"path": node.path}
+	})))
+	return bs.String()
 }

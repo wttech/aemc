@@ -68,7 +68,7 @@ func (c *CLI) repoNodeChildrenCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			c.SetOutput("children", children)
+			c.SetOutput("children", pkg.NewRepoNodeList(children))
 			c.Ok("node children read")
 		},
 	}

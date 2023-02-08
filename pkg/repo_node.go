@@ -22,7 +22,7 @@ type RepoNode struct {
 func NewNode(repo Repo, path string) RepoNode {
 	return RepoNode{
 		repo: repo,
-		path: path,
+		path: "/" + strings.Trim(path, "/"),
 	}
 }
 
@@ -81,7 +81,7 @@ func (n RepoNode) Breadcrumb() []RepoNode {
 }
 
 func (n RepoNode) Child(name string) RepoNode {
-	return NewNode(n.repo, fmt.Sprintf("%s/%s", strings.TrimPrefix(n.path, "/"), name))
+	return NewNode(n.repo, fmt.Sprintf("%s/%s", n.path, name))
 }
 
 func (n RepoNode) Children() ([]RepoNode, error) {

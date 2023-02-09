@@ -1,3 +1,3 @@
 step "undeploy AEM dispatcher"
-docker compose down -d
+docker compose down
 clc

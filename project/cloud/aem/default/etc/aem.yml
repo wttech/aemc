@@ -1,0 +1,187 @@
+# AEM instances to work with
+instance:
+
+  # Defined by single value (only remote)
+  config_url: ''
+
+  # Defined strictly with full details (local or remote)
+  config:
+    local_author:
+      http_url: http://127.0.0.1:4502
+      user: admin
+      password: admin
+      run_modes: [ local ]
+      jvm_opts:
+        - '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:14502'
+        - '-Djava.io.tmpdir=[[.Path]]/aem/home/tmp'
+        - '-Duser.language=en'
+        - '-Duser.country=US'
+        - '-Duser.timezone=UTC'
+      start_opts: []
+      secret_vars:
+        - 'ACME_SECRET=value'
+      env_vars:
+        - 'ACME_VAR=value'
+      sling_props: []
+    local_publish:
+      http_url: http://127.0.0.1:4503
+      user: admin
+      password: admin
+      run_modes: [ local ]
+      jvm_opts:
+        - '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:14503'
+        - '-Djava.io.tmpdir=[[.Path]]/aem/home/tmp'
+        - '-Duser.language=en'
+        - '-Duser.country=US'
+        - '-Duser.timezone=UTC'
+      start_opts: []
+      secret_vars:
+        - 'ACME_SECRET=value'
+      env_vars:
+        - 'ACME_VAR=value'
+      sling_props: []
+
+  # Filters for defined
+  filter:
+    id: ''
+    author: false
+    publish: false
+
+  # Tuning performance & reliability
+  # 'auto'     - for more than 1 local instances - 'serial', otherwise 'parallel'
+  # 'parallel' - for working with remote instances
+  # 'serial'   - for working with local instances
+  processing_mode: auto
+
+  # State checking
+  check:
+    # Time to wait before first state checking (to avoid false-positives)
+    warmup: 1s
+    # Time to wait for next state checking
+    interval: 5s
+    # Number of successful check attempts that indicates end of checking
+    done_threshold: 3
+    # Wait only for those instances whose state has been changed internally (unaware of external changes)
+    await_strict: true
+    # Max time to wait for the instance to be healthy after executing the start script or e.g deploying a package
+    await_started_timeout:
+      duration: 10m
+    # Max time to wait for the instance to be stopped after executing the stop script
+    await_stopped_timeout:
+      duration: 10m
+    # Bundle state tracking
+    bundle_stable:
+      symbolic_names_ignored: []
+    # OSGi events tracking
+    event_stable:
+      # Topics indicating that instance is not stable
+      topics_unstable:
+        - "org/osgi/framework/ServiceEvent/*"
+        - "org/osgi/framework/FrameworkEvent/*"
+        - "org/osgi/framework/BundleEvent/*"
+      # Ignored service names to handle known issues
+      details_ignored:
+        - "*.*MBean"
+        - "org.osgi.service.component.runtime.ServiceComponentRuntime"
+        - "java.util.ResourceBundle"
+      received_max_age: 5s
+    # Sling Installer tracking
+    installer:
+      # JMX state checking
+      state: true
+      # Pause Installation nodes checking
+      pause: true
+
+  # Managed locally (set up automatically)
+  local:
+    # Current runtime dir (Sling launchpad, JCR repository)
+    unpack_dir: "aem/home/var/instance"
+    # Archived runtime dir (AEM backup files '*.aemb.zst')
+    backup_dir: "aem/home/var/backup"
+
+    # Oak Run tool options (offline instance management)
+    oakrun:
+      download_url: "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.44.0/oak-run-1.44.0.jar"
+      store_path: "crx-quickstart/repository/segmentstore"
+
+    # Source files
+    quickstart:
+      # AEM SDK ZIP or JAR
+      dist_file: 'aem/home/lib/{aem-sdk,cq-quickstart}-*.{zip,jar}'
+      # AEM License properties file
+      license_file: "aem/home/lib/license.properties"
+
+  # Status discovery (timezone, AEM version, etc)
+  status:
+    timeout: 500ms
+
+  # JCR Repository
+  repo:
+    property_change_ignored:
+      - "transportPassword" # because AEM encrypts it right after changing by replication agent setup command
+
+  # CRX Package Manager
+  package:
+    # Force re-uploading/installing of snapshot AEM packages (just built / unreleased)
+    snapshot_patterns: [ "**/*-SNAPSHOT.zip" ]
+    # Use checksums to avoid re-deployments when snapshot AEM packages are unchanged
+    snapshot_deploy_skipping: true
+
+  # OSGi Framework
+  osgi:
+    bundle:
+      install:
+        start: true
+        start_level: 20
+        refresh_packages: true
+
+# Java options used to launch AEM instances
+java:
+  # Pre-installed local JDK dir
+  home_dir: "" # "[[.Env.JAVA_HOME]]"
+  # Auto-managed JDK download URL
+  download_url: "" # "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_x64_mac_hotspot_11.0.18_10.tar.gz"
+  # Validate if following Java version constraints are met
+  version_constraints: ">= 11, < 12"
+
+# AEM application build
+app:
+  # Exclude the following paths when determining if the build should be executed or not
+  sources_ignored:
+    - "**/aem/home/**"
+    - "**/.*"
+    - "**/.*/**"
+    - "!.content.xml"
+    - "**/target"
+    - "**/target/**"
+    - "**/build"
+    - "**/build/**"
+    - "**/dist"
+    - "**/dist/**"
+    - "**/generated"
+    - "**/generated/**"
+    - "package-lock.json"
+    - "**/package-lock.json"
+    - "*.log"
+    - "*.tmp"
+    - "**/node_modules"
+    - "**/node_modules/**"
+    - "**/node"
+    - "**/node/**"
+
+base:
+  # Location of temporary files (downloaded AEM packages, etc)
+  tmp_dir: aem/home/tmp
+
+log:
+  level: info
+  timestamp_format: "2006-01-02 15:04:05"
+  full_timestamp: true
+
+input:
+  format: yml
+  file: STDIN
+
+output:
+  format: text
+  file: aem/home/var/log/aem.log

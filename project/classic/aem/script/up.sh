@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-step "creating instances"
+step "creating instances (it may take a moment)"
 aem instance create
 clc
 

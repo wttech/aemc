@@ -20,7 +20,7 @@ func (c *CLI) initCmd() *cobra.Command {
 				}
 			}
 			c.SetOutput("gettingStarted", strings.Join([]string{
-				"The next step is providing AEM files (JAR or SDK ZIP, license) to directory '" + common.LibDir + "'.",
+				"The next step is providing AEM files (JAR or SDK ZIP, license, service packs) to directory '" + common.LibDir + "'.",
 				"Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '" + cfg.FileDefault + "'.",
 				"To avoid problems with IDE performance, make sure to exclude from indexing the directory '" + common.HomeDir + "'.",
 				"Finally, use control scripts to manage AEM instances:",

@@ -25,7 +25,7 @@ echo "Releasing $VERSION_TAG"
 echo "Bumping version in files"
 
 README_FILE="README.MD"
-PROJECT_WRAPPER_SCRIPT="project/aemw"
+PROJECT_WRAPPER_SCRIPT="project/common/aemw"
 PROJECT_CLOUD_INIT_SCRIPT="project/cloud/init.sh"
 PROJECT_CLASSIC_INIT_SCRIPT="project/classic/init.sh"
 

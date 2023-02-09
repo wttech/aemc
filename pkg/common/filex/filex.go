@@ -69,6 +69,9 @@ func Copy(sourcePath, destinationPath string) error {
 	if !sourceStat.Mode().IsRegular() {
 		return fmt.Errorf("cannot copy file from '%s' to '%s' as source does not exist (or is not a regular file)", sourcePath, destinationPath)
 	}
+	if err := pathx.Ensure(filepath.Dir(destinationPath)); err != nil {
+		return err
+	}
 	source, err := os.Open(sourcePath)
 	if err != nil {
 		return err

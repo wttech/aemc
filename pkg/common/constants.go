@@ -5,6 +5,8 @@ const (
 	AppName        = "AEM Compose"
 	MainDir        = "aem"
 	HomeDirName    = "home"
+	ScriptDirName  = "script"
+	ScriptDir      = MainDir + "/" + ScriptDirName
 	HomeDir        = MainDir + "/" + HomeDirName
 	VarDirName     = "var"
 	VarDir         = HomeDir + "/" + VarDirName

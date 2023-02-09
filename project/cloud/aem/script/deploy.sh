@@ -12,9 +12,13 @@ aem package deploy --file "all/target/*.all-*.zip"
 clc
 
 step "deploy AEM dispatcher"
-sh aem/home/opt/sdk/dispatcher/bin/validate.sh dispatcher/src > aem/home/var/log/dispatcher-validate.log
-clc
+
+# TODO <https://github.com/adobe/aem-project-archetype/issues/1043>
+#sh aem/home/opt/sdk/dispatcher/bin/validate.sh dispatcher/src > aem/home/var/log/dispatcher-validate.log
+#clc
+
 docker tag "$(docker load --input "aem/home/opt/sdk/dispatcher/lib/dispatcher-publish-${ARCH}.tar.gz" | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"
 clc
+
 docker compose up -d
 clc

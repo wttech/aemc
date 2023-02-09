@@ -43,6 +43,8 @@ curl -s "${SOURCE_COMMON_URL}/${AEM_WRAPPER}" -o "${AEM_WRAPPER}"
 
 mkdir -p "${LIB_DIR}"
 
+curl -s "${SOURCE_URL}/docker-compose.yml" -o "docker-compose.yml"
+
 echo "Downloading & Testing AEM Compose CLI"
 echo ""
 

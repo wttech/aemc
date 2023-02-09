@@ -248,12 +248,7 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 		log.Debugf("no instances to stop")
 		return []Instance{}, nil
 	}
-	if err := im.LocalOpts.Initialize(); err != nil {
-		return []Instance{}, err
-	}
-
 	log.Infof("stopping instance(s) '%s'", InstanceIds(instances))
-
 	stopped := []Instance{}
 	for _, i := range instances {
 		if i.local.IsRunning() {
@@ -264,7 +259,6 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 			stopped = append(stopped, i)
 		}
 	}
-
 	var awaited []Instance
 	if im.CheckOpts.AwaitStrict {
 		awaited = stopped
@@ -274,12 +268,10 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 	if err := im.AwaitStopped(awaited); err != nil {
 		return nil, err
 	}
-
 	_, err := im.Clean(stopped)
 	if err != nil {
 		return nil, err
 	}
-
 	return stopped, nil
 }
 
@@ -293,10 +285,6 @@ func (im *InstanceManager) KillAll() ([]Instance, error) {
 }
 
 func (im *InstanceManager) Kill(instances []Instance) ([]Instance, error) {
-	if err := im.LocalOpts.Initialize(); err != nil {
-		return []Instance{}, err
-	}
-
 	log.Infof("killing instance(s) '%s'", InstanceIds(instances))
 
 	killed := []Instance{}

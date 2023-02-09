@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 
 VERSION=${AEM_CLI_VERSION:-"0.16.5"}
+COLORS=${AEM_CLI_COLORS:-"true"}
 
 # Define API
 # ==========
@@ -8,7 +9,13 @@ VERSION=${AEM_CLI_VERSION:-"0.16.5"}
 # print provisioning step header
 step () {
   DATE=$(date "+%Y-%m-%d %H:%M:%S")
-  echo "[$DATE]" "$@"
+  if [ "$COLORS" = "true" ]; then
+    CL='\033[0;33m'
+    NC='\033[0m'
+    echo "${CL}[$DATE]" "$@" "${NC}"
+  else
+    echo "[$DATE]" "$@"
+  fi
 }
 
 # check last command

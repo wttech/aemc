@@ -7,6 +7,7 @@ if [ -f "$AEM_WRAPPER" ]; then
   exit 1
 fi
 
+SOURCE_COMMON_URL="https://raw.githubusercontent.com/wttech/aemc/main/project/common"
 SOURCE_URL="https://raw.githubusercontent.com/wttech/aemc/main/project/classic"
 
 AEM_DIR="aem"
@@ -38,7 +39,7 @@ mkdir -p "${DEFAULT_CONFIG_DIR}"
 curl -s "${SOURCE_URL}/${DEFAULT_CONFIG_DIR}/aem.yml" -o "${DEFAULT_CONFIG_DIR}/aem.yml"
 
 mkdir -p "${AEM_DIR}"
-curl -s "${SOURCE_URL}/${AEM_WRAPPER}" -o "${AEM_WRAPPER}"
+curl -s "${SOURCE_COMMON_URL}/${AEM_WRAPPER}" -o "${AEM_WRAPPER}"
 
 mkdir -p "${LIB_DIR}"
 

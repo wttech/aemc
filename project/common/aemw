@@ -115,8 +115,7 @@ if [ -f "$SCRIPT" ]; then
   export AEM_INSTANCE_PROCESSING_MODE=${AEM_INSTANCE_PROCESSING_MODE:-serial}
 
   STARTED_TIMESTAMP=$(date +%s)
-  step "script '${COMMAND}' started"
-  step "check progress using command 'tail -f aem/home/aem.log'"
+  step "script '${COMMAND}' started; check progress using command 'tail -f aem/home/var/log/aem.log'"
 
   # shellcheck source=aem/*.sh
   . "${SCRIPT}"

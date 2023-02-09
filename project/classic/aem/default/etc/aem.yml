@@ -118,7 +118,11 @@ instance:
   # JCR Repository
   repo:
     property_change_ignored:
-      - "transportPassword" # because AEM encrypts it right after changing by replication agent setup command
+      # AEM assigns them automatically
+      - "cq:lastModified"
+      - "cq:lastModifiedBy"
+      # AEM encrypts it right after changing by replication agent setup command
+      - "transportPassword"
 
   # CRX Package Manager
   package:

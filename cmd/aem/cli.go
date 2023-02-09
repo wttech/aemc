@@ -273,6 +273,9 @@ func (c *CLI) ReadInput(out any) error {
 			return fmt.Errorf("cannot parse STDIN input properly: %w", err)
 		}
 	} else {
+		if !pathx.Exists(file) {
+			return fmt.Errorf("cannot load input file as it does not exist '%s'", file)
+		}
 		if err := fmtx.UnmarshalFileInFormat(format, file, out); err != nil {
 			return err
 		}

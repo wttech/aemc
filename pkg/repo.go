@@ -26,7 +26,7 @@ func NewRepo(res *Instance) *Repo {
 	return &Repo{
 		instance: *res,
 
-		PropertyChangeIgnored: []string{"transportPassword"},
+		PropertyChangeIgnored: []string{"cq:lastModified", "cq:lastModifiedBy", "transportPassword"},
 	}
 }
 

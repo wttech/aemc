@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/fatih/color"
 	"github.com/samber/lo"
 	"github.com/segmentio/textio"
 	log "github.com/sirupsen/logrus"
@@ -160,10 +161,18 @@ func (c *CLI) exit() {
 }
 
 func (c *CLI) printCommandResult() {
-	fmt.Print(fmtx.TblList("command result", [][]any{
+	changedColored := "false"
+	if c.outputResponse.Changed {
+		changedColored = color.YellowString("true")
+	}
+	failedColored := "false"
+	if c.outputResponse.Failed {
+		failedColored = color.RedString("true")
+	}
+	fmt.Print(fmtx.TblList(color.BlueString("command result"), [][]any{
 		{"message", c.outputResponse.Msg},
-		{"changed", c.outputResponse.Changed},
-		{"failed", c.outputResponse.Failed},
+		{"changed", changedColored},
+		{"failed", failedColored},
 		{"elapsed", c.outputResponse.Elapsed},
 		{"ended", timex.Human(c.outputResponse.Ended)},
 	}))
@@ -207,7 +216,7 @@ func (c *CLI) printOutputDataIndented(writer *textio.PrefixWriter, value any) {
 				return strings.Compare(fmt.Sprintf("%v", keys[k1].Interface()), fmt.Sprintf("%v", keys[k2].Interface())) < 0
 			})
 			for _, k := range keys {
-				_, _ = writer.WriteString(stringsx.HumanCase(fmt.Sprintf("%s", k)) + "\n")
+				_, _ = writer.WriteString(color.BlueString(stringsx.HumanCase(fmt.Sprintf("%s", k))) + "\n")
 				mv := rv.MapIndex(k).Interface()
 				c.printOutputDataIndented(dw, mv)
 			}

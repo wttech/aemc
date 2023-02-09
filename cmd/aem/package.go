@@ -104,9 +104,9 @@ func (c *CLI) pkgUploadCmd() *cobra.Command {
 					return nil, err
 				}
 				return map[string]any{
-					"changed":  changed,
-					"package":  p,
-					"instance": instance,
+					OutputChanged: changed,
+					"package":     p,
+					"instance":    instance,
 				}, nil
 			})
 			if err != nil {
@@ -114,7 +114,7 @@ func (c *CLI) pkgUploadCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("uploaded", uploaded)
-			if mapsx.HasSome(uploaded, "changed", true) {
+			if mapsx.HasSome(uploaded, OutputChanged, true) {
 				c.Changed("package uploaded")
 			} else {
 				c.Ok("package not uploaded (up-to-date)")
@@ -148,9 +148,9 @@ func (c *CLI) pkgInstallCmd() *cobra.Command {
 					c.aem.InstanceManager().AwaitStartedOne(instance)
 				}
 				return map[string]any{
-					"changed":  changed,
-					"package":  p,
-					"instance": instance,
+					OutputChanged: changed,
+					"package":     p,
+					"instance":    instance,
 				}, nil
 			})
 			if err != nil {
@@ -158,7 +158,7 @@ func (c *CLI) pkgInstallCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("installed", installed)
-			if mapsx.HasSome(installed, "changed", true) {
+			if mapsx.HasSome(installed, OutputChanged, true) {
 				c.Changed("package installed")
 			} else {
 				c.Ok("package already installed (up-to-date)")
@@ -197,9 +197,9 @@ func (c *CLI) pkgDeployCmd() *cobra.Command {
 					return nil, err
 				}
 				return map[string]any{
-					"changed":  changed,
-					"package":  p,
-					"instance": instance,
+					OutputChanged: changed,
+					"package":     p,
+					"instance":    instance,
 				}, nil
 			})
 			if err != nil {
@@ -207,7 +207,7 @@ func (c *CLI) pkgDeployCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("deployed", deployed)
-			if mapsx.HasSome(deployed, "changed", true) {
+			if mapsx.HasSome(deployed, OutputChanged, true) {
 				c.Changed("package deployed")
 			} else {
 				c.Ok("package already deployed (up-to-date)")
@@ -241,9 +241,9 @@ func (c *CLI) pkgUninstallCmd() *cobra.Command {
 					c.aem.InstanceManager().AwaitStartedOne(instance)
 				}
 				return map[string]any{
-					"changed":  changed,
-					"package":  p,
-					"instance": instance,
+					OutputChanged: changed,
+					"package":     p,
+					"instance":    instance,
 				}, nil
 			})
 			if err != nil {
@@ -251,7 +251,7 @@ func (c *CLI) pkgUninstallCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("uninstalled", uninstalled)
-			if mapsx.HasSome(uninstalled, "changed", true) {
+			if mapsx.HasSome(uninstalled, OutputChanged, true) {
 				c.Changed("package uninstalled")
 			} else {
 				c.Ok("package already uninstalled")
@@ -285,9 +285,9 @@ func (c *CLI) pkgDeleteCmd() *cobra.Command {
 					c.aem.InstanceManager().AwaitStartedOne(instance)
 				}
 				return map[string]any{
-					"changed":  changed,
-					"package":  p,
-					"instance": instance,
+					OutputChanged: changed,
+					"package":     p,
+					"instance":    instance,
 				}, nil
 			})
 			if err != nil {
@@ -295,7 +295,7 @@ func (c *CLI) pkgDeleteCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("deleted", deleted)
-			if mapsx.HasSome(deleted, "changed", true) {
+			if mapsx.HasSome(deleted, OutputChanged, true) {
 				c.Changed("package deleted")
 			} else {
 				c.Ok("package not deleted (does not exist)")
@@ -344,9 +344,9 @@ func (c *CLI) pkgPurgeCmd() *cobra.Command {
 					changed = changed || deleted
 				}
 				return map[string]any{
-					"changed":  changed,
-					"package":  p,
-					"instance": instance,
+					OutputChanged: changed,
+					"package":     p,
+					"instance":    instance,
 				}, nil
 			})
 			if err != nil {
@@ -354,7 +354,7 @@ func (c *CLI) pkgPurgeCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("purged", purged)
-			if mapsx.HasSome(purged, "changed", true) {
+			if mapsx.HasSome(purged, OutputChanged, true) {
 				c.Changed("package purged")
 			} else {
 				c.Ok("package already purged")

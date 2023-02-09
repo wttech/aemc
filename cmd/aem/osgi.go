@@ -60,9 +60,9 @@ func (c *CLI) osgiBundleInstall() *cobra.Command {
 					}
 				}
 				return map[string]any{
-					"changed":  changed,
-					"bundle":   bundle,
-					"instance": instance,
+					OutputChanged: changed,
+					"bundle":      bundle,
+					"instance":    instance,
 				}, nil
 			})
 			if err != nil {
@@ -70,7 +70,7 @@ func (c *CLI) osgiBundleInstall() *cobra.Command {
 				return
 			}
 			c.SetOutput("installed", installed)
-			if mapsx.HasSome(installed, "changed", true) {
+			if mapsx.HasSome(installed, OutputChanged, true) {
 				c.Changed("bundle installed")
 			} else {
 				c.Ok("bundle already installed")
@@ -101,9 +101,9 @@ func (c *CLI) osgiBundleUninstall() *cobra.Command {
 					return nil, err
 				}
 				return map[string]any{
-					"changed":  changed,
-					"instance": instance,
-					"bundle":   bundle,
+					OutputChanged: changed,
+					"instance":    instance,
+					"bundle":      bundle,
 				}, nil
 			})
 			if err != nil {
@@ -111,7 +111,7 @@ func (c *CLI) osgiBundleUninstall() *cobra.Command {
 				return
 			}
 			c.SetOutput("uninstalled", uninstalled)
-			if mapsx.HasSome(uninstalled, "changed", true) {
+			if mapsx.HasSome(uninstalled, OutputChanged, true) {
 				c.Changed("bundle uninstalled")
 			} else {
 				c.Ok("bundle already uninstalled")
@@ -194,9 +194,9 @@ func (c *CLI) osgiBundleStartCmd() *cobra.Command {
 					}
 				}
 				return map[string]any{
-					"changed":  changed,
-					"instance": instance,
-					"bundle":   bundle,
+					OutputChanged: changed,
+					"instance":    instance,
+					"bundle":      bundle,
 				}, nil
 			})
 			if err != nil {
@@ -204,7 +204,7 @@ func (c *CLI) osgiBundleStartCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("started", started)
-			if mapsx.HasSome(started, "changed", true) {
+			if mapsx.HasSome(started, OutputChanged, true) {
 				c.Changed("bundle started")
 			} else {
 				c.Ok("bundle already started (up-to-date)")
@@ -240,9 +240,9 @@ func (c *CLI) osgiBundleStopCmd() *cobra.Command {
 					}
 				}
 				return map[string]any{
-					"changed":  changed,
-					"bundle":   bundle,
-					"instance": instance,
+					OutputChanged: changed,
+					"bundle":      bundle,
+					"instance":    instance,
 				}, nil
 			})
 			if err != nil {
@@ -250,7 +250,7 @@ func (c *CLI) osgiBundleStopCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("stopped", stopped)
-			if mapsx.HasSome(stopped, "changed", true) {
+			if mapsx.HasSome(stopped, OutputChanged, true) {
 				c.Changed("bundle stopped")
 			} else {
 				c.Ok("bundle already stopped (up-to-date)")
@@ -283,9 +283,9 @@ func (c *CLI) osgiBundleRestartCmd() *cobra.Command {
 					c.Error(err)
 				}
 				return map[string]any{
-					"changed":  true,
-					"bundle":   bundle,
-					"instance": instance,
+					OutputChanged: true,
+					"bundle":      bundle,
+					"instance":    instance,
 				}, nil
 			})
 			if err != nil {
@@ -404,9 +404,9 @@ func (c *CLI) osgiComponentEnableCmd() *cobra.Command {
 					}
 				}
 				return map[string]any{
-					"changed":   changed,
-					"instance":  instance,
-					"component": cmp,
+					OutputChanged: changed,
+					"instance":    instance,
+					"component":   cmp,
 				}, nil
 			})
 			if err != nil {
@@ -414,7 +414,7 @@ func (c *CLI) osgiComponentEnableCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("enabled", enabled)
-			if mapsx.HasSome(enabled, "changed", true) {
+			if mapsx.HasSome(enabled, OutputChanged, true) {
 				c.Changed("component enabled")
 			} else {
 				c.Ok("component already enabled (up-to-date)")
@@ -447,9 +447,9 @@ func (c *CLI) osgiComponentDisableCmd() *cobra.Command {
 					}
 				}
 				return map[string]any{
-					"changed":   changed,
-					"instance":  instance,
-					"component": cmp,
+					OutputChanged: changed,
+					"instance":    instance,
+					"component":   cmp,
 				}, nil
 			})
 			if err != nil {
@@ -457,7 +457,7 @@ func (c *CLI) osgiComponentDisableCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("disabled", disabled)
-			if mapsx.HasSome(disabled, "changed", true) {
+			if mapsx.HasSome(disabled, OutputChanged, true) {
 				c.Changed("component disabled")
 			} else {
 				c.Ok("component already disabled (up-to-date)")
@@ -487,9 +487,9 @@ func (c *CLI) osgiComponentReenableCmd() *cobra.Command {
 					c.Error(err)
 				}
 				return map[string]any{
-					"changed":   true,
-					"component": cmp,
-					"instance":  instance,
+					OutputChanged: true,
+					"component":   cmp,
+					"instance":    instance,
 				}, nil
 			})
 			if err != nil {
@@ -597,9 +597,9 @@ func (c *CLI) osgiConfigSave() *cobra.Command {
 					c.aem.InstanceManager().AwaitStartedOne(instance)
 				}
 				return map[string]any{
-					"changed":  changed,
-					"config":   config,
-					"instance": instance,
+					OutputChanged: changed,
+					"config":      config,
+					"instance":    instance,
 				}, nil
 			})
 			if err != nil {
@@ -607,7 +607,7 @@ func (c *CLI) osgiConfigSave() *cobra.Command {
 				return
 			}
 			c.SetOutput("saved", saved)
-			if mapsx.HasSome(saved, "changed", true) {
+			if mapsx.HasSome(saved, OutputChanged, true) {
 				c.Changed("config saved")
 			} else {
 				c.Ok("config already saved (up-to-date)")
@@ -639,9 +639,9 @@ func (c *CLI) osgiConfigDelete() *cobra.Command {
 					c.aem.InstanceManager().AwaitStartedOne(instance)
 				}
 				return map[string]any{
-					"changed":  changed,
-					"config":   config,
-					"instance": instance,
+					OutputChanged: changed,
+					"config":      config,
+					"instance":    instance,
 				}, nil
 			})
 			if err != nil {
@@ -649,7 +649,7 @@ func (c *CLI) osgiConfigDelete() *cobra.Command {
 				return
 			}
 			c.SetOutput("deleted", deleted)
-			if mapsx.HasSome(deleted, "changed", true) {
+			if mapsx.HasSome(deleted, OutputChanged, true) {
 				c.Changed("config deleted")
 			} else {
 				c.Ok("config already deleted (does not exist)")

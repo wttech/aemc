@@ -100,9 +100,9 @@ func (c *CLI) repoNodeSaveCmd() *cobra.Command {
 					return nil, err
 				}
 				return map[string]any{
-					"changed":  changed,
-					"node":     node,
-					"instance": instance,
+					OutputChanged: changed,
+					"node":        node,
+					"instance":    instance,
 				}, nil
 			})
 			if err != nil {
@@ -110,7 +110,7 @@ func (c *CLI) repoNodeSaveCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("saved", saved)
-			if mapsx.HasSome(saved, "changed", true) {
+			if mapsx.HasSome(saved, OutputChanged, true) {
 				c.Changed("node saved")
 			} else {
 				c.Ok("node already saved (up-to-date)")
@@ -139,9 +139,9 @@ func (c *CLI) repoNodeDeleteCmd() *cobra.Command {
 					return nil, err
 				}
 				return map[string]any{
-					"changed":  changed,
-					"node":     node,
-					"instance": instance,
+					OutputChanged: changed,
+					"node":        node,
+					"instance":    instance,
 				}, nil
 			})
 			if err != nil {
@@ -149,7 +149,7 @@ func (c *CLI) repoNodeDeleteCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("deleted", deleted)
-			if mapsx.HasSome(deleted, "changed", true) {
+			if mapsx.HasSome(deleted, OutputChanged, true) {
 				c.Changed("node deleted")
 			} else {
 				c.Ok("node already deleted (does not exist)")

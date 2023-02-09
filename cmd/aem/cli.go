@@ -27,6 +27,7 @@ import (
 
 const (
 	OutputFileDefault = common.LogDir + "/aem.log"
+	OutputChanged     = "changed"
 )
 
 type CLI struct {
@@ -161,18 +162,10 @@ func (c *CLI) exit() {
 }
 
 func (c *CLI) printCommandResult() {
-	changedColored := "false"
-	if c.outputResponse.Changed {
-		changedColored = color.YellowString("true")
-	}
-	failedColored := "false"
-	if c.outputResponse.Failed {
-		failedColored = color.RedString("true")
-	}
 	fmt.Print(fmtx.TblList(color.BlueString("command result"), [][]any{
 		{"message", c.outputResponse.Msg},
-		{"changed", changedColored},
-		{"failed", failedColored},
+		{"changed", formatValueChanged(c.outputResponse.Changed)},
+		{"failed", formatValueFailed(c.outputResponse.Failed)},
 		{"elapsed", c.outputResponse.Elapsed},
 		{"ended", timex.Human(c.outputResponse.Ended)},
 	}))
@@ -190,25 +183,25 @@ func (c *CLI) printOutputDataValue() {
 
 func (c *CLI) printOutputDataAll() {
 	if len(c.outputResponse.Data) > 0 {
-		c.printOutputDataIndented(textio.NewPrefixWriter(os.Stdout, ""), c.outputResponse.Data)
+		c.printOutputDataIndented(textio.NewPrefixWriter(os.Stdout, ""), c.outputResponse.Data, "")
 	}
 }
 
-func (c *CLI) printOutputDataIndented(writer *textio.PrefixWriter, value any) {
+func (c *CLI) printOutputDataIndented(writer *textio.PrefixWriter, value any, key string) {
 	rv := reflect.ValueOf(value)
 	switch rv.Type().Kind() {
 	case reflect.Slice, reflect.Array:
 		if rv.Len() == 0 {
-			c.printOutputDataIndented(writer, "<empty>")
+			c.printOutputDataIndented(writer, "<empty>", "")
 		} else {
 			for i := 0; i < rv.Len(); i++ {
 				iv := rv.Index(i).Interface()
-				c.printOutputDataIndented(writer, iv)
+				c.printOutputDataIndented(writer, iv, "")
 			}
 		}
 	case reflect.Map:
 		if rv.Len() == 0 {
-			c.printOutputDataIndented(writer, "<empty>")
+			c.printOutputDataIndented(writer, "<empty>", "")
 		} else {
 			dw := textio.NewPrefixWriter(writer, "  ")
 			keys := rv.MapKeys()
@@ -216,12 +209,17 @@ func (c *CLI) printOutputDataIndented(writer *textio.PrefixWriter, value any) {
 				return strings.Compare(fmt.Sprintf("%v", keys[k1].Interface()), fmt.Sprintf("%v", keys[k2].Interface())) < 0
 			})
 			for _, k := range keys {
-				_, _ = writer.WriteString(color.BlueString(stringsx.HumanCase(fmt.Sprintf("%s", k))) + "\n")
+				mapKey := fmt.Sprintf("%s", k)
+				_, _ = writer.WriteString(color.BlueString(stringsx.HumanCase(mapKey)) + "\n")
 				mv := rv.MapIndex(k).Interface()
-				c.printOutputDataIndented(dw, mv)
+				c.printOutputDataIndented(dw, mv, mapKey)
 			}
 		}
 	default:
+		boolValue, boolOk := value.(bool)
+		if boolOk && key == OutputChanged {
+			value = formatValueChanged(boolValue)
+		}
 		_, _ = writer.WriteString(strings.TrimSuffix(fmtx.MarshalText(value), "\n") + "\n")
 	}
 }
@@ -318,10 +316,25 @@ func (c *CLI) addOutput(name string, data any) {
 	c.setOutput(name, result)
 }
 
-// TODO recursively update map keys (or align)
 func (c *CLI) fixOutputName(name string) string {
 	if c.outputFormat == fmtx.YML {
 		name = stringsx.SnakeCase(name)
 	}
 	return name
+}
+
+func formatValueFailed(failed bool) string {
+	text := "false"
+	if failed {
+		text = color.RedString("true")
+	}
+	return text
+}
+
+func formatValueChanged(changed bool) string {
+	text := "false"
+	if changed {
+		text = color.YellowString("true")
+	}
+	return text
 }

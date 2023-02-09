@@ -119,8 +119,8 @@ instance:
   repo:
     property_change_ignored:
       # AEM assigns them automatically
+      - "jcr:created"
       - "cq:lastModified"
-      - "cq:lastModifiedBy"
       # AEM encrypts it right after changing by replication agent setup command
       - "transportPassword"
 

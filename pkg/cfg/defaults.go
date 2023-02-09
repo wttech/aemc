@@ -47,7 +47,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("instance.package.snapshot_deploy_skipping", true)
 
 	v.SetDefault("instance.repo.property_change_ignored", []string{
-		"cq:lastModified", "cq:lastModifiedBy",
+		"jcr:created",
+		"cq:lastModified",
 		"transportPassword",
 	})
 }

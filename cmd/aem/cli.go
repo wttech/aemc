@@ -207,7 +207,7 @@ func (c *CLI) printOutputDataIndented(writer *textio.PrefixWriter, value any) {
 				return strings.Compare(fmt.Sprintf("%v", keys[k1].Interface()), fmt.Sprintf("%v", keys[k2].Interface())) < 0
 			})
 			for _, k := range keys {
-				_, _ = writer.WriteString(fmt.Sprintf("%s\n", k)) // TODO camelCase to human
+				_, _ = writer.WriteString(stringsx.HumanCase(fmt.Sprintf("%s", k)) + "\n")
 				mv := rv.MapIndex(k).Interface()
 				c.printOutputDataIndented(dw, mv)
 			}

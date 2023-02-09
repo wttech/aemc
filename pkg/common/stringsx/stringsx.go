@@ -92,3 +92,7 @@ func SnakeCase(str string) string {
 	snake = snakeMatchAllCap.ReplaceAllString(snake, "${1}_${2}")
 	return strings.ToLower(snake)
 }
+
+func HumanCase(str string) string {
+	return strings.ReplaceAll(SnakeCase(str), "_", " ")
+}

@@ -69,7 +69,7 @@ Worth knowing:
 
 ## CLI - AEM Project Quickstart
 
-Run one of the commands below according to the AEM version you are using to initialize the AEM Compose tool in your project (e.g generated from [Adobe AEM Project Archetype](https://github.com/adobe/aem-project-archetype#usage)):
+Run one of the commands below according to the AEM version you are using to initialize the AEM Compose tool in your project (e.g existing one or generated from [Adobe AEM Project Archetype](https://github.com/adobe/aem-project-archetype#usage)):
 
 - Cloud/AEMaaCS/SDK/202x.y.zzzzz
 

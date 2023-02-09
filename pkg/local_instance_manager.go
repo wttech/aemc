@@ -71,6 +71,11 @@ func (o *LocalOpts) Initialize() error {
 			return err
 		}
 	}
+	for _, instance := range o.manager.Locals() {
+		if err := instance.Local().Validate(); err != nil {
+			return err
+		}
+	}
 	// preparation phase
 	if err := o.manager.aem.baseOpts.Prepare(); err != nil {
 		return err

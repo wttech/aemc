@@ -14,6 +14,7 @@ import (
 	"github.com/wttech/aemc/pkg/instance"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -149,16 +150,37 @@ var (
 )
 
 func (li LocalInstance) Validate() error {
+	if err := li.checkPassword(); err != nil {
+		return err
+	}
+	if err := li.checkRecreationNeeded(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (li LocalInstance) checkRecreationNeeded() error {
+	createLock := li.createLock()
+	if createLock.IsLocked() {
+		state, err := createLock.State()
+		if err != nil {
+			return err
+		}
+		if !state.UpToDate {
+			return fmt.Errorf("instance '%s' is outdated and need to be recreated; distribution JAR changed from '%s' to '%s'", li.instance.ID(), state.Locked.JarName, state.Current.JarName)
+		}
+	}
+	return nil
+}
+
+func (li LocalInstance) checkPassword() error {
 	if !LocalInstancePasswordRegex.MatchString(li.instance.password) {
-		return fmt.Errorf("password for instance '%s' need to match regex '%s'", li.instance.ID(), LocalInstancePasswordRegex)
+		return fmt.Errorf("instance '%s' has a password which does not match regex '%s'", li.instance.ID(), LocalInstancePasswordRegex)
 	}
 	return nil
 }
 
 func (li LocalInstance) Create() error {
-	if err := li.Validate(); err != nil {
-		return err
-	}
 	log.Infof("creating instance '%s'", li.instance.ID())
 	if err := pathx.DeleteIfExists(li.Dir()); err != nil {
 		return fmt.Errorf("cannot clean up dir for instance '%s': %w", li.instance.ID(), err)
@@ -187,12 +209,17 @@ func (li LocalInstance) Create() error {
 
 func (li LocalInstance) createLock() osx.Lock[localInstanceCreateLock] {
 	return osx.NewLock(fmt.Sprintf("%s/create.yml", li.LockDir()), func() (localInstanceCreateLock, error) {
-		return localInstanceCreateLock{Created: time.Now()}, nil
+		var zero localInstanceCreateLock
+		jar, err := li.Opts().Jar()
+		if err != nil {
+			return zero, err
+		}
+		return localInstanceCreateLock{JarName: filepath.Base(jar)}, nil
 	})
 }
 
 type localInstanceCreateLock struct {
-	Created time.Time `yaml:"created"`
+	JarName string `yaml:"jar_name"`
 }
 
 func (li LocalInstance) unpackJarFile() error {
@@ -276,9 +303,6 @@ func (li LocalInstance) IsInitialized() bool {
 func (li LocalInstance) Start() error {
 	if !li.IsCreated() {
 		return fmt.Errorf("cannot start instance '%s' as it is not created", li.instance.ID())
-	}
-	if err := li.Validate(); err != nil {
-		return err
 	}
 	if err := li.update(); err != nil {
 		return err
@@ -458,9 +482,6 @@ type localInstanceStartLock struct {
 func (li LocalInstance) Stop() error {
 	if !li.IsCreated() {
 		return fmt.Errorf("cannot stop instance as it is not created")
-	}
-	if err := li.Validate(); err != nil {
-		return err
 	}
 	log.Infof("stopping instance '%s'", li.instance.ID())
 	cmd, err := li.binScriptCommand(LocalInstanceScriptStop, true)

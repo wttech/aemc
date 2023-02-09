@@ -47,10 +47,10 @@ func (s SDK) Prepare() error {
 		return err
 	}
 	if check.UpToDate {
-		log.Debugf("existing SDK '%s' is up-to-date", check.Current.Version)
+		log.Debugf("existing SDK '%s' is up-to-date", zipFile)
 		return nil
 	}
-	log.Infof("preparing new SDK '%s'", check.Current.Version)
+	log.Infof("preparing new SDK '%s'", zipFile)
 	err = s.prepare(zipFile)
 	if err != nil {
 		return err
@@ -59,13 +59,13 @@ func (s SDK) Prepare() error {
 	if err != nil {
 		return err
 	}
-	log.Infof("prepared new SDK '%s'", check.Current.Version)
+	log.Infof("prepared new SDK '%s'", zipFile)
 
 	jar, err := s.QuickstartJar()
 	if err != nil {
 		return err
 	}
-	log.Debugf("found JAR '%s' in unpacked SDK '%s'", jar, check.Current.Version)
+	log.Debugf("found JAR '%s' in unpacked SDK '%s'", jar, zipFile)
 
 	return nil
 }

@@ -18,8 +18,6 @@ import (
 
 const (
 	EnvPrefix           = "AEM"
-	InputStdin          = "STDIN"
-	OutputFileDefault   = common.LogDir + "/aem.log"
 	FileDefault         = common.ConfigDir + "/aem.yml"
 	FileEnvVar          = "AEM_CONFIG_FILE"
 	TemplateFileDefault = common.DefaultDir + "/" + common.ConfigDirName + "/aem.yml"
@@ -145,7 +143,7 @@ func InputFormats() []string {
 }
 
 func OutputFormats() []string {
-	return []string{fmtx.Text, fmtx.YML, fmtx.JSON, fmtx.None}
+	return []string{fmtx.Text, fmtx.YML, fmtx.JSON}
 }
 
 func (c *Config) ConfigureLogger() {

@@ -21,9 +21,10 @@ type ConfigValues struct {
 	} `mapstructure:"input" yaml:"input"`
 
 	Output struct {
-		File   string `mapstructure:"file" yaml:"file"`
-		Format string `mapstructure:"format" yaml:"format"`
-		Value  string `mapstructure:"value" yaml:"value"`
+		LogFile string `mapstructure:"log_file" yaml:"log_file"`
+		LogText bool   `mapstructure:"log_text" yaml:"log_text"`
+		Format  string `mapstructure:"format" yaml:"format"`
+		Value   string `mapstructure:"value" yaml:"value"`
 	} `mapstructure:"output" yaml:"output"`
 
 	App struct {

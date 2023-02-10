@@ -10,10 +10,11 @@ step () {
   DATE=$(date "+%Y-%m-%d %H:%M:%S")
   if [ -z "$NO_COLOR" ]; then
     CL='\033[0;36m'
+    CY='\033[0;32m'
     NC='\033[0m'
-    echo "${CL}[$DATE]" "$@" "${NC}"
+    echo "${CL}INFO${NC}[$DATE]${CY}" "$@" "${NC}"
   else
-    echo "[$DATE]" "$@"
+    echo "INFO[$DATE]" "$@"
   fi
 }
 
@@ -111,8 +112,8 @@ COMMAND="${1:-${COMMAND_DEFAULT}}"
 SCRIPT="aem/script/${COMMAND}.sh"
 
 if [ -f "$SCRIPT" ]; then
-  export AEM_OUTPUT_FORMAT=${AEM_OUTPUT_FORMAT:-none}
   export AEM_INSTANCE_PROCESSING_MODE=${AEM_INSTANCE_PROCESSING_MODE:-serial}
+  export AEM_OUTPUT_VALUE=${AEM_OUTPUT_VALUE:-"NONE"}
 
   STARTED_TIMESTAMP=$(date +%s)
   step "script '${COMMAND}' started; check progress using command 'tail -f aem/home/var/log/aem.log'"

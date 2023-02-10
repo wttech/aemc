@@ -26,8 +26,7 @@ import (
 )
 
 const (
-	OutputFileDefault = common.LogDir + "/aem.log"
-	OutputChanged     = "changed"
+	OutputChanged = "changed"
 )
 
 type CLI struct {
@@ -43,7 +42,8 @@ type CLI struct {
 	outputFormat   string
 	outputValue    string
 	outputBuffer   *bytes.Buffer
-	outputFile     string
+	outputLogFile  string
+	outputLogText  bool
 	outputResponse *OutputResponse
 	outputWriter   io.Writer
 }
@@ -54,8 +54,10 @@ func NewCLI(aem *pkg.Aem, config *cfg.Config) *CLI {
 	result.aem = aem
 	result.config = config
 
+	result.outputLogFile = common.LogFile
+	result.outputLogText = true
+	result.outputValue = common.OutputValueAll
 	result.outputFormat = fmtx.Text
-	result.outputFile = OutputFileDefault
 	result.outputBuffer = bytes.NewBufferString("")
 	result.outputResponse = outputResponseDefault()
 	result.cmd = result.rootCmd()
@@ -97,36 +99,42 @@ func (c *CLI) configure() {
 
 func (c *CLI) configureOutput() {
 	c.outputValue = c.config.Values().Output.Value
+	c.outputFormat = strings.ReplaceAll(c.config.Values().Output.Format, "yaml", "yml")
+	c.outputLogFile = c.config.Values().Output.LogFile
+	c.outputLogText = c.config.Values().Output.LogText
+
 	if len(c.outputValue) > 0 {
 		c.outputFormat = fmtx.Text
-	} else {
-		c.outputFile = c.config.Values().Output.File
-		c.outputFormat = strings.ReplaceAll(c.config.Values().Output.Format, "yaml", "yml")
+		c.outputLogText = true
 	}
-
+	if c.outputFormat != fmtx.Text {
+		c.outputLogText = true
+	}
 	if !lo.Contains(cfg.OutputFormats(), c.outputFormat) {
-		log.Fatalf("unsupported CLI output format detected! supported ones are: %s", strings.Join(cfg.OutputFormats(), ", "))
+		log.Fatalf("unsupported CLI output format detected '%s'! supported ones are: %s", c.outputFormat, strings.Join(cfg.OutputFormats(), ", "))
 	}
 
-	if c.outputFormat == fmtx.None { // print to file but not to stdout
-		outputWriter := c.openOutputFile()
-		c.aem.SetOutput(outputWriter)
-		log.SetOutput(outputWriter)
-	} else if c.outputFormat != fmtx.Text { // print to file but also buffer to later print serialized to stdout
-		outputWriter := io.MultiWriter(c.outputBuffer, c.openOutputFile())
+	if c.outputFormat == fmtx.Text {
+		if c.outputLogText {
+			outputWriter := c.openOutputLogFile()
+			c.aem.SetOutput(outputWriter)
+			log.SetOutput(outputWriter)
+		}
+	} else {
+		outputWriter := io.MultiWriter(c.outputBuffer, c.openOutputLogFile())
 		c.aem.SetOutput(outputWriter)
 		log.SetOutput(outputWriter)
 	}
 }
 
-func (c *CLI) openOutputFile() *os.File {
-	err := pathx.Ensure(path.Dir(c.outputFile))
+func (c *CLI) openOutputLogFile() *os.File {
+	err := pathx.Ensure(path.Dir(c.outputLogFile))
 	if err != nil {
 		return nil
 	}
-	file, err := os.OpenFile(c.outputFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(c.outputLogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatalf(fmt.Sprintf("cannot open/create AEM output file properly at path '%s': %s", c.outputFile, err))
+		log.Fatalf(fmt.Sprintf("cannot open/create AEM output file properly at path '%s': %s", c.outputLogFile, err))
 	}
 	return file
 }
@@ -142,15 +150,8 @@ func (c *CLI) exit() {
 	c.outputResponse.Elapsed = c.elapsed()
 	c.outputResponse.Log = c.outputBuffer.String()
 
-	if c.outputFormat == fmtx.None {
-		c.printCommandResult()
-	} else if c.outputFormat == fmtx.Text {
-		if len(c.outputValue) > 0 {
-			c.printOutputDataValue()
-		} else {
-			c.printOutputDataAll()
-			c.printCommandResult()
-		}
+	if c.outputFormat == fmtx.Text {
+		c.printOutputText()
 	} else {
 		c.printOutputMarshaled()
 	}
@@ -159,6 +160,17 @@ func (c *CLI) exit() {
 		os.Exit(1)
 	}
 	os.Exit(0)
+}
+
+func (c *CLI) printOutputText() {
+	if c.outputValue == common.OutputValueAll {
+		c.printDataAll()
+		c.printCommandResult()
+	} else if c.outputValue == common.OutputValueNone {
+		c.printCommandResult()
+	} else {
+		c.printDataValue()
+	}
 }
 
 func (c *CLI) printCommandResult() {
@@ -172,7 +184,7 @@ func (c *CLI) printCommandResult() {
 }
 
 // TODO allow to print 'changed', 'failed', 'elapsed', 'ended' as well
-func (c *CLI) printOutputDataValue() {
+func (c *CLI) printDataValue() {
 	value, ok := c.outputResponse.Data[c.outputValue]
 	if !ok {
 		println("<undefined>")
@@ -181,7 +193,7 @@ func (c *CLI) printOutputDataValue() {
 	}
 }
 
-func (c *CLI) printOutputDataAll() {
+func (c *CLI) printDataAll() {
 	if len(c.outputResponse.Data) > 0 {
 		c.printOutputDataIndented(textio.NewPrefixWriter(os.Stdout, ""), c.outputResponse.Data, "")
 	}
@@ -274,7 +286,7 @@ func (c *CLI) ReadInput(out any) error {
 		if err != nil {
 			return fmt.Errorf("cannot parse string input properly: %w", err)
 		}
-	} else if file == cfg.InputStdin {
+	} else if file == common.STDIn {
 		err := fmtx.UnmarshalDataInFormat(format, bufio.NewReader(os.Stdin), out)
 		if err != nil {
 			return fmt.Errorf("cannot parse STDIN input properly: %w", err)

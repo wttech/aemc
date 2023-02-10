@@ -14,6 +14,7 @@ const (
 	ConfigDir      = HomeDir + "/" + ConfigDirName
 	LogDirName     = "log"
 	LogDir         = VarDir + "/" + LogDirName
+	LogFile        = LogDir + "/aem.log"
 	ToolDirName    = "opt"
 	ToolDir        = HomeDir + "/" + ToolDirName
 	LibDirName     = "lib"
@@ -22,4 +23,11 @@ const (
 	TmpDir         = HomeDir + "/" + TmpDirName
 	DefaultDirName = "default"
 	DefaultDir     = MainDir + "/" + DefaultDirName
+)
+
+const (
+	STDIn           = "STDIN"
+	STDOut          = "STDOUT"
+	OutputValueAll  = "ALL"
+	OutputValueNone = "NONE"
 )

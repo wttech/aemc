@@ -188,4 +188,8 @@ input:
 
 output:
   format: text
-  file: aem/home/var/log/aem.log
+  log:
+    # File path of logs written especially when output format is different than 'text'
+    file: aem/home/var/log/aem.log
+    # Controls if console output and log entries should be written to file instead of printed to console when output format is 'text'
+    text: false

@@ -17,9 +17,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("input.format", fmtx.YML)
 	v.SetDefault("input.file", common.STDIn)
 	v.SetDefault("output.format", fmtx.Text)
-	v.SetDefault("output.log_file", common.LogFile)
-	v.SetDefault("output.log_text", true)
 	v.SetDefault("output.value", common.OutputValueAll)
+	v.SetDefault("output.log.file", common.LogFile)
+	v.SetDefault("output.log.text", false)
 
 	v.SetDefault("instance.processing_mode", instance.ProcessingAuto)
 

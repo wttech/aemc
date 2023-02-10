@@ -11,9 +11,6 @@ import (
 )
 
 const (
-	// None skips printing output of the commands
-	None string = "none"
-
 	// Text prints output of the commands as human-readable text
 	Text string = "text"
 

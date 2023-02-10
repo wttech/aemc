@@ -21,20 +21,15 @@ func (c *CLI) initCmd() *cobra.Command {
 					return
 				}
 			}
-			scriptFiles, err := os.ReadDir(common.ScriptDir)
+			scripts, err := c.initFindScriptNames()
 			if err != nil {
-				c.Error(fmt.Errorf("cannot list scripts in dir '%s'", common.ScriptDir))
-			}
-			var scripts []string
-			for _, file := range scriptFiles {
-				if strings.HasSuffix(file.Name(), ".sh") {
-					scripts = append(scripts, strings.TrimSuffix(file.Name(), ".sh"))
-				}
+				c.Error(err)
+				return
 			}
 			c.SetOutput("gettingStarted", fmt.Sprintf(strings.Join([]string{
 				"The next step is providing AEM files (JAR or SDK ZIP, license, service packs) to directory '" + common.LibDir + "'.",
 				"Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '" + cfg.FileDefault + "'.",
-				"To avoid problems with IDE performance, make sure to exclude from indexing the directory '" + common.HomeDir + "'.",
+				"Make sure to exclude the directory '" + common.HomeDir + "'from VCS versioning and IDE indexing.",
 				"Finally, use control scripts to manage AEM instances:",
 				"",
 
@@ -51,4 +46,18 @@ func (c *CLI) initCmd() *cobra.Command {
 		},
 	}
 	return cmd
+}
+
+func (c *CLI) initFindScriptNames() ([]string, error) {
+	scriptFiles, err := os.ReadDir(common.ScriptDir)
+	if err != nil {
+		return nil, fmt.Errorf("cannot list scripts in dir '%s'", common.ScriptDir)
+	}
+	var scripts []string
+	for _, file := range scriptFiles {
+		if strings.HasSuffix(file.Name(), ".sh") {
+			scripts = append(scripts, strings.TrimSuffix(file.Name(), ".sh"))
+		}
+	}
+	return scripts, nil
 }

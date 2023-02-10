@@ -48,8 +48,8 @@ func (c *CLI) rootFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(&(c.config.Values().Output.Format),
 		"output-format", c.config.Values().Output.Format,
 		"Controls output format ("+strings.Join(cfg.OutputFormats(), "|")+")")
-	cmd.PersistentFlags().StringVar(&(c.config.Values().Output.File),
-		"output-file", c.config.Values().Output.File,
+	cmd.PersistentFlags().StringVar(&(c.config.Values().Output.LogFile),
+		"output-log-file", c.config.Values().Output.LogFile,
 		"Controls output file path")
 	cmd.PersistentFlags().StringVar(&(c.config.Values().Output.Value),
 		"output-value", c.config.Values().Output.Value,

@@ -51,6 +51,18 @@ func ReadString(path string) (string, error) {
 	return string(bytes), nil
 }
 
+func AppendString(path string, text string) error {
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("cannot append to file '%s': %w", path, err)
+	}
+	defer f.Close()
+	if _, err := f.WriteString(text); err != nil {
+		return fmt.Errorf("cannot append to file '%s': %w", path, err)
+	}
+	return nil
+}
+
 func AmendString(file string, updater func(string) string) error {
 	content, err := ReadString(file)
 	if err != nil {

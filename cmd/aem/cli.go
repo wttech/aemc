@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/fatih/color"
 	"github.com/samber/lo"
 	"github.com/segmentio/textio"
 	log "github.com/sirupsen/logrus"
@@ -25,7 +26,7 @@ import (
 )
 
 const (
-	OutputFileDefault = common.LogDir + "/aem.log"
+	OutputChanged = "changed"
 )
 
 type CLI struct {
@@ -41,7 +42,8 @@ type CLI struct {
 	outputFormat   string
 	outputValue    string
 	outputBuffer   *bytes.Buffer
-	outputFile     string
+	outputLogFile  string
+	outputLogText  bool
 	outputResponse *OutputResponse
 	outputWriter   io.Writer
 }
@@ -52,8 +54,10 @@ func NewCLI(aem *pkg.Aem, config *cfg.Config) *CLI {
 	result.aem = aem
 	result.config = config
 
+	result.outputLogFile = common.LogFile
+	result.outputLogText = true
+	result.outputValue = common.OutputValueAll
 	result.outputFormat = fmtx.Text
-	result.outputFile = OutputFileDefault
 	result.outputBuffer = bytes.NewBufferString("")
 	result.outputResponse = outputResponseDefault()
 	result.cmd = result.rootCmd()
@@ -95,36 +99,42 @@ func (c *CLI) configure() {
 
 func (c *CLI) configureOutput() {
 	c.outputValue = c.config.Values().Output.Value
+	c.outputFormat = strings.ReplaceAll(c.config.Values().Output.Format, "yaml", "yml")
+	c.outputLogFile = c.config.Values().Output.LogFile
+	c.outputLogText = c.config.Values().Output.LogText
+
 	if len(c.outputValue) > 0 {
 		c.outputFormat = fmtx.Text
-	} else {
-		c.outputFile = c.config.Values().Output.File
-		c.outputFormat = strings.ReplaceAll(c.config.Values().Output.Format, "yaml", "yml")
+		c.outputLogText = true
 	}
-
+	if c.outputFormat != fmtx.Text {
+		c.outputLogText = true
+	}
 	if !lo.Contains(cfg.OutputFormats(), c.outputFormat) {
-		log.Fatalf("unsupported CLI output format detected! supported ones are: %s", strings.Join(cfg.OutputFormats(), ", "))
+		log.Fatalf("unsupported CLI output format detected '%s'! supported ones are: %s", c.outputFormat, strings.Join(cfg.OutputFormats(), ", "))
 	}
 
-	if c.outputFormat == fmtx.None { // print to file but not to stdout
-		outputWriter := c.openOutputFile()
-		c.aem.SetOutput(outputWriter)
-		log.SetOutput(outputWriter)
-	} else if c.outputFormat != fmtx.Text { // print to file but also buffer to later print serialized to stdout
-		outputWriter := io.MultiWriter(c.outputBuffer, c.openOutputFile())
+	if c.outputFormat == fmtx.Text {
+		if c.outputLogText {
+			outputWriter := c.openOutputLogFile()
+			c.aem.SetOutput(outputWriter)
+			log.SetOutput(outputWriter)
+		}
+	} else {
+		outputWriter := io.MultiWriter(c.outputBuffer, c.openOutputLogFile())
 		c.aem.SetOutput(outputWriter)
 		log.SetOutput(outputWriter)
 	}
 }
 
-func (c *CLI) openOutputFile() *os.File {
-	err := pathx.Ensure(path.Dir(c.outputFile))
+func (c *CLI) openOutputLogFile() *os.File {
+	err := pathx.Ensure(path.Dir(c.outputLogFile))
 	if err != nil {
 		return nil
 	}
-	file, err := os.OpenFile(c.outputFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(c.outputLogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatalf(fmt.Sprintf("cannot open/create AEM output file properly at path '%s': %s", c.outputFile, err))
+		log.Fatalf(fmt.Sprintf("cannot open/create AEM output file properly at path '%s': %s", c.outputLogFile, err))
 	}
 	return file
 }
@@ -140,15 +150,8 @@ func (c *CLI) exit() {
 	c.outputResponse.Elapsed = c.elapsed()
 	c.outputResponse.Log = c.outputBuffer.String()
 
-	if c.outputFormat == fmtx.None {
-		c.printCommandResult()
-	} else if c.outputFormat == fmtx.Text {
-		if len(c.outputValue) > 0 {
-			c.printOutputDataValue()
-		} else {
-			c.printOutputDataAll()
-			c.printCommandResult()
-		}
+	if c.outputFormat == fmtx.Text {
+		c.printOutputText()
 	} else {
 		c.printOutputMarshaled()
 	}
@@ -159,18 +162,29 @@ func (c *CLI) exit() {
 	os.Exit(0)
 }
 
+func (c *CLI) printOutputText() {
+	if c.outputValue == common.OutputValueAll {
+		c.printDataAll()
+		c.printCommandResult()
+	} else if c.outputValue == common.OutputValueNone {
+		c.printCommandResult()
+	} else {
+		c.printDataValue()
+	}
+}
+
 func (c *CLI) printCommandResult() {
-	fmt.Print(fmtx.TblList("command result", [][]any{
+	fmt.Print(fmtx.TblList(color.BlueString("command result"), [][]any{
 		{"message", c.outputResponse.Msg},
-		{"changed", c.outputResponse.Changed},
-		{"failed", c.outputResponse.Failed},
+		{"changed", formatValueChanged(c.outputResponse.Changed)},
+		{"failed", formatValueFailed(c.outputResponse.Failed)},
 		{"elapsed", c.outputResponse.Elapsed},
 		{"ended", timex.Human(c.outputResponse.Ended)},
 	}))
 }
 
 // TODO allow to print 'changed', 'failed', 'elapsed', 'ended' as well
-func (c *CLI) printOutputDataValue() {
+func (c *CLI) printDataValue() {
 	value, ok := c.outputResponse.Data[c.outputValue]
 	if !ok {
 		println("<undefined>")
@@ -179,27 +193,27 @@ func (c *CLI) printOutputDataValue() {
 	}
 }
 
-func (c *CLI) printOutputDataAll() {
+func (c *CLI) printDataAll() {
 	if len(c.outputResponse.Data) > 0 {
-		c.printOutputDataIndented(textio.NewPrefixWriter(os.Stdout, ""), c.outputResponse.Data)
+		c.printOutputDataIndented(textio.NewPrefixWriter(os.Stdout, ""), c.outputResponse.Data, "")
 	}
 }
 
-func (c *CLI) printOutputDataIndented(writer *textio.PrefixWriter, value any) {
+func (c *CLI) printOutputDataIndented(writer *textio.PrefixWriter, value any, key string) {
 	rv := reflect.ValueOf(value)
 	switch rv.Type().Kind() {
 	case reflect.Slice, reflect.Array:
 		if rv.Len() == 0 {
-			c.printOutputDataIndented(writer, "<empty>")
+			c.printOutputDataIndented(writer, "<empty>", "")
 		} else {
 			for i := 0; i < rv.Len(); i++ {
 				iv := rv.Index(i).Interface()
-				c.printOutputDataIndented(writer, iv)
+				c.printOutputDataIndented(writer, iv, "")
 			}
 		}
 	case reflect.Map:
 		if rv.Len() == 0 {
-			c.printOutputDataIndented(writer, "<empty>")
+			c.printOutputDataIndented(writer, "<empty>", "")
 		} else {
 			dw := textio.NewPrefixWriter(writer, "  ")
 			keys := rv.MapKeys()
@@ -207,12 +221,17 @@ func (c *CLI) printOutputDataIndented(writer *textio.PrefixWriter, value any) {
 				return strings.Compare(fmt.Sprintf("%v", keys[k1].Interface()), fmt.Sprintf("%v", keys[k2].Interface())) < 0
 			})
 			for _, k := range keys {
-				_, _ = writer.WriteString(stringsx.HumanCase(fmt.Sprintf("%s", k)) + "\n")
+				mapKey := fmt.Sprintf("%s", k)
+				_, _ = writer.WriteString(color.BlueString(stringsx.HumanCase(mapKey)) + "\n")
 				mv := rv.MapIndex(k).Interface()
-				c.printOutputDataIndented(dw, mv)
+				c.printOutputDataIndented(dw, mv, mapKey)
 			}
 		}
 	default:
+		boolValue, boolOk := value.(bool)
+		if boolOk && key == OutputChanged {
+			value = formatValueChanged(boolValue)
+		}
 		_, _ = writer.WriteString(strings.TrimSuffix(fmtx.MarshalText(value), "\n") + "\n")
 	}
 }
@@ -267,7 +286,7 @@ func (c *CLI) ReadInput(out any) error {
 		if err != nil {
 			return fmt.Errorf("cannot parse string input properly: %w", err)
 		}
-	} else if file == cfg.InputStdin {
+	} else if file == common.STDIn {
 		err := fmtx.UnmarshalDataInFormat(format, bufio.NewReader(os.Stdin), out)
 		if err != nil {
 			return fmt.Errorf("cannot parse STDIN input properly: %w", err)
@@ -309,10 +328,25 @@ func (c *CLI) addOutput(name string, data any) {
 	c.setOutput(name, result)
 }
 
-// TODO recursively update map keys (or align)
 func (c *CLI) fixOutputName(name string) string {
 	if c.outputFormat == fmtx.YML {
 		name = stringsx.SnakeCase(name)
 	}
 	return name
+}
+
+func formatValueFailed(failed bool) string {
+	text := "false"
+	if failed {
+		text = color.RedString("true")
+	}
+	return text
+}
+
+func formatValueChanged(changed bool) string {
+	text := "false"
+	if changed {
+		text = color.YellowString("true")
+	}
+	return text
 }

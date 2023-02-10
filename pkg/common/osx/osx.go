@@ -2,6 +2,7 @@ package osx
 
 import (
 	"github.com/samber/lo"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"os"
 	"runtime"
@@ -39,4 +40,11 @@ func EnvVarsWithout(names ...string) []string {
 		}
 	}
 	return result
+}
+
+func LineSep() string {
+	if pathx.Sep() == "\\" {
+		return "\r\n"
+	}
+	return "\n"
 }

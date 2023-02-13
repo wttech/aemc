@@ -17,7 +17,7 @@ func TblProps(props map[string]any) string {
 
 func TblList(caption string, items [][]any) string {
 	sb := bytes.NewBufferString("\n")
-	sb.WriteString(fmt.Sprintf("%s\n\n", caption))
+	sb.WriteString(fmt.Sprintf("%s\n", caption))
 	tbl := tablewriter.NewWriter(sb)
 	tbl.SetColWidth(TblColWidth)
 	tbl.SetHeader([]string{})

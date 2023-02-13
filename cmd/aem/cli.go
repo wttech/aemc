@@ -15,7 +15,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
-	"github.com/wttech/aemc/pkg/common/timex"
 	"io"
 	"os"
 	"path"
@@ -174,13 +173,29 @@ func (c *CLI) printOutputText() {
 }
 
 func (c *CLI) printCommandResult() {
-	fmt.Print(fmtx.TblList(color.BlueString("command result"), [][]any{
-		{"message", c.outputResponse.Msg},
-		{"changed", formatValueChanged(c.outputResponse.Changed)},
-		{"failed", formatValueFailed(c.outputResponse.Failed)},
-		{"elapsed", c.outputResponse.Elapsed},
-		{"ended", timex.Human(c.outputResponse.Ended)},
-	}))
+	r := c.outputResponse
+	entry := fmt.Sprintf("%s", r.Msg)
+	if color.NoColor || c.outputLogText {
+		if r.Failed {
+			log.Errorf(entry)
+		} else {
+			if r.Changed {
+				log.Info(fmt.Sprintf("%s [changed]", entry))
+			} else {
+				log.Info(fmt.Sprintf("%s [unchanged]", entry))
+			}
+		}
+	} else {
+		if r.Failed {
+			log.Errorf(color.RedString(entry))
+		} else {
+			if r.Changed {
+				log.Info(color.YellowString(entry))
+			} else {
+				log.Info(color.GreenString(entry))
+			}
+		}
+	}
 }
 
 // TODO allow to print 'changed', 'failed', 'elapsed', 'ended' as well

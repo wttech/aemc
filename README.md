@@ -29,9 +29,6 @@ Universal tool to manage AEM instances everywhere!
   * [Generating default configuration](#generating-default-configuration)
   * [Configuration precedence](#configuration-precedence)
   * [Performance optimization](#performance-optimization)
-* [Dev setup](#dev-setup)
-  * [Prerequisites](#prerequisites)
-  * [Releasing](#releasing)
 * [Contributing](#contributing)
 * [License](#license)
 
@@ -347,39 +344,14 @@ export AEM_OUTPUT_MODE=none
 export AEM_INSTANCE_PROCESSING_MODE=parallel
 ```
 
-# Dev setup
-
-## Prerequisites
-
-1. Install Go: <https://go.dev/doc/install>,
-2. Set up shell, append lines *~/.zshrc* with content below then restart IDE/terminals,
-
-```shell
-export GOPATH="$HOME/go"
-export PATH="$GOPATH/bin:$PATH"
-```
-
-## Releasing
-
-Simply run script:
-
-```shell
-sh release.sh <major.minor.patch>
-```
-
-It will:
-
-* bump version is source files automatically,
-* commit changes,
-* push release tag that will initiate [release workflow](.github/workflows/release-perform.yml).
-
 # Contributing
 
 Issues reported or pull requests created will be very appreciated.
 
 1. Fork plugin source code using a dedicated GitHub button.
-2. Do code changes on a feature branch created from *develop* branch.
-3. Create a pull request with a base of *develop* branch.
+2. See [development guide](DEVELOPMENT.md)
+3. Do code changes on a feature branch created from *main* branch.
+4. Create a pull request with a base of *main* branch.
 
 # License
 

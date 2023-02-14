@@ -163,8 +163,8 @@ func (c *CLI) exit() {
 
 func (c *CLI) printOutputText() {
 	if c.outputValue == common.OutputValueAll {
-		c.printDataAll()
 		c.printCommandResult()
+		c.printDataAll()
 	} else if c.outputValue == common.OutputValueNone {
 		c.printCommandResult()
 	} else {

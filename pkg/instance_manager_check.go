@@ -91,12 +91,12 @@ func (im *InstanceManager) CheckOne(i Instance, checks []Checker) ([]CheckResult
 		result := check.Check(i)
 		results = append(results, result)
 		if result.abort {
-			log.Fatalf("%s | %s", i.ID(), result.message)
+			log.Fatalf("instance checked '%s' | %s", i.ID(), result.message)
 		}
 		if result.err != nil {
-			log.Infof("%s | %s", i.ID(), result.err)
+			log.Infof("instance checked '%s' | %s", i.ID(), result.err)
 		} else if len(result.message) > 0 {
-			log.Infof("%s | %s", i.ID(), result.message)
+			log.Infof("instance checked '%s' | %s", i.ID(), result.message)
 		}
 		if !result.ok && check.Spec().Mandatory {
 			break

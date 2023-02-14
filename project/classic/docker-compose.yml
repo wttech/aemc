@@ -6,6 +6,6 @@ services:
       - "80:80"
     environment: [] # TODO
     volumes:
-      - ./aem/home/var/dispatcher/httpd/logs:/etc/httpd/logs"
-      - ./aem/home/var/dispatcher/httpd/cache:/var/www/localhost/cache"
-      - ./aem/home/var/dispatcher/httpd/htdocs:/var/www/localhost/htdocs"
+      - ./aem/home/var/dispatcher/httpd/logs:/etc/httpd/logs
+      - ./aem/home/var/dispatcher/httpd/cache:/var/www/localhost/cache
+      - ./aem/home/var/dispatcher/httpd/htdocs:/var/www/localhost/htdocs

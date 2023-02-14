@@ -38,13 +38,13 @@ type CLI struct {
 	started time.Time
 	ended   time.Time
 
-	outputFormat   string
-	outputValue    string
-	outputBuffer   *bytes.Buffer
-	outputLogFile  string
-	outputLogText  bool
-	outputResponse *OutputResponse
-	outputWriter   io.Writer
+	outputFormat     string
+	outputValue      string
+	outputBuffer     *bytes.Buffer
+	outputLogFile    string
+	outputLogConsole bool
+	outputResponse   *OutputResponse
+	outputWriter     io.Writer
 }
 
 func NewCLI(aem *pkg.Aem, config *cfg.Config) *CLI {
@@ -54,7 +54,7 @@ func NewCLI(aem *pkg.Aem, config *cfg.Config) *CLI {
 	result.config = config
 
 	result.outputLogFile = common.LogFile
-	result.outputLogText = true
+	result.outputLogConsole = true
 	result.outputValue = common.OutputValueAll
 	result.outputFormat = fmtx.Text
 	result.outputBuffer = bytes.NewBufferString("")
@@ -100,21 +100,21 @@ func (c *CLI) configureOutput() {
 	c.outputValue = c.config.Values().Output.Value
 	c.outputFormat = strings.ReplaceAll(c.config.Values().Output.Format, "yaml", "yml")
 	c.outputLogFile = c.config.Values().Output.Log.File
-	c.outputLogText = c.config.Values().Output.Log.Text
+	c.outputLogConsole = c.config.Values().Output.Log.Console
 
 	if c.outputValue != common.OutputValueNone && c.outputValue != common.OutputValueAll {
 		c.outputFormat = fmtx.Text
-		c.outputLogText = true
+		c.outputLogConsole = false
 	}
 	if c.outputFormat != fmtx.Text {
-		c.outputLogText = true
+		c.outputLogConsole = false
 	}
 	if !lo.Contains(cfg.OutputFormats(), c.outputFormat) {
 		log.Fatalf("unsupported CLI output format detected '%s'! supported ones are: %s", c.outputFormat, strings.Join(cfg.OutputFormats(), ", "))
 	}
 
 	if c.outputFormat == fmtx.Text {
-		if c.outputLogText {
+		if !c.outputLogConsole {
 			outputWriter := c.openOutputLogFile()
 			c.aem.SetOutput(outputWriter)
 			log.SetOutput(outputWriter)
@@ -174,25 +174,22 @@ func (c *CLI) printOutputText() {
 
 func (c *CLI) printCommandResult() {
 	r := c.outputResponse
-	entry := fmt.Sprintf("%s", r.Msg)
-	if color.NoColor || c.outputLogText {
+	msg := fmt.Sprintf("%s", r.Msg)
+	if color.NoColor || !c.outputLogConsole {
+		entry := log.WithField("changed", r.Changed).WithField("elapsed", r.Elapsed)
 		if r.Failed {
-			log.Errorf(entry)
+			entry.Errorf(msg)
 		} else {
-			if r.Changed {
-				log.Info(fmt.Sprintf("%s [changed]", entry))
-			} else {
-				log.Info(fmt.Sprintf("%s [unchanged]", entry))
-			}
+			entry.Infof(msg)
 		}
 	} else {
 		if r.Failed {
-			log.Errorf(color.RedString(entry))
+			log.Errorf(color.RedString(msg))
 		} else {
 			if r.Changed {
-				log.Info(color.YellowString(entry))
+				log.Info(color.YellowString(msg))
 			} else {
-				log.Info(color.GreenString(entry))
+				log.Info(color.GreenString(msg))
 			}
 		}
 	}

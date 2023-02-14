@@ -191,5 +191,5 @@ output:
   log:
     # File path of logs written especially when output format is different than 'text'
     file: aem/home/var/log/aem.log
-    # Controls if console output and log entries should be printed to console when output format is 'text'
-    text: false
+    # Controls if script outputs and log entries should be printed to console instead of written to file when output format is 'text'
+    console: true

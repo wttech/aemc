@@ -1,7 +1,7 @@
 FROM rockylinux:8
 
 # Install required OS packages
-RUN yum -y install httpd wget
+RUN yum -y install httpd wget mod_ssl
 
 # Download & install dispatcher module
 RUN mkdir -p /tmp/dispatcher && cd /tmp/dispatcher && \
@@ -24,6 +24,12 @@ COPY src.override/conf.dispatcher.d/cache/ams_publish_invalidate_allowed.any /et
 # Deactivate mod-ssl dependencies
 COPY src.override/conf.d/proxy/mock.proxy /etc/httpd/conf.d/proxy/mock.proxy
 COPY src.override/conf.d/rewrites/xforwarded_forcessl_rewrite.rules /etc/httpd/conf.d/rewrites/xforwarded_forcessl_rewrite.rules
+
+# Initialize document roots
+RUN mkdir -p /var/www/localhost/author/cache /var/www/localhost/publish/cache /mnt/var/www/default
+
+# Fix for 'SSLCertificateFile: file '/etc/pki/tls/certs/localhost.crt' does not exist or is empty'
+RUN /usr/libexec/httpd-ssl-gencerts
 
 # https://httpd.apache.org/docs/2.4/stopping.html#gracefulstop
 STOPSIGNAL SIGWINCH

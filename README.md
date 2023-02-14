@@ -79,7 +79,7 @@ Run one of the commands below according to the AEM version you are using to init
   curl https://raw.githubusercontent.com/wttech/aemc/main/project/cloud/init.sh | sh
   ```
 
-- Classic/On-Prem/6.5.x
+- Classic/AMS/On-Prem/6.5.x
 
   ```shell
   curl https://raw.githubusercontent.com/wttech/aemc/main/project/classic/init.sh | sh

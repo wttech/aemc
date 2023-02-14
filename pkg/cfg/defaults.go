@@ -19,7 +19,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("output.format", fmtx.Text)
 	v.SetDefault("output.value", common.OutputValueAll)
 	v.SetDefault("output.log.file", common.LogFile)
-	v.SetDefault("output.log.text", false)
+	v.SetDefault("output.log.console", true)
 
 	v.SetDefault("instance.processing_mode", instance.ProcessingAuto)
 

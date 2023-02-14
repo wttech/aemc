@@ -1,3 +1,3 @@
 #!/usr/bin/env sh
 
-rm -fr etc.src && cp -r ../src etc.src && docker build -t aemc/dispatcher-publish:latest .
+rm -fr src.origin && cp -r ../src src.origin && docker build -t aemc/dispatcher-publish:latest .

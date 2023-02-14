@@ -15,6 +15,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
+	"github.com/wttech/aemc/pkg/project"
 	"io"
 	"os"
 	"path"
@@ -29,8 +30,9 @@ const (
 )
 
 type CLI struct {
-	aem    *pkg.Aem
-	config *cfg.Config
+	aem     *pkg.Aem
+	project *project.Project
+	config  *cfg.Config
 
 	cmd   *cobra.Command
 	error error
@@ -52,6 +54,7 @@ func NewCLI(aem *pkg.Aem, config *cfg.Config) *CLI {
 
 	result.aem = aem
 	result.config = config
+	result.project = project.New(config)
 
 	result.outputLogFile = common.LogFile
 	result.outputLogConsole = true

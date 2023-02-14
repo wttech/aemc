@@ -3,6 +3,7 @@ package project
 import (
 	"embed"
 	"fmt"
+	"github.com/magiconair/properties"
 	"github.com/samber/lo"
 	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common"
@@ -100,28 +101,51 @@ func copyEmbedFiles(efs *embed.FS, dirPrefix string) error {
 	})
 }
 
-func (p Project) DetermineKind(name string) (Kind, error) {
-	var kind Kind
+func (p Project) KindDetermine(name string) (Kind, error) {
+	var kind Kind = KindAuto
 	if name != "" {
 		kindCandidate, err := KindOf(name)
 		if err != nil {
 			return "", err
 		}
 		kind = kindCandidate
-	} else {
-		kind = p.InferKind()
 	}
 	if kind == KindAuto {
-		kind = p.InferKind()
+		kindCandidate, err := p.KindInfer()
+		if err != nil {
+			return "", err
+		}
+		kind = kindCandidate
 	}
 	return kind, nil
 }
 
-func (p Project) InferKind() Kind {
-	return KindClassic // TODO read archetype.properties ; check aemVersion=cloud
+const (
+	KindPropFile          = "archetype.properties"
+	KindPropName          = "aemVersion"
+	KindPropCloudValue    = "cloud"
+	KindPropClassicPrefix = "6."
+)
+
+func (p Project) KindInfer() (Kind, error) {
+	if pathx.Exists(KindPropFile) {
+		props, err := properties.LoadFile(KindPropFile, properties.ISO_8859_1)
+		if err != nil {
+			return "", fmt.Errorf("cannot infer project kind: %w", err)
+		}
+		propValue := props.GetString(KindPropName, "")
+		if propValue == KindPropCloudValue {
+			return KindCloud, nil
+		} else if strings.HasPrefix(propValue, KindPropClassicPrefix) {
+			return KindClassic, nil
+		} else {
+			return "", fmt.Errorf("cannot infer project kind as value '%s' of property '%s' in file '%s' is not recognized", propValue, KindPropName, KindPropFile)
+		}
+	}
+	return "", fmt.Errorf("cannot infer project kind as file '%s' does not exist", KindPropFile)
 }
 
-func (p Project) FindScriptNames() ([]string, error) {
+func (p Project) ScriptNames() ([]string, error) {
 	scriptFiles, err := os.ReadDir(common.ScriptDir)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list scripts in dir '%s'", common.ScriptDir)

@@ -16,7 +16,7 @@ func (c *CLI) initCmd() *cobra.Command {
 		Short:   "Initializes project files and configuration",
 		Run: func(cmd *cobra.Command, args []string) {
 			kindName, _ := cmd.Flags().GetString("project-kind")
-			kind, err := c.project.DetermineKind(kindName)
+			kind, err := c.project.KindDetermine(kindName)
 			if err != nil {
 				c.Error(err)
 				return
@@ -26,7 +26,7 @@ func (c *CLI) initCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			scripts, err := c.project.FindScriptNames()
+			scripts, err := c.project.ScriptNames()
 			if err != nil {
 				c.Error(err)
 				return

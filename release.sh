@@ -25,21 +25,15 @@ echo "Releasing $VERSION_TAG"
 echo "Bumping version in files"
 
 README_FILE="README.MD"
-PROJECT_WRAPPER_SCRIPT="project/common/aemw"
-PROJECT_CLOUD_INIT_SCRIPT="project/cloud/init.sh"
-PROJECT_CLASSIC_INIT_SCRIPT="project/classic/init.sh"
+PROJECT_WRAPPER_SCRIPT="project/aemw"
 
 # <https://stackoverflow.com/a/57766728>
 if [ "$(uname)" = "Darwin" ]; then
   sed -i '' 's/AEM_CLI_VERSION:-"[^\"]*"/AEM_CLI_VERSION:-"'"$VERSION"'"/g' "$PROJECT_WRAPPER_SCRIPT"
-  sed -i '' 's/AEM_CLI_VERSION:-"[^\"]*"/AEM_CLI_VERSION:-"'"$VERSION"'"/g' "$PROJECT_CLASSIC_INIT_SCRIPT"
-  sed -i '' 's/AEM_CLI_VERSION:-"[^\"]*"/AEM_CLI_VERSION:-"'"$VERSION"'"/g' "$PROJECT_CLOUD_INIT_SCRIPT"
   # shellcheck disable=SC2016
   sed -i '' 's/aem\@v[^\`]*\`/aem@v'"$VERSION"\`'/g' "$README_FILE"
 else
     sed -i 's/AEM_CLI_VERSION:-"[^\"]*"/AEM_CLI_VERSION:-"'"$VERSION"'"/g' "$PROJECT_WRAPPER_SCRIPT"
-    sed -i 's/AEM_CLI_VERSION:-"[^\"]*"/AEM_CLI_VERSION:-"'"$VERSION"'"/g' "$PROJECT_CLOUD_INIT_SCRIPT"
-    sed -i 's/AEM_CLI_VERSION:-"[^\"]*"/AEM_CLI_VERSION:-"'"$VERSION"'"/g' "$PROJECT_CLASSIC_INIT_SCRIPT"
     # shellcheck disable=SC2016
     sed -i 's/aem\@v[^\`]*\`/aem@v'"$VERSION"\`'/g' "$README_FILE"
 fi

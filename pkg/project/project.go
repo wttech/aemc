@@ -46,7 +46,7 @@ func KindOf(name string) (Kind, error) {
 	} else if name == KindClassic {
 		return KindClassic, nil
 	} else {
-		return "", fmt.Errorf("unsupport project kind '%s'", name)
+		return "", fmt.Errorf("project kind '%s' is not supported", name)
 	}
 }
 
@@ -74,7 +74,7 @@ func (p Project) Initialize(kind Kind) error {
 			return err
 		}
 	default:
-		return fmt.Errorf("unsupport project kind '%s'", kind)
+		return fmt.Errorf("project kind '%s' cannot be initialized", kind)
 	}
 	if err := pathx.Ensure(common.LibDir); err != nil {
 		return err

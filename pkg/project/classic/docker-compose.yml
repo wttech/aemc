@@ -1,7 +1,7 @@
 version: "3"
 services:
   dispatcher:
-    image: aemc/dispatcher-publish:latest
+    image: acme/aem-ams/dispatcher-publish:latest
     ports:
       - "80:80"
     environment:

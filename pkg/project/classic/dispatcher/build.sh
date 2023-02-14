@@ -1,3 +1,3 @@
 #!/usr/bin/env sh
 
-docker build -t aemc/dispatcher-publish:latest .
+docker build -t acme/aem-ams/dispatcher-publish .

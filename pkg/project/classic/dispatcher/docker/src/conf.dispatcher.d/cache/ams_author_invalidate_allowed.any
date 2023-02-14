@@ -1,0 +1,5 @@
+ # This is where you'd put an entry for each publisher or author that you want to allow to invalidate the cache on the dispatcher
+/0 {
+    /glob "*.*.*.*"
+    /type "allow"
+}

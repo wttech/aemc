@@ -315,6 +315,18 @@ func InstanceIds(instances []Instance) string {
 	return strings.Join(lo.Map(instances, func(i Instance, _ int) string { return i.id }), ",")
 }
 
+func InstanceMsg(instances []Instance, msg string) string {
+	count := len(instances)
+	switch count {
+	case 0:
+		return fmt.Sprintf("none of instances: %s", msg)
+	case 1:
+		return fmt.Sprintf("instance '%s': %s", instances[0].id, msg)
+	default:
+		return fmt.Sprintf("instances '%s': %s", InstanceIds(instances), msg)
+	}
+}
+
 // InstanceProcess is a workaround for <https://stackoverflow.com/a/71132286/3360007> (ideally should be a method of manager)
 func InstanceProcess[R any](aem *Aem, instances []Instance, processor func(instance Instance) (R, error)) ([]R, error) {
 	parallel := false

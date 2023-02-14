@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common"
-	"os"
+	"github.com/wttech/aemc/pkg/project"
 	"strings"
 )
 
@@ -13,15 +13,20 @@ func (c *CLI) initCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "initialize",
 		Aliases: []string{"init"},
-		Short:   "Initializes configuration and dependencies",
+		Short:   "Initializes project files and configuration",
 		Run: func(cmd *cobra.Command, args []string) {
-			if !c.config.IsInitialized() {
-				if err := c.config.Initialize(); err != nil {
-					c.Error(err)
-					return
-				}
+			kindName, _ := cmd.Flags().GetString("project-kind")
+			kind, err := c.project.KindDetermine(kindName)
+			if err != nil {
+				c.Error(err)
+				return
 			}
-			scripts, err := c.initFindScriptNames()
+			changed, err := c.project.InitializeWithChanged(kind)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			scripts, err := c.project.ScriptNames()
 			if err != nil {
 				c.Error(err)
 				return
@@ -42,22 +47,13 @@ func (c *CLI) initCmd() *cobra.Command {
 
 				"sh aemw --help",
 			}, "\n"), strings.Join(scripts, "|")))
-			c.Ok("initialized properly")
+			if changed {
+				c.Changed("project initialized")
+			} else {
+				c.Ok("project already initialized")
+			}
 		},
 	}
+	cmd.Flags().String("project-kind", project.KindClassic, fmt.Sprintf("Project kind (%s)", strings.Join(project.KindStrings(), "|")))
 	return cmd
-}
-
-func (c *CLI) initFindScriptNames() ([]string, error) {
-	scriptFiles, err := os.ReadDir(common.ScriptDir)
-	if err != nil {
-		return nil, fmt.Errorf("cannot list scripts in dir '%s'", common.ScriptDir)
-	}
-	var scripts []string
-	for _, file := range scriptFiles {
-		if strings.HasSuffix(file.Name(), ".sh") {
-			scripts = append(scripts, strings.TrimSuffix(file.Name(), ".sh"))
-		}
-	}
-	return scripts, nil
 }

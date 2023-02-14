@@ -11,6 +11,10 @@ step "deploy AEM application"
 aem package deploy --file "all/target/*.all-*.zip"
 clc
 
+step "build AEM dispatcher"
+(cd dispatcher && sh build.sh)
+clc
+
 step "deploy AEM dispatcher"
-docker compose up -d
+mkdir -p aem/home/var/dispatcher/httpd/logs aem/home/var/dispatcher/httpd/cache aem/home/var/dispatcher/httpd/htdocs && docker compose up -d
 clc

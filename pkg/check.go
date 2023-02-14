@@ -116,9 +116,9 @@ func (c BundleStableChecker) Check(instance Instance) CheckResult {
 		var message string
 		randomBundleSymbolicName := lox.Random(unstableBundles).SymbolicName
 		if unstableBundleCount <= 10 {
-			message = fmt.Sprintf("some bundles unstable (%d): %s", unstableBundleCount, randomBundleSymbolicName)
+			message = fmt.Sprintf("some bundles unstable (%d): '%s'", unstableBundleCount, randomBundleSymbolicName)
 		} else {
-			message = fmt.Sprintf("many bundles unstable (%s): %s", bundleStablePercent(bundles, unstableBundles), randomBundleSymbolicName)
+			message = fmt.Sprintf("many bundles unstable (%s): '%s'", bundleStablePercent(bundles, unstableBundles), randomBundleSymbolicName)
 		}
 		return CheckResult{
 			ok:      false,
@@ -168,7 +168,7 @@ func (c EventStableChecker) Check(instance Instance) CheckResult {
 	unstableEventCount := len(unstableEvents)
 
 	if unstableEventCount > 0 {
-		message := fmt.Sprintf("some events unstable (%d): %s", unstableEventCount, unstableEvents[0].Details())
+		message := fmt.Sprintf("some events unstable (%d): '%s'", unstableEventCount, unstableEvents[0].Details())
 		return CheckResult{
 			ok:      false,
 			message: message,

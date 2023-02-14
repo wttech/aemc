@@ -1,0 +1,12 @@
+version: "3"
+services:
+  dispatcher:
+    image: acme/aem-ams/dispatcher-publish:latest
+    ports:
+      - "80:80"
+    environment:
+      - DISP_ID=docker
+    volumes:
+      - ./aem/home/var/dispatcher/httpd/logs:/etc/httpd/logs
+      - ./aem/home/var/dispatcher/httpd/cache:/var/www/localhost/cache
+      - ./aem/home/var/dispatcher/httpd/htdocs:/var/www/localhost/htdocs

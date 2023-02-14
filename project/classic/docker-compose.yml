@@ -1,8 +1,0 @@
-version: "3"
-services:
-  dispatcher:
-    image: httpd/httpd:2.4.55
-    ports:
-      - "80:80"
-    environment: [] # TODO
-    volumes: [] # TODO

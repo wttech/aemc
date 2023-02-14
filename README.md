@@ -71,19 +71,11 @@ Worth knowing:
 
 ## CLI - AEM Project Quickstart
 
-Run one of the commands below according to the AEM version you are using to initialize the AEM Compose tool in your project (e.g existing one or generated from [Adobe AEM Project Archetype](https://github.com/adobe/aem-project-archetype#usage)):
+Run command below to initialize the AEM Compose tool in your project (e.g existing one or generated from [Adobe AEM Project Archetype](https://github.com/adobe/aem-project-archetype#usage)):
 
-- Cloud/AEMaaCS/SDK/202x.y.zzzzz
-
-  ```shell
-  curl https://raw.githubusercontent.com/wttech/aemc/main/project/cloud/init.sh | sh
-  ```
-
-- Classic/AMS/On-Prem/6.5.x
-
-  ```shell
-  curl https://raw.githubusercontent.com/wttech/aemc/main/project/classic/init.sh | sh
-  ```
+```shell
+curl https://raw.githubusercontent.com/wttech/aemc/main/project/init.sh | sh
+```
 
 After successful initialization, remember to always use the tool via wrapper script in the following way:
 

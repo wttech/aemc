@@ -26,6 +26,12 @@ func (c *CLI) initCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+
+			//projectType := cmd.Flags().GetString("project-type")
+
+			// TODO
+			// unpack cloud/classic project files
+
 			c.SetOutput("gettingStarted", fmt.Sprintf(strings.Join([]string{
 				"The next step is providing AEM files (JAR or SDK ZIP, license, service packs) to directory '" + common.LibDir + "'.",
 				"Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '" + cfg.FileDefault + "'.",
@@ -45,6 +51,7 @@ func (c *CLI) initCmd() *cobra.Command {
 			c.Ok("initialized properly")
 		},
 	}
+	cmd.Flags().String("project-type", "cloud", "Project type (cloud|classic)")
 	return cmd
 }
 

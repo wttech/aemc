@@ -54,4 +54,4 @@ sh ${AEM_WRAPPER} version
 echo "Success! Now initialize AEM Compose by running the command:"
 echo ""
 
-echo "sh ${AEM_WRAPPER} init"
+echo "sh ${AEM_WRAPPER} init --project-type [cloud|classic]"

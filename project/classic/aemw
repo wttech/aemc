@@ -9,13 +9,16 @@ VERSION=${AEM_CLI_VERSION:-"1.0.1"}
 step () {
   DATE=$(date "+%Y-%m-%d %H:%M:%S")
   if [ -z "$NO_COLOR" ]; then
-    STEP='STEP'
     CL='\033[0;35m'
     CY='\033[0;35m'
     NC='\033[0m'
-    echo "${CL}${STEP}${NC}[$DATE]${CY}" "$@" "${NC}"
+    echo ""
+    echo "${CL}STEP${NC}[$DATE]${CY}" "$@" "${NC}"
+    echo ""
   else
-    echo "${STEP}[$DATE]" "$@"
+    echo ""
+    echo "STEP[$DATE]" "$@"
+    echo ""
   fi
 }
 

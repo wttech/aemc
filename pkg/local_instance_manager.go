@@ -22,7 +22,7 @@ const (
 	BackupDir   = common.VarDir + "/backup"
 	OverrideDir = common.DefaultDir + "/" + common.VarDirName + "/instance"
 
-	DistFile        = common.LibDir + "/aem-sdk-quickstart.jar"
+	DistFile        = common.LibDir + "/{aem-sdk,cq-quickstart}-*.{zip,jar}"
 	LicenseFile     = common.LibDir + "/" + LicenseFilename
 	LicenseFilename = "license.properties"
 )

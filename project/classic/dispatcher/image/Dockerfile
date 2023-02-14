@@ -1,23 +1,34 @@
-FROM httpd:2.4.55-alpine3.17
+FROM rockylinux:8
 
-RUN apk update && apk add ca-certificates && update-ca-certificates && apk add openssl wget
-RUN wget https://download.macromedia.com/dispatcher/download/dispatcher-apache2.4-linux-x86_64-4.3.5.tar.gz
+# Install required OS packages
+RUN yum -y install httpd wget
+
+# Download & install dispatcher module
+RUN mkdir -p /tmp/dispatcher && cd /tmp/dispatcher && \
+    wget https://download.macromedia.com/dispatcher/download/dispatcher-apache2.4-linux-x86_64-4.3.5.tar.gz -O dispatcher.tar.gz && \
+    tar xzf dispatcher.tar.gz && \
+    cp dispatcher-apache2.4-4.3.5.so /etc/httpd/modules/mod_dispatcher.so
 
 # Project-specific source code
-COPY etc.src/conf.d /etc/httpd/conf.d
-COPY etc.src/conf.dispatcher.d /etc/httpd/conf.dispatcher.d
+COPY src.origin /etc/httpd
 
 # Local environment-specific variables
-COPY etc/httpd/conf.d/custom.conf /etc/httpd/conf.d/custom.conf
+COPY src.override/conf.d/custom.conf /etc/httpd/conf.d/custom.conf
 
 # Allow invalidating from any host
-COPY etc/httpd/conf.dispatcher.d/cache/ams_author_invalidate_allowed.any /etc/httpd/conf.dispatcher.d/cache/ams_author_invalidate_allowed.any
-COPY etc/httpd/conf.dispatcher.d/cache/ams_publish_invalidate_allowed.any /etc/httpd/conf.dispatcher.d/cache/ams_publish_invalidate_allowed.any
+COPY src.override/conf.dispatcher.d/cache/ams_author_invalidate_allowed.any /etc/httpd/conf.dispatcher.d/cache/ams_author_invalidate_allowed.any
+COPY src.override/conf.dispatcher.d/cache/ams_publish_invalidate_allowed.any /etc/httpd/conf.dispatcher.d/cache/ams_publish_invalidate_allowed.any
 
 # Load dispatcher module
-COPY etc/httpd/conf.modules.d/02-dispatcher.conf /etc/httpd/conf.modules.d/02-dispatcher.conf
+COPY src.override/conf.modules.d/02-dispatcher.conf /etc/httpd/conf.modules.d/02-dispatcher.conf
 
 # Deactivate mod-ssl dependencies
-COPY etc/httpd/conf.d/proxy/mock.proxy /etc/httpd/conf.d/proxy/mock.proxy
-COPY etc/httpd/conf.d/rewrites/xforwarded_forcessl_rewrite.rules /etc/httpd/conf.d/rewrites/xforwarded_forcessl_rewrite.rules
+COPY src.override/conf.d/proxy/mock.proxy /etc/httpd/conf.d/proxy/mock.proxy
+COPY src.override/conf.d/rewrites/xforwarded_forcessl_rewrite.rules /etc/httpd/conf.d/rewrites/xforwarded_forcessl_rewrite.rules
 
+# https://httpd.apache.org/docs/2.4/stopping.html#gracefulstop
+STOPSIGNAL SIGWINCH
+
+COPY httpd-foreground /bin/httpd-foreground
+EXPOSE 80
+CMD ["/bin/httpd-foreground"]

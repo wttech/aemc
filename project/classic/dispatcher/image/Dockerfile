@@ -15,6 +15,7 @@ COPY src.origin /etc/httpd
 
 # Local environment-specific variables
 COPY src.override/conf.d/custom.conf /etc/httpd/conf.d/custom.conf
+COPY src.override/conf.d/variables/default.vars /etc/httpd/conf.d/variables/default.vars
 
 # Allow invalidating from any host
 COPY src.override/conf.dispatcher.d/cache/ams_author_invalidate_allowed.any /etc/httpd/conf.dispatcher.d/cache/ams_author_invalidate_allowed.any
@@ -26,8 +27,6 @@ COPY src.override/conf.d/rewrites/xforwarded_forcessl_rewrite.rules /etc/httpd/c
 
 # https://httpd.apache.org/docs/2.4/stopping.html#gracefulstop
 STOPSIGNAL SIGWINCH
-
-RUN bash -c 'ls -la /usr/lib64/httpd/modules'
 
 COPY httpd-foreground /bin/httpd-foreground
 EXPOSE 80

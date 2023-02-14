@@ -134,7 +134,6 @@ if [ -f "$SCRIPT" ]; then
   STARTED_TIMESTAMP=$(date +%s)
 
   info "script '${COMMAND}' started"
-  echo ""
 
   # shellcheck source=aem/*.sh
   . "${SCRIPT}"
@@ -142,7 +141,6 @@ if [ -f "$SCRIPT" ]; then
   ENDED_TIMESTAMP=$(date +%s)
   ELAPSED=$((ENDED_TIMESTAMP - STARTED_TIMESTAMP))
 
-  echo ""
   info "script '${COMMAND}' ended in $(duration $ELAPSED)"
 else
   aem "$@"

@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"fmt"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"time"
@@ -56,7 +57,7 @@ func (im *InstanceManager) CheckUntilDone(instances []Instance, opts *CheckOpts,
 			if !opts.DoneNever {
 				doneTimes++
 				if doneTimes <= opts.DoneThreshold {
-					log.Infof("instances checked (%d/%d) '%s'", doneTimes, opts.DoneThreshold, InstanceIds(instances))
+					log.Infof(InstanceMsg(instances, fmt.Sprintf("checked (%d/%d)", doneTimes, opts.DoneThreshold)))
 				}
 				if doneTimes == opts.DoneThreshold {
 					break
@@ -91,12 +92,12 @@ func (im *InstanceManager) CheckOne(i Instance, checks []Checker) ([]CheckResult
 		result := check.Check(i)
 		results = append(results, result)
 		if result.abort {
-			log.Fatalf("instance checked '%s' | %s", i.ID(), result.message)
+			log.Fatalf("instance '%s': %s", i.ID(), result.message)
 		}
 		if result.err != nil {
-			log.Infof("instance checked '%s' | %s", i.ID(), result.err)
+			log.Infof("instance '%s': %s", i.ID(), result.err)
 		} else if len(result.message) > 0 {
-			log.Infof("instance checked '%s' | %s", i.ID(), result.message)
+			log.Infof("instance '%s': %s", i.ID(), result.message)
 		}
 		if !result.ok && check.Spec().Mandatory {
 			break
@@ -117,7 +118,7 @@ func (im *InstanceManager) AwaitStarted(instances []Instance) error {
 	if len(instances) == 0 {
 		return nil
 	}
-	log.Infof("awaiting up instance(s) '%s'", InstanceIds(instances))
+	log.Infof(InstanceMsg(instances, "awaiting up"))
 	return im.CheckUntilDone(instances, im.CheckOpts, []Checker{
 		im.CheckOpts.AwaitStartedTimeout,
 		im.CheckOpts.Reachable,
@@ -139,7 +140,7 @@ func (im *InstanceManager) AwaitStopped(instances []Instance) error {
 	if len(instances) == 0 {
 		return nil
 	}
-	log.Infof("awaiting down instance(s) '%s'", InstanceIds(instances))
+	log.Infof(InstanceMsg(instances, "awaiting down"))
 	return im.CheckUntilDone(instances, im.CheckOpts, []Checker{
 		im.CheckOpts.AwaitStoppedTimeout,
 		im.CheckOpts.StatusStopped,

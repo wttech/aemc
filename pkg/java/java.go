@@ -104,11 +104,12 @@ func (o *Opts) download() error {
 		log.Debugf("existing JDK '%s' is up-to-date", check.Locked.Source)
 		return nil
 	}
-	log.Infof("downloading new JDK '%s'", o.DownloadURL)
 	archiveFile := fmt.Sprintf("%s/%s", o.archiveDir(), httpx.FileNameFromURL(o.DownloadURL))
+	log.Infof("downloading new JDK from URL '%s' to file '%s'", o.DownloadURL, archiveFile)
 	if err := httpx.DownloadOnce(o.DownloadURL, archiveFile); err != nil {
 		return err
 	}
+	log.Infof("downloaded new JDK from URL '%s' to file '%s'", o.DownloadURL, archiveFile)
 	_, err = filex.UnarchiveWithChanged(archiveFile, o.jdkDir())
 	if err != nil {
 		return err
@@ -116,7 +117,7 @@ func (o *Opts) download() error {
 	if err := lock.Lock(); err != nil {
 		return err
 	}
-	log.Infof("downloaded new JDK '%s'", o.DownloadURL)
+	log.Infof("unarchived new JDK at dir '%s'", o.jdkDir())
 	return nil
 }
 

@@ -158,7 +158,7 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 	if err := im.LocalOpts.Initialize(); err != nil {
 		return created, err
 	}
-	log.Infof("creating instance(s) '%s'", InstanceIds(instances))
+	log.Infof(InstanceMsg(instances, "creating"))
 	for _, i := range instances {
 		if !i.local.IsCreated() {
 			err := i.local.Create()
@@ -189,7 +189,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		return []Instance{}, err
 	}
 
-	log.Infof("checking started & out-of-date instance(s) '%s'", InstanceIds(instances))
+	log.Infof(InstanceMsg(instances, "checking started & out-of-date"))
 
 	var outdated []Instance
 	for _, i := range instances {
@@ -208,7 +208,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		return outdated, err
 	}
 
-	log.Infof("starting instance(s) '%s'", InstanceIds(instances))
+	log.Infof(InstanceMsg(instances, "starting"))
 
 	started := []Instance{}
 	for _, i := range instances {
@@ -248,7 +248,7 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 		log.Debugf("no instances to stop")
 		return []Instance{}, nil
 	}
-	log.Infof("stopping instance(s) '%s'", InstanceIds(instances))
+	log.Infof(InstanceMsg(instances, "stopping"))
 	stopped := []Instance{}
 	for _, i := range instances {
 		if i.local.IsRunning() {
@@ -285,7 +285,7 @@ func (im *InstanceManager) KillAll() ([]Instance, error) {
 }
 
 func (im *InstanceManager) Kill(instances []Instance) ([]Instance, error) {
-	log.Infof("killing instance(s) '%s'", InstanceIds(instances))
+	log.Infof(InstanceMsg(instances, "killing"))
 
 	killed := []Instance{}
 	for _, i := range instances {
@@ -317,7 +317,7 @@ func (im *InstanceManager) Delete(instances []Instance) ([]Instance, error) {
 		log.Debugf("no instances to delete")
 		return []Instance{}, nil
 	}
-	log.Infof("deleting instance(s) '%s'", InstanceIds(instances))
+	log.Infof(InstanceMsg(instances, "deleting"))
 	deleted := []Instance{}
 	for _, i := range instances {
 		if i.local.IsCreated() {
@@ -337,7 +337,7 @@ func (im *InstanceManager) Clean(instances []Instance) ([]Instance, error) {
 		log.Debugf("no instances to clean")
 		return []Instance{}, nil
 	}
-	log.Infof("cleaning instance(s) '%s'", InstanceIds(instances))
+	log.Infof(InstanceMsg(instances, "cleaning"))
 	cleaned := []Instance{}
 	for _, i := range instances {
 		if !i.local.IsRunning() {

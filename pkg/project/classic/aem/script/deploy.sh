@@ -12,7 +12,7 @@ aem package deploy --file "all/target/*.all-*.zip"
 clc
 
 step "build AEM dispatcher"
-(cd dispatcher/image && sh build.sh)
+(cd dispatcher && sh build.sh)
 clc
 
 step "deploy AEM dispatcher"

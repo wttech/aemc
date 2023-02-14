@@ -79,7 +79,7 @@ Run one of the commands below according to the AEM version you are using to init
   curl https://raw.githubusercontent.com/wttech/aemc/main/project/cloud/init.sh | sh
   ```
 
-- Classic/On-Prem/6.5.x
+- Classic/AMS/On-Prem/6.5.x
 
   ```shell
   curl https://raw.githubusercontent.com/wttech/aemc/main/project/classic/init.sh | sh
@@ -102,7 +102,7 @@ sh aemw version
 Ensure having installed [Go](https://go.dev/dl/) then run command:
 
 - latest released version: `go install github.com/wttech/aemc/cmd/aem@latest`,
-- specific released version: `go install github.com/wttech/aemc/cmd/aem@v1.0.0`,
+- specific released version: `go install github.com/wttech/aemc/cmd/aem@v1.0.1`,
 - recently committed version: `go install github.com/wttech/aemc/cmd/aem@main`,
 
 Use installed version of the tool instead of the one defined in file *aem/api.sh* by running the following command:

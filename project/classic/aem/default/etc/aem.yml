@@ -65,7 +65,7 @@ instance:
     await_strict: true
     # Max time to wait for the instance to be healthy after executing the start script or e.g deploying a package
     await_started_timeout:
-      duration: 10m
+      duration: 30m
     # Max time to wait for the instance to be stopped after executing the stop script
     await_stopped_timeout:
       duration: 10m

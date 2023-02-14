@@ -32,10 +32,10 @@ func (im *InstanceManager) NewCheckOpts() *CheckOpts {
 		Reachable:           NewReachableChecker(true),
 		BundleStable:        NewBundleStableChecker(),
 		EventStable:         NewEventStableChecker(),
-		AwaitStartedTimeout: NewTimeoutChecker("started", time.Minute*10),
+		AwaitStartedTimeout: NewTimeoutChecker("started", time.Minute*30),
 		Installer:           NewInstallerChecker(),
 		StatusStopped:       NewStatusStoppedChecker(),
-		AwaitStoppedTimeout: NewTimeoutChecker("stopped", time.Minute*5),
+		AwaitStoppedTimeout: NewTimeoutChecker("stopped", time.Minute*10),
 		Unreachable:         NewReachableChecker(false),
 	}
 }

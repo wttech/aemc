@@ -7,6 +7,7 @@ import (
 	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/filex"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"io/fs"
 	"os"
 	"strings"
@@ -59,18 +60,31 @@ func (p Project) IsInitialized() bool {
 }
 
 func (p Project) Initialize(kind Kind) error {
+	if p.IsInitialized() {
+		return fmt.Errorf("project of kind '%s' is already initialized", kind)
+	}
 	switch kind {
 	case KindClassic:
-		return copyEmbedFiles(&classicFiles)
+		if err := copyEmbedFiles(&classicFiles, string(kind)+"/"); err != nil {
+			return err
+		}
 	case KindCloud:
-		return copyEmbedFiles(&cloudFiles)
+		if err := copyEmbedFiles(&cloudFiles, string(kind)+"/"); err != nil {
+			return err
+		}
 	default:
-		return fmt.Errorf("unsupport project type '%s'", kind)
+		return fmt.Errorf("unsupport project kind '%s'", kind)
+	}
+	if err := pathx.Ensure(common.LibDir); err != nil {
+		return err
+	}
+	if err := pathx.Ensure(common.TmpDir); err != nil {
+		return err
 	}
 	return p.config.Initialize()
 }
 
-func copyEmbedFiles(efs *embed.FS) error {
+func copyEmbedFiles(efs *embed.FS, dirPrefix string) error {
 	return fs.WalkDir(efs, ".", func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() {
 			return nil
@@ -79,7 +93,7 @@ func copyEmbedFiles(efs *embed.FS) error {
 		if err != nil {
 			return err
 		}
-		if err := filex.Write(path, bytes); err != nil {
+		if err := filex.Write(strings.TrimPrefix(path, dirPrefix), bytes); err != nil {
 			return err
 		}
 		return nil

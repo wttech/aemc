@@ -5,6 +5,18 @@ VERSION=${AEM_CLI_VERSION:-"1.0.1"}
 # Define API
 # ==========
 
+# pretend AEM CLI logger but in bash
+info () {
+  DATE=$(date "+%Y-%m-%d %H:%M:%S")
+  if [ -z "$NO_COLOR" ]; then
+    CL='\033[0;36m'
+    NC='\033[0m'
+    echo "${CL}INFO${NC}[$DATE]" "$@"
+  else
+    echo "INFO[$DATE]" "$@"
+  fi
+}
+
 # print provisioning step header
 step () {
   DATE=$(date "+%Y-%m-%d %H:%M:%S")
@@ -120,14 +132,14 @@ if [ -f "$SCRIPT" ]; then
   export AEM_OUTPUT_VALUE=${AEM_OUTPUT_VALUE:-"NONE"}
 
   STARTED_TIMESTAMP=$(date +%s)
-  step "script '${COMMAND}' started"
+  info "script '${COMMAND}' started"
 
   # shellcheck source=aem/*.sh
   . "${SCRIPT}"
 
   ENDED_TIMESTAMP=$(date +%s)
   ELAPSED=$((ENDED_TIMESTAMP - STARTED_TIMESTAMP))
-  step "script '${COMMAND}' ended in $(duration $ELAPSED)"
+  info "script '${COMMAND}' ended in $(duration $ELAPSED)"
 else
   aem "$@"
 fi

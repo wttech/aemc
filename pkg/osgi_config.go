@@ -102,7 +102,7 @@ func (c OSGiConfig) Delete() error {
 		return err
 	}
 	if !state.Exists {
-		return fmt.Errorf("instance '%s': config '%s' cannot be deleted as it does", c.manager.instance.ID(), c.pid)
+		return fmt.Errorf("%s > config '%s' cannot be deleted as it does", c.manager.instance.ID(), c.pid)
 	}
 	return c.manager.Delete(c.pid)
 }

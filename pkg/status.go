@@ -40,11 +40,11 @@ func NewStatus(res *Instance) *Status {
 func (sm Status) SystemProps() (map[string]string, error) {
 	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SystemPropPath)
 	if err != nil {
-		return nil, fmt.Errorf("instance '%s': cannot read system properties", sm.instance.ID())
+		return nil, fmt.Errorf("%s > cannot read system properties", sm.instance.ID())
 	}
 	var results []string
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &results); err != nil {
-		return nil, fmt.Errorf("instance '%s': cannot parse system properties response: %w", sm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot parse system properties response: %w", sm.instance.ID(), err)
 	}
 	props := parseProperties(results)
 	return props, nil
@@ -53,11 +53,11 @@ func (sm Status) SystemProps() (map[string]string, error) {
 func (sm Status) SlingProps() (map[string]string, error) {
 	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SlingPropPath)
 	if err != nil {
-		return nil, fmt.Errorf("instance '%s': cannot read Sling properties", sm.instance.ID())
+		return nil, fmt.Errorf("%s > cannot read Sling properties", sm.instance.ID())
 	}
 	var results []string
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &results); err != nil {
-		return nil, fmt.Errorf("instance '%s': cannot parse Sling properties response: %w", sm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot parse Sling properties response: %w", sm.instance.ID(), err)
 	}
 	props := parseProperties(results)
 	return props, nil
@@ -66,11 +66,11 @@ func (sm Status) SlingProps() (map[string]string, error) {
 func (sm Status) SlingSettings() (map[string]string, error) {
 	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SlingSettingsPath)
 	if err != nil {
-		return nil, fmt.Errorf("instance '%s': cannot read Sling settings", sm.instance.ID())
+		return nil, fmt.Errorf("%s > cannot read Sling settings", sm.instance.ID())
 	}
 	var results []string
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &results); err != nil {
-		return nil, fmt.Errorf("instance '%s': cannot parse Sling settings response : %w", sm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot parse Sling settings response : %w", sm.instance.ID(), err)
 	}
 	props := parseProperties(results)
 	return props, nil
@@ -94,11 +94,11 @@ func (sm Status) TimeLocation() (*time.Location, error) {
 	}
 	locName, ok := systemProps[SystemPropTimezone]
 	if !ok {
-		return nil, fmt.Errorf("instance '%s': system property '%s' does not exist", sm.instance.ID(), SystemPropTimezone)
+		return nil, fmt.Errorf("%s > system property '%s' does not exist", sm.instance.ID(), SystemPropTimezone)
 	}
 	timeLocation, err := time.LoadLocation(locName)
 	if err != nil {
-		log.Warnf("instance '%s': cannot load time location '%s': %s", sm.instance.ID(), locName, err)
+		log.Warnf("%s > cannot load time location '%s': %s", sm.instance.ID(), locName, err)
 	}
 	return timeLocation, nil
 }
@@ -110,7 +110,7 @@ func (sm Status) RunModes() ([]string, error) {
 	}
 	values, ok := slingSettings[SlingSettingRunModes]
 	if !ok {
-		return []string{}, fmt.Errorf("instance '%s': Sling setting '%s' does not exist", sm.instance.ID(), SlingSettingRunModes)
+		return []string{}, fmt.Errorf("%s > Sling setting '%s' does not exist", sm.instance.ID(), SlingSettingRunModes)
 	}
 	return lo.Map(strings.Split(stringsx.Between(values, "[", "]"), ","), func(rm string, _ int) string { return strings.TrimSpace(rm) }), nil
 }
@@ -118,11 +118,11 @@ func (sm Status) RunModes() ([]string, error) {
 func (sm Status) AemVersion() (string, error) {
 	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SystemProductInfoPath)
 	if err != nil {
-		return instance.AemVersionUnknown, fmt.Errorf("instance '%s': cannot read system product info", sm.instance.ID())
+		return instance.AemVersionUnknown, fmt.Errorf("%s > cannot read system product info", sm.instance.ID())
 	}
 	bytes, err := io.ReadAll(response.RawBody())
 	if err != nil {
-		return instance.AemVersionUnknown, fmt.Errorf("instance '%s': cannot read system product info: %w", sm.instance.ID(), err)
+		return instance.AemVersionUnknown, fmt.Errorf("%s > cannot read system product info: %w", sm.instance.ID(), err)
 	}
 	html := stringsx.AfterLast(string(bytes), SystemProductInfoMarker)
 	matches := aemVersionRegex.FindStringSubmatch(html)

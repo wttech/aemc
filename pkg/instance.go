@@ -175,7 +175,7 @@ func localHosts() []string {
 func (i Instance) TimeLocation() *time.Location {
 	loc, err := i.status.TimeLocation()
 	if err != nil {
-		log.Debugf("instance '%s': cannot determine time location: %s", i.ID(), err)
+		log.Debugf("%s > cannot determine time location: %s", i.ID(), err)
 		return time.Now().Location()
 	}
 	return loc
@@ -185,7 +185,7 @@ func (i Instance) AemVersion() string {
 	// TODO try to retrieve version from filename 'aem/home/instance/[author|publish]/crx-quickstart/app/cq-quickstart-6.5.0-standalone-quickstart.jar'
 	version, err := i.status.AemVersion()
 	if err != nil {
-		log.Debugf("instance '%s': cannot determine AEM version: %s", i.ID(), err)
+		log.Debugf("%s > cannot determine AEM version: %s", i.ID(), err)
 		return instance.AemVersionUnknown
 	}
 	return version
@@ -194,7 +194,7 @@ func (i Instance) AemVersion() string {
 func (i Instance) RunModes() []string {
 	runModes, err := i.status.RunModes()
 	if err != nil {
-		log.Debugf("instance '%s': cannot determine run modes: %s", i.ID(), err)
+		log.Debugf("%s > cannot determine run modes: %s", i.ID(), err)
 		return []string{}
 	}
 	return runModes

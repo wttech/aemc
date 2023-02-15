@@ -154,7 +154,7 @@ func (b OSGiBundle) assumeExists() (*OSGiBundleState, error) {
 		return state, err
 	}
 	if !state.Exists {
-		return state, fmt.Errorf("instance '%s': bundle '%s' does not exist", b.manager.instance.ID(), b.symbolicName)
+		return state, fmt.Errorf("%s > bundle '%s' does not exist", b.manager.instance.ID(), b.symbolicName)
 	}
 	return state, nil
 }
@@ -188,9 +188,9 @@ func (b OSGiBundle) Await(state string, condition func() bool, timeout time.Dura
 			break
 		}
 		if time.Now().After(started.Add(timeout)) {
-			return fmt.Errorf("instance '%s': awaiting bundle '%s' state '%s' reached timeout after %s", b.manager.instance.ID(), b.symbolicName, state, timeout)
+			return fmt.Errorf("%s > awaiting bundle '%s' state '%s' reached timeout after %s", b.manager.instance.ID(), b.symbolicName, state, timeout)
 		}
-		log.Infof("instance '%s': awaiting bundle '%s' state '%s'", b.manager.instance.ID(), b.symbolicName, state)
+		log.Infof("%s > awaiting bundle '%s' state '%s'", b.manager.instance.ID(), b.symbolicName, state)
 		time.Sleep(time.Second * 5)
 	}
 	return nil

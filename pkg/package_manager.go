@@ -52,7 +52,7 @@ func (pm *PackageManager) ByPath(remotePath string) (*Package, error) {
 	}
 	item, ok := lo.Find(list.List, func(item pkg.ListItem) bool { return item.Path == remotePath })
 	if !ok {
-		return nil, fmt.Errorf("instance '%s': package at path '%s' does not exist", pm.instance.ID(), remotePath)
+		return nil, fmt.Errorf("%s > package at path '%s' does not exist", pm.instance.ID(), remotePath)
 	}
 	pid, err := pkg.ParsePID(item.PID)
 	if err != nil {
@@ -68,13 +68,13 @@ func (pm *PackageManager) byPID(pidConfig pkg.PID) (*Package, error) {
 func (pm *PackageManager) List() (*pkg.List, error) {
 	resp, err := pm.instance.http.Request().Get(ListJson)
 	if err != nil {
-		return nil, fmt.Errorf("instance '%s': cannot request package list: %w", pm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot request package list: %w", pm.instance.ID(), err)
 	} else if resp.IsError() {
-		return nil, fmt.Errorf("instance '%s': cannot request package list: %s", pm.instance.ID(), resp.Status())
+		return nil, fmt.Errorf("%s > cannot request package list: %s", pm.instance.ID(), resp.Status())
 	}
 	res := new(pkg.List)
 	if err = fmtx.UnmarshalJSON(resp.RawBody(), res); err != nil {
-		return nil, fmt.Errorf("instance '%s': cannot parse package list response: %w", pm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot parse package list response: %w", pm.instance.ID(), err)
 	}
 	return res, nil
 }
@@ -82,7 +82,7 @@ func (pm *PackageManager) List() (*pkg.List, error) {
 func (pm *PackageManager) Find(pid string) (*pkg.ListItem, error) {
 	item, err := pm.findInternal(pid)
 	if err != nil {
-		return nil, fmt.Errorf("instance '%s': cannot find package '%s': %w", pm.instance.ID(), pid, err)
+		return nil, fmt.Errorf("%s > cannot find package '%s': %w", pm.instance.ID(), pid, err)
 	}
 	return item, nil
 }
@@ -94,13 +94,13 @@ func (pm *PackageManager) findInternal(pid string) (*pkg.ListItem, error) {
 	}
 	resp, err := pm.instance.http.Request().SetQueryParam("name", pidConfig.Name).Get(ListJson)
 	if err != nil {
-		return nil, fmt.Errorf("instance '%s': cannot request package list: %w", pm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot request package list: %w", pm.instance.ID(), err)
 	} else if resp.IsError() {
-		return nil, fmt.Errorf("instance '%s': cannot request package list: %s", pm.instance.ID(), resp.Status())
+		return nil, fmt.Errorf("%s > cannot request package list: %s", pm.instance.ID(), resp.Status())
 	}
 	res := new(pkg.List)
 	if err = fmtx.UnmarshalJSON(resp.RawBody(), res); err != nil {
-		return nil, fmt.Errorf("instance '%s': cannot parse package list response: %w", pm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot parse package list response: %w", pm.instance.ID(), err)
 	}
 	item, ok := lo.Find(res.List, func(p pkg.ListItem) bool { return p.PID == pid })
 	if ok {
@@ -114,21 +114,21 @@ func (pm *PackageManager) IsSnapshot(localPath string) bool {
 }
 
 func (pm *PackageManager) Build(remotePath string) error {
-	log.Infof("instance '%s': building package '%s'", pm.instance.ID(), remotePath)
+	log.Infof("%s > building package '%s'", pm.instance.ID(), remotePath)
 	response, err := pm.instance.http.Request().Post(ServiceJsonPath + remotePath + "?cmd=build")
 	if err != nil {
-		return fmt.Errorf("instance '%s': cannot build package '%s': %w", pm.instance.ID(), remotePath, err)
+		return fmt.Errorf("%s > cannot build package '%s': %w", pm.instance.ID(), remotePath, err)
 	} else if response.IsError() {
-		return fmt.Errorf("instance '%s': cannot build package '%s': %s", pm.instance.ID(), remotePath, response.Status())
+		return fmt.Errorf("%s > cannot build package '%s': %s", pm.instance.ID(), remotePath, response.Status())
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return fmt.Errorf("instance '%s': cannot build package '%s'; cannot parse response: %w", pm.instance.ID(), remotePath, err)
+		return fmt.Errorf("%s > cannot build package '%s'; cannot parse response: %w", pm.instance.ID(), remotePath, err)
 	}
 	if !status.Success {
-		return fmt.Errorf("instance '%s': cannot build package '%s'; unexpected status: %s", pm.instance.ID(), remotePath, status.Message)
+		return fmt.Errorf("%s > cannot build package '%s'; unexpected status: %s", pm.instance.ID(), remotePath, status.Message)
 	}
-	log.Infof("instance '%s': built package '%s'", pm.instance.ID(), remotePath)
+	log.Infof("%s > built package '%s'", pm.instance.ID(), remotePath)
 	return nil
 }
 
@@ -159,45 +159,45 @@ func (pm *PackageManager) UploadWithChanged(localPath string) (bool, error) {
 }
 
 func (pm *PackageManager) Upload(localPath string) (string, error) {
-	log.Infof("instance '%s': uploading package '%s'", pm.instance.ID(), localPath)
+	log.Infof("%s > uploading package '%s'", pm.instance.ID(), localPath)
 	response, err := pm.instance.http.Request().
 		SetFile("package", localPath).
 		SetMultipartFormData(map[string]string{"force": "true"}).
 		Post(ServiceJsonPath + "/?cmd=upload")
 	if err != nil {
-		return "", fmt.Errorf("instance '%s': cannot upload package '%s': %w", pm.instance.ID(), localPath, err)
+		return "", fmt.Errorf("%s > cannot upload package '%s': %w", pm.instance.ID(), localPath, err)
 	} else if response.IsError() {
-		return "", fmt.Errorf("instance '%s': cannot upload package '%s': %s", pm.instance.ID(), localPath, response.Status())
+		return "", fmt.Errorf("%s > cannot upload package '%s': %s", pm.instance.ID(), localPath, response.Status())
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return "", fmt.Errorf("instance '%s': cannot upload package '%s'; cannot parse response: %w", pm.instance.ID(), localPath, err)
+		return "", fmt.Errorf("%s > cannot upload package '%s'; cannot parse response: %w", pm.instance.ID(), localPath, err)
 	}
 	if !status.Success {
-		return "", fmt.Errorf("instance '%s': cannot upload package '%s'; unexpected status: %s", pm.instance.ID(), localPath, status.Message)
+		return "", fmt.Errorf("%s > cannot upload package '%s'; unexpected status: %s", pm.instance.ID(), localPath, status.Message)
 	}
-	log.Infof("instance '%s': uploaded package '%s'", pm.instance.ID(), localPath)
+	log.Infof("%s > uploaded package '%s'", pm.instance.ID(), localPath)
 	return status.Path, nil
 }
 
 func (pm *PackageManager) Install(remotePath string) error {
-	log.Infof("instance '%s': installing package '%s'", pm.instance.ID(), remotePath)
+	log.Infof("%s > installing package '%s'", pm.instance.ID(), remotePath)
 	response, err := pm.instance.http.Request().
 		SetFormData(map[string]string{"cmd": "install"}).
 		Post(ServiceJsonPath + remotePath)
 	if err != nil {
-		return fmt.Errorf("instance '%s': cannot install package '%s': %w", pm.instance.ID(), remotePath, err)
+		return fmt.Errorf("%s > cannot install package '%s': %w", pm.instance.ID(), remotePath, err)
 	} else if response.IsError() {
-		return fmt.Errorf("instance '%s': cannot install package '%s': '%s'", pm.instance.ID(), remotePath, response.Status())
+		return fmt.Errorf("%s > cannot install package '%s': '%s'", pm.instance.ID(), remotePath, response.Status())
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return fmt.Errorf("instance '%s': cannot install package '%s'; cannot parse response: %w", pm.instance.ID(), remotePath, err)
+		return fmt.Errorf("%s > cannot install package '%s'; cannot parse response: %w", pm.instance.ID(), remotePath, err)
 	}
 	if !status.Success {
-		return fmt.Errorf("instance '%s': cannot install package '%s'; unexpected status: %s", pm.instance.ID(), remotePath, status.Message)
+		return fmt.Errorf("%s > cannot install package '%s'; unexpected status: %s", pm.instance.ID(), remotePath, status.Message)
 	}
-	log.Infof("instance '%s': installed package '%s'", pm.instance.ID(), remotePath)
+	log.Infof("%s > installed package '%s'", pm.instance.ID(), remotePath)
 	return nil
 }
 
@@ -235,7 +235,7 @@ func (pm *PackageManager) deploySnapshot(localPath string) (bool, error) {
 			return false, err
 		}
 		if checksum == lockData.Checksum {
-			log.Infof("instance '%s': skipped deploying package '%s'", pm.instance.ID(), localPath)
+			log.Infof("%s > skipped deploying package '%s'", pm.instance.ID(), localPath)
 			return false, nil
 		}
 	}
@@ -284,44 +284,44 @@ type packageDeployLock struct {
 }
 
 func (pm *PackageManager) Uninstall(remotePath string) error {
-	log.Infof("instance '%s': uninstalling package '%s'", pm.instance.ID(), remotePath)
+	log.Infof("%s > uninstalling package '%s'", pm.instance.ID(), remotePath)
 	response, err := pm.instance.http.Request().
 		SetFormData(map[string]string{"cmd": "uninstall"}).
 		Post(ServiceJsonPath + remotePath)
 	if err != nil {
-		return fmt.Errorf("instance '%s': cannot uninstall package '%s': %w", pm.instance.ID(), remotePath, err)
+		return fmt.Errorf("%s > cannot uninstall package '%s': %w", pm.instance.ID(), remotePath, err)
 	} else if response.IsError() {
-		return fmt.Errorf("instance '%s': cannot uninstall package '%s': %s", pm.instance.ID(), remotePath, response.Status())
+		return fmt.Errorf("%s > cannot uninstall package '%s': %s", pm.instance.ID(), remotePath, response.Status())
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return fmt.Errorf("instance '%s': cannot uninstall package '%s'; cannot parse response: %w", pm.instance.ID(), remotePath, err)
+		return fmt.Errorf("%s > cannot uninstall package '%s'; cannot parse response: %w", pm.instance.ID(), remotePath, err)
 	}
 	if !status.Success {
-		return fmt.Errorf("instance '%s': cannot uninstall package '%s'; unexpected status: %s", pm.instance.ID(), remotePath, status.Message)
+		return fmt.Errorf("%s > cannot uninstall package '%s'; unexpected status: %s", pm.instance.ID(), remotePath, status.Message)
 	}
-	log.Infof("instance '%s': uninstalled package '%s'", pm.instance.ID(), remotePath)
+	log.Infof("%s > uninstalled package '%s'", pm.instance.ID(), remotePath)
 	return nil
 }
 
 func (pm *PackageManager) Delete(remotePath string) error {
-	log.Infof("instance '%s': deleting package '%s'", pm.instance.ID(), remotePath)
+	log.Infof("%s > deleting package '%s'", pm.instance.ID(), remotePath)
 	response, err := pm.instance.http.Request().
 		SetFormData(map[string]string{"cmd": "delete"}).
 		Post(ServiceJsonPath + remotePath)
 	if err != nil {
-		return fmt.Errorf("instance '%s': cannot delete package '%s': %w", pm.instance.ID(), remotePath, err)
+		return fmt.Errorf("%s > cannot delete package '%s': %w", pm.instance.ID(), remotePath, err)
 	} else if response.IsError() {
-		return fmt.Errorf("instance '%s': cannot delete package '%s': %s", pm.instance.ID(), remotePath, response.Status())
+		return fmt.Errorf("%s > cannot delete package '%s': %s", pm.instance.ID(), remotePath, response.Status())
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return fmt.Errorf("instance '%s': cannot delete package '%s'; cannot parse response: %w", pm.instance.ID(), remotePath, err)
+		return fmt.Errorf("%s > cannot delete package '%s'; cannot parse response: %w", pm.instance.ID(), remotePath, err)
 	}
 	if !status.Success {
-		return fmt.Errorf("instance '%s': cannot delete package '%s'; unexpected status: %s", pm.instance.ID(), remotePath, status.Message)
+		return fmt.Errorf("%s > cannot delete package '%s'; unexpected status: %s", pm.instance.ID(), remotePath, status.Message)
 	}
-	log.Infof("instance '%s': deleted package '%s'", pm.instance.ID(), remotePath)
+	log.Infof("%s > deleted package '%s'", pm.instance.ID(), remotePath)
 	return nil
 }
 

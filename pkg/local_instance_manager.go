@@ -196,7 +196,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		if i.local.IsRunning() && i.local.OutOfDate() {
 			outdated = append(outdated, i)
 
-			log.Infof("instance '%s': is already started but out-of-date", i.ID())
+			log.Infof("%s > is already started but out-of-date", i.ID())
 			err := i.local.Stop()
 			if err != nil {
 				return nil, err
@@ -292,7 +292,7 @@ func (im *InstanceManager) Kill(instances []Instance) ([]Instance, error) {
 		if i.local.IsKillable() {
 			err := i.local.Kill()
 			if err != nil {
-				log.Warnf("instance '%s': cannot kill as process not running or is already killed: %s", i.ID(), err)
+				log.Warnf("%s > cannot kill as process not running or is already killed: %s", i.ID(), err)
 			} else {
 				killed = append(killed, i)
 			}

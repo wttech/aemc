@@ -28,7 +28,9 @@ Universal tool to manage AEM instances everywhere!
 * [Configuration](#configuration)
   * [Generating default configuration](#generating-default-configuration)
   * [Configuration precedence](#configuration-precedence)
-  * [Performance optimization](#performance-optimization)
+  * [Scripts](#scripts)
+    * [Improving performance](#improving-performance)
+    * [Increasing verbosity](#increasing-verbosity)
 * [Contributing](#contributing)
 * [License](#license)
 
@@ -181,11 +183,35 @@ instance:
       user: admin
       password: admin
       run_modes: [ local ]
+      jvm_opts:
+        - '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:14502'
+        - '-Djava.io.tmpdir=[[.Path]]/aem/home/tmp'
+        - '-Duser.language=en'
+        - '-Duser.country=US'
+        - '-Duser.timezone=UTC'
+      start_opts: []
+      secret_vars:
+        - 'ACME_SECRET=value'
+      env_vars:
+        - 'ACME_VAR=value'
+      sling_props: []
     local_publish:
       http_url: http://127.0.0.1:4503
       user: admin
       password: admin
       run_modes: [ local ]
+      jvm_opts:
+        - '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:14503'
+        - '-Djava.io.tmpdir=[[.Path]]/aem/home/tmp'
+        - '-Duser.language=en'
+        - '-Duser.country=US'
+        - '-Duser.timezone=UTC'
+      start_opts: []
+      secret_vars:
+        - 'ACME_SECRET=value'
+      env_vars:
+        - 'ACME_VAR=value'
+      sling_props: []
 
   # Filters for defined
   filter:
@@ -209,6 +235,12 @@ instance:
     done_threshold: 3
     # Wait only for those instances whose state has been changed internally (unaware of external changes)
     await_strict: true
+    # Max time to wait for the instance to be healthy after executing the start script or e.g deploying a package
+    await_started_timeout:
+      duration: 30m
+    # Max time to wait for the instance to be stopped after executing the stop script
+    await_stopped_timeout:
+      duration: 10m
     # Bundle state tracking
     bundle_stable:
       symbolic_names_ignored: []
@@ -235,9 +267,14 @@ instance:
   # Managed locally (set up automatically)
   local:
     # Current runtime dir (Sling launchpad, JCR repository)
-    unpack_dir: "aem/home/data/instance"
+    unpack_dir: "aem/home/var/instance"
     # Archived runtime dir (AEM backup files '*.aemb.zst')
-    backup_dir: "aem/home/data/backup"
+    backup_dir: "aem/home/var/backup"
+
+    # Oak Run tool options (offline instance management)
+    oakrun:
+      download_url: "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.44.0/oak-run-1.44.0.jar"
+      store_path: "crx-quickstart/repository/segmentstore"
 
     # Source files
     quickstart:
@@ -246,7 +283,20 @@ instance:
       # AEM License properties file
       license_file: "aem/home/lib/license.properties"
 
-  # Package Manager
+  # Status discovery (timezone, AEM version, etc)
+  status:
+    timeout: 500ms
+
+  # JCR Repository
+  repo:
+    property_change_ignored:
+      # AEM assigns them automatically
+      - "jcr:created"
+      - "cq:lastModified"
+      # AEM encrypts it right after changing by replication agent setup command
+      - "transportPassword"
+
+  # CRX Package Manager
   package:
     # Force re-uploading/installing of snapshot AEM packages (just built / unreleased)
     snapshot_patterns: [ "**/*-SNAPSHOT.zip" ]
@@ -263,8 +313,10 @@ instance:
 
 # Java options used to launch AEM instances
 java:
-  # Java JRE/JDK location
-  home_dir: {{ .Env.JAVA_HOME }}
+  # Pre-installed local JDK dir
+  home_dir: "" # "[[.Env.JAVA_HOME]]"
+  # Auto-managed JDK download URL
+  download_url: "" # "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_x64_mac_hotspot_11.0.18_10.tar.gz"
   # Validate if following Java version constraints are met
   version_constraints: ">= 11, < 12"
 
@@ -308,7 +360,11 @@ input:
 
 output:
   format: text
-  file: aem/home/aem.log
+  log:
+    # File path of logs written especially when output format is different than 'text'
+    file: aem/home/var/log/aem.log
+    # Controls if script outputs and log entries should be printed to console instead of written to file when output format is 'text'
+    console: true
 ```
 
 After instructing tool where the AEM instances files are located then, finally, instances may be created and launched:
@@ -327,14 +383,27 @@ For example: `instance.local.quickstart.dist_file` could be overridden by enviro
 
 Also note that some configuration options may be ultimately overridden by CLI flags, like `--output-format`.
 
-## Performance optimization
+## Scripts
 
-By default, fail-safe options are in use. However, to achieve maximum performance of the tool, considering setting these options:
+By default, fail-safe options are in use. However, consider using the configuration options listed below to achieve a more desired tool experience. 
 
-```shell
-export AEM_OUTPUT_MODE=none
-export AEM_INSTANCE_PROCESSING_MODE=parallel
-```
+### Improving performance
+
+  ```shell
+  export AEM_INSTANCE_PROCESSING_MODE=parallel
+  ```
+
+  This setting will significantly reduce command execution time. Although be aware that when deploying heavy AEM packages like Service Packs on the same machine in parallel, a heavy load could be observed, which could lead to unpredicted AEM CMS and AEM Compose tool behavior.
+
+### Increasing verbosity
+
+  ```shell
+  export AEM_OUTPUT_VALUE=ALL
+  ```
+
+  Setting this environment variable will instruct the tool to request from the AEM instance descriptive information about the recently executed command subject.
+  For example, if a recently executed command was `sh aemw package deploy my-package.zip -A` the AEM Compose tool after doing the actual package deployment will request from CRX Package Manager the exact information about just deployed package.
+  This feature is beneficial for clarity and debugging purposes.
 
 # Contributing
 

@@ -35,13 +35,17 @@ func (c *CLI) configInitCmd() *cobra.Command {
 		Aliases: []string{"init"},
 		Short:   "Initialize configuration",
 		Run: func(cmd *cobra.Command, args []string) {
-			err := c.config.Initialize()
+			changed, err := c.config.InitializeWithChanged()
 			if err != nil {
 				c.Error(err)
 				return
 			}
 			c.SetOutput("path", cfg.File())
-			c.Ok("config initialized properly")
+			if changed {
+				c.Changed("config initialized")
+			} else {
+				c.Ok("config already initialized")
+			}
 		},
 	}
 	return cmd

@@ -133,7 +133,7 @@ if [ -f "$SCRIPT" ]; then
 
   STARTED_TIMESTAMP=$(date +%s)
 
-  info "script '${COMMAND}' started"
+  info "script '${COMMAND}' started; to customize its behavior see: https://github.com/wttech/aemc#scripts"
 
   # shellcheck source=aem/*.sh
   . "${SCRIPT}"

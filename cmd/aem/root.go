@@ -22,7 +22,7 @@ func (c *CLI) rootCmd() *cobra.Command {
 	}
 	cmd.AddCommand(c.appCmd())
 	cmd.AddCommand(c.versionCmd())
-	cmd.AddCommand(c.initCmd())
+	cmd.AddCommand(c.projectCmd())
 	cmd.AddCommand(c.configCmd())
 	cmd.AddCommand(c.instanceCmd())
 	cmd.AddCommand(c.osgiCmd())

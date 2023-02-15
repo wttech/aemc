@@ -100,10 +100,12 @@ func (c *CLI) configure() {
 }
 
 func (c *CLI) configureOutput() {
-	c.outputValue = c.config.Values().Output.Value
-	c.outputFormat = strings.ReplaceAll(c.config.Values().Output.Format, "yaml", "yml")
-	c.outputLogFile = c.config.Values().Output.Log.File
-	c.outputLogConsole = c.config.Values().Output.Log.Console
+	opts := c.config.Values().Output
+
+	c.outputValue = opts.Value
+	c.outputFormat = strings.ReplaceAll(opts.Format, "yaml", "yml")
+	c.outputLogFile = opts.Log.File
+	c.outputLogConsole = opts.Log.Console
 
 	if c.outputValue != common.OutputValueNone && c.outputValue != common.OutputValueAll {
 		c.outputFormat = fmtx.Text

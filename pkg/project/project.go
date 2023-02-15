@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/magiconair/properties"
 	"github.com/samber/lo"
+	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/filex"
@@ -31,7 +32,7 @@ const (
 )
 
 func Kinds() []Kind {
-	return []Kind{KindCloud, KindClassic}
+	return []Kind{KindAuto, KindCloud, KindClassic}
 }
 
 func KindStrings() []string {
@@ -56,14 +57,30 @@ var classicFiles embed.FS
 //go:embed cloud
 var cloudFiles embed.FS
 
-func (p Project) IsInitialized() bool {
-	return p.config.IsInitialized()
+func (p Project) InitializeWithChanged(kind Kind) (bool, error) {
+	projectChanged, err := p.initializeWithChanged(kind)
+	if err != nil {
+		return false, err
+	}
+	configChanged, err := p.config.InitializeWithChanged()
+	if err != nil {
+		return false, err
+	}
+	return projectChanged || configChanged, nil
 }
 
-func (p Project) Initialize(kind Kind) error {
-	if p.IsInitialized() {
-		return fmt.Errorf("project of kind '%s' is already initialized", kind)
+func (p Project) initializeWithChanged(kind Kind) (bool, error) {
+	if p.config.TemplateFileExists() {
+		return false, nil
 	}
+	if err := p.initialize(kind); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (p Project) initialize(kind Kind) error {
+	log.Infof("preparing default files for project of kind '%s'", kind)
 	switch kind {
 	case KindClassic:
 		if err := copyEmbedFiles(&classicFiles, string(kind)+"/"); err != nil {
@@ -76,13 +93,14 @@ func (p Project) Initialize(kind Kind) error {
 	default:
 		return fmt.Errorf("project kind '%s' cannot be initialized", kind)
 	}
+	log.Infof("creating conventional directories")
 	if err := pathx.Ensure(common.LibDir); err != nil {
 		return err
 	}
 	if err := pathx.Ensure(common.TmpDir); err != nil {
 		return err
 	}
-	return p.config.Initialize()
+	return nil
 }
 
 func copyEmbedFiles(efs *embed.FS, dirPrefix string) error {
@@ -129,18 +147,27 @@ const (
 
 func (p Project) KindInfer() (Kind, error) {
 	if pathx.Exists(KindPropFile) {
-		props, err := properties.LoadFile(KindPropFile, properties.ISO_8859_1)
+		log.Infof("inferring project kind basing on file '%s' and property '%s'", KindPropFile, KindPropName)
+		propLoader := properties.Loader{
+			Encoding:         properties.ISO_8859_1,
+			DisableExpansion: true,
+		}
+		props, err := propLoader.LoadFile(KindPropFile)
 		if err != nil {
 			return "", fmt.Errorf("cannot infer project kind: %w", err)
 		}
 		propValue := props.GetString(KindPropName, "")
+
+		var kind Kind
 		if propValue == KindPropCloudValue {
-			return KindCloud, nil
+			kind = KindCloud
 		} else if strings.HasPrefix(propValue, KindPropClassicPrefix) {
-			return KindClassic, nil
+			kind = KindClassic
 		} else {
 			return "", fmt.Errorf("cannot infer project kind as value '%s' of property '%s' in file '%s' is not recognized", propValue, KindPropName, KindPropFile)
 		}
+		log.Infof("inferred project kind basing on file '%s' and property '%s' is '%s'", KindPropFile, KindPropName, kind)
+		return kind, nil
 	}
 	return "", fmt.Errorf("cannot infer project kind as file '%s' does not exist", KindPropFile)
 }
@@ -159,12 +186,26 @@ func (p Project) ScriptNames() ([]string, error) {
 	return scripts, nil
 }
 
-func (p Project) InitializeWithChanged(kind Kind) (bool, error) {
-	if p.IsInitialized() {
-		return false, nil
+func (p Project) GettingStarted() (string, error) {
+	scripts, err := p.ScriptNames()
+	if err != nil {
+		return "", err
 	}
-	if err := p.Initialize(kind); err != nil {
-		return false, err
-	}
-	return true, nil
+	text := fmt.Sprintf(strings.Join([]string{
+		"The next step is providing AEM files (JAR or SDK ZIP, license, service packs) to directory '" + common.LibDir + "'.",
+		"Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '" + cfg.FileDefault + "'.",
+		"Make sure to exclude the directory '" + common.HomeDir + "'from VCS versioning and IDE indexing.",
+		"Finally, use control scripts to manage AEM instances:",
+		"",
+
+		"sh aemw [%s]",
+
+		"",
+		"It is also possible to run individual AEM Compose CLI commands separately.",
+		"Discover available commands by running:",
+		"",
+
+		"sh aemw --help",
+	}, "\n"), strings.Join(scripts, "|"))
+	return text, nil
 }

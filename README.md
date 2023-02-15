@@ -29,7 +29,7 @@ Universal tool to manage AEM instances everywhere!
   * [Generating default configuration](#generating-default-configuration)
   * [Configuration precedence](#configuration-precedence)
   * [Scripts](#scripts)
-    * [Optimizing performance](#optimizing-performance)
+    * [Improving performance](#improving-performance)
     * [Increasing verbosity](#increasing-verbosity)
 * [Contributing](#contributing)
 * [License](#license)
@@ -333,13 +333,13 @@ Also note that some configuration options may be ultimately overridden by CLI fl
 
 By default, fail-safe options are in use. However, consider using the configuration options listed below to achieve a more desired tool experience. 
 
-### Optimizing performance
+### Improving performance
 
   ```shell
   export AEM_INSTANCE_PROCESSING_MODE=parallel
   ```
 
-Note that when deploying heavy AEM packages like Service Packs on the same machine in parallel, then could be observed a heavy load which could lead to unpredicted both AEM CMS and AEM Compose tool behavior.
+Basically, this setting will reduce significantly commands execution time. Although be aware, note that when deploying heavy AEM packages like Service Packs on the same machine in parallel, then could be observed a heavy load which could lead to unpredicted both AEM CMS and AEM Compose tool behavior.
 
 ### Increasing verbosity
 

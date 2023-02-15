@@ -26,11 +26,9 @@ step () {
     NC='\033[0m'
     echo ""
     echo "${CL}STEP${NC}[$DATE]${CY}" "$@" "${NC}"
-    echo ""
   else
     echo ""
     echo "STEP[$DATE]" "$@"
-    echo ""
   fi
 }
 

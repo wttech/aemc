@@ -23,25 +23,25 @@ func (cm *OSGiConfigManager) ByPID(pid string) OSGiConfig {
 func (cm *OSGiConfigManager) listPIDs() (*osgi.ConfigPIDs, error) {
 	resp, err := cm.instance.http.Request().Get(ConfigMgrPath)
 	if err != nil {
-		return nil, fmt.Errorf("cannot request config list on instance '%s': %w", cm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot request config list: %w", cm.instance.ID(), err)
 	}
 	if resp.IsError() {
-		return nil, fmt.Errorf("cannot request config list on instance '%s': %w", cm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot request config list: %w", cm.instance.ID(), err)
 	}
 
 	htmlBytes, err := io.ReadAll(resp.RawBody())
 	if err != nil {
-		return nil, fmt.Errorf("cannot read config list from instance '%s'", cm.instance.ID())
+		return nil, fmt.Errorf("%s > cannot read config list", cm.instance.ID())
 	}
 	html := string(htmlBytes)
 	r, _ := regexp.Compile("configData = (.*);")
 	pids := strings.TrimSuffix(strings.TrimPrefix(r.FindString(html), "configData = "), ";")
 	if len(pids) == 0 {
-		return nil, fmt.Errorf("cannot find config list in HTML response from instance '%s'", cm.instance.ID())
+		return nil, fmt.Errorf("%s > cannot find config list in HTML response", cm.instance.ID())
 	}
 	var res osgi.ConfigPIDs
 	if err = fmtx.UnmarshalJSON(bytes.NewBufferString(pids), &res); err != nil {
-		return nil, fmt.Errorf("cannot parse bundle list from instance '%s': %w", cm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot parse config list JSON found in HTML response: %w", cm.instance.ID(), err)
 	}
 	return &res, nil
 }
@@ -62,14 +62,14 @@ func (cm *OSGiConfigManager) All() ([]OSGiConfig, error) {
 func (cm *OSGiConfigManager) Find(pid string) (*osgi.ConfigListItem, error) {
 	resp, err := cm.instance.http.Request().Get(fmt.Sprintf("%s/%s.json", ConfigMgrPath, pid))
 	if err != nil {
-		return nil, fmt.Errorf("cannot request config on instance '%s': %w", cm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot find config '%s': %w", cm.instance.ID(), pid, err)
 	}
 	if resp.IsError() {
-		return nil, fmt.Errorf("cannot request config on instance '%s': %w", cm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot find config '%s': %s", cm.instance.ID(), pid, resp.Status())
 	}
 	var res []osgi.ConfigListItem
 	if err = fmtx.UnmarshalJSON(resp.RawBody(), &res); err != nil {
-		return nil, fmt.Errorf("cannot parse config from instance '%s': %w", cm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot parse config '%s': %w", cm.instance.ID(), pid, err)
 	}
 	if len(res) > 0 {
 		return &res[0], nil
@@ -96,14 +96,14 @@ func (cm *OSGiConfigManager) FindAll() (*osgi.ConfigList, error) {
 }
 
 func (cm *OSGiConfigManager) Save(pid string, props map[string]any) error {
-	log.Infof("saving config '%s' on instance '%s'", pid, cm.instance.ID())
+	log.Infof("%s > saving config '%s'", cm.instance.ID(), pid)
 	resp, err := cm.instance.http.RequestFormData(saveConfigProps(props)).Post(fmt.Sprintf("%s/%s", ConfigMgrPath, pid))
 	if err != nil {
-		return fmt.Errorf("cannot save config '%s' on instance '%s': %w", pid, cm.instance.ID(), err)
+		return fmt.Errorf("%s > cannot save config '%s': %w", cm.instance.ID(), pid, err)
 	} else if resp.IsError() {
-		return fmt.Errorf("cannot save config '%s' on instance '%s': %s", pid, cm.instance.ID(), resp.Status())
+		return fmt.Errorf("%s > cannot save config '%s': %s", cm.instance.ID(), pid, resp.Status())
 	}
-	log.Infof("saved config '%s' on instance '%s'", pid, cm.instance.ID())
+	log.Infof("%s > saved config '%s'", cm.instance.ID(), pid)
 	return nil
 }
 
@@ -120,16 +120,16 @@ func saveConfigProps(props map[string]any) map[string]any {
 }
 
 func (cm *OSGiConfigManager) Delete(pid string) error {
-	log.Infof("deleting config '%s' from instance '%s'", pid, cm.instance.ID())
+	log.Infof("%s > deleting config '%s'", cm.instance.ID(), pid)
 	resp, err := cm.instance.http.Request().
 		SetFormData(map[string]string{"delete": "1", "apply": "1"}).
 		Post(fmt.Sprintf("%s/%s", ConfigMgrPath, pid))
 	if err != nil {
-		return fmt.Errorf("cannot save config '%s' on instance '%s': %w", pid, cm.instance.ID(), err)
+		return fmt.Errorf("%s > cannot save config '%s': %w", cm.instance.ID(), pid, err)
 	} else if resp.IsError() {
-		return fmt.Errorf("cannot save config '%s' on instance '%s': %s", pid, cm.instance.ID(), resp.Status())
+		return fmt.Errorf("%s > cannot save config '%s': %s", cm.instance.ID(), pid, resp.Status())
 	}
-	log.Infof("deleted config '%s' from instance '%s'", pid, cm.instance.ID())
+	log.Infof("%s > deleted config '%s'", cm.instance.ID(), pid)
 	return nil
 }
 

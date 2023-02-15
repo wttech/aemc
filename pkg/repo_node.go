@@ -208,8 +208,8 @@ func (n RepoNode) Delete() error {
 	if err != nil {
 		return err
 	}
-	if !state.Exists {
-		return fmt.Errorf("node '%s' cannot be deleted as it does not exist on instance '%s'", n.path, n.repo.instance.ID())
+	if !state.Exists { // TODO investigate if existence check if really needed here
+		return fmt.Errorf("%s > node '%s' cannot be deleted as it does not exist", n.repo.instance.ID(), n.path)
 	}
 	return n.repo.Delete(n.path)
 }

@@ -319,11 +319,9 @@ func InstanceMsg(instances []Instance, msg string) string {
 	count := len(instances)
 	switch count {
 	case 0:
-		return fmt.Sprintf("none of instances: %s", msg)
-	case 1:
-		return fmt.Sprintf("instance '%s': %s", instances[0].id, msg)
+		return fmt.Sprintf("[] > %s", msg)
 	default:
-		return fmt.Sprintf("instances '%s': %s", InstanceIds(instances), msg)
+		return fmt.Sprintf("%s > %s", InstanceIds(instances), msg)
 	}
 }
 

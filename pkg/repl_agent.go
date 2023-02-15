@@ -23,21 +23,21 @@ func (ra ReplAgent) Setup(props map[string]any) (bool, error) {
 	changed := false
 	pageState, err := ra.page.State()
 	if err != nil {
-		return false, fmt.Errorf("cannot read replication agent '%s' on instance '%s': %w", ra.page.Path(), ra.instanceID(), err)
+		return false, fmt.Errorf("%s > cannot read replication agent '%s': %w", ra.instanceID(), ra.page.Path(), err)
 	}
 	if !pageState.Exists {
 		err = ra.page.Save(map[string]any{
 			"jcr:primaryType": "cq:Page",
 		})
 		if err != nil {
-			return false, fmt.Errorf("cannot setup replication agent '%s' on instance '%s': %w", ra.page.Path(), ra.instanceID(), err)
+			return false, fmt.Errorf("%s > cannot setup replication agent '%s': %w", ra.instanceID(), ra.page.Path(), err)
 		}
 		changed = true
 	}
 	pageContent := ra.page.Content()
 	pageContentState, err := pageContent.State()
 	if err != nil {
-		return changed, fmt.Errorf("cannot read replication agent '%s' exist on instance '%s': %w", pageContent.Path(), ra.instanceID(), err)
+		return changed, fmt.Errorf("%s > cannot read replication agent '%s' exist: %w", ra.instanceID(), pageContent.Path(), err)
 	}
 	if !pageContentState.Exists {
 		maps.Copy(props, map[string]any{
@@ -48,13 +48,13 @@ func (ra ReplAgent) Setup(props map[string]any) (bool, error) {
 		})
 		err = pageContent.Save(props)
 		if err != nil {
-			return changed, fmt.Errorf("cannot create replication agent '%s' on instance '%s': %w", pageContent.Path(), ra.instanceID(), err)
+			return changed, fmt.Errorf("%s > cannot create replication agent '%s': %w", ra.instanceID(), pageContent.Path(), err)
 		}
 		changed = true
 	} else {
 		changed, err = pageContent.SaveWithChanged(props) // TODO react when transportPassword changes externally, now is ignored
 		if err != nil {
-			return changed, fmt.Errorf("cannot update replication agent '%s' on instance '%s': %w", pageContent.Path(), ra.instanceID(), err)
+			return changed, fmt.Errorf("%s > cannot update replication agent '%s': %w", ra.instanceID(), pageContent.Path(), err)
 		}
 	}
 
@@ -64,14 +64,14 @@ func (ra ReplAgent) Setup(props map[string]any) (bool, error) {
 func (ra ReplAgent) Delete() (bool, error) {
 	pageState, err := ra.page.State()
 	if err != nil {
-		return false, fmt.Errorf("cannot read replication agent '%s' on instance '%s': %w", ra.page.Path(), ra.instanceID(), err)
+		return false, fmt.Errorf("%s > cannot read replication agent '%s': %w", ra.instanceID(), ra.page.Path(), err)
 	}
 	if !pageState.Exists {
 		return false, nil
 	}
 	err = ra.page.Delete()
 	if err != nil {
-		return false, fmt.Errorf("cannot delete replication agent '%s' from instance '%s': %w", ra.page.Path(), ra.instanceID(), err)
+		return false, fmt.Errorf("%s > cannot delete replication agent '%s': %w", ra.instanceID(), ra.page.Path(), err)
 	}
 	return true, nil
 }

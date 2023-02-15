@@ -20,6 +20,7 @@ Universal tool to manage AEM instances everywhere!
 
 * [Distributions](#distributions)
   * [CLI - Overview](#cli---overview)
+  * [CLI - Demo](#cli---demo)
   * [CLI - AEM Project Quickstart](#cli---aem-project-quickstart)
   * [CLI - Building &amp; installing from source](#cli---building--installing-from-source)
   * [Ansible Collection](#ansible-collection)
@@ -68,6 +69,8 @@ Main features:
 Worth knowing:
 
 - On Windows use it with [Git Bash](https://gitforwindows.org/) ([CMD](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/cmd) and [PowerShell](https://learn.microsoft.com/en-us/powershell/scripting/overview) are not supported nor tested)
+
+## CLI - Demo
 
 ![CLI Screenshot](docs/cli-demo.gif)
 

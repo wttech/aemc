@@ -339,7 +339,7 @@ By default, fail-safe options are in use. However, consider using the configurat
   export AEM_INSTANCE_PROCESSING_MODE=parallel
   ```
 
-Basically, this setting will reduce significantly commands execution time. Although be aware, note that when deploying heavy AEM packages like Service Packs on the same machine in parallel, then could be observed a heavy load which could lead to unpredicted both AEM CMS and AEM Compose tool behavior.
+  This setting will significantly reduce command execution time. Although be aware that when deploying heavy AEM packages like Service Packs on the same machine in parallel, a heavy load could be observed, which could lead to unpredicted AEM CMS and AEM Compose tool behavior.
 
 ### Increasing verbosity
 

@@ -111,6 +111,10 @@ func File() string {
 	return path
 }
 
+func (c *Config) FileExists() bool {
+	return pathx.Exists(File())
+}
+
 func TemplateFile() string {
 	path := os.Getenv(TemplateFileEnvVar)
 	if path == "" {
@@ -119,23 +123,23 @@ func TemplateFile() string {
 	return path
 }
 
-func (c *Config) IsInitialized() bool {
-	return pathx.Exists(File())
+func (c *Config) TemplateFileExists() bool {
+	return pathx.Exists(TemplateFile())
 }
 
-func (c *Config) Initialize() error {
+func (c *Config) InitializeWithChanged() (bool, error) {
 	file := File()
 	if pathx.Exists(file) {
-		return fmt.Errorf("config file already exists: '%s'", file)
+		return false, nil
 	}
 	templateFile := TemplateFile()
 	if !pathx.Exists(templateFile) {
-		return fmt.Errorf("config file template does not exist: '%s'", templateFile)
+		return false, fmt.Errorf("config file template does not exist: '%s'", templateFile)
 	}
 	if err := filex.Copy(templateFile, file); err != nil {
-		return fmt.Errorf("cannot copy config file template: '%w'", err)
+		return false, fmt.Errorf("cannot copy config file template: '%w'", err)
 	}
-	return nil
+	return true, nil
 }
 
 func InputFormats() []string {

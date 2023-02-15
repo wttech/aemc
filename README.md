@@ -28,7 +28,9 @@ Universal tool to manage AEM instances everywhere!
 * [Configuration](#configuration)
   * [Generating default configuration](#generating-default-configuration)
   * [Configuration precedence](#configuration-precedence)
-  * [Performance optimization](#performance-optimization)
+  * [Script customizations](#script-customizations)
+    * [Optimizing performance](#optimizing-performance)
+    * [Increasing verbosity](#increasing-verbosity)
 * [Contributing](#contributing)
 * [License](#license)
 
@@ -327,14 +329,27 @@ For example: `instance.local.quickstart.dist_file` could be overridden by enviro
 
 Also note that some configuration options may be ultimately overridden by CLI flags, like `--output-format`.
 
-## Performance optimization
+## Script customizations
 
-By default, fail-safe options are in use. However, to achieve maximum performance of the tool, considering setting these options:
+By default, fail-safe options are in use. However, consider using the configuration options listed below to achieve a more desired tool experience. 
 
-```shell
-export AEM_OUTPUT_MODE=none
-export AEM_INSTANCE_PROCESSING_MODE=parallel
-```
+### Optimizing performance
+
+  ```shell
+  export AEM_INSTANCE_PROCESSING_MODE=parallel
+  ```
+
+Note that when deploying heavy AEM packages like Service Packs on the same machine in parallel, then could be observed a heavy load which could lead to unpredicted both AEM CMS and AEM Compose tool behavior.
+
+### Increasing verbosity
+
+  ```shell
+  export AEM_OUTPUT_VALUE=ALL
+  ```
+
+  Setting this environment variable will instruct the tool to request from the AEM instance descriptive information about the recently executed command subject.
+  For example, if a recently executed command was `sh aemw package deploy my-package.zip -A` the AEM Compose tool after doing the actual package deployment will request from CRX Package Manager the exact information about just deployed package.
+  This feature is beneficial for clarity and debugging purposes.
 
 # Contributing
 

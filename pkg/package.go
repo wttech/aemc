@@ -54,7 +54,7 @@ func (p Package) Build() error {
 		return err
 	}
 	if !state.Exists {
-		return fmt.Errorf("package '%s' cannot be built as it does not exist on instance '%s'", p.PID.String(), p.manager.instance.ID())
+		return fmt.Errorf("instance '%s': package '%s' cannot be built as it does not exist", p.manager.instance.ID(), p.PID.String())
 	}
 	return p.manager.Build(state.Data.Path)
 }
@@ -65,7 +65,7 @@ func (p *Package) Install() error {
 		return err
 	}
 	if !state.Exists {
-		return fmt.Errorf("package '%s' cannot be installed as it does not exist on instance '%s'", p.PID.String(), p.manager.instance.ID())
+		return fmt.Errorf("instance '%s': package '%s' cannot be installed as it does not exist", p.manager.instance.ID(), p.PID.String())
 	}
 	return p.manager.Install(state.Data.Path)
 }
@@ -76,7 +76,7 @@ func (p *Package) InstallWithChanged() (bool, error) {
 		return false, err
 	}
 	if !state.Exists {
-		return false, fmt.Errorf("package '%s' cannot be installed as it does not exist on instance '%s'", p.PID.String(), p.manager.instance.ID())
+		return false, fmt.Errorf("instance '%s': package '%s' cannot be installed as it does not exist", p.manager.instance.ID(), p.PID.String())
 	}
 	if !state.Data.Installed() { // TODO checksum comparison needed here
 		return true, p.manager.Install(state.Data.Path)
@@ -90,7 +90,7 @@ func (p *Package) Uninstall() error {
 		return err
 	}
 	if !state.Exists {
-		return fmt.Errorf("package '%s' cannot be uninstalled as it does not exist on instance '%s'", p.PID.String(), p.manager.instance.ID())
+		return fmt.Errorf("instance '%s': package '%s' cannot be uninstalled as it does not exist", p.manager.instance.ID(), p.PID.String())
 	}
 	return p.manager.Uninstall(state.Data.Path)
 }
@@ -101,7 +101,7 @@ func (p *Package) UninstallWithChanged() (bool, error) {
 		return false, err
 	}
 	if !state.Exists {
-		return false, fmt.Errorf("package '%s' cannot be uninstalled as it does not exist on instance '%s'", p.PID.String(), p.manager.instance.ID())
+		return false, fmt.Errorf("instance '%s': package '%s' cannot be uninstalled as it does not exist", p.manager.instance.ID(), p.PID.String())
 	}
 	if state.Data.Installed() {
 		return true, p.manager.Uninstall(state.Data.Path)
@@ -115,7 +115,7 @@ func (p Package) Delete() error {
 		return err
 	}
 	if !state.Exists {
-		return fmt.Errorf("package '%s' cannot be deleted as it does not exist on instance '%s'", p.PID.String(), p.manager.instance.ID())
+		return fmt.Errorf("instance '%s': package '%s' cannot be deleted as it does not exist", p.manager.instance.ID(), p.PID.String())
 	}
 	return p.manager.Delete(state.Data.Path)
 }

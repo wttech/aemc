@@ -134,7 +134,7 @@ func (c OSGiComponent) assumeExists() (*OSGiComponentState, error) {
 		return state, err
 	}
 	if !state.Exists {
-		return state, fmt.Errorf("component '%s' does not exist on instance '%s'", c.pid, c.manager.instance.ID())
+		return state, fmt.Errorf("instance '%s': component '%s' does not exist", c.manager.instance.ID(), c.pid)
 	}
 	return state, nil
 }
@@ -168,9 +168,9 @@ func (c OSGiComponent) Await(state string, condition func() bool, timeout time.D
 			break
 		}
 		if time.Now().After(started.Add(timeout)) {
-			return fmt.Errorf("instance '%s' awaiting component '%s' state '%s' reached timeout after %s", c.manager.instance.ID(), c.pid, state, timeout)
+			return fmt.Errorf("instance '%s': awaiting component '%s' state '%s' reached timeout after %s", c.manager.instance.ID(), c.pid, state, timeout)
 		}
-		log.Infof("instance '%s' is awaiting component '%s' state '%s'", c.manager.instance.ID(), c.pid, state)
+		log.Infof("instance '%s': awaiting component '%s' state '%s'", c.manager.instance.ID(), c.pid, state)
 		time.Sleep(time.Second * 5)
 	}
 	return nil

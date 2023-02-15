@@ -44,7 +44,7 @@ func (bm *OSGiBundleManager) ByFile(localPath string) (*OSGiBundle, error) {
 func (bm OSGiBundleManager) Find(symbolicName string) (*osgi.BundleListItem, error) {
 	bundles, err := bm.List()
 	if err != nil {
-		return nil, fmt.Errorf("cannot find bundle '%s' on instance '%s'", symbolicName, bm.instance.ID())
+		return nil, fmt.Errorf("instance '%s': cannot find bundle '%s'", bm.instance.ID(), symbolicName)
 	}
 	item, found := lo.Find(bundles.List, func(i osgi.BundleListItem) bool { return symbolicName == i.SymbolicName })
 	if found {
@@ -56,43 +56,43 @@ func (bm OSGiBundleManager) Find(symbolicName string) (*osgi.BundleListItem, err
 func (bm *OSGiBundleManager) List() (*osgi.BundleList, error) {
 	resp, err := bm.instance.http.Request().Get(BundlesPathJson)
 	if err != nil {
-		return nil, fmt.Errorf("cannot request bundle list on instance '%s': %w", bm.instance.ID(), err)
+		return nil, fmt.Errorf("instance '%s': cannot request bundle list: %w", bm.instance.ID(), err)
 	}
 	if resp.IsError() {
-		return nil, fmt.Errorf("cannot request bundle list on instance '%s': %s", bm.instance.ID(), resp.Status())
+		return nil, fmt.Errorf("instance '%s': cannot request bundle list: %s", bm.instance.ID(), resp.Status())
 	}
 	var res osgi.BundleList
 	if err = fmtx.UnmarshalJSON(resp.RawBody(), &res); err != nil {
-		return nil, fmt.Errorf("cannot parse bundle list from instance '%s': %w", bm.instance.ID(), err)
+		return nil, fmt.Errorf("instance '%s': cannot parse bundle list: %w", bm.instance.ID(), err)
 	}
 	return &res, nil
 }
 
 func (bm *OSGiBundleManager) Start(id int) error {
-	log.Infof("starting bundle '%d' on instance '%s'", id, bm.instance.ID())
+	log.Infof("instance '%s': starting bundle '%d'", bm.instance.ID(), id)
 	response, err := bm.instance.http.Request().
 		SetFormData(map[string]string{"action": "start"}).
 		Post(fmt.Sprintf("%s/%d", BundlesPath, id))
 	if err != nil {
-		return fmt.Errorf("cannot start bundle '%d' on instance '%s': %w", id, bm.instance.ID(), err)
+		return fmt.Errorf("instance '%s': cannot start bundle '%d': %w", bm.instance.ID(), id, err)
 	} else if response.IsError() {
-		return fmt.Errorf("cannot start bundle '%d' on instance '%s': %s", id, bm.instance.ID(), response.Status())
+		return fmt.Errorf("instance '%s': cannot start bundle '%d': %s", bm.instance.ID(), id, response.Status())
 	}
-	log.Infof("started bundle '%d' on instance '%s'", id, bm.instance.ID())
+	log.Infof("instance '%s': started bundle '%d'", bm.instance.ID(), id)
 	return nil
 }
 
 func (bm *OSGiBundleManager) Stop(id int) error {
-	log.Infof("stopping bundle '%d' on instance '%s'", id, bm.instance.ID())
+	log.Infof("instance '%s': stopping bundle '%d'", bm.instance.ID(), id)
 	response, err := bm.instance.http.Request().
 		SetFormData(map[string]string{"action": "stop"}).
 		Post(fmt.Sprintf("%s/%d", BundlesPath, id))
 	if err != nil {
-		return fmt.Errorf("cannot stop bundle '%d' on instance '%s': %w", id, bm.instance.ID(), err)
+		return fmt.Errorf("instance '%s': cannot stop bundle '%d': %w", bm.instance.ID(), id, err)
 	} else if response.IsError() {
-		return fmt.Errorf("cannot stop bundle '%d' on instance '%s': %s", id, bm.instance.ID(), response.Status())
+		return fmt.Errorf("instance '%s': cannot stop bundle '%d': %s", bm.instance.ID(), id, response.Status())
 	}
-	log.Infof("stopped bundle '%d' on instance '%s'", id, bm.instance.ID())
+	log.Infof("instance '%s': stopped bundle '%d'", bm.instance.ID(), id)
 	return nil
 }
 
@@ -120,7 +120,7 @@ func (bm *OSGiBundleManager) InstallWithChanged(localPath string) (bool, error) 
 }
 
 func (bm *OSGiBundleManager) Install(localPath string) error {
-	log.Infof("installing bundle '%s' on instance '%s'", localPath, bm.instance.ID())
+	log.Infof("instance '%s': installing bundle '%s'", bm.instance.ID(), localPath)
 	response, err := bm.instance.http.RequestFormData(map[string]any{
 		"action":           "install",
 		"bundlestart":      bm.InstallStart,
@@ -128,23 +128,23 @@ func (bm *OSGiBundleManager) Install(localPath string) error {
 		"refreshPackages":  bm.InstallRefreshPackages,
 	}).SetFile("bundlefile", localPath).Post(BundlesPath)
 	if err != nil {
-		return fmt.Errorf("cannot install bundle '%s' on instance '%s': %w", localPath, bm.instance.ID(), err)
+		return fmt.Errorf("instance '%s': cannot install bundle '%s': %w", bm.instance.ID(), localPath, err)
 	} else if response.IsError() {
-		return fmt.Errorf("cannot install bundle '%s' on instance '%s': '%s'", localPath, bm.instance.ID(), response.Status())
+		return fmt.Errorf("instance '%s': cannot install bundle '%s': %s", bm.instance.ID(), localPath, response.Status())
 	}
-	log.Infof("installed bundle '%s' on instance '%s'", localPath, bm.instance.ID())
+	log.Infof("instance '%s': installed bundle '%s'", bm.instance.ID(), localPath)
 	return nil
 }
 
 func (bm *OSGiBundleManager) Uninstall(id int) error {
-	log.Infof("uninstalling bundle '%d' from instance '%s'", id, bm.instance.ID())
+	log.Infof("instance '%s': uninstalling bundle '%d'", bm.instance.ID(), id)
 	response, err := bm.instance.http.RequestFormData(map[string]any{"action": "uninstall"}).Post(fmt.Sprintf("%s/%d", BundlesPath, id))
 	if err != nil {
-		return fmt.Errorf("cannot uninstall bundle '%d' on instance '%s': %w", id, bm.instance.ID(), err)
+		return fmt.Errorf("instance '%s': cannot uninstall bundle '%d': %w", bm.instance.ID(), id, err)
 	} else if response.IsError() {
-		return fmt.Errorf("cannot uninstall bundle '%d' on instance '%s': '%s'", id, bm.instance.ID(), response.Status())
+		return fmt.Errorf("instance '%s': cannot uninstall bundle '%d': %s", bm.instance.ID(), id, response.Status())
 	}
-	log.Infof("uninstalled bundle '%d' from instance '%s'", id, bm.instance.ID())
+	log.Infof("instance '%s': uninstalled bundle '%d'", bm.instance.ID(), id)
 	return nil
 }
 

@@ -163,7 +163,7 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 		if !i.local.IsCreated() {
 			err := i.local.Create()
 			if err != nil {
-				return nil, fmt.Errorf("cannot create instance '%s': %s", i.ID(), err)
+				return nil, err
 			}
 			created = append(created, i)
 		}
@@ -196,10 +196,10 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		if i.local.IsRunning() && i.local.OutOfDate() {
 			outdated = append(outdated, i)
 
-			log.Infof("instance '%s' is already started but out-of-date", i.ID())
+			log.Infof("instance '%s': is already started but out-of-date", i.ID())
 			err := i.local.Stop()
 			if err != nil {
-				return nil, fmt.Errorf("cannot stop out-of-date instance '%s': %s", i.ID(), err)
+				return nil, err
 			}
 		}
 	}
@@ -215,7 +215,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		if !i.local.IsRunning() {
 			err := i.local.Start()
 			if err != nil {
-				return nil, fmt.Errorf("cannot start instance '%s': %s", i.ID(), err)
+				return nil, err
 			}
 			started = append(started, i)
 		}
@@ -254,7 +254,7 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 		if i.local.IsRunning() {
 			err := i.local.Stop()
 			if err != nil {
-				return nil, fmt.Errorf("cannot stop instance '%s': %s", i.ID(), err)
+				return nil, err
 			}
 			stopped = append(stopped, i)
 		}
@@ -292,9 +292,8 @@ func (im *InstanceManager) Kill(instances []Instance) ([]Instance, error) {
 		if i.local.IsKillable() {
 			err := i.local.Kill()
 			if err != nil {
-				log.Warnf("cannot kill instance '%s' (process not running / already killed): %s", i.ID(), err)
+				log.Warnf("instance '%s': cannot kill as process not running or is already killed: %s", i.ID(), err)
 			} else {
-				log.Infof("killed instance '%s'", i.ID())
 				killed = append(killed, i)
 			}
 		}
@@ -323,9 +322,8 @@ func (im *InstanceManager) Delete(instances []Instance) ([]Instance, error) {
 		if i.local.IsCreated() {
 			err := i.local.Delete()
 			if err != nil {
-				return nil, fmt.Errorf("cannot delete instance '%s': %s", i.ID(), err)
+				return nil, err
 			}
-			log.Infof("deleted instance '%s'", i.ID())
 			deleted = append(deleted, i)
 		}
 	}
@@ -343,9 +341,8 @@ func (im *InstanceManager) Clean(instances []Instance) ([]Instance, error) {
 		if !i.local.IsRunning() {
 			err := i.local.Clean()
 			if err != nil {
-				return nil, fmt.Errorf("cannot clean instance '%s': %s", i.ID(), err)
+				return nil, err
 			}
-			log.Infof("cleaned instance '%s'", i.ID())
 			cleaned = append(cleaned, i)
 		}
 	}

@@ -72,24 +72,22 @@ func (r Repo) Read(path string) (map[string]any, error) {
 }
 
 func (r Repo) Save(path string, props map[string]any) error {
-	log.Infof("saving node '%s' on instance '%s'", path, r.instance.ID())
+	log.Infof("instance '%s': saving node '%s'", r.instance.ID(), path)
 	resp, err := r.requestFormData("", props).Post(path)
-	err = r.handleResponse(fmt.Sprintf("cannot save node '%s' on instance '%s'", path, r.instance.ID()), resp, err)
-	if err != nil {
+	if err := r.handleResponse(fmt.Sprintf("instance '%s': cannot save node '%s'", r.instance.ID(), path), resp, err); err != nil {
 		return err
 	}
-	log.Infof("saved node '%s' on instance '%s'", path, r.instance.ID())
+	log.Infof("instance '%s': saved node '%s'", r.instance.ID(), path)
 	return nil
 }
 
 func (r Repo) Delete(path string) error {
-	log.Infof("deleting node '%s' from instance '%s'", path, r.instance.ID())
+	log.Infof("instance '%s': deleting node '%s'", r.instance.ID(), path)
 	resp, err := r.requestFormData("delete", map[string]any{}).Post(path)
-	err = r.handleResponse(fmt.Sprintf("cannot delete node '%s' from instance '%s'", path, r.instance.ID()), resp, err)
-	if err != nil {
+	if err = r.handleResponse(fmt.Sprintf("instance '%s': cannot delete node '%s'", r.instance.ID(), path), resp, err); err != nil {
 		return err
 	}
-	log.Infof("deleted node '%s' from instance '%s'", path, r.instance.ID())
+	log.Infof("instance '%s': deleted node '%s'", r.instance.ID(), path)
 	return nil
 }
 

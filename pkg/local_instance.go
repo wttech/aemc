@@ -250,18 +250,18 @@ func (li LocalInstance) copyLicenseFile() error {
 	}
 	source := pathx.Canonical(li.Opts().Quickstart.LicenseFile)
 	dest := pathx.Canonical(li.LicenseFile())
-	log.Infof("copying license file from '%s' to '%s'", source, dest)
+	log.Infof("%s > copying license file from '%s' to '%s'", li.instance.ID(), source, dest)
 	if err := filex.Copy(source, dest); err != nil {
-		return fmt.Errorf("cannot copy license file from '%s' to '%s': %s", source, dest, err)
+		return fmt.Errorf("%s > cannot copy license file from '%s' to '%s': %s", li.instance.ID(), source, dest, err)
 	}
 	return nil
 }
 
 func (li LocalInstance) copyCbpExecutable() error {
 	dest := li.binCbpExecutable()
-	log.Infof("copying CBP executable to '%s'", dest)
+	log.Infof("%s > copying CBP executable to '%s'", li.instance.ID(), dest)
 	if err := filex.Write(dest, instance.CbpExecutable); err != nil {
-		return fmt.Errorf("cannot copy CBP executable to '%s': %s", dest, err)
+		return fmt.Errorf("%s > cannot copy CBP executable to '%s': %s", li.instance.ID(), dest, err)
 	}
 	return nil
 }
@@ -384,11 +384,11 @@ func (li LocalInstance) setPassword() error {
 
 func (li LocalInstance) copyOverrideDirs() error {
 	for _, src := range lo.Filter(li.OverrideDirs(), func(s string, _ int) bool { return pathx.Exists(s) }) {
-		log.Infof("copying instance override files from dir '%s' to '%s'", src, li.Dir())
+		log.Infof("%s > copying instance override files from dir '%s' to '%s'", li.instance.ID(), src, li.Dir())
 		if err := filex.CopyDir(src, li.Dir()); err != nil {
 			return err
 		}
-		log.Infof("copied instance override files from dir '%s' to '%s'", src, li.Dir())
+		log.Infof("%s > copied instance override files from dir '%s' to '%s'", li.instance.ID(), src, li.Dir())
 	}
 	return nil
 }
@@ -399,7 +399,7 @@ func (li LocalInstance) secretsDir() string {
 
 func (li LocalInstance) recreateSlingPropsFile() error {
 	filePath := fmt.Sprintf("%s/conf/sling.properties", li.QuickstartDir())
-	log.Infof("configuring instance Sling properties in file '%s'", filePath)
+	log.Infof("%s > configuring instance Sling properties in file '%s'", li.Instance().ID(), filePath)
 	propsCombined := append(li.SlingProps, "org.apache.felix.configadmin.plugin.interpolation.secretsdir=${sling.home}/"+LocalInstanceSecretsDir)
 	propsLoaded, err := properties.LoadString(strings.Join(propsCombined, "\n"))
 	if err != nil {
@@ -421,7 +421,7 @@ func (li LocalInstance) recreateSecretsDir() error {
 		return err
 	}
 	if len(li.SecretVars) > 0 {
-		log.Infof("configuring instance secret vars in dir '%s'", dir)
+		log.Infof("%s > configuring instance secret vars in dir '%s'", li.instance.ID(), dir)
 		for _, secretVar := range li.SecretVars {
 			k := stringsx.Before(secretVar, "=")
 			v := stringsx.After(secretVar, "=")
@@ -429,7 +429,7 @@ func (li LocalInstance) recreateSecretsDir() error {
 				return err
 			}
 		}
-		log.Infof("configured instance secret vars in dir '%s'", dir)
+		log.Infof("%s > configured instance secret vars in dir '%s'", li.instance.ID(), dir)
 	}
 	return nil
 }
@@ -440,7 +440,7 @@ func (li LocalInstance) checkPortsOpen() error {
 	for _, port := range ports {
 		reachable, _ := netx.IsReachable(host, port, time.Second*3)
 		if reachable {
-			return fmt.Errorf("some process is already running on address '%s:%s'", host, port)
+			return fmt.Errorf("%s > some process is already running on address '%s:%s'", li.instance.ID(), host, port)
 		}
 	}
 	return nil
@@ -481,9 +481,9 @@ type localInstanceStartLock struct {
 
 func (li LocalInstance) Stop() error {
 	if !li.IsCreated() {
-		return fmt.Errorf("cannot stop instance as it is not created")
+		return fmt.Errorf("%s > cannot stop as it is not created", li.instance.ID())
 	}
-	log.Infof("stopping instance '%s'", li.instance.ID())
+	log.Infof("%s > stopping", li.instance.ID())
 	cmd, err := li.binScriptCommand(LocalInstanceScriptStop, true)
 	if err != nil {
 		return err
@@ -677,7 +677,7 @@ func (s LocalStatus) String() string {
 
 func (li LocalInstance) Status() (LocalStatus, error) {
 	if !li.IsCreated() {
-		return LocalStatusUnknown, fmt.Errorf("cannot check status of instance as it is not created")
+		return LocalStatusUnknown, fmt.Errorf("%s > cannot check status as it is not created", li.instance.ID())
 	}
 	cmd, err := li.binScriptCommand(LocalInstanceScriptStatus, false)
 	if err != nil {
@@ -705,11 +705,11 @@ func (li LocalInstance) IsRunning() bool {
 
 func (li LocalInstance) Delete() error {
 	if li.IsRunning() {
-		return fmt.Errorf("cannot delete instance as it is running")
+		return fmt.Errorf("%s > cannot delete as it is running", li.instance.ID())
 	}
 	log.Infof("%s > deleting", li.instance.ID())
 	if err := pathx.Delete(li.Dir()); err != nil {
-		return fmt.Errorf("cannot delete instance properly: %w", err)
+		return fmt.Errorf("%s > cannot delete its dir properly: %w", li.instance.ID(), err)
 
 	}
 	log.Infof("%s > deleted", li.instance.ID())
@@ -786,12 +786,12 @@ func (li LocalInstance) PID() (int, error) {
 	file := li.pidFile()
 	str, err := filex.ReadString(file)
 	if err != nil {
-		return 0, fmt.Errorf("cannot read instance PID file '%s'", file)
+		return 0, fmt.Errorf("%s > cannot read PID file '%s'", li.instance.ID(), file)
 	}
 	strTrimmed := strings.TrimSpace(str)
 	num, err := strconv.Atoi(strTrimmed)
 	if err != nil {
-		return 0, fmt.Errorf("cannot convert value '%s' to integer read from instance PID file '%s'", strTrimmed, file)
+		return 0, fmt.Errorf("%s > cannot convert value '%s' to integer read from PID file '%s'", li.instance.ID(), strTrimmed, file)
 	}
 	return num, nil
 }

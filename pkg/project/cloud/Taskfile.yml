@@ -1,0 +1,162 @@
+# Task tool documentation:
+# 1) Basics: https://taskfile.dev/usage
+# 2) Naming conventions: https://taskfile.dev/styleguide
+
+version: '3'
+
+env:
+  AEM_INSTANCE_PROCESSING_MODE: auto
+  AEM_OUTPUT_VALUE: NONE
+
+vars:
+  APM_VERSION: 5.5.1
+
+tasks:
+  setup:
+    desc: setup AEM environment
+    cmds:
+      - task: aem:setup
+      - task: docker:up
+
+  resetup:
+    desc: destroy and setup again AEM environment
+    cmds:
+      - task: destroy
+      - task: setup
+
+  start:
+    desc: start AEM environment
+    aliases: [up]
+    cmds:
+      - task: aem:up
+      - task: docker:up
+
+  stop:
+    desc: stop AEM environment
+    aliases: [down]
+    cmds:
+      - task: docker:down
+      - task: aem:down
+
+  restart:
+    cmds:
+      - task: aem:down
+      - task: aem:up
+
+  destroy:
+    desc: destroy AEM environment
+    cmds:
+      - task: stop
+      - task: aem:destroy
+
+  aem:setup:
+    desc: setup AEM instances
+    cmds:
+      - task: aem:start
+      - task: aem:provision
+      - task: aem:deploy
+
+  aem:create:
+    desc: create AEM instances
+    cmds: [sh aemw instance create]
+
+  aem:start:
+    desc: start AEM instances
+    aliases: [aem:up]
+    cmds:
+      - sh aemw instance create
+      - sh aemw instance up
+
+  aem:provision:
+    desc: provision AEM instances
+    aliases: [aem:configure]
+    cmds:
+      - task: aem:provision:repl-agent-publish
+      - task: aem:provision:repl-agent-flush
+      - task: aem:provision:crx
+      - task: aem:provision:apm
+
+  aem:provision:repl-agent-publish:
+    desc: configure replication agent on author instance
+    cmds:
+      - |
+        PROPS="
+        enabled: true
+        transportUri: http://localhost:4503/bin/receive?sling:authRequestLogin=1
+        transportUser: admin
+        transportPassword: admin
+        userId: admin
+        "
+        echo "$PROPS" | sh aemw repl agent setup -A --location "author" --name "publish"
+
+  aem:provision:repl-agent-flush:
+    desc: configure replication agent on publish instance
+    cmds:
+      - |
+        PROPS="
+        enabled: true
+        transportUri: http://127.0.0.1/dispatcher/invalidate.cache
+        protocolHTTPHeaders:
+          - CQ-Action: {action}
+          - CQ-Handle: {path}
+          - CQ-Path: {path}
+          - Host: publish
+          "
+        echo "$PROPS" | sh aemw repl agent setup -P --location "publish" --name "flush"
+
+  aem:provision:crx:
+    desc: enable CRX/DE
+    cmds:
+      - >
+        sh aemw osgi config save 
+        --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet"
+        --input-string "alias: /crx/server"
+
+  aem:provision:apm:
+    desc: deploy APM tool
+    cmds:
+      - sh aemw package deploy --url "https://github.com/wttech/APM/releases/download/apm-{{.APM_VERSION}}/apm-all-{{.APM_VERSION}}.zip"
+
+  aem:destroy:
+    desc: destroy AEM instances
+    deps: [undeploy, stop]
+    cmds: [sh aemw instance destroy]
+
+  aem:stop:
+    desc: stop AEM instances
+    aliases: [aem:down]
+    cmds: [sh aemw instance start]
+
+  aem:build:
+    desc: build AEM application
+    cmds:
+      - >
+        sh aemw app build
+        --command "mvn clean package"
+        --sources "pom.xml,all,core,ui.apps,ui.apps.structure,ui.config,ui.content,ui.frontend,ui.tests"
+        --file "all/target/*.all-*.zip"
+      - cd dispatcher && sh build.sh
+
+  aem:deploy:
+    desc: deploy AEM application
+    cmds:
+      - sh aemw package deploy --file "all/target/*.all-*.zip"
+
+  docker:start:
+    desc: start Docker containers
+    aliases: [docker:up]
+    cmds:
+      # - sh aem/home/opt/sdk/dispatcher/bin/validate.sh dispatcher/src > aem/home/var/log/dispatcher-validate.log # uncomment if possible, see: https://github.com/adobe/aem-project-archetype/issues/1043
+      - docker tag "$(docker load --input "aem/home/opt/sdk/dispatcher/lib/dispatcher-publish-${ARCH}.tar.gz" | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"
+      - docker compose up -d
+
+  docker:stop:
+    desc: stop Docker containers
+    aliases: [docker:down]
+    cmds: [docker compose down]
+
+  docker:restart:
+    desc: restart Docker containers
+    cmds:
+      - task: docker-stop
+      - task: docker-start

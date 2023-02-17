@@ -5,62 +5,6 @@ VERSION=${AEM_CLI_VERSION:-"1.0.5"}
 # Define API
 # ==========
 
-# pretend AEM CLI logger but in bash
-info () {
-  DATE=$(date "+%Y-%m-%d %H:%M:%S")
-  if [ -z "$NO_COLOR" ]; then
-    CL='\033[0;36m'
-    NC='\033[0m'
-    echo "${CL}INFO${NC}[$DATE]" "$@"
-  else
-    echo "INFO[$DATE]" "$@"
-  fi
-}
-
-# print provisioning step header
-step () {
-  DATE=$(date "+%Y-%m-%d %H:%M:%S")
-  if [ -z "$NO_COLOR" ]; then
-    CL='\033[0;35m'
-    CY='\033[0;35m'
-    NC='\033[0m'
-    echo ""
-    echo "${CL}STEP${NC}[$DATE]${CY}" "$@" "${NC}"
-  else
-    echo ""
-    echo "STEP[$DATE]" "$@"
-  fi
-}
-
-# check last command
-clc () {
-  if [ "$?" -ne 0 ]; then
-    exit "$?"
-  fi
-}
-
-# format seconds to more nice format
-duration () {
-  T=$1
-  D=$((T/60/60/24))
-  H=$((T/60/60%24))
-  M=$((T/60%60))
-  S=$((T%60))
-  if [ $D -gt 0 ]; then
-      printf '%d day(s) ' $D
-  fi
-  if [ $H -gt 0 ]; then
-      printf '%d hour(s) ' $H
-  fi
-  if [ $M -gt 0 ]; then
-      printf '%d minute(s) ' $M
-  fi
-  if [ $D -gt 0 ] || [ $H -gt 0 ] || [ $M -gt 0 ]; then
-      printf 'and '
-  fi
-  printf '%d second(s)\n' $S
-}
-
 detect_os () {
     case "$(uname)" in
       'Linux')
@@ -118,28 +62,7 @@ if [ "${VERSION}" != "installed" ] ; then
   }
 fi
 
-# Execute script if found or fallback to CLI
+# Execute AEM Compose CLI
 # ==========================================
 
-COMMAND_DEFAULT=${AEM_CLI_COMMAND_DEFAULT:-"setup"}
-COMMAND="${1:-${COMMAND_DEFAULT}}"
-SCRIPT="aem/script/${COMMAND}.sh"
-
-if [ -f "$SCRIPT" ]; then
-  export AEM_INSTANCE_PROCESSING_MODE=${AEM_INSTANCE_PROCESSING_MODE:-serial}
-  export AEM_OUTPUT_VALUE=${AEM_OUTPUT_VALUE:-"NONE"}
-
-  STARTED_TIMESTAMP=$(date +%s)
-
-  info "script '${COMMAND}' started; to customize its behavior see: https://github.com/wttech/aemc#scripts"
-
-  # shellcheck source=aem/*.sh
-  . "${SCRIPT}"
-
-  ENDED_TIMESTAMP=$(date +%s)
-  ELAPSED=$((ENDED_TIMESTAMP - STARTED_TIMESTAMP))
-
-  info "script '${COMMAND}' ended in $(duration $ELAPSED)"
-else
-  aem "$@"
-fi
+aem "$@"

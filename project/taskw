@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+
+# Execute AEM Compose CLI
+# ==========================================
+
+# TODO auto-download like in 'aemw'
+
+# https://taskfile.dev/api/#env
+export TASK_COLOR_GREEN=35
+
+task "$@"

@@ -5,30 +5,61 @@ VERSION=${AEM_CLI_VERSION:-"1.0.5"}
 # Define API
 # ==========
 
-detect_os () {
-    case "$(uname)" in
-      'Linux')
-        echo "linux"
-        ;;
-      'Darwin')
-        echo "darwin"
-        ;;
-      *)
-        echo "windows"
-        ;;
-    esac
+# https://github.com/client9/shlib/blob/master/uname_os.sh
+detect_os() {
+  os=$(uname -s | tr '[:upper:]' '[:lower:]')
+
+  # fixed up for https://github.com/client9/shlib/issues/3
+  case "$os" in
+    msys*) os="windows" ;;
+    mingw*) os="windows" ;;
+    cygwin*) os="windows" ;;
+    win*) os="windows" ;; # for windows busybox and like # https://frippery.org/busybox/
+  esac
+
+  # other fixups here
+  echo "$os"
 }
 
-detect_arch () {
-  uname -m
+# https://github.com/client9/shlib/blob/master/uname_arch.sh
+detect_arch() {
+  arch=$(uname -m)
+  case $arch in
+    x86_64) arch="amd64" ;;
+    x86) arch="386" ;;
+    i686) arch="386" ;;
+    i386) arch="386" ;;
+    aarch64) arch="arm64" ;;
+    armv5*) arch="armv5" ;;
+    armv6*) arch="armv6" ;;
+    armv7*) arch="armv7" ;;
+  esac
+  echo ${arch}
 }
 
-download_file () {
+# https://github.com/client9/shlib/blob/master/http_download.sh
+download_file() {
+  local_file=$1
+  source_url=$2
+  header=$3
+  if [ -z "$header" ]; then
+    code=$(curl -w '%{http_code}' -sL -o "$local_file" "$source_url")
+  else
+    code=$(curl -w '%{http_code}' -sL -H "$header" -o "$local_file" "$source_url")
+  fi
+  if [ "$code" != "200" ]; then
+    echo "Error! Downloading file from URL '$source_url' received HTTP status '$code'"
+    return 1
+  fi
+  return 0
+}
+
+download_file_once () {
   URL=$1
   FILE=$2
   if [ ! -f "${FILE}" ]; then
       mkdir -p "$(dirname "$FILE")"
-      curl -o "$FILE" -OJL "$URL"
+      download_file "$FILE" "$URL"
   fi
 }
 
@@ -53,7 +84,7 @@ BIN_EXEC_FILE="${BIN_ARCHIVE_DIR}/${BIN_NAME}"
 if [ "${VERSION}" != "installed" ] ; then
   if [ ! -f "${BIN_EXEC_FILE}" ]; then
     mkdir -p "${BIN_ARCHIVE_DIR}"
-    download_file "${BIN_DOWNLOAD_URL}" "${BIN_ARCHIVE_FILE}"
+    download_file_once "${BIN_DOWNLOAD_URL}" "${BIN_ARCHIVE_FILE}"
     tar -xf "${BIN_ARCHIVE_FILE}" -C "${BIN_ARCHIVE_DIR}"
     chmod +x "${BIN_EXEC_FILE}"
   fi

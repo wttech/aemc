@@ -101,5 +101,6 @@ fi
 
 # https://taskfile.dev/api/#env
 export TASK_COLOR_GREEN=35
+export TASK_TEMP_DIR="${AEM_DIR}/tmp/task"
 
 "./${BIN_EXEC_FILE}" "$@"

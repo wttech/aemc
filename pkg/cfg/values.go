@@ -21,9 +21,10 @@ type ConfigValues struct {
 	} `mapstructure:"input" yaml:"input"`
 
 	Output struct {
-		Format string `mapstructure:"format" yaml:"format"`
-		Value  string `mapstructure:"value" yaml:"value"`
-		Log    struct {
+		Format  string `mapstructure:"format" yaml:"format"`
+		NoColor bool   `mapstructure:"no_color" yaml:"no_color"`
+		Value   string `mapstructure:"value" yaml:"value"`
+		Log     struct {
 			File    string `mapstructure:"file" yaml:"file"`
 			Console bool   `mapstructure:"console" yaml:"console"`
 		} `mapstructure:"log" yaml:"log"`

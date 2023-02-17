@@ -114,10 +114,7 @@ tasks:
   aem:provision:crx:
     desc: enable CRX/DE
     cmds:
-      - >
-        sh aemw osgi config save 
-        --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet"
-        --input-string "alias: /crx/server"
+      - 'sh aemw osgi config save --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet" --input-string "alias: /crx/server"'
 
   aem:provision:apm:
     desc: deploy APM tool

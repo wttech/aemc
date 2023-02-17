@@ -154,6 +154,7 @@ func (c *Config) ConfigureLogger() {
 	log.SetFormatter(&log.TextFormatter{
 		TimestampFormat: c.values.Log.TimestampFormat,
 		FullTimestamp:   c.values.Log.FullTimestamp,
+		ForceColors:     !c.values.Output.NoColor,
 	})
 	level, err := log.ParseLevel(c.values.Log.Level)
 	if err != nil {

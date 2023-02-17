@@ -47,6 +47,7 @@ type CLI struct {
 	outputLogConsole bool
 	outputResponse   *OutputResponse
 	outputWriter     io.Writer
+	outputNoColor    bool
 }
 
 func NewCLI(aem *pkg.Aem, config *cfg.Config) *CLI {
@@ -62,6 +63,7 @@ func NewCLI(aem *pkg.Aem, config *cfg.Config) *CLI {
 	result.outputFormat = fmtx.Text
 	result.outputBuffer = bytes.NewBufferString("")
 	result.outputResponse = outputResponseDefault()
+	result.outputNoColor = color.NoColor
 	result.cmd = result.rootCmd()
 
 	return result
@@ -101,6 +103,9 @@ func (c *CLI) configure() {
 
 func (c *CLI) configureOutput() {
 	opts := c.config.Values().Output
+
+	c.outputNoColor = opts.NoColor
+	color.NoColor = opts.NoColor
 
 	c.outputValue = opts.Value
 	c.outputFormat = strings.ReplaceAll(opts.Format, "yaml", "yml")
@@ -180,7 +185,8 @@ func (c *CLI) printOutputText() {
 func (c *CLI) printCommandResult() {
 	r := c.outputResponse
 	msg := fmt.Sprintf("%s", r.Msg)
-	if color.NoColor || !c.outputLogConsole {
+
+	if c.outputNoColor {
 		entry := log.WithField("changed", r.Changed).WithField("elapsed", r.Elapsed)
 		if r.Failed {
 			entry.Errorf(msg)

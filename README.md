@@ -14,7 +14,7 @@ Universal tool to manage AEM instances everywhere!
   - [*CLI*](#cli---overview) - for developer workstations, shell scripting
     - [Docker Example](examples/docker) - coming soon
   - [*Ansible Collection/Modules*](#ansible-collection) - for managing higher AEM environments
-    - [Packer Example](https://github.com/wttech/aemc-ansible/tree/main/examples/packer) - good starting point for baking AWS EC2 image using Ansible and AEM Compose Ansible modules
+    - [Packer Example](https://github.com/wttech/aemc-ansible/tree/main/examples/packer) - good starting point for baking AWS EC2 image using Ansible
 - Fast & lightweight
 - No dependencies - usable on all operating systems and architectures
 

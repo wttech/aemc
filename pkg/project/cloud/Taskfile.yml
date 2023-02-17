@@ -167,3 +167,8 @@ tasks:
     cmds:
       - task: docker-stop
       - task: docker-start
+
+  docker:status:
+    desc: list Docker containers
+    cmds:
+      - docker compose ps

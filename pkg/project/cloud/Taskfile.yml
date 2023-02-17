@@ -143,6 +143,7 @@ tasks:
 
   aem:deploy:
     desc: deploy AEM application
+    deps: [aem:build]
     cmds:
       - sh aemw package deploy --file "all/target/*.all-*.zip"
 

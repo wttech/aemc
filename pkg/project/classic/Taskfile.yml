@@ -119,7 +119,7 @@ tasks:
       - sh aemw package deploy --url "https://github.com/wttech/APM/releases/download/apm-{{.APM_VERSION}}/apm-all-{{.APM_VERSION}}.zip"
 
   aem:provision:service-pack:
-    desc: deploy APM tool
+    desc: deploy AEM Service Pack
     cmds:
       - sh aemw package deploy --file "aem/home/lib/aem-service-pkg-6.5.*.0.zip"
 

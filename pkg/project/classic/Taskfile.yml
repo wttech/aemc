@@ -1,0 +1,190 @@
+# Task tool documentation:
+# 1) Basics: https://taskfile.dev/usage
+# 2) Naming conventions: https://taskfile.dev/styleguide
+
+version: '3'
+
+env:
+  AEM_INSTANCE_PROCESSING_MODE: auto
+  AEM_OUTPUT_VALUE: NONE
+
+vars:
+  APM_VERSION: 5.5.1
+
+tasks:
+
+  setup:
+    desc: setup AEM environment
+    cmds:
+      - task: aem:setup
+      - task: docker:up
+
+  resetup:
+    desc: destroy and setup again AEM environment
+    cmds:
+      - task: destroy
+      - task: setup
+
+  start:
+    desc: start AEM environment
+    aliases: [up]
+    cmds:
+      - task: aem:up
+      - task: docker:up
+
+  stop:
+    desc: stop AEM environment
+    aliases: [down]
+    cmds:
+      - task: docker:down
+      - task: aem:down
+
+  restart:
+    cmds:
+      - task: aem:down
+      - task: aem:up
+
+  destroy:
+    desc: destroy AEM environment
+    cmds:
+      - task: stop
+      - task: aem:destroy
+
+  aem:setup:
+    desc: setup AEM instances
+    cmds:
+      - task: aem:start
+      - task: aem:provision
+      - task: aem:deploy
+
+  aem:create:
+    desc: create AEM instances
+    cmds: [sh aemw instance create]
+
+  aem:start:
+    desc: start AEM instances
+    aliases: [aem:up]
+    cmds:
+      - sh aemw instance create
+      - sh aemw instance up
+
+  aem:await:
+    desc: await stable AEM instances
+    aliases: [aem:check]
+    cmds:
+      - sh aemw instance await
+
+  aem:status:
+    desc: check AEM instances status
+    env:
+      AEM_OUTPUT_VALUE: ALL
+    cmds:
+      - sh aemw instance status
+
+  aem:provision:
+    desc: provision AEM instances
+    aliases: [aem:configure]
+    cmds:
+      - task: aem:provision:repl-agent-publish
+      - task: aem:provision:repl-agent-flush
+      - task: aem:provision:crx
+      - task: aem:provision:apm
+      - task: aem:provision:service-pack
+
+  aem:provision:repl-agent-publish:
+    desc: configure replication agent on author instance
+    cmds:
+      - |
+        PROPS="
+        enabled: true
+        transportUri: http://localhost:4503/bin/receive?sling:authRequestLogin=1
+        transportUser: admin
+        transportPassword: admin
+        userId: admin
+        "
+        echo "$PROPS" | sh aemw repl agent setup -A --location "author" --name "publish"
+
+  aem:provision:repl-agent-flush:
+    desc: configure replication agent on publish instance
+    cmds:
+      - |
+        PROPS="
+        enabled: true
+        transportUri: http://127.0.0.1/dispatcher/invalidate.cache
+        protocolHTTPHeaders:
+          - CQ-Action: {action}
+          - CQ-Handle: {path}
+          - CQ-Path: {path}
+          - Host: publish
+          "
+        echo "$PROPS" | sh aemw repl agent setup -P --location "publish" --name "flush"
+
+  aem:provision:crx:
+    desc: enable CRX/DE
+    cmds:
+      - 'sh aemw osgi config save --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet" --input-string "alias: /crx/server"'
+
+  aem:provision:apm:
+    desc: deploy APM tool
+    cmds:
+      - sh aemw package deploy --url "https://github.com/wttech/APM/releases/download/apm-{{.APM_VERSION}}/apm-all-{{.APM_VERSION}}.zip"
+
+  aem:provision:service-pack:
+    desc: deploy AEM Service Pack
+    cmds:
+      - sh aemw package deploy --file "aem/home/lib/aem-service-pkg-6.5.*.0.zip"
+
+  aem:destroy:
+    desc: destroy AEM instances
+    deps: [aem:stop]
+    cmds: [sh aemw instance destroy]
+
+  aem:stop:
+    desc: stop AEM instances
+    aliases: [aem:down]
+    cmds: [sh aemw instance stop]
+
+  aem:build:
+    desc: build AEM application
+    cmds:
+      - >
+        sh aemw app build
+        --command "mvn clean package"
+        --sources "pom.xml,all,core,ui.apps,ui.apps.structure,ui.config,ui.content,ui.frontend,ui.tests"
+        --file "all/target/*.all-*.zip"
+
+  aem:deploy:
+    desc: deploy AEM application
+    deps: [aem:build]
+    cmds:
+      - sh aemw package deploy --file "all/target/*.all-*.zip"
+
+  docker:build:dispatcher:
+    desc: build AEM dispatcher image
+    dir: dispatcher
+    cmds:
+      - docker build -t acme/aem-ams/dispatcher-publish .
+
+  docker:start:
+    desc: start Docker containers
+    aliases: [docker:up]
+    deps: [docker:build:dispatcher]
+    cmds:
+      - mkdir -p aem/home/var/dispatcher/httpd/logs aem/home/var/dispatcher/httpd/cache aem/home/var/dispatcher/httpd/htdocs
+      - docker compose up -d
+
+  docker:stop:
+    desc: stop Docker containers
+    aliases: [docker:down]
+    cmds: [docker compose down]
+
+  docker:restart:
+    desc: restart Docker containers
+    cmds:
+      - task: docker-stop
+      - task: docker-start
+
+  docker:status:
+    desc: list Docker containers
+    cmds:
+      - docker compose ps

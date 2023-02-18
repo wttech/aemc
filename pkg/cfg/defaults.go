@@ -1,6 +1,7 @@
 package cfg
 
 import (
+	"github.com/fatih/color"
 	"github.com/spf13/viper"
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/fmtx"
@@ -17,6 +18,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("input.format", fmtx.YML)
 	v.SetDefault("input.file", common.STDIn)
 	v.SetDefault("output.format", fmtx.Text)
+	v.SetDefault("output.no_color", color.NoColor)
 	v.SetDefault("output.value", common.OutputValueAll)
 	v.SetDefault("output.log.file", common.LogFile)
 	v.SetDefault("output.log.console", true)

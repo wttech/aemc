@@ -67,6 +67,12 @@ tasks:
       - sh aemw instance create
       - sh aemw instance up
 
+  aem:await:
+    desc: await stable AEM instances
+    aliases: [aem:check]
+    cmds:
+      - sh aemw instance await
+
   aem:status:
     desc: check AEM instances status
     env:

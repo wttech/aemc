@@ -12,9 +12,10 @@ Universal tool to manage AEM instances everywhere!
 - Reusable core designed to handle advanced dev-ops operations needed to manage AEM instances
 - Various distributions based on core for context-specific use cases:
   - [*CLI*](#cli---overview) - for developer workstations, shell scripting
+    - [AEM Project Quickstart](https://github.com/wttech/aemc#cli---aem-project-quickstart) - add development environment automation to the existing AEM projects
     - [Docker Example](examples/docker) - coming soon
   - [*Ansible Collection/Modules*](#ansible-collection) - for managing higher AEM environments
-    - [Packer Example](https://github.com/wttech/aemc-ansible/tree/main/examples/packer) - good starting point for baking AWS EC2 image using Ansible
+    - [Packer Example](https://github.com/wttech/aemc-ansible/tree/main/examples/packer) - starting point for baking AWS EC2 image using Ansible
 - Fast & lightweight
 - No dependencies - usable on all operating systems and architectures
 

@@ -169,10 +169,14 @@ Check out [releases page](https://github.com/wttech/aemc/releases) to review ava
 To start working with tool run command:
 
 ```shell
-aem config init
+sh aemw config init
 ```
 
-It will produce default configuration file named *aem.yml*. 
+It will produce:
+
+- default/template configuration file: *aem/default/etc* (VCS-tracked)
+- actual configuration file:  *aem/home/etc/aem.yml* (VCS-ignored)
+
 Correct the `dist_file`, `license_file`, `unpack_dir` properties to provide essential files to be able to launch AEM instances.
 
 ```yml

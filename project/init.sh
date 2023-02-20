@@ -21,9 +21,4 @@ sh ${AEM_WRAPPER} version
 echo "Success! Now initialize AEM Compose by running the command:"
 echo ""
 
-echo "sh ${AEM_WRAPPER} project init --kind [auto|cloud|classic]"
-
-echo "After initialization review available project tasks by running the command:"
-echo ""
-
-echo "sh ${TASK_WRAPPER} --list"
+echo "sh ${AEM_WRAPPER} project init"

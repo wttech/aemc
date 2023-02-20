@@ -11,7 +11,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"io/fs"
-	"os"
 	"strings"
 )
 
@@ -172,33 +171,15 @@ func (p Project) KindInfer() (Kind, error) {
 	return "", fmt.Errorf("cannot infer project kind as file '%s' does not exist", KindPropFile)
 }
 
-func (p Project) ScriptNames() ([]string, error) {
-	scriptFiles, err := os.ReadDir(common.ScriptDir)
-	if err != nil {
-		return nil, fmt.Errorf("cannot list scripts in dir '%s'", common.ScriptDir)
-	}
-	var scripts []string
-	for _, file := range scriptFiles {
-		if strings.HasSuffix(file.Name(), ".sh") {
-			scripts = append(scripts, strings.TrimSuffix(file.Name(), ".sh"))
-		}
-	}
-	return scripts, nil
-}
-
 func (p Project) GettingStarted() (string, error) {
-	scripts, err := p.ScriptNames()
-	if err != nil {
-		return "", err
-	}
 	text := fmt.Sprintf(strings.Join([]string{
 		"The next step is providing AEM files (JAR or SDK ZIP, license, service packs) to directory '" + common.LibDir + "'.",
 		"Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '" + cfg.FileDefault + "'.",
 		"Make sure to exclude the directory '" + common.HomeDir + "'from VCS versioning and IDE indexing.",
-		"Finally, use control scripts to manage AEM instances:",
+		"Finally, use tasks to manage AEM instances:",
 		"",
 
-		"sh aemw [%s]",
+		"sh taskw --list",
 
 		"",
 		"It is also possible to run individual AEM Compose CLI commands separately.",
@@ -206,6 +187,6 @@ func (p Project) GettingStarted() (string, error) {
 		"",
 
 		"sh aemw --help",
-	}, "\n"), strings.Join(scripts, "|"))
+	}, "\n"))
 	return text, nil
 }

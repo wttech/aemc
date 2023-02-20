@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/wttech/aemc/pkg/common/filex"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"reflect"
+	"strings"
 	"text/template"
 )
 
@@ -30,6 +32,9 @@ var funcMap = template.FuncMap{
 			return value
 		}
 		return value
+	},
+	"canonicalPath": func(pathSegments ...string) string {
+		return pathx.Canonical(strings.Join(pathSegments, "/"))
 	},
 }
 

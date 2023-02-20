@@ -145,7 +145,6 @@ tasks:
         --command "mvn clean package"
         --sources "pom.xml,all,core,ui.apps,ui.apps.structure,ui.config,ui.content,ui.frontend,ui.tests"
         --file "all/target/*.all-*.zip"
-      - cd dispatcher && sh build.sh
 
   aem:deploy:
     desc: deploy AEM application
@@ -158,7 +157,7 @@ tasks:
     aliases: [docker:up]
     cmds:
       # - sh aem/home/opt/sdk/dispatcher/bin/validate.sh dispatcher/src > aem/home/var/log/dispatcher-validate.log # uncomment if possible, see: https://github.com/adobe/aem-project-archetype/issues/1043
-      - docker tag "$(docker load --input "aem/home/opt/sdk/dispatcher/lib/dispatcher-publish-${ARCH}.tar.gz" | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"
+      - docker tag "$(docker load --input "aem/home/opt/sdk/dispatcher/lib/dispatcher-publish-{{ARCH}}.tar.gz" | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"
       - docker compose up -d
 
   docker:stop:

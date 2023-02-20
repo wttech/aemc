@@ -59,7 +59,9 @@ download_file_once () {
   FILE=$2
   if [ ! -f "${FILE}" ]; then
       mkdir -p "$(dirname "$FILE")"
-      download_file "$FILE" "$URL"
+      FILE_TMP="$2.tmp"
+      download_file "$FILE_TMP" "$URL"
+      mv "$FILE_TMP" "$FILE"
   fi
 }
 

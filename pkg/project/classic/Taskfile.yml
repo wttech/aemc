@@ -2,7 +2,7 @@
 # 1) Basics: https://taskfile.dev/usage
 # 2) Naming conventions: https://taskfile.dev/styleguide
 
-version: '3'
+version: "3"
 
 env:
   AEM_INSTANCE_PROCESSING_MODE: auto
@@ -12,77 +12,77 @@ vars:
   APM_VERSION: 5.5.1
 
 tasks:
-
   setup:
-    desc: setup AEM environment
+    desc: sets up the environment with AEM and dispatcher
     cmds:
       - task: aem:setup
-      - task: docker:up
+      - task: dispatcher:up
 
   resetup:
-    desc: destroy and setup again AEM environment
+    desc: destroys and sets up the environment again
     cmds:
       - task: destroy
       - task: setup
 
   start:
-    desc: start AEM environment
+    desc: starts the environment with AEM and dispatcher
     aliases: [up]
     cmds:
       - task: aem:up
-      - task: docker:up
+      - task: dispatcher:up
 
   stop:
-    desc: stop AEM environment
+    desc: stops the environment
     aliases: [down]
     cmds:
-      - task: docker:down
+      - task: dispatcher:down
       - task: aem:down
 
   restart:
+    desc: re-starts environment including AEM and dispatcher
     cmds:
       - task: aem:down
       - task: aem:up
+      - task: dispatcher:down
+      - task: dispatcher:up
 
   destroy:
-    desc: destroy AEM environment
+    desc: destroys the entire environment
     cmds:
       - task: stop
       - task: aem:destroy
+      - task: dispatcher:destroy
 
   aem:setup:
-    desc: setup AEM instances
+    desc: sets up AEM instances by starting and provisioning them. It also deploys the code to them
     cmds:
       - task: aem:start
       - task: aem:provision
       - task: aem:deploy
 
-  aem:create:
-    desc: create AEM instances
-    cmds: [sh aemw instance create]
-
   aem:start:
-    desc: start AEM instances
+    desc: starts AEM instances
     aliases: [aem:up]
     cmds:
       - sh aemw instance create
       - sh aemw instance up
 
   aem:await:
-    desc: await stable AEM instances
+    desc: awaits stable AEM instances
+    internal: true
     aliases: [aem:check]
     cmds:
       - sh aemw instance await
 
   aem:status:
-    desc: check AEM instances status
+    desc: checks statuses of AEM instances
     env:
       AEM_OUTPUT_VALUE: ALL
     cmds:
       - sh aemw instance status
 
   aem:provision:
-    desc: provision AEM instances
+    desc: provisions AEM instances by installing necessary packages and setting configurations
     aliases: [aem:configure]
     cmds:
       - task: aem:provision:repl-agent-publish
@@ -92,7 +92,8 @@ tasks:
       - task: aem:provision:service-pack
 
   aem:provision:repl-agent-publish:
-    desc: configure replication agent on author instance
+    desc: configures replication agent on AEM author instance
+    internal: true
     cmds:
       - |
         PROPS="
@@ -105,7 +106,8 @@ tasks:
         echo "$PROPS" | sh aemw repl agent setup -A --location "author" --name "publish"
 
   aem:provision:repl-agent-flush:
-    desc: configure replication agent on publish instance
+    desc: configures replication agent on AEM publish instance
+    internal: true
     cmds:
       - |
         PROPS="
@@ -120,32 +122,35 @@ tasks:
         echo "$PROPS" | sh aemw repl agent setup -P --location "publish" --name "flush"
 
   aem:provision:crx:
-    desc: enable CRX/DE
+    desc: enables CRX/DE on all AEM instances
+    internal: true
     cmds:
       - 'sh aemw osgi config save --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet" --input-string "alias: /crx/server"'
 
   aem:provision:apm:
-    desc: deploy APM tool
+    desc: deploys APM tool
+    internal: true
     cmds:
       - sh aemw package deploy --url "https://github.com/wttech/APM/releases/download/apm-{{.APM_VERSION}}/apm-all-{{.APM_VERSION}}.zip"
 
   aem:provision:service-pack:
-    desc: deploy AEM Service Pack
+    desc: deploys AEM Service Pack
+    internal: true
     cmds:
       - sh aemw package deploy --file "aem/home/lib/aem-service-pkg-6.5.*.0.zip"
 
   aem:destroy:
-    desc: destroy AEM instances
+    desc: destroys all AEM instances
     deps: [aem:stop]
     cmds: [sh aemw instance destroy]
 
   aem:stop:
-    desc: stop AEM instances
+    desc: stops AEM instances
     aliases: [aem:down]
     cmds: [sh aemw instance stop]
 
   aem:build:
-    desc: build AEM application
+    desc: builds AEM application in current folder using Maven
     cmds:
       - >
         sh aemw app build
@@ -154,37 +159,41 @@ tasks:
         --file "all/target/*.all-*.zip"
 
   aem:deploy:
-    desc: deploy AEM application
+    desc: deploys AEM application built with aem:build
     deps: [aem:build]
     cmds:
       - sh aemw package deploy --file "all/target/*.all-*.zip"
 
-  docker:build:dispatcher:
-    desc: build AEM dispatcher image
+  dispatcher:build:
+    desc: builds dispatcher Docker image
     dir: dispatcher
     cmds:
       - docker build -t acme/aem-ams/dispatcher-publish .
 
-  docker:start:
-    desc: start Docker containers
-    aliases: [docker:up]
-    deps: [docker:build:dispatcher]
+  dispatcher:start:
+    desc: starts Docker containers with dispatcher
+    aliases: [dispatcher:up]
+    deps: [dispatcher:build]
     cmds:
       - mkdir -p aem/home/var/dispatcher/httpd/logs aem/home/var/dispatcher/httpd/cache aem/home/var/dispatcher/httpd/htdocs
       - docker compose up -d
 
-  docker:stop:
-    desc: stop Docker containers
-    aliases: [docker:down]
+  dispatcher:stop:
+    desc: stops Docker containers
+    aliases: [dispatcher:down]
     cmds: [docker compose down]
 
-  docker:restart:
-    desc: restart Docker containers
+  dispatcher:restart:
+    desc: restarts Docker containers
     cmds:
       - task: docker-stop
       - task: docker-start
 
-  docker:status:
-    desc: list Docker containers
+  dispatcher:status:
+    desc: lists Docker containers
     cmds:
       - docker compose ps
+
+  dispatcher:destroy:
+    desc: destroys dispatcher containers
+    cmds: [docker compose rm]

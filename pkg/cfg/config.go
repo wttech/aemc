@@ -91,7 +91,7 @@ func readFromFile(v *viper.Viper) {
 	}
 	data := map[string]any{
 		"Env":  osx.EnvVarsMap(),
-		"Path": pathx.Canonical("."),
+		"Path": pathx.Normalize("."),
 	}
 	var tplOut bytes.Buffer
 	if err = tpl.Execute(&tplOut, data); err != nil {

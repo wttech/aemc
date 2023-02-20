@@ -65,6 +65,20 @@ download_file_once () {
   fi
 }
 
+unarchive_file() {
+  FILE=$1
+  DIR=$2
+
+  rm -fr "$DIR"
+  mkdir -p "$DIR"
+  if [ "${FILE##*.}" = "zip" ] ; then
+    unzip "$FILE" -d "$DIR"
+  else
+    tar -xf "$FILE" -C "$DIR"
+  fi
+}
+
+
 # Download tool
 # =============
 
@@ -90,11 +104,7 @@ BIN_EXEC_FILE="${BIN_ARCHIVE_DIR}/${BIN_NAME}"
 if [ ! -f "${BIN_EXEC_FILE}" ]; then
   mkdir -p "${BIN_ARCHIVE_DIR}"
   download_file_once "${BIN_DOWNLOAD_URL}" "${BIN_ARCHIVE_FILE}"
-  if [ "$BIN_ARCHIVE_EXT" = "tar.gz" ] ; then
-    tar -xf "${BIN_ARCHIVE_FILE}" -C "${BIN_ARCHIVE_DIR}"
-  else
-    unzip "${BIN_ARCHIVE_FILE}" -d "${BIN_ARCHIVE_DIR}"
-  fi
+  unarchive_file "${BIN_ARCHIVE_FILE}" "${BIN_ARCHIVE_DIR}"
   chmod +x "${BIN_EXEC_FILE}"
 fi
 

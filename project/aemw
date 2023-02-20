@@ -65,6 +65,20 @@ download_file_once () {
   fi
 }
 
+unarchive_file() {
+  FILE=$1
+  DIR=$2
+
+  rm -fr "$DIR"
+  mkdir -p "$DIR"
+  if [ "${FILE##*.}" = "zip" ] ; then
+    unzip "$FILE" -d "$DIR"
+  else
+    tar -xf "$FILE" -C "$DIR"
+  fi
+}
+
+
 # Download or use installed tool
 # ==============================
 
@@ -76,9 +90,13 @@ HOME_DIR="${AEM_DIR}/home"
 DOWNLOAD_DIR="${HOME_DIR}/opt"
 
 BIN_DOWNLOAD_NAME="aemc-cli"
-BIN_DOWNLOAD_URL="https://github.com/wttech/aemc/releases/download/v${VERSION}/${BIN_DOWNLOAD_NAME}_${OS}_${ARCH}.tar.gz"
+BIN_ARCHIVE_EXT="tar.gz"
+if [ "$OS" = "windows" ] ; then
+  BIN_ARCHIVE_EXT="zip"
+fi
+BIN_DOWNLOAD_URL="https://github.com/wttech/aemc/releases/download/v${VERSION}/${BIN_DOWNLOAD_NAME}_${OS}_${ARCH}.${BIN_ARCHIVE_EXT}"
 BIN_ROOT="${DOWNLOAD_DIR}/${BIN_DOWNLOAD_NAME}/${VERSION}"
-BIN_ARCHIVE_FILE="${BIN_ROOT}/${BIN_DOWNLOAD_NAME}.tar.gz"
+BIN_ARCHIVE_FILE="${BIN_ROOT}/${BIN_DOWNLOAD_NAME}.${BIN_ARCHIVE_EXT}"
 BIN_ARCHIVE_DIR="${BIN_ROOT}/${BIN_DOWNLOAD_NAME}"
 BIN_NAME="aem"
 BIN_EXEC_FILE="${BIN_ARCHIVE_DIR}/${BIN_NAME}"
@@ -87,7 +105,7 @@ if [ "${VERSION}" != "installed" ] ; then
   if [ ! -f "${BIN_EXEC_FILE}" ]; then
     mkdir -p "${BIN_ARCHIVE_DIR}"
     download_file_once "${BIN_DOWNLOAD_URL}" "${BIN_ARCHIVE_FILE}"
-    tar -xf "${BIN_ARCHIVE_FILE}" -C "${BIN_ARCHIVE_DIR}"
+    unarchive_file "${BIN_ARCHIVE_FILE}" "${BIN_ARCHIVE_DIR}"
     chmod +x "${BIN_EXEC_FILE}"
   fi
   aem() {

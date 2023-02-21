@@ -17,7 +17,7 @@ tasks:
     desc: setup AEM environment
     cmds:
       - task: aem:setup
-      - task: docker:up
+      - task: docker:setup
 
   resetup:
     desc: destroy and setup again AEM environment
@@ -159,16 +159,32 @@ tasks:
     cmds:
       - sh aemw package deploy --file "all/target/*.all-*.zip"
 
-  docker:build:dispatcher:
+  docker:setup:
+    desc: setup Docker containers
+    cmds:
+      - task: docker:start
+      - task: docker:status
+
+  docker:build:
+    desc: build Docker containers
+    deps: [docker:dispatcher:build]
+
+  docker:dispatcher:build:
     desc: build AEM dispatcher image
     dir: dispatcher
     cmds:
       - docker build -t acme/aem-ams/dispatcher-publish .
 
+  docker:dispatcher:test:
+    desc: test AEM dispatcher image
+    dir: dispatcher
+    cmds:
+      - docker run --rm -it --entrypoint bash acme/aem-ams/dispatcher-publish:latest
+
   docker:start:
     desc: start Docker containers
     aliases: [docker:up]
-    deps: [docker:build:dispatcher]
+    deps: [docker:build]
     cmds:
       - mkdir -p aem/home/var/dispatcher/httpd/logs aem/home/var/dispatcher/httpd/cache aem/home/var/dispatcher/httpd/htdocs
       - docker compose up -d
@@ -188,3 +204,4 @@ tasks:
     desc: list Docker containers
     cmds:
       - docker compose ps
+      - docker compose logs

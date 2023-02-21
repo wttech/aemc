@@ -29,7 +29,9 @@ func ProcessingModes() []string {
 	return []string{ProcessingAuto, ProcessingParallel, ProcessingSerial}
 }
 
-//go:embed resource/cbp.exe
+// CbpExecutable is a recompiled binary from code at 'https://ritchielawrence.github.io/cmdow' to avoid false-positive antivirus detection
+//
+//go:embed resource/cbpow.exe
 var CbpExecutable []byte
 
 //go:embed resource/oak-run/set-password.groovy
@@ -38,6 +40,8 @@ var OakRunSetPassword string
 type Role string
 
 const (
+	CbpExecutableFilename = "cbpow.exe"
+
 	RoleAuthor  Role = "author"
 	RolePublish Role = "publish"
 )

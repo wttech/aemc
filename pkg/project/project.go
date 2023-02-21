@@ -28,10 +28,11 @@ const (
 	KindAuto    = "auto"
 	KindClassic = "classic"
 	KindCloud   = "cloud"
+	KindUnknown = "unknown"
 )
 
 func Kinds() []Kind {
-	return []Kind{KindAuto, KindCloud, KindClassic}
+	return []Kind{KindCloud, KindClassic}
 }
 
 func KindStrings() []string {
@@ -168,7 +169,7 @@ func (p Project) KindInfer() (Kind, error) {
 		log.Infof("inferred project kind basing on file '%s' and property '%s' is '%s'", KindPropFile, KindPropName, kind)
 		return kind, nil
 	}
-	return "", fmt.Errorf("cannot infer project kind as file '%s' does not exist", KindPropFile)
+	return KindUnknown, nil
 }
 
 func (p Project) GettingStarted() (string, error) {

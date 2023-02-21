@@ -173,7 +173,7 @@ tasks:
     desc: build AEM dispatcher image
     dir: dispatcher
     cmds:
-      - docker build -t acme/aem-ams/dispatcher-publish .
+      - docker build --platform linux/amd64 -t acme/aem-ams/dispatcher-publish .
 
   docker:dispatcher:test:
     desc: test AEM dispatcher image

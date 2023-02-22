@@ -162,6 +162,12 @@ tasks:
       - task: dispatcher:start
       - task: dispatcher:status
 
+  dispatcher:resetup:
+    desc: destroy then setup again AEM dispatcher
+    cmds:
+      - task: dispatcher:destroy
+      - task: dispatcher:setup
+
   dispatcher:build:
     desc: build AEM dispatcher image
     dir: dispatcher
@@ -200,7 +206,7 @@ tasks:
     dir: dispatcher
     cmds:
       - docker compose ps
-      - docker compose logs
+      - docker compose logs --tail 20
 
   dispatcher:destroy:
     desc: destroy AEM dispatcher

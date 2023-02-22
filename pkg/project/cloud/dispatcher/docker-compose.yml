@@ -1,6 +1,7 @@
 version: "3"
 services:
   dispatcher:
+    container_name: dispatcher
     image: adobe/aem-ethos/dispatcher-publish:latest
     ports:
       - "80:80"

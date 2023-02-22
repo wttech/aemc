@@ -1,6 +1,7 @@
 version: "3"
 services:
   dispatcher:
+    container_name: dispatcher
     image: acme/aem-ams/dispatcher-publish:latest
     ports:
       - "80:80"

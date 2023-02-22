@@ -29,6 +29,10 @@ func (c *CLI) projectInitCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			if kind == project.KindUnknown {
+				c.Fail(fmt.Sprintf("project kind cannot be determined; specify it with flag '--kind=[%s]'", strings.Join(project.KindStrings(), "|")))
+				return
+			}
 			changed, err := c.project.InitializeWithChanged(kind)
 			if err != nil {
 				c.Error(err)

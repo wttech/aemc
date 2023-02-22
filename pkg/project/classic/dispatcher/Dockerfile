@@ -6,7 +6,7 @@ RUN yum -y install httpd wget mod_ssl
 
 # Download & install dispatcher module
 RUN mkdir -p /tmp/dispatcher && cd /tmp/dispatcher && \
-    wget https://download.macromedia.com/dispatcher/download/dispatcher-apache2.4-linux-aarch64-${DISPATCHER_VERSION}.tar.gz -O dispatcher.tar.gz && \
+    wget https://download.macromedia.com/dispatcher/download/dispatcher-apache2.4-linux-x86_64-${DISPATCHER_VERSION}.tar.gz -O dispatcher.tar.gz && \
     tar xzf dispatcher.tar.gz && \
     cp dispatcher-apache2.4-${DISPATCHER_VERSION}.so /usr/lib64/httpd/modules/mod_dispatcher.so && \
     chmod 0755 /usr/lib64/httpd/modules/mod_dispatcher.so

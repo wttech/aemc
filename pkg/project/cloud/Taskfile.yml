@@ -2,7 +2,7 @@
 # 1) Basics: https://taskfile.dev/usage
 # 2) Naming conventions: https://taskfile.dev/styleguide
 
-version: "3"
+version: '3'
 
 env:
   AEM_INSTANCE_PROCESSING_MODE: auto
@@ -16,7 +16,7 @@ tasks:
     desc: sets up the environment with AEM and dispatcher
     cmds:
       - task: aem:setup
-      - task: dispatcher:up
+      - task: dispatcher:setup
 
   resetup:
     desc: destroys and sets up the environment again
@@ -39,7 +39,7 @@ tasks:
       - task: aem:down
 
   restart:
-    desc: re-starts environment including AEM and dispatcher
+    desc: restarts environment including AEM and dispatcher
     cmds:
       - task: aem:down
       - task: aem:up
@@ -64,15 +64,7 @@ tasks:
     desc: starts AEM instances
     aliases: [aem:up]
     cmds:
-      - sh aemw instance create
-      - sh aemw instance up
-
-  aem:await:
-    desc: awaits stable AEM instances
-    internal: true
-    aliases: [aem:check]
-    cmds:
-      - sh aemw instance await
+      - sh aemw instance launch
 
   aem:status:
     desc: checks statuses of AEM instances
@@ -157,9 +149,19 @@ tasks:
     cmds:
       - sh aemw package deploy --file "all/target/*.all-*.zip"
 
+  dispatcher:setup:
+    desc: setup Docker containers
+    cmds:
+      - task: dispatcher:start
+      - task: dispatcher:status
+
   dispatcher:start:
     desc: starts Docker containers with dispatcher using Adobe's Docker image
     aliases: [dispatcher:up]
+
+  docker:start:
+    desc: start Docker containers
+    aliases: [docker:up]
     cmds:
       # - sh aem/home/opt/sdk/dispatcher/bin/validate.sh dispatcher/src > aem/home/var/log/dispatcher-validate.log # uncomment if possible, see: https://github.com/adobe/aem-project-archetype/issues/1043
       - docker tag "$(docker load --input "aem/home/opt/sdk/dispatcher/lib/dispatcher-publish-{{ARCH}}.tar.gz" | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"
@@ -180,6 +182,7 @@ tasks:
     desc: lists Docker containers
     cmds:
       - docker compose ps
+      - docker compose logs
 
   dispatcher:destroy:
     desc: destroys dispatcher containers

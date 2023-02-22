@@ -138,7 +138,7 @@ func (li LocalInstance) binScriptUnix(name string) string {
 }
 
 func (li LocalInstance) binCbpExecutable() string {
-	return pathx.Canonical(fmt.Sprintf("%s/bin/cbp.exe", li.WorkDir()))
+	return pathx.Canonical(fmt.Sprintf("%s/bin/%s", li.WorkDir(), instance.CbpExecutableFilename))
 }
 
 func (li LocalInstance) LicenseFile() string {
@@ -281,7 +281,7 @@ func (li LocalInstance) correctFiles() error {
 		)
 		content = strings.ReplaceAll(content, // force instance to be launched in background (it is windowed by default)
 			"start \"CQ\" cmd.exe /C java %CQ_JVM_OPTS% -jar %CurrDirName%\\%CQ_JARFILE% %START_OPTS%",
-			LocalInstanceWorkDirName+"\\bin\\cbp.exe cmd.exe /C \"java %CQ_JVM_OPTS% -jar %CurrDirName%\\%CQ_JARFILE% %START_OPTS% 1> %CurrDirName%\\logs\\stdout.log 2>&1\"",
+			LocalInstanceWorkDirName+"\\bin\\"+instance.CbpExecutableFilename+" /run /hid cmd.exe /C \"java %CQ_JVM_OPTS% -jar %CurrDirName%\\%CQ_JARFILE% %START_OPTS% 1> %CurrDirName%\\logs\\stdout.log 2>&1\"",
 		)
 		content = strings.ReplaceAll(content, // introduce CQ_START_OPTS (not available by default)
 			"set START_OPTS=start -c %CurrDirName% -i launchpad",

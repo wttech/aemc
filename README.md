@@ -82,7 +82,7 @@ Worth knowing:
 Run command below to initialize the AEM Compose tool in your project (e.g existing one or generated from [Adobe AEM Project Archetype](https://github.com/adobe/aem-project-archetype#usage)):
 
 ```shell
-curl https://raw.githubusercontent.com/wttech/aemc/main/project/init.sh | sh
+curl https://raw.githubusercontent.com/wttech/aemc/main/project-init.sh | sh
 ```
 
 After successful initialization, remember to always use the tool via wrapper script in the following way:

@@ -13,75 +13,68 @@ vars:
 
 tasks:
   setup:
-    desc: setup AEM environment
+    desc: setup AEM instances and dispatcher
     cmds:
       - task: aem:setup
-      - task: docker:setup
+      - task: dispatcher:setup
 
   resetup:
-    desc: destroy and setup again AEM environment
+    desc: destroy then setup again AEM instances and dispatcher
     cmds:
       - task: destroy
       - task: setup
 
   start:
-    desc: start AEM environment
+    desc: start AEM instances and dispatcher
     aliases: [up]
     cmds:
       - task: aem:up
-      - task: docker:up
+      - task: dispatcher:up
 
   stop:
-    desc: stop AEM environment
+    desc: stop AEM instances and dispatcher
     aliases: [down]
     cmds:
-      - task: docker:down
+      - task: dispatcher:down
       - task: aem:down
 
   restart:
+    desc: restart AEM instances and dispatcher
     cmds:
       - task: aem:down
       - task: aem:up
+      - task: dispatcher:down
+      - task: dispatcher:up
 
   destroy:
-    desc: destroy AEM environment
+    desc: destroy AEM instances and dispatcher
     cmds:
       - task: stop
       - task: aem:destroy
+      - task: dispatcher:destroy
 
   aem:setup:
-    desc: setup AEM instances
+    desc: start and provision AEM instances then build and deploy AEM application
     cmds:
       - task: aem:start
       - task: aem:provision
       - task: aem:deploy
 
-  aem:create:
-    desc: create AEM instances
-    cmds: [sh aemw instance create]
-
   aem:start:
     desc: start AEM instances
     aliases: [aem:up]
     cmds:
-      - sh aemw instance create
-      - sh aemw instance up
-
-  aem:await:
-    desc: await stable AEM instances
-    aliases: [aem:check]
-    cmds:
-      - sh aemw instance await
+      - sh aemw instance launch
 
   aem:status:
-    desc: check AEM instances status
+    desc: check status of AEM instances
     env:
       AEM_OUTPUT_VALUE: ALL
     cmds:
       - sh aemw instance status
 
   aem:provision:
-    desc: provision AEM instances
+    desc: provision AEM instances by installing packages and applying configurations
     aliases: [aem:configure]
     cmds:
       - task: aem:provision:repl-agent-publish
@@ -90,7 +83,8 @@ tasks:
       - task: aem:provision:apm
 
   aem:provision:repl-agent-publish:
-    desc: configure replication agent on author instance
+    desc: configure replication agent on AEM author instance
+    internal: true
     cmds:
       - |
         PROPS="
@@ -103,7 +97,8 @@ tasks:
         echo "$PROPS" | sh aemw repl agent setup -A --location "author" --name "publish"
 
   aem:provision:repl-agent-flush:
-    desc: configure replication agent on publish instance
+    desc: configure replication agent on AEM publish instance
+    internal: true
     cmds:
       - |
         PROPS="
@@ -118,12 +113,14 @@ tasks:
         echo "$PROPS" | sh aemw repl agent setup -P --location "publish" --name "flush"
 
   aem:provision:crx:
-    desc: enable CRX/DE
+    desc: enable CRX/DE on all AEM instances
+    internal: true
     cmds:
       - 'sh aemw osgi config save --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet" --input-string "alias: /crx/server"'
 
   aem:provision:apm:
     desc: deploy APM tool
+    internal: true
     cmds:
       - sh aemw package deploy --url "https://github.com/wttech/APM/releases/download/apm-{{.APM_VERSION}}/apm-all-{{.APM_VERSION}}.zip"
 
@@ -138,7 +135,7 @@ tasks:
     cmds: [sh aemw instance stop]
 
   aem:build:
-    desc: build AEM application
+    desc: build AEM application using Maven
     cmds:
       - >
         sh aemw app build
@@ -152,33 +149,48 @@ tasks:
     cmds:
       - sh aemw package deploy --file "all/target/*.all-*.zip"
 
-  docker:setup:
-    desc: setup Docker containers
+  dispatcher:setup:
+    desc: setup AEM dispatcher
     cmds:
-      - task: docker:start
-      - task: docker:status
+      - task: dispatcher:start
+      - task: dispatcher:status
 
-  docker:start:
-    desc: start Docker containers
-    aliases: [docker:up]
+  dispatcher:resetup:
+    desc: destroy then setup again AEM dispatcher
+    cmds:
+      - task: dispatcher:destroy
+      - task: dispatcher:setup
+
+  dispatcher:start:
+    desc: start AEM dispatcher using SDK image
+    aliases: [dispatcher:up]
+    dir: dispatcher
     cmds:
       # - sh aem/home/opt/sdk/dispatcher/bin/validate.sh dispatcher/src > aem/home/var/log/dispatcher-validate.log # uncomment if possible, see: https://github.com/adobe/aem-project-archetype/issues/1043
-      - docker tag "$(docker load --input "aem/home/opt/sdk/dispatcher/lib/dispatcher-publish-{{ARCH}}.tar.gz" | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"
+      - rm -fr target/sdk && cp -r ../aem/home/opt/sdk/dispatcher target/sdk
+      - docker tag "$(docker load --input "target/sdk/lib/dispatcher-publish-{{ARCH}}.tar.gz" | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"
       - docker compose up -d
 
-  docker:stop:
-    desc: stop Docker containers
-    aliases: [docker:down]
+  dispatcher:stop:
+    desc: stop AEM dispatcher
+    aliases: [dispatcher:down]
+    dir: dispatcher
     cmds: [docker compose down]
 
-  docker:restart:
-    desc: restart Docker containers
+  dispatcher:restart:
+    desc: restart AEM dispatcher
     cmds:
-      - task: docker-stop
-      - task: docker-start
+      - task: dispatcher:stop
+      - task: dispatcher:start
 
-  docker:status:
-    desc: list Docker containers
+  dispatcher:status:
+    desc: check status of AEM dispatcher
+    dir: dispatcher
     cmds:
       - docker compose ps
-      - docker compose logs
+      - docker compose logs --tail 20
+
+  dispatcher:destroy:
+    desc: destroy AEM dispatcher
+    dir: dispatcher
+    cmds: [docker compose rm]

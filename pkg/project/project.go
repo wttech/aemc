@@ -51,6 +51,9 @@ func KindOf(name string) (Kind, error) {
 	}
 }
 
+//go:embed common
+var commonFiles embed.FS
+
 //go:embed classic
 var classicFiles embed.FS
 
@@ -83,11 +86,17 @@ func (p Project) initialize(kind Kind) error {
 	log.Infof("preparing default files for project of kind '%s'", kind)
 	switch kind {
 	case KindClassic:
-		if err := copyEmbedFiles(&classicFiles, string(kind)+"/"); err != nil {
+		if err := copyEmbedFiles(&commonFiles, "common/"); err != nil {
+			return err
+		}
+		if err := copyEmbedFiles(&classicFiles, "classic/"); err != nil {
 			return err
 		}
 	case KindCloud:
-		if err := copyEmbedFiles(&cloudFiles, string(kind)+"/"); err != nil {
+		if err := copyEmbedFiles(&commonFiles, "common/"); err != nil {
+			return err
+		}
+		if err := copyEmbedFiles(&cloudFiles, "cloud/"); err != nil {
 			return err
 		}
 	default:

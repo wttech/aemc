@@ -54,7 +54,7 @@ tasks:
       - task: dispatcher:destroy
 
   aem:setup:
-    desc: launch and provision AEM instances then build and deploy AEM application
+    desc: start and provision AEM instances then build and deploy AEM application
     cmds:
       - task: aem:start
       - task: aem:provision

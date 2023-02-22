@@ -114,7 +114,7 @@ tasks:
         echo "$PROPS" | sh aemw repl agent setup -P --location "publish" --name "flush"
 
   aem:provision:crx:
-    desc: enables CRX/DE on AEM instances
+    desc: enable CRX/DE on AEM instances
     internal: true
     cmds:
       - 'sh aemw osgi config save --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet" --input-string "alias: /crx/server"'

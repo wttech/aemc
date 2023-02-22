@@ -12,16 +12,16 @@ instance:
       password: admin
       run_modes: [ local ]
       jvm_opts:
-        - "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:14502"
-        - "-Djava.io.tmpdir=[[.Path]]/aem/home/tmp"
-        - "-Duser.language=en"
-        - "-Duser.country=US"
-        - "-Duser.timezone=UTC"
+        - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
+        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:14502
+        - -Duser.language=en
+        - -Duser.country=US
+        - -Duser.timezone=UTC
       start_opts: []
       secret_vars:
-        - "ACME_SECRET=value"
+        - ACME_SECRET=value
       env_vars:
-        - "ACME_VAR=value"
+        - ACME_VAR=value
       sling_props: []
     local_publish:
       http_url: http://127.0.0.1:4503
@@ -29,16 +29,16 @@ instance:
       password: admin
       run_modes: [ local ]
       jvm_opts:
-        - "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:14503"
-        - "-Djava.io.tmpdir=[[.Path]]/aem/home/tmp"
-        - "-Duser.language=en"
-        - "-Duser.country=US"
-        - "-Duser.timezone=UTC"
+        - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
+        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:14503
+        - -Duser.language=en
+        - -Duser.country=US
+        - -Duser.timezone=UTC
       start_opts: []
       secret_vars:
-        - "ACME_SECRET=value"
+        - ACME_SECRET=value
       env_vars:
-        - "ACME_VAR=value"
+        - ACME_VAR=value
       sling_props: []
 
   # Filters for defined

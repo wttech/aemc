@@ -1,0 +1,30 @@
+version: "3"
+services:
+  dispatcher:
+    image: adobe/aem-ethos/dispatcher-publish:latest
+    ports:
+      - "80:80"
+    environment:
+      - AEM_HOST=host.docker.internal
+      - AEM_IP=*.*.*.*
+      - AEM_PORT=4503
+      - VHOST=publish
+      - ENVIRONMENT_TYPE=dev
+      - DISP_LOG_LEVEL=Warn
+      - REWRITE_LOG_LEVEL=Warn
+      - EXPIRATION_TIME=A2592000
+      - FORWARDED_HOST_SETTING=Off
+      - COMMERCE_ENDPOINT=http://localhost/graphql
+    volumes:
+      # Use project-specific dispatcher config
+      - ./src:/mnt/dev/src:ro
+      - ./target/sdk/lib:/usr/lib/dispatcher-sdk:ro
+      - ./target/sdk/lib/import_sdk_config.sh:/docker_entrypoint.d/zzz-import-sdk-config.sh:ro
+      # Enable invalidation by any client
+      - ./target/sdk/lib/overwrite_cache_invalidation.sh:/docker_entrypoint.d/zzz-overwrite_cache_invalidation.sh:ro
+      # Enable hot reload
+      - ./target/sdk/lib/httpd-reload-monitor:/usr/sbin/httpd-reload-monitor:ro
+      - ./target/sdk/bin/validator-linux-amd64:/usr/sbin/validator:ro
+      # Enable previewing logs and caches directly on host
+      - ./target/sdk/logs:/var/log/apache2
+      - ./target/sdk/cache:/mnt/var/www

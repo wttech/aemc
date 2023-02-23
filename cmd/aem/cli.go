@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/fatih/color"
+	"github.com/iancoleman/strcase"
 	"github.com/samber/lo"
 	"github.com/segmentio/textio"
 	log "github.com/sirupsen/logrus"
@@ -353,7 +354,7 @@ func (c *CLI) addOutput(name string, data any) {
 
 func (c *CLI) fixOutputName(name string) string {
 	if c.outputFormat == fmtx.YML {
-		name = stringsx.SnakeCase(name)
+		name = strcase.ToSnake(name)
 	}
 	return name
 }

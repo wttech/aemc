@@ -14,8 +14,9 @@ func (c *CLI) configCmd() *cobra.Command {
 		Short:   "Manages configuration",
 	}
 	cmd.AddCommand(c.configInitCmd())
-	cmd.AddCommand(c.configListCmd())
-	cmd.AddCommand(c.configReadCmd())
+	cmd.AddCommand(c.configValueCmd())
+	cmd.AddCommand(c.configValuesCmd())
+	cmd.AddCommand(c.configExportCmd())
 	return cmd
 }
 
@@ -41,10 +42,10 @@ func (c *CLI) configInitCmd() *cobra.Command {
 	return cmd
 }
 
-func (c *CLI) configListCmd() *cobra.Command {
+func (c *CLI) configValuesCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "list",
-		Aliases: []string{"ls", "print", "values"},
+		Use:     "values",
+		Aliases: []string{"get-all"},
 		Short:   "Read all configuration values",
 		Run: func(cmd *cobra.Command, args []string) {
 			c.SetOutput("values", c.config.Values())
@@ -54,11 +55,11 @@ func (c *CLI) configListCmd() *cobra.Command {
 	return cmd
 }
 
-func (c *CLI) configReadCmd() *cobra.Command {
+func (c *CLI) configValueCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "read",
-		Aliases: []string{"get", "value"},
+		Use:     "value",
 		Short:   "Read configuration value",
+		Aliases: []string{"get"},
 		Run: func(cmd *cobra.Command, args []string) {
 			key, _ := cmd.Flags().GetString("key")
 			template, _ := cmd.Flags().GetString("template")
@@ -90,5 +91,25 @@ func (c *CLI) configReadCmd() *cobra.Command {
 	cmd.Flags().StringP("key", "k", "", "Value key")
 	cmd.Flags().StringP("template", "t", "", "Value template")
 	cmd.MarkFlagsMutuallyExclusive("key", "template")
+	return cmd
+}
+
+func (c *CLI) configExportCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "export",
+		Aliases: []string{"save"},
+		Short:   "Export configuration values to file",
+		Run: func(cmd *cobra.Command, args []string) {
+			file, _ := cmd.Flags().GetString("file")
+			if err := c.config.Export(file); err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("file", file)
+			c.Ok("config values exported")
+		},
+	}
+	cmd.Flags().StringP("file", "f", "aem.env", "File path to export")
+	cmd.MarkFlagRequired("file")
 	return cmd
 }

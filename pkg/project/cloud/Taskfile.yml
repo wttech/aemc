@@ -4,6 +4,9 @@
 
 version: '3'
 
+# TODO put AEM url and dispatcher url to env file read by both AEM Compose and task file
+dotenv: ['aem.env', '.env']
+
 env:
   AEM_INSTANCE_PROCESSING_MODE: auto
   AEM_OUTPUT_VALUE: NONE
@@ -90,7 +93,7 @@ tasks:
       - |
         PROPS="
         enabled: true
-        transportUri: http://localhost:4503/bin/receive?sling:authRequestLogin=1
+        transportUri: {{.INSTANCE_CONFIG_LOCAL_PUBLISH_HTTPURL}}/bin/receive?sling:authRequestLogin=1
         transportUser: admin
         transportPassword: admin
         userId: admin
@@ -114,7 +117,7 @@ tasks:
         echo "$PROPS" | sh aemw repl agent setup -P --location "publish" --name "flush"
 
   aem:provision:crx:
-    desc: enable CRX/DE on AEM instances
+    desc: enable CRX/DE on all AEM instances
     internal: true
     cmds:
       - 'sh aemw osgi config save --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet" --input-string "alias: /crx/server"'
@@ -154,20 +157,14 @@ tasks:
     deps: [aem:author:check, aem:publish:check]
 
   aem:author:check:
-    vars:
-      BASIC_AUTH:
-        sh: sh aemw config value -t "[[.Instance.Config.local_author.User]]:[[.Instance.Config.local_author.Password]]" --output-value value 2>&1
     desc: check deployed AEM application deployed to instance and dispatcher
     cmds:
-      - curl -s -u "{{.BASIC_AUTH}}" "http://127.0.0.1:4502/etc/replication/agents.author/publish.test.html" | grep -q "Replication (TEST) of /content successful"
+      - curl -s -u "{{.INSTANCE_CONFIG_LOCAL_AUTHOR_USER}}:{{.INSTANCE_CONFIG_LOCAL_AUTHOR_PASSWORD}}" "{{.INSTANCE_CONFIG_LOCAL_AUTHOR_HTTPURL}}/etc/replication/agents.author/publish.test.html" | grep -q "Replication (TEST) of /content successful"
 
   aem:publish:check:
-    vars:
-      BASIC_AUTH:
-        sh: sh aemw config value -t "[[.Instance.Config.local_publish.User]]:[[.Instance.Config.local_publish.Password]]" --output-value value 2>&1
     desc: check deployed AEM application deployed to instance and dispatcher
     cmds:
-      - curl -s -u "{{.BASIC_AUTH}}" "http://127.0.0.1:4503/etc/replication/agents.publish/flush.test.html" | grep -q "Replication (TEST) of /content successful"
+      - curl -s -u "{{.INSTANCE_CONFIG_LOCAL_PUBLISH_USER}}:{{.INSTANCE_CONFIG_LOCAL_PUBLISH_PASSWORD}}" "{{.INSTANCE_CONFIG_LOCAL_PUBLISH_HTTPURL}}/etc/replication/agents.publish/flush.test.html" | grep -q "Replication (TEST) of /content successful"
 
   dispatcher:setup:
     desc: setup AEM dispatcher

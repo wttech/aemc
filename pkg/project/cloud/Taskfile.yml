@@ -17,6 +17,7 @@ tasks:
     cmds:
       - task: aem:setup
       - task: dispatcher:setup
+      - task: aem:check
 
   resetup:
     desc: destroy then setup again AEM instances and dispatcher
@@ -148,6 +149,25 @@ tasks:
     deps: [aem:build]
     cmds:
       - sh aemw package deploy --file "all/target/*.all-*.zip"
+
+  aem:check:
+    deps: [aem:author:check, aem:publish:check]
+
+  aem:author:check:
+    vars:
+      BASIC_AUTH:
+        sh: sh aemw config value -t "[[.Instance.Config.local_author.User]]:[[.Instance.Config.local_author.Password]]" --output-value value 2>&1
+    desc: check deployed AEM application deployed to instance and dispatcher
+    cmds:
+      - curl -s -u "{{.BASIC_AUTH}}" "http://127.0.0.1:4502/etc/replication/agents.author/publish.test.html" | grep -q "Replication (TEST) of /content successful"
+
+  aem:publish:check:
+    vars:
+      BASIC_AUTH:
+        sh: sh aemw config value -t "[[.Instance.Config.local_publish.User]]:[[.Instance.Config.local_publish.Password]]" --output-value value 2>&1
+    desc: check deployed AEM application deployed to instance and dispatcher
+    cmds:
+      - curl -s -u "{{.BASIC_AUTH}}" "http://127.0.0.1:4503/etc/replication/agents.publish/flush.test.html" | grep -q "Replication (TEST) of /content successful"
 
   dispatcher:setup:
     desc: setup AEM dispatcher

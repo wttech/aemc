@@ -8,7 +8,7 @@ class Global {
 
 void findUserNode(ub) {
     if (ub.hasProperty("rep:principalName")) {
-        if ("rep:principalName = {{.User}}".equals(ub.getProperty("rep:principalName").toString())) {
+        if ("rep:principalName = [[.User]]".equals(ub.getProperty("rep:principalName").toString())) {
             Global.userNode = ub;
         }
     }
@@ -24,7 +24,7 @@ findUserNode(ub.getChildNode("home").getChildNode("users"));
 
 if (Global.userNode) {
     println("Found user node: " + Global.userNode.toString());
-    Global.userNode.setProperty("rep:password", PasswordUtil.buildPasswordHash("{{.Password}}"));
+    Global.userNode.setProperty("rep:password", PasswordUtil.buildPasswordHash("[[.Password]]"));
     session.store.merge(ub, EmptyHook.INSTANCE, CommitInfo.EMPTY);
     println("Updated user node: " + Global.userNode.toString());
 } else {

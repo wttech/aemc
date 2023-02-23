@@ -10,6 +10,11 @@ import (
 	"text/template"
 )
 
+var (
+	DelimLeft  = "[["
+	DelimRight = "]]"
+)
+
 func New(name string) *template.Template {
 	return template.New(name).Funcs(funcMap)
 }
@@ -42,8 +47,12 @@ func recovery() {
 	recover()
 }
 
+func RenderKey(key string, data any) (string, error) {
+	return RenderString(DelimLeft+"."+key+DelimRight, data)
+}
+
 func RenderString(tplContent string, data any) (string, error) {
-	tplParsed, err := New("string-template").Parse(tplContent)
+	tplParsed, err := New("string-template").Delims(DelimLeft, DelimRight).Parse(tplContent)
 	if err != nil {
 		return "", err
 	}

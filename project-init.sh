@@ -8,7 +8,7 @@ if [ -f "$AEM_WRAPPER" ]; then
   exit 1
 fi
 
-SOURCE_URL="https://raw.githubusercontent.com/wttech/aemc/main/project"
+SOURCE_URL="https://raw.githubusercontent.com/wttech/aemc/main/pkg/project/common"
 curl -s "${SOURCE_URL}/${AEM_WRAPPER}" -o "${AEM_WRAPPER}"
 curl -s "${SOURCE_URL}/${TASK_WRAPPER}" -o "${TASK_WRAPPER}"
 

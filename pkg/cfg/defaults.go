@@ -15,6 +15,17 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("base.tmp_dir", common.TmpDir)
 
+	v.SetDefault("java.download.url_template", "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_[[.Arch]]_[[.OS]]_hotspot_11.0.18_10.[[.Ext]]")
+	v.SetDefault("java.download.replacements", map[string]string{
+		// Map GOARCH values to be compatible with Adoptium
+		"x86_64": "x64",
+		"amd64":  "x64",
+		"386":    "x86-32",
+		// Enforce non-ARM Java as some AEM features are not working on ARM (e.g Scene 7)
+		"arm64":   "x64",
+		"aarch64": "x64",
+	})
+
 	v.SetDefault("input.format", fmtx.YML)
 	v.SetDefault("input.file", common.STDIn)
 	v.SetDefault("output.format", fmtx.Text)

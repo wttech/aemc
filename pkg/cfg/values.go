@@ -35,9 +35,12 @@ type ConfigValues struct {
 	} `mapstructure:"app" yaml:"app"`
 
 	Java struct {
-		HomeDir            string `mapstructure:"home_dir" yaml:"home_dir"`
-		DownloadURL        string `mapstructure:"download_url" yaml:"download_url"`
 		VersionConstraints string `mapstructure:"version_constraints" yaml:"version_constraints"`
+		HomeDir            string `mapstructure:"home_dir" yaml:"home_dir"`
+		Download           struct {
+			URLTemplate  string            `mapstructure:"url_template" yaml:"url_template"`
+			Replacements map[string]string `mapstructure:"replacements" yaml:"replacements"`
+		}
 	}
 
 	Instance struct {

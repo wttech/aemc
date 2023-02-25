@@ -60,7 +60,11 @@ func (c *Config) Export(file string) error {
 // NewConfig creates a new config
 func NewConfig() *Config {
 	result := new(Config)
+
 	result.viper = newViper()
+	result.readFromFile(File())
+	result.readFromEnv()
+	// TODO result.readFromFile(EnvFile()) // 'aem.env'
 
 	var v ConfigValues
 	err := result.viper.Unmarshal(&v)
@@ -74,11 +78,7 @@ func NewConfig() *Config {
 
 func newViper() *viper.Viper {
 	v := viper.New()
-
 	setDefaults(v)
-	readFromFile(v)
-	readFromEnv(v)
-
 	return v
 }
 
@@ -90,14 +90,13 @@ func (c ConfigValues) String() string {
 	return yml
 }
 
-func readFromEnv(v *viper.Viper) {
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	v.SetEnvPrefix(EnvPrefix)
-	v.AutomaticEnv()
+func (c *Config) readFromEnv() {
+	c.viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	c.viper.SetEnvPrefix(EnvPrefix)
+	c.viper.AutomaticEnv()
 }
 
-func readFromFile(v *viper.Viper) {
-	file := File()
+func (c *Config) readFromFile(file string) {
 	exists, err := pathx.ExistsStrict(file)
 	if err != nil {
 		log.Debugf("skipping reading AEM config file '%s': %s", file, err)
@@ -120,8 +119,8 @@ func readFromFile(v *viper.Viper) {
 	if err = tpl.Execute(&tplOut, data); err != nil {
 		log.Fatalf("cannot render AEM config template properly '%s': %s", file, err)
 	}
-	v.SetConfigType(filepath.Ext(file)[1:])
-	if err = v.ReadConfig(bytes.NewReader(tplOut.Bytes())); err != nil {
+	c.viper.SetConfigType(filepath.Ext(file)[1:])
+	if err = c.viper.MergeConfig(bytes.NewReader(tplOut.Bytes())); err != nil {
 		log.Fatalf("cannot load AEM config file properly '%s': %s", file, err)
 	}
 }

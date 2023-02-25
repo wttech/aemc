@@ -13,30 +13,37 @@ import (
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
+	"github.com/wttech/aemc/pkg/common/tplx"
 	"os"
 	"os/exec"
 	"runtime"
 	"strings"
 )
 
-const (
-	DownloadVersion = "11.0.18+10"
-)
-
 type Opts struct {
 	baseOpts *base.Opts
 
-	HomeDir            string
-	DownloadURL        string
-	VersionConstraints version.Constraints
+	HomeDir                 string
+	DownloadURLTemplate     string
+	DownloadURLReplacements map[string]string
+	VersionConstraints      version.Constraints
 }
 
 func NewOpts(baseOpts *base.Opts) *Opts {
 	return &Opts{
 		baseOpts: baseOpts,
 
-		HomeDir:            "",
-		DownloadURL:        proposeDownloadURL(),
+		HomeDir:             "",
+		DownloadURLTemplate: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_[[.Arch]]_[[.OS]]_hotspot_11.0.18_10.[[.Ext]]",
+		DownloadURLReplacements: map[string]string{
+			// Map GOARCH values to be compatible with Adoptium
+			"x86_64": "x64",
+			"amd64":  "x64",
+			"386":    "x86-32",
+			// Enforce non-ARM Java as some AEM features are not working on ARM (e.g Scene 7)
+			"arm64":   "x64",
+			"aarch64": "x64",
+		},
 		VersionConstraints: version.MustConstraints(version.NewConstraint(">= 11, < 12")),
 	}
 }
@@ -45,25 +52,30 @@ type DownloadLock struct {
 	Source string `yaml:"source"`
 }
 
-func proposeDownloadURL() string {
+func (o *Opts) DownloadURL() (string, error) {
 	var ext string
 	if osx.IsWindows() {
 		ext = "zip"
 	} else {
 		ext = "tar.gz"
 	}
-	versionFolder := strings.ReplaceAll(DownloadVersion, "+", "%2B")
-	versionSuffix := strings.ReplaceAll(DownloadVersion, "+", "_")
-	os := strings.NewReplacer("darwin", "mac").Replace(runtime.GOOS)
-	arch := strings.NewReplacer(
-		"x86_64", "x64",
-		"amd64", "x64",
-		"386", "x86-32",
-		// enforce non-ARM Java as some AEM features are not working on ARM (e.g Scene 7)
-		"arm64", "x64",
-		"aarch64", "x64",
-	).Replace(runtime.GOARCH)
-	return fmt.Sprintf("https://github.com/adoptium/temurin11-binaries/releases/download/jdk-%s/OpenJDK11U-jdk_%s_%s_hotspot_%s.%s", versionFolder, arch, os, versionSuffix, ext)
+	vars := map[string]string{
+		"Os":   runtime.GOOS,
+		"Arch": runtime.GOARCH,
+		"Ext":  ext,
+	}
+	for k, v := range vars {
+		for search, replace := range o.DownloadURLReplacements {
+			if v == search {
+				vars[k] = replace
+			}
+		}
+	}
+	url, err := tplx.RenderString(o.DownloadURLTemplate, vars)
+	if err != nil {
+		return "", fmt.Errorf("cannot render Java download URL template '%s': %w", o.DownloadURLTemplate, err)
+	}
+	return url, nil
 }
 
 func (o *Opts) workDir() string {
@@ -75,7 +87,7 @@ func (o *Opts) archiveDir() string {
 }
 
 func (o *Opts) downloadLock() osx.Lock[DownloadLock] {
-	return osx.NewLock(fmt.Sprintf("%s/lock/create.yml", o.workDir()), func() (DownloadLock, error) { return DownloadLock{Source: o.DownloadURL}, nil })
+	return osx.NewLock(fmt.Sprintf("%s/lock/create.yml", o.workDir()), func() (DownloadLock, error) { return DownloadLock{Source: o.DownloadURLTemplate}, nil })
 }
 
 func (o *Opts) jdkDir() string {
@@ -83,7 +95,7 @@ func (o *Opts) jdkDir() string {
 }
 
 func (o *Opts) Prepare() error {
-	if o.DownloadURL != "" {
+	if o.DownloadURLTemplate != "" {
 		if err := o.download(); err != nil {
 			return err
 		}
@@ -104,14 +116,17 @@ func (o *Opts) download() error {
 		log.Debugf("existing JDK '%s' is up-to-date", check.Locked.Source)
 		return nil
 	}
-	archiveFile := fmt.Sprintf("%s/%s", o.archiveDir(), httpx.FileNameFromURL(o.DownloadURL))
-	log.Infof("downloading new JDK from URL '%s' to file '%s'", o.DownloadURL, archiveFile)
-	if err := httpx.DownloadOnce(o.DownloadURL, archiveFile); err != nil {
+	url, err := o.DownloadURL()
+	if err != nil {
 		return err
 	}
-	log.Infof("downloaded new JDK from URL '%s' to file '%s'", o.DownloadURL, archiveFile)
-	_, err = filex.UnarchiveWithChanged(archiveFile, o.jdkDir())
-	if err != nil {
+	archiveFile := fmt.Sprintf("%s/%s", o.archiveDir(), httpx.FileNameFromURL(url))
+	log.Infof("downloading new JDK from URL '%s' to file '%s'", url, archiveFile)
+	if err := httpx.DownloadOnce(url, archiveFile); err != nil {
+		return err
+	}
+	log.Infof("downloaded new JDK from URL '%s' to file '%s'", url, archiveFile)
+	if _, err = filex.UnarchiveWithChanged(archiveFile, o.jdkDir()); err != nil {
 		return err
 	}
 	if err := lock.Lock(); err != nil {
@@ -243,9 +258,10 @@ func (o *Opts) Configure(config *cfg.Config) {
 	if len(opts.HomeDir) > 0 {
 		o.HomeDir = opts.HomeDir
 	}
-	if len(opts.DownloadURL) > 0 {
-		o.DownloadURL = opts.DownloadURL
+	if len(opts.Download.URLTemplate) > 0 {
+		o.DownloadURLTemplate = opts.Download.URLTemplate
 	}
+	o.DownloadURLReplacements = opts.Download.Replacements
 	if len(opts.VersionConstraints) > 0 {
 		o.VersionConstraints = version.MustConstraints(version.NewConstraint(opts.VersionConstraints))
 	}

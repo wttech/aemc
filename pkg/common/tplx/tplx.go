@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/pathx"
+	"net/url"
 	"reflect"
 	"strings"
 	"text/template"
@@ -38,7 +39,28 @@ var funcMap = template.FuncMap{
 		}
 		return value
 	},
+	"trim": func(s string) string {
+		defer recovery()
+		return strings.TrimSpace(s)
+	},
+	"replace": func(s1 string, s2 string) string {
+		defer recovery()
+		return strings.Replace(s2, s1, "", -1)
+	},
+	"lower": func(s string) string {
+		defer recovery()
+		return strings.ToLower(s)
+	},
+	"upper": func(s string) string {
+		defer recovery()
+		return strings.ToUpper(s)
+	},
+	"urlEncode": func(s string) string {
+		defer recovery()
+		return url.QueryEscape(s)
+	},
 	"canonicalPath": func(pathSegments ...string) string {
+		defer recovery()
 		return pathx.Canonical(strings.Join(pathSegments, "/"))
 	},
 }

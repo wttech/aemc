@@ -16,7 +16,6 @@ func (c *CLI) configCmd() *cobra.Command {
 	cmd.AddCommand(c.configInitCmd())
 	cmd.AddCommand(c.configValueCmd())
 	cmd.AddCommand(c.configValuesCmd())
-	cmd.AddCommand(c.configExportCmd())
 	return cmd
 }
 
@@ -91,25 +90,5 @@ func (c *CLI) configValueCmd() *cobra.Command {
 	cmd.Flags().StringP("key", "k", "", "Value key")
 	cmd.Flags().StringP("template", "t", "", "Value template")
 	cmd.MarkFlagsMutuallyExclusive("key", "template")
-	return cmd
-}
-
-func (c *CLI) configExportCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "export",
-		Aliases: []string{"save"},
-		Short:   "Export configuration values to file",
-		Run: func(cmd *cobra.Command, args []string) {
-			file, _ := cmd.Flags().GetString("file")
-			if err := c.config.Export(file); err != nil {
-				c.Error(err)
-				return
-			}
-			c.SetOutput("file", file)
-			c.Ok("config values exported")
-		},
-	}
-	cmd.Flags().StringP("file", "f", "aem.env", "File path to export")
-	cmd.MarkFlagRequired("file")
 	return cmd
 }

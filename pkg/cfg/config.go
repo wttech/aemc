@@ -3,9 +3,6 @@ package cfg
 import (
 	"bytes"
 	"fmt"
-	"github.com/fatih/structs"
-	"github.com/iancoleman/strcase"
-	"github.com/nqd/flat"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/wttech/aemc/pkg/common"
@@ -14,10 +11,8 @@ import (
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/tplx"
-	"golang.org/x/exp/maps"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 )
 
@@ -37,24 +32,6 @@ type Config struct {
 
 func (c *Config) Values() *ConfigValues {
 	return c.values
-}
-
-func (c *Config) Export(file string) error {
-	values, _ := flat.Flatten(structs.Map(c.values), &flat.Options{Delimiter: "."})
-	keys := maps.Keys(values)
-	f, err := os.Create(file)
-	defer f.Close()
-	if err != nil {
-		return fmt.Errorf("cannot export config to file '%s': %w", file, err)
-	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		key := strings.ToUpper(strcase.ToSnake(k))
-		if _, err := f.WriteString(fmt.Sprintf("%s=%v\n", key, values[k])); err != nil {
-			return fmt.Errorf("cannot export config key '%s' to file '%s': %w", key, file, err)
-		}
-	}
-	return nil
 }
 
 // NewConfig creates a new config

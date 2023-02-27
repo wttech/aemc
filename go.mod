@@ -9,7 +9,6 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/essentialkaos/go-jar v1.0.6
 	github.com/fatih/color v1.14.1
-	github.com/fatih/structs v1.1.0
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/gobwas/glob v0.2.3
 	github.com/google/go-cmp v0.5.9
@@ -18,7 +17,6 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/magiconair/properties v1.8.7
 	github.com/mholt/archiver/v3 v3.5.1
-	github.com/nqd/flat v0.2.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/otiai10/copy v1.9.0
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06

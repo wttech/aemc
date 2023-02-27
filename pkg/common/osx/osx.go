@@ -37,7 +37,7 @@ func EnvVarsLoad() {
 		name = EnvLocal
 	}
 	nameFile := name + "." + EnvFileExt
-	for _, file := range []string{EnvFileDefault, EnvFileSpecific, nameFile} {
+	for _, file := range []string{EnvFileSpecific, nameFile, EnvFileDefault} {
 		if pathx.Exists(file) {
 			if err := godotenv.Overload(file); err != nil {
 				log.Fatalf("cannot load env file '%s': %s", file, err)

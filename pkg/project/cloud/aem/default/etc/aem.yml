@@ -151,7 +151,7 @@ java:
   # Auto-installed JDK options
   download:
     # Source URL with template vars support
-    url_template: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_[[.Arch]]_[[.OS]]_hotspot_11.0.18_10.[[.Ext]]"
+    url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.18_10.[[.ArchiveExt]]"
     # Map source URL template vars to be compatible
     replacements:
       # Map GOARCH values to the ones used Adoptium Java

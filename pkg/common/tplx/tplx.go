@@ -19,7 +19,6 @@ func New(name string) *template.Template {
 	return template.New(name).Funcs(funcMap)
 }
 
-// based on <https://github.com/leekchan/gtf/blob/master/gtf.go>
 var funcMap = sprig.TxtFuncMap()
 
 func init() {

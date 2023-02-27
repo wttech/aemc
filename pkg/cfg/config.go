@@ -13,6 +13,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/tplx"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -89,9 +90,18 @@ func (c *Config) readFromFile(file string, templating bool) {
 			log.Fatalf("cannot parse AEM config file '%s': %s", file, err)
 			return
 		}
+		var ext string
+		if osx.IsWindows() {
+			ext = "zip"
+		} else {
+			ext = "tar.gz"
+		}
 		data := map[string]any{
-			"Env":  osx.EnvVarsMap(),
-			"Path": pathx.Normalize("."),
+			"Env":        osx.EnvVarsMap(),
+			"Path":       pathx.Normalize("."),
+			"Os":         runtime.GOOS,
+			"Arch":       runtime.GOARCH,
+			"ArchiveExt": ext,
 		}
 		var tplOut bytes.Buffer
 		if err = tpl.Execute(&tplOut, data); err != nil {

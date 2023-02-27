@@ -13,10 +13,8 @@ import (
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
-	"github.com/wttech/aemc/pkg/common/tplx"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
 )
 
@@ -24,7 +22,7 @@ type Opts struct {
 	baseOpts *base.Opts
 
 	HomeDir                 string
-	DownloadURLTemplate     string
+	DownloadURL             string
 	DownloadURLReplacements map[string]string
 	VersionConstraints      version.Constraints
 }
@@ -33,8 +31,8 @@ func NewOpts(baseOpts *base.Opts) *Opts {
 	return &Opts{
 		baseOpts: baseOpts,
 
-		HomeDir:             "",
-		DownloadURLTemplate: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_[[.Arch]]_[[.OS]]_hotspot_11.0.18_10.[[.Ext]]",
+		HomeDir:     "",
+		DownloadURL: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.18_10.[[.ArchiveExt]]",
 		DownloadURLReplacements: map[string]string{
 			// Map GOARCH values to be compatible with Adoptium
 			"x86_64": "x64",
@@ -52,32 +50,6 @@ type DownloadLock struct {
 	Source string `yaml:"source"`
 }
 
-func (o *Opts) DownloadURL() (string, error) {
-	var ext string
-	if osx.IsWindows() {
-		ext = "zip"
-	} else {
-		ext = "tar.gz"
-	}
-	vars := map[string]string{
-		"Os":   runtime.GOOS,
-		"Arch": runtime.GOARCH,
-		"Ext":  ext,
-	}
-	for k, v := range vars {
-		for search, replace := range o.DownloadURLReplacements {
-			if v == search {
-				vars[k] = replace
-			}
-		}
-	}
-	url, err := tplx.RenderString(o.DownloadURLTemplate, vars)
-	if err != nil {
-		return "", fmt.Errorf("cannot render Java download URL template '%s': %w", o.DownloadURLTemplate, err)
-	}
-	return url, nil
-}
-
 func (o *Opts) workDir() string {
 	return common.ToolDir + "/java"
 }
@@ -87,7 +59,7 @@ func (o *Opts) archiveDir() string {
 }
 
 func (o *Opts) downloadLock() osx.Lock[DownloadLock] {
-	return osx.NewLock(fmt.Sprintf("%s/lock/create.yml", o.workDir()), func() (DownloadLock, error) { return DownloadLock{Source: o.DownloadURLTemplate}, nil })
+	return osx.NewLock(fmt.Sprintf("%s/lock/create.yml", o.workDir()), func() (DownloadLock, error) { return DownloadLock{Source: o.DownloadURL}, nil })
 }
 
 func (o *Opts) jdkDir() string {
@@ -95,7 +67,7 @@ func (o *Opts) jdkDir() string {
 }
 
 func (o *Opts) Prepare() error {
-	if o.DownloadURLTemplate != "" {
+	if o.DownloadURL != "" {
 		if err := o.download(); err != nil {
 			return err
 		}
@@ -116,9 +88,9 @@ func (o *Opts) download() error {
 		log.Debugf("existing JDK '%s' is up-to-date", check.Locked.Source)
 		return nil
 	}
-	url, err := o.DownloadURL()
-	if err != nil {
-		return err
+	url := o.DownloadURL
+	for search, replace := range o.DownloadURLReplacements {
+		url = strings.ReplaceAll(url, search, replace)
 	}
 	archiveFile := fmt.Sprintf("%s/%s", o.archiveDir(), httpx.FileNameFromURL(url))
 	log.Infof("downloading new JDK from URL '%s' to file '%s'", url, archiveFile)
@@ -258,8 +230,8 @@ func (o *Opts) Configure(config *cfg.Config) {
 	if len(opts.HomeDir) > 0 {
 		o.HomeDir = opts.HomeDir
 	}
-	if len(opts.Download.URLTemplate) > 0 {
-		o.DownloadURLTemplate = opts.Download.URLTemplate
+	if len(opts.Download.URL) > 0 {
+		o.DownloadURL = opts.Download.URL
 	}
 	o.DownloadURLReplacements = opts.Download.Replacements
 	if len(opts.VersionConstraints) > 0 {

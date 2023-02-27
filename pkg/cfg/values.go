@@ -38,7 +38,7 @@ type ConfigValues struct {
 		VersionConstraints string `mapstructure:"version_constraints" yaml:"version_constraints"`
 		HomeDir            string `mapstructure:"home_dir" yaml:"home_dir"`
 		Download           struct {
-			URLTemplate  string            `mapstructure:"url_template" yaml:"url_template"`
+			URL          string            `mapstructure:"url" yaml:"url"`
 			Replacements map[string]string `mapstructure:"replacements" yaml:"replacements"`
 		}
 	}

@@ -15,7 +15,7 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("base.tmp_dir", common.TmpDir)
 
-	v.SetDefault("java.download.url_template", "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_[[.Arch]]_[[.OS]]_hotspot_11.0.18_10.[[.Ext]]")
+	v.SetDefault("java.download.url", "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.18_10.[[.ArchiveExt]]")
 	v.SetDefault("java.download.replacements", map[string]string{
 		// Map GOARCH values to be compatible with Adoptium
 		"x86_64": "x64",

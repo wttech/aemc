@@ -4,6 +4,8 @@
 
 version: '3'
 
+dotenv: ['aem.env', 'local.env', '.env']
+
 env:
   AEM_INSTANCE_PROCESSING_MODE: auto
   AEM_OUTPUT_VALUE: NONE
@@ -90,7 +92,7 @@ tasks:
       - |
         PROPS="
         enabled: true
-        transportUri: http://localhost:4503/bin/receive?sling:authRequestLogin=1
+        transportUri: {{.AEM_PUBLISH_HTTP_URL}}/bin/receive?sling:authRequestLogin=1
         transportUser: admin
         transportPassword: admin
         userId: admin
@@ -104,7 +106,7 @@ tasks:
       - |
         PROPS="
         enabled: true
-        transportUri: http://127.0.0.1/dispatcher/invalidate.cache
+        transportUri: {{.AEM_DISPATCHER_HTTP_URL }}/dispatcher/invalidate.cache
         protocolHTTPHeaders:
           - CQ-Action: {action}
           - CQ-Handle: {path}
@@ -155,6 +157,19 @@ tasks:
     deps: [aem:build]
     cmds:
       - sh aemw package deploy --file "all/target/*.all-*.zip"
+
+  aem:check:
+    deps: [aem:author:check, aem:publish:check]
+
+  aem:author:check:
+    desc: check deployed AEM application deployed to instance and dispatcher
+    cmds:
+      - curl -s -u "{{.AEM_AUTHOR_USER}}:{{.AEM_AUTHOR_PASSWORD}}" "{{.AEM_AUTHOR_HTTP_URL}}/etc/replication/agents.author/publish.test.html" | grep -q "Replication (TEST) of /content successful"
+
+  aem:publish:check:
+    desc: check deployed AEM application deployed to instance and dispatcher
+    cmds:
+      - curl -s -u "{{.AEM_PUBLISH_USER}}:{{.AEM_PUBLISH_PASSWORD}}" "{{.AEM_PUBLISH_HTTP_URL}}/etc/replication/agents.publish/flush.test.html" | grep -q "Replication (TEST) of /content successful"
 
   dispatcher:setup:
     desc: setup AEM dispatcher

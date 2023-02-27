@@ -3,10 +3,9 @@ package tplx
 import (
 	"bytes"
 	"fmt"
+	"github.com/Masterminds/sprig"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/pathx"
-	"net/url"
-	"reflect"
 	"strings"
 	"text/template"
 )
@@ -21,48 +20,13 @@ func New(name string) *template.Template {
 }
 
 // based on <https://github.com/leekchan/gtf/blob/master/gtf.go>
-var funcMap = template.FuncMap{
-	"default": func(arg interface{}, value interface{}) interface{} {
-		defer recovery()
-		v := reflect.ValueOf(value)
-		switch v.Kind() {
-		case reflect.String, reflect.Slice, reflect.Array, reflect.Map:
-			if v.Len() == 0 {
-				return arg
-			}
-		case reflect.Bool:
-			if !v.Bool() {
-				return arg
-			}
-		default:
-			return value
-		}
-		return value
-	},
-	"trim": func(s string) string {
-		defer recovery()
-		return strings.TrimSpace(s)
-	},
-	"replace": func(s1 string, s2 string) string {
-		defer recovery()
-		return strings.Replace(s2, s1, "", -1)
-	},
-	"lower": func(s string) string {
-		defer recovery()
-		return strings.ToLower(s)
-	},
-	"upper": func(s string) string {
-		defer recovery()
-		return strings.ToUpper(s)
-	},
-	"urlEncode": func(s string) string {
-		defer recovery()
-		return url.QueryEscape(s)
-	},
-	"canonicalPath": func(pathSegments ...string) string {
+var funcMap = sprig.TxtFuncMap()
+
+func init() {
+	funcMap["canonicalPath"] = func(pathSegments ...string) string {
 		defer recovery()
 		return pathx.Canonical(strings.Join(pathSegments, "/"))
-	},
+	}
 }
 
 func recovery() {

@@ -2,18 +2,18 @@
 instance:
 
   # Defined by single value (only remote)
-  config_url: ''
+  config_url: ""
 
   # Defined strictly with full details (local or remote)
   config:
     local_author:
-      http_url: http://127.0.0.1:4502
+      http_url: [[.Env.AEM_AUTHOR_HTTP_URL | default "http://127.0.0.1:4502" ]]
       user: admin
       password: admin
       run_modes: [ local ]
       jvm_opts:
         - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
-        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:14502
+        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=[[.Env.AEM_AUTHOR_DEBUG_ADDR | default "0.0.0.0:14502" ]]
         - -Duser.language=en
         - -Duser.country=US
         - -Duser.timezone=UTC
@@ -24,13 +24,13 @@ instance:
         - ACME_VAR=value
       sling_props: []
     local_publish:
-      http_url: http://127.0.0.1:4503
+      http_url: [[.Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4502" ]]
       user: admin
       password: admin
       run_modes: [ local ]
       jvm_opts:
         - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
-        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:14503
+        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=[[.Env.AEM_PUBLISH_DEBUG_ADDR | default "0.0.0.0:14502" ]]
         - -Duser.language=en
         - -Duser.country=US
         - -Duser.timezone=UTC
@@ -43,7 +43,7 @@ instance:
 
   # Filters for defined
   filter:
-    id: ''
+    id: ""
     author: false
     publish: false
 
@@ -143,9 +143,9 @@ java:
   # Require following versions before e.g running AEM instances
   version_constraints: ">= 11, < 12"
 
-  # Pre-installed JDK dir
+  # Pre-installed local JDK dir
   # a) keep it empty to download open source Java automatically for current OS and architecture
-  # b) set it to absolute path or env var '[[.Env.JAVA_HOME]]' to indicate where closed source Java like Oracle is installed
+  # b) set it to absolute path or to env var '[[.Env.JAVA_HOME]]' to indicate where closed source Java like Oracle is installed
   home_dir: ""
 
   # Auto-installed JDK options
@@ -155,12 +155,12 @@ java:
     # Map source URL template vars to be compatible
     replacements:
       # Map GOARCH values to the ones used Adoptium Java
-      "x86_64": "x64",
-      "amd64": "x64",
-      "386": "x86-32",
+      "x86_64": "x64"
+      "amd64": "x64"
+      "386": "x86-32"
       # Enforce non-ARM Java as some AEM features are not working on ARM (e.g Scene 7)
-      "arm64": "x64",
-      "aarch64": "x64",
+      "arm64": "x64"
+      "aarch64": "x64"
 
 # AEM application build
 app:

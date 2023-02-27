@@ -1,12 +1,22 @@
 package osx
 
 import (
+	"github.com/joho/godotenv"
 	"github.com/samber/lo"
+	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"os"
 	"runtime"
 	"strings"
+)
+
+var (
+	EnvFileExt      = "env"
+	EnvFileSpecific = "aem." + EnvFileExt
+	EnvFileDefault  = "." + EnvFileExt
+	EnvVar          = "AEM_ENV"
+	EnvLocal        = "local"
 )
 
 func IsWindows() bool {
@@ -19,6 +29,21 @@ func IsDarwin() bool {
 
 func isLinux() bool {
 	return !IsWindows() && !IsDarwin()
+}
+
+func EnvVarsLoad() {
+	name := os.Getenv(EnvVar)
+	if name == "" {
+		name = EnvLocal
+	}
+	nameFile := name + "." + EnvFileExt
+	for _, file := range []string{EnvFileDefault, EnvFileSpecific, nameFile} {
+		if pathx.Exists(file) {
+			if err := godotenv.Overload(file); err != nil {
+				log.Fatalf("cannot load env file '%s': %s", file, err)
+			}
+		}
+	}
 }
 
 func EnvVarsMap() map[string]string {

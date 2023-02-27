@@ -23,6 +23,10 @@ func (c *CLI) projectInitCmd() *cobra.Command {
 		Aliases: []string{"init"},
 		Short:   "Initializes project files and configuration",
 		Run: func(cmd *cobra.Command, args []string) {
+			if err := c.project.EnsureDirs(); err != nil {
+				c.Error(err)
+				return
+			}
 			kindName, _ := cmd.Flags().GetString("kind")
 			kind, err := c.project.KindDetermine(kindName)
 			if err != nil {

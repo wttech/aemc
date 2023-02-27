@@ -62,9 +62,8 @@ func NewConfig() *Config {
 	result := new(Config)
 
 	result.viper = newViper()
-	result.readFromFile(File())
+	result.readFromFile(File(), true)
 	result.readFromEnv()
-	// TODO result.readFromFile(EnvFile()) // 'aem.env'
 
 	var v ConfigValues
 	err := result.viper.Unmarshal(&v)
@@ -96,7 +95,7 @@ func (c *Config) readFromEnv() {
 	c.viper.AutomaticEnv()
 }
 
-func (c *Config) readFromFile(file string) {
+func (c *Config) readFromFile(file string, templating bool) {
 	exists, err := pathx.ExistsStrict(file)
 	if err != nil {
 		log.Debugf("skipping reading AEM config file '%s': %s", file, err)
@@ -106,22 +105,34 @@ func (c *Config) readFromFile(file string) {
 		log.Debugf("skipping reading AEM config file as it does not exist '%s'", file)
 		return
 	}
-	tpl, err := tplx.New(filepath.Base(file)).Delims("[[", "]]").ParseFiles(file)
-	if err != nil {
-		log.Fatalf("cannot parse AEM config file '%s': %s", file, err)
-		return
-	}
-	data := map[string]any{
-		"Env":  osx.EnvVarsMap(),
-		"Path": pathx.Normalize("."),
-	}
-	var tplOut bytes.Buffer
-	if err = tpl.Execute(&tplOut, data); err != nil {
-		log.Fatalf("cannot render AEM config template properly '%s': %s", file, err)
+	var config []byte
+	if templating {
+		tpl, err := tplx.New(filepath.Base(file)).Delims("[[", "]]").ParseFiles(file)
+		if err != nil {
+			log.Fatalf("cannot parse AEM config file '%s': %s", file, err)
+			return
+		}
+		data := map[string]any{
+			"Env":  osx.EnvVarsMap(),
+			"Path": pathx.Normalize("."),
+		}
+		var tplOut bytes.Buffer
+		if err = tpl.Execute(&tplOut, data); err != nil {
+			log.Fatalf("cannot render AEM config template properly '%s': %s", file, err)
+			return
+		}
+		config = tplOut.Bytes()
+	} else {
+		config, err = filex.Read(file)
+		if err != nil {
+			log.Fatalf("cannot read AEM config file '%s': %s", file, err)
+			return
+		}
 	}
 	c.viper.SetConfigType(filepath.Ext(file)[1:])
-	if err = c.viper.MergeConfig(bytes.NewReader(tplOut.Bytes())); err != nil {
+	if err = c.viper.MergeConfig(bytes.NewReader(config)); err != nil {
 		log.Fatalf("cannot load AEM config file properly '%s': %s", file, err)
+		return
 	}
 }
 

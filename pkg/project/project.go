@@ -102,13 +102,6 @@ func (p Project) initialize(kind Kind) error {
 	default:
 		return fmt.Errorf("project kind '%s' cannot be initialized", kind)
 	}
-	log.Infof("creating conventional directories")
-	if err := pathx.Ensure(common.LibDir); err != nil {
-		return err
-	}
-	if err := pathx.Ensure(common.TmpDir); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -153,6 +146,17 @@ const (
 	KindPropCloudValue    = "cloud"
 	KindPropClassicPrefix = "6."
 )
+
+func (p Project) EnsureDirs() error {
+	log.Infof("ensuring conventional project directories")
+	if err := pathx.Ensure(common.LibDir); err != nil {
+		return err
+	}
+	if err := pathx.Ensure(common.TmpDir); err != nil {
+		return err
+	}
+	return nil
+}
 
 func (p Project) KindInfer() (Kind, error) {
 	if pathx.Exists(KindPropFile) {

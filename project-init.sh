@@ -18,7 +18,7 @@ echo ""
 chmod +x "${AEM_WRAPPER}" "${TASK_WRAPPER}"
 sh ${AEM_WRAPPER} version
 
-echo "aem/home\ndispatcher/target" > .gitignore
+echo "# AEM Compose\naem/home\ndispatcher/target" >> .gitignore
 
 echo "Success! Now initialize AEM Compose by running the command:"
 echo ""

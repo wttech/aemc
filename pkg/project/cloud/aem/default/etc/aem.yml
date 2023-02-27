@@ -154,7 +154,7 @@ java:
     url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.18_10.[[.ArchiveExt]]"
     # Map source URL template vars to be compatible
     replacements:
-      # Map GOARCH values to the ones used Adoptium Java
+      # Map GOARCH values to the ones used by Adoptium Java
       "x86_64": "x64"
       "amd64": "x64"
       "386": "x86-32"

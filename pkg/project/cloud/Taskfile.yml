@@ -108,10 +108,10 @@ tasks:
         enabled: true
         transportUri: {{.AEM_DISPATCHER_HTTP_URL }}/dispatcher/invalidate.cache
         protocolHTTPHeaders:
-          - CQ-Action: {action}
-          - CQ-Handle: {path}
-          - CQ-Path: {path}
-          - Host: publish
+          - 'CQ-Action: {action}'
+          - 'CQ-Handle: {path}'
+          - 'CQ-Path: {path}'
+          - 'Host: publish'
           "
         echo "$PROPS" | sh aemw repl agent setup -P --location "publish" --name "flush"
 

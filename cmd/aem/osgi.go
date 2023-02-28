@@ -15,6 +15,8 @@ func (c *CLI) osgiCmd() *cobra.Command {
 	cmd.AddCommand(c.osgiBundleCmd())
 	cmd.AddCommand(c.osgiComponentCmd())
 	cmd.AddCommand(c.osgiConfigCmd())
+
+	cmd.AddCommand(c.osgiRestartCmd())
 	return cmd
 }
 
@@ -669,4 +671,39 @@ func osgiConfigFromFlag(cmd *cobra.Command, i pkg.Instance) *pkg.OSGiConfig {
 	pid, _ := cmd.Flags().GetString("pid")
 	config := i.OSGI().ConfigManager().ByPID(pid)
 	return &config
+}
+
+func (c *CLI) osgiRestartCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "restart",
+		Short: "Restart OSGi framework",
+		Run: func(cmd *cobra.Command, args []string) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			restarted, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
+				if err := instance.OSGI().Restart(); err != nil {
+					return nil, err
+				}
+				return map[string]any{
+					OutputChanged: true,
+					"instance":    instance,
+				}, nil
+			})
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			if err := c.aem.InstanceManager().Await(instances); err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("restarted", restarted)
+			c.Changed("framework restarted")
+		},
+	}
+	osgiBundleDefineFlags(cmd)
+	return cmd
 }

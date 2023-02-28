@@ -264,7 +264,10 @@ func (c *CLI) instanceAwaitCmd() *cobra.Command {
 			}
 			manager := c.aem.InstanceManager()
 			manager.CheckOpts.DoneNever = doneNever
-			manager.Await(instances)
+			if err := manager.Await(instances); err != nil {
+				c.Error(err)
+				return
+			}
 			c.SetOutput("instances", instances)
 			c.Ok("instance(s) awaited")
 		},

@@ -1,7 +1,14 @@
 package pkg
 
+import (
+	"fmt"
+	log "github.com/sirupsen/logrus"
+)
+
 // OSGi Facade for communicating with OSGi framework.
 type OSGi struct {
+	instance *Instance
+
 	bundleManager    *OSGiBundleManager
 	componentManager *OSGiComponentManager
 	eventManager     *OSGiEventManager
@@ -10,6 +17,8 @@ type OSGi struct {
 
 func NewOSGi(instance *Instance) *OSGi {
 	return &OSGi{
+		instance: instance,
+
 		bundleManager:    NewBundleManager(instance),
 		componentManager: NewComponentManager(instance),
 		eventManager:     &OSGiEventManager{instance: instance},
@@ -31,4 +40,30 @@ func (o *OSGi) EventManager() *OSGiEventManager {
 
 func (o *OSGi) ConfigManager() *OSGiConfigManager {
 	return o.configManager
+}
+
+func (o *OSGi) Shutdown() error {
+	return o.shutdown("Stop")
+}
+
+func (o *OSGi) Restart() error {
+	return o.shutdown("Restart")
+}
+
+const (
+	VMStatPath = "/system/console/vmstat"
+)
+
+func (o *OSGi) shutdown(shutdownType string) error {
+	log.Infof("%s > triggering OSGi shutdown of type '%s'", o.instance.ID(), shutdownType)
+	response, err := o.instance.http.Request().SetFormData(map[string]string{
+		"shutdown_type": shutdownType,
+	}).Post(VMStatPath)
+	if err != nil {
+		return fmt.Errorf("%s > cannot trigger OSGi shutdown of type '%s': %w", o.instance.ID(), shutdownType, err)
+	} else if response.IsError() {
+		return fmt.Errorf("%s > cannot trigger OSGi shutdown of type '%s': %s", o.instance.ID(), shutdownType, response.Status())
+	}
+	log.Infof("%s > triggered OSGi shutdown of type '%s'", o.instance.ID(), shutdownType)
+	return nil
 }

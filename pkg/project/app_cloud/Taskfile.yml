@@ -10,15 +10,13 @@ env:
   AEM_INSTANCE_PROCESSING_MODE: auto
   AEM_OUTPUT_VALUE: NONE
 
-vars:
-  APM_VERSION: 5.5.1
-
 tasks:
   setup:
     desc: setup AEM instances and dispatcher
     cmds:
       - task: aem:setup
       - task: dispatcher:setup
+      - task: aem:check
 
   resetup:
     desc: destroy then setup again AEM instances and dispatcher
@@ -83,7 +81,6 @@ tasks:
       - task: aem:provision:repl-agent-flush
       - task: aem:provision:crx
       - task: aem:provision:apm
-      - task: aem:provision:service-pack
 
   aem:provision:repl-agent-publish:
     desc: configure replication agent on AEM author instance
@@ -124,14 +121,10 @@ tasks:
   aem:provision:apm:
     desc: deploy APM tool
     internal: true
+    vars:
+      APM_VERSION: 5.6.19
     cmds:
-      - sh aemw package deploy --url "https://github.com/wttech/APM/releases/download/apm-{{.APM_VERSION}}/apm-all-{{.APM_VERSION}}.zip"
-
-  aem:provision:service-pack:
-    desc: deploy AEM Service Pack
-    internal: true
-    cmds:
-      - sh aemw package deploy --file "aem/home/lib/aem-service-pkg-6.5.*.0.zip"
+      - sh aemw package deploy --url "https://github.com/wttech/APM/releases/download/apm-{{.APM_VERSION}}/apm-all.cloud-{{.APM_VERSION}}.zip"
 
   aem:destroy:
     desc: destroy AEM instances
@@ -162,13 +155,15 @@ tasks:
     deps: [aem:author:check, aem:publish:check]
 
   aem:author:check:
-    desc: check deployed AEM application deployed to instance and dispatcher
+    desc: check health of AEM author instance
     cmds:
+      - curl -s -u "{{.AEM_AUTHOR_USER}}:{{.AEM_AUTHOR_PASSWORD}}" "{{.AEM_AUTHOR_HTTP_URL}}/libs/granite/core/content/login.html" | grep -q "QUICKSTART_HOMEPAGE"
       - curl -s -u "{{.AEM_AUTHOR_USER}}:{{.AEM_AUTHOR_PASSWORD}}" "{{.AEM_AUTHOR_HTTP_URL}}/etc/replication/agents.author/publish.test.html" | grep -q "Replication (TEST) of /content successful"
 
   aem:publish:check:
-    desc: check deployed AEM application deployed to instance and dispatcher
+    desc: check health of AEM publish instance
     cmds:
+      - curl -s -u "{{.AEM_PUBLISH_USER}}:{{.AEM_PUBLISH_PASSWORD}}" "{{.AEM_PUBLISH_HTTP_URL}}/libs/granite/core/content/login.html" | grep -q "QUICKSTART_HOMEPAGE"
       - curl -s -u "{{.AEM_PUBLISH_USER}}:{{.AEM_PUBLISH_PASSWORD}}" "{{.AEM_PUBLISH_HTTP_URL}}/etc/replication/agents.publish/flush.test.html" | grep -q "Replication (TEST) of /content successful"
 
   dispatcher:setup:
@@ -183,25 +178,14 @@ tasks:
       - task: dispatcher:destroy
       - task: dispatcher:setup
 
-  dispatcher:build:
-    desc: build AEM dispatcher image
-    dir: dispatcher
-    cmds:
-      - docker build --platform linux/amd64 -t acme/aem-ams/dispatcher-publish .
-
-  dispatcher:test:
-    desc: test AEM dispatcher image
-    dir: dispatcher
-    cmds:
-      - docker run --rm -it --entrypoint bash acme/aem-ams/dispatcher-publish:latest
-
   dispatcher:start:
-    desc: start AEM dispatcher using custom image
+    desc: start AEM dispatcher using SDK image
     aliases: [dispatcher:up]
-    deps: [dispatcher:build]
     dir: dispatcher
     cmds:
-      - mkdir -p target/docker/httpd/logs target/docker/httpd/cache target/docker/httpd/htdocs
+      # - sh aem/home/opt/sdk/dispatcher/bin/validate.sh dispatcher/src > aem/home/var/log/dispatcher-validate.log # uncomment if possible, see: https://github.com/adobe/aem-project-archetype/issues/1043
+      - rm -fr target/sdk && cp -r ../aem/home/opt/sdk/dispatcher target/sdk
+      - docker tag "$(docker load --input "target/sdk/lib/dispatcher-publish-{{ARCH}}.tar.gz" | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"
       - docker compose up -d
 
   dispatcher:stop:

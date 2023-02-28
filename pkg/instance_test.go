@@ -13,7 +13,7 @@ func TestInstanceNewLocalAuthor(t *testing.T) {
 	aem := pkg.NewAem()
 	instance := aem.InstanceManager().NewLocalAuthor()
 
-	assert.Equal(t, "http://localhost:4502", instance.HTTP().BaseURL())
+	assert.Equal(t, "http://127.0.0.1:4502", instance.HTTP().BaseURL())
 	assert.Equal(t, "admin", instance.User())
 	assert.Equal(t, "admin", instance.Password())
 }
@@ -24,7 +24,7 @@ func TestInstanceNewLocalPublish(t *testing.T) {
 	aem := pkg.NewAem()
 	instance := aem.InstanceManager().NewLocalPublish()
 
-	assert.Equal(t, "http://localhost:4503", instance.HTTP().BaseURL())
+	assert.Equal(t, "http://127.0.0.1:4503", instance.HTTP().BaseURL())
 	assert.Equal(t, "admin", instance.User())
 	assert.Equal(t, "admin", instance.Password())
 }

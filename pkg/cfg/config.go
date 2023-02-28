@@ -13,6 +13,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/tplx"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -37,7 +38,10 @@ func (c *Config) Values() *ConfigValues {
 // NewConfig creates a new config
 func NewConfig() *Config {
 	result := new(Config)
+
 	result.viper = newViper()
+	result.readFromFile(File(), true)
+	result.readFromEnv()
 
 	var v ConfigValues
 	err := result.viper.Unmarshal(&v)
@@ -51,11 +55,7 @@ func NewConfig() *Config {
 
 func newViper() *viper.Viper {
 	v := viper.New()
-
 	setDefaults(v)
-	readFromFile(v)
-	readFromEnv(v)
-
 	return v
 }
 
@@ -67,14 +67,13 @@ func (c ConfigValues) String() string {
 	return yml
 }
 
-func readFromEnv(v *viper.Viper) {
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	v.SetEnvPrefix(EnvPrefix)
-	v.AutomaticEnv()
+func (c *Config) readFromEnv() {
+	c.viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	c.viper.SetEnvPrefix(EnvPrefix)
+	c.viper.AutomaticEnv()
 }
 
-func readFromFile(v *viper.Viper) {
-	file := File()
+func (c *Config) readFromFile(file string, templating bool) {
 	exists, err := pathx.ExistsStrict(file)
 	if err != nil {
 		log.Debugf("skipping reading AEM config file '%s': %s", file, err)
@@ -84,22 +83,43 @@ func readFromFile(v *viper.Viper) {
 		log.Debugf("skipping reading AEM config file as it does not exist '%s'", file)
 		return
 	}
-	tpl, err := tplx.New(filepath.Base(file)).Delims("[[", "]]").ParseFiles(file)
-	if err != nil {
-		log.Fatalf("cannot parse AEM config file '%s': %s", file, err)
-		return
+	var config []byte
+	if templating {
+		tpl, err := tplx.New(filepath.Base(file)).Delims("[[", "]]").ParseFiles(file)
+		if err != nil {
+			log.Fatalf("cannot parse AEM config file '%s': %s", file, err)
+			return
+		}
+		var ext string
+		if osx.IsWindows() {
+			ext = "zip"
+		} else {
+			ext = "tar.gz"
+		}
+		data := map[string]any{
+			"Env":        osx.EnvVarsMap(),
+			"Path":       pathx.Normalize("."),
+			"Os":         runtime.GOOS,
+			"Arch":       runtime.GOARCH,
+			"ArchiveExt": ext,
+		}
+		var tplOut bytes.Buffer
+		if err = tpl.Execute(&tplOut, data); err != nil {
+			log.Fatalf("cannot render AEM config template properly '%s': %s", file, err)
+			return
+		}
+		config = tplOut.Bytes()
+	} else {
+		config, err = filex.Read(file)
+		if err != nil {
+			log.Fatalf("cannot read AEM config file '%s': %s", file, err)
+			return
+		}
 	}
-	data := map[string]any{
-		"Env":  osx.EnvVarsMap(),
-		"Path": pathx.Normalize("."),
-	}
-	var tplOut bytes.Buffer
-	if err = tpl.Execute(&tplOut, data); err != nil {
-		log.Fatalf("cannot render AEM config template properly '%s': %s", file, err)
-	}
-	v.SetConfigType(filepath.Ext(file)[1:])
-	if err = v.ReadConfig(bytes.NewReader(tplOut.Bytes())); err != nil {
+	c.viper.SetConfigType(filepath.Ext(file)[1:])
+	if err = c.viper.MergeConfig(bytes.NewReader(config)); err != nil {
 		log.Fatalf("cannot load AEM config file properly '%s': %s", file, err)
+		return
 	}
 }
 

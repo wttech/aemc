@@ -6,8 +6,8 @@ import (
 
 const (
 	IDDelimiter          = "_"
-	URLLocalAuthor       = "http://localhost:4502"
-	URLLocalPublish      = "http://localhost:4503"
+	URLLocalAuthor       = "http://127.0.0.1:4502"
+	URLLocalPublish      = "http://127.0.0.1:4503"
 	PasswordDefault      = "admin"
 	UserDefault          = "admin"
 	LocationLocal        = "local"

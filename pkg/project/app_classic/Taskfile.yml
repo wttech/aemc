@@ -4,12 +4,11 @@
 
 version: '3'
 
+dotenv: ['aem.env', 'local.env', '.env']
+
 env:
   AEM_INSTANCE_PROCESSING_MODE: auto
   AEM_OUTPUT_VALUE: NONE
-
-vars:
-  APM_VERSION: 5.5.1
 
 tasks:
   setup:
@@ -81,6 +80,7 @@ tasks:
       - task: aem:provision:repl-agent-flush
       - task: aem:provision:crx
       - task: aem:provision:apm
+      - task: aem:provision:service-pack
 
   aem:provision:repl-agent-publish:
     desc: configure replication agent on AEM author instance
@@ -89,7 +89,7 @@ tasks:
       - |
         PROPS="
         enabled: true
-        transportUri: http://localhost:4503/bin/receive?sling:authRequestLogin=1
+        transportUri: {{.AEM_PUBLISH_HTTP_URL}}/bin/receive?sling:authRequestLogin=1
         transportUser: admin
         transportPassword: admin
         userId: admin
@@ -103,12 +103,12 @@ tasks:
       - |
         PROPS="
         enabled: true
-        transportUri: http://127.0.0.1/dispatcher/invalidate.cache
+        transportUri: {{.AEM_DISPATCHER_HTTP_URL }}/dispatcher/invalidate.cache
         protocolHTTPHeaders:
-          - CQ-Action: {action}
-          - CQ-Handle: {path}
-          - CQ-Path: {path}
-          - Host: publish
+          - 'CQ-Action: {action}'
+          - 'CQ-Handle: {path}'
+          - 'CQ-Path: {path}'
+          - 'Host: publish'
           "
         echo "$PROPS" | sh aemw repl agent setup -P --location "publish" --name "flush"
 
@@ -121,8 +121,16 @@ tasks:
   aem:provision:apm:
     desc: deploy APM tool
     internal: true
+    vars:
+      APM_VERSION: 5.6.19
     cmds:
       - sh aemw package deploy --url "https://github.com/wttech/APM/releases/download/apm-{{.APM_VERSION}}/apm-all-{{.APM_VERSION}}.zip"
+
+  aem:provision:service-pack:
+    desc: deploy AEM Service Pack
+    internal: true
+    cmds:
+      - sh aemw package deploy --file "aem/home/lib/aem-service-pkg-6.5.*.0.zip"
 
   aem:destroy:
     desc: destroy AEM instances
@@ -149,6 +157,21 @@ tasks:
     cmds:
       - sh aemw package deploy --file "all/target/*.all-*.zip"
 
+  aem:check:
+    deps: [aem:author:check, aem:publish:check]
+
+  aem:author:check:
+    desc: check health of AEM author instance
+    cmds:
+      - curl -s -u "{{.AEM_AUTHOR_USER}}:{{.AEM_AUTHOR_PASSWORD}}" "{{.AEM_AUTHOR_HTTP_URL}}/libs/granite/core/content/login.html" | grep -q "QUICKSTART_HOMEPAGE"
+      - curl -s -u "{{.AEM_AUTHOR_USER}}:{{.AEM_AUTHOR_PASSWORD}}" "{{.AEM_AUTHOR_HTTP_URL}}/etc/replication/agents.author/publish.test.html" | grep -q "Replication (TEST) of /content successful"
+
+  aem:publish:check:
+    desc: check health of AEM publish instance
+    cmds:
+      - curl -s -u "{{.AEM_PUBLISH_USER}}:{{.AEM_PUBLISH_PASSWORD}}" "{{.AEM_PUBLISH_HTTP_URL}}/libs/granite/core/content/login.html" | grep -q "QUICKSTART_HOMEPAGE"
+      - curl -s -u "{{.AEM_PUBLISH_USER}}:{{.AEM_PUBLISH_PASSWORD}}" "{{.AEM_PUBLISH_HTTP_URL}}/etc/replication/agents.publish/flush.test.html" | grep -q "Replication (TEST) of /content successful"
+
   dispatcher:setup:
     desc: setup AEM dispatcher
     cmds:
@@ -161,14 +184,25 @@ tasks:
       - task: dispatcher:destroy
       - task: dispatcher:setup
 
-  dispatcher:start:
-    desc: start AEM dispatcher using SDK image
-    aliases: [dispatcher:up]
+  dispatcher:build:
+    desc: build AEM dispatcher image
     dir: dispatcher
     cmds:
-      # - sh aem/home/opt/sdk/dispatcher/bin/validate.sh dispatcher/src > aem/home/var/log/dispatcher-validate.log # uncomment if possible, see: https://github.com/adobe/aem-project-archetype/issues/1043
-      - rm -fr target/sdk && cp -r ../aem/home/opt/sdk/dispatcher target/sdk
-      - docker tag "$(docker load --input "target/sdk/lib/dispatcher-publish-{{ARCH}}.tar.gz" | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"
+      - docker build --platform linux/amd64 -t acme/aem-ams/dispatcher-publish .
+
+  dispatcher:test:
+    desc: test AEM dispatcher image
+    dir: dispatcher
+    cmds:
+      - docker run --rm -it --entrypoint bash acme/aem-ams/dispatcher-publish:latest
+
+  dispatcher:start:
+    desc: start AEM dispatcher using custom image
+    aliases: [dispatcher:up]
+    deps: [dispatcher:build]
+    dir: dispatcher
+    cmds:
+      - mkdir -p target/docker/httpd/logs target/docker/httpd/cache target/docker/httpd/htdocs
       - docker compose up -d
 
   dispatcher:stop:

@@ -3,47 +3,41 @@ package tplx
 import (
 	"bytes"
 	"fmt"
+	"github.com/Masterminds/sprig"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/pathx"
-	"reflect"
 	"strings"
 	"text/template"
+)
+
+var (
+	DelimLeft  = "[["
+	DelimRight = "]]"
 )
 
 func New(name string) *template.Template {
 	return template.New(name).Funcs(funcMap)
 }
 
-// based on <https://github.com/leekchan/gtf/blob/master/gtf.go>
-var funcMap = template.FuncMap{
-	"default": func(arg interface{}, value interface{}) interface{} {
+var funcMap = sprig.TxtFuncMap()
+
+func init() {
+	funcMap["canonicalPath"] = func(pathSegments ...string) string {
 		defer recovery()
-		v := reflect.ValueOf(value)
-		switch v.Kind() {
-		case reflect.String, reflect.Slice, reflect.Array, reflect.Map:
-			if v.Len() == 0 {
-				return arg
-			}
-		case reflect.Bool:
-			if !v.Bool() {
-				return arg
-			}
-		default:
-			return value
-		}
-		return value
-	},
-	"canonicalPath": func(pathSegments ...string) string {
 		return pathx.Canonical(strings.Join(pathSegments, "/"))
-	},
+	}
 }
 
 func recovery() {
 	recover()
 }
 
+func RenderKey(key string, data any) (string, error) {
+	return RenderString(DelimLeft+"."+key+DelimRight, data)
+}
+
 func RenderString(tplContent string, data any) (string, error) {
-	tplParsed, err := New("string-template").Parse(tplContent)
+	tplParsed, err := New("string-template").Delims(DelimLeft, DelimRight).Parse(tplContent)
 	if err != nil {
 		return "", err
 	}

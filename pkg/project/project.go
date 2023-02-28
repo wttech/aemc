@@ -9,6 +9,7 @@ import (
 	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/filex"
+	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"io/fs"
 	"strings"
@@ -25,14 +26,17 @@ func New(config *cfg.Config) *Project {
 type Kind string
 
 const (
-	KindAuto    = "auto"
-	KindClassic = "classic"
-	KindCloud   = "cloud"
-	KindUnknown = "unknown"
+	KindAuto       = "auto"
+	KindInstance   = "instance"
+	KindAppClassic = "app_classic"
+	KindAppCloud   = "app_cloud"
+	KindUnknown    = "unknown"
+
+	GitIgnoreFile = ".gitignore"
 )
 
 func Kinds() []Kind {
-	return []Kind{KindCloud, KindClassic}
+	return []Kind{KindInstance, KindAppCloud, KindAppClassic}
 }
 
 func KindStrings() []string {
@@ -42,10 +46,12 @@ func KindStrings() []string {
 func KindOf(name string) (Kind, error) {
 	if name == KindAuto {
 		return KindAuto, nil
-	} else if name == KindCloud {
-		return KindCloud, nil
-	} else if name == KindClassic {
-		return KindClassic, nil
+	} else if name == KindInstance {
+		return KindInstance, nil
+	} else if name == KindAppCloud {
+		return KindAppCloud, nil
+	} else if name == KindAppClassic {
+		return KindAppClassic, nil
 	} else {
 		return "", fmt.Errorf("project kind '%s' is not supported", name)
 	}
@@ -54,11 +60,14 @@ func KindOf(name string) (Kind, error) {
 //go:embed common
 var commonFiles embed.FS
 
-//go:embed classic
-var classicFiles embed.FS
+//go:embed instance
+var instanceFiles embed.FS
 
-//go:embed cloud
-var cloudFiles embed.FS
+//go:embed app_classic
+var appClassicFiles embed.FS
+
+//go:embed app_cloud
+var appCloudFiles embed.FS
 
 func (p Project) InitializeWithChanged(kind Kind) (bool, error) {
 	projectChanged, err := p.initializeWithChanged(kind)
@@ -83,31 +92,41 @@ func (p Project) initializeWithChanged(kind Kind) (bool, error) {
 }
 
 func (p Project) initialize(kind Kind) error {
+	if err := p.prepareDefaultFiles(kind); err != nil {
+		return err
+	}
+	if err := p.prepareGitIgnore(kind); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p Project) prepareDefaultFiles(kind Kind) error {
 	log.Infof("preparing default files for project of kind '%s'", kind)
 	switch kind {
-	case KindClassic:
+	case KindInstance:
 		if err := copyEmbedFiles(&commonFiles, "common/"); err != nil {
 			return err
 		}
-		if err := copyEmbedFiles(&classicFiles, "classic/"); err != nil {
+		if err := copyEmbedFiles(&instanceFiles, "instance/"); err != nil {
 			return err
 		}
-	case KindCloud:
+	case KindAppClassic:
 		if err := copyEmbedFiles(&commonFiles, "common/"); err != nil {
 			return err
 		}
-		if err := copyEmbedFiles(&cloudFiles, "cloud/"); err != nil {
+		if err := copyEmbedFiles(&appClassicFiles, "classic/"); err != nil {
+			return err
+		}
+	case KindAppCloud:
+		if err := copyEmbedFiles(&commonFiles, "common/"); err != nil {
+			return err
+		}
+		if err := copyEmbedFiles(&appCloudFiles, "cloud/"); err != nil {
 			return err
 		}
 	default:
 		return fmt.Errorf("project kind '%s' cannot be initialized", kind)
-	}
-	log.Infof("creating conventional directories")
-	if err := pathx.Ensure(common.LibDir); err != nil {
-		return err
-	}
-	if err := pathx.Ensure(common.TmpDir); err != nil {
-		return err
 	}
 	return nil
 }
@@ -126,6 +145,22 @@ func copyEmbedFiles(efs *embed.FS, dirPrefix string) error {
 		}
 		return nil
 	})
+}
+
+func (p Project) prepareGitIgnore(kind Kind) error {
+	switch kind {
+	case KindAppClassic, KindAppCloud:
+		return filex.AppendString(GitIgnoreFile, strings.Join([]string{
+			"# " + common.AppName,
+			"aem/home/",
+			"dispatcher/target/",
+		}, osx.LineSep()))
+	default:
+		return filex.AppendString(GitIgnoreFile, strings.Join([]string{
+			"# " + common.AppName,
+			"aem/home/",
+		}, osx.LineSep()))
+	}
 }
 
 func (p Project) KindDetermine(name string) (Kind, error) {
@@ -154,6 +189,17 @@ const (
 	KindPropClassicPrefix = "6."
 )
 
+func (p Project) EnsureDirs() error {
+	log.Infof("ensuring conventional project directories")
+	if err := pathx.Ensure(common.LibDir); err != nil {
+		return err
+	}
+	if err := pathx.Ensure(common.TmpDir); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (p Project) KindInfer() (Kind, error) {
 	if pathx.Exists(KindPropFile) {
 		log.Infof("inferring project kind basing on file '%s' and property '%s'", KindPropFile, KindPropName)
@@ -169,9 +215,9 @@ func (p Project) KindInfer() (Kind, error) {
 
 		var kind Kind
 		if propValue == KindPropCloudValue {
-			kind = KindCloud
+			kind = KindAppCloud
 		} else if strings.HasPrefix(propValue, KindPropClassicPrefix) {
-			kind = KindClassic
+			kind = KindAppClassic
 		} else {
 			return "", fmt.Errorf("cannot infer project kind as value '%s' of property '%s' in file '%s' is not recognized", propValue, KindPropName, KindPropFile)
 		}
@@ -185,7 +231,7 @@ func (p Project) GettingStarted() (string, error) {
 	text := fmt.Sprintf(strings.Join([]string{
 		"The next step is providing AEM files (JAR or SDK ZIP, license, service packs) to directory '" + common.LibDir + "'.",
 		"Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '" + cfg.FileDefault + "'.",
-		"Make sure to exclude the directory '" + common.HomeDir + "'from VCS versioning and IDE indexing.",
+		"Make sure to exclude the directory '" + common.HomeDir + "' from VCS versioning and IDE indexing.",
 		"Finally, use tasks to manage AEM instances:",
 		"",
 

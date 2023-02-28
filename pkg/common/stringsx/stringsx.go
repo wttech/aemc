@@ -3,8 +3,8 @@ package stringsx
 import (
 	"fmt"
 	"github.com/gobwas/glob"
+	"github.com/iancoleman/strcase"
 	"github.com/samber/lo"
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -84,15 +84,6 @@ func AfterLast(value string, a string) string {
 	return value[adjustedPos:]
 }
 
-var snakeMatchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
-var snakeMatchAllCap = regexp.MustCompile("([a-z0-9])([A-Z])")
-
-func SnakeCase(str string) string {
-	snake := snakeMatchFirstCap.ReplaceAllString(str, "${1}_${2}")
-	snake = snakeMatchAllCap.ReplaceAllString(snake, "${1}_${2}")
-	return strings.ToLower(snake)
-}
-
 func HumanCase(str string) string {
-	return strings.ReplaceAll(SnakeCase(str), "_", " ")
+	return strings.ReplaceAll(strcase.ToSnake(str), "_", " ")
 }

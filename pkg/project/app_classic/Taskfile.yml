@@ -4,14 +4,15 @@
 
 version: '3'
 
-dotenv:
-  - '{{ .AEM_ENV | default("local") }}.env'  # VCS-tracked, env-specific
-  - '.env.{{ .AEM_ENV | default("local") }}' # VCS-ignored, env-specific
-  - '.env'                                   # VCS-ignored, user-specific
-
 env:
+  AEM_ENV: '{{default "local" .AEM_ENV }}'
   AEM_INSTANCE_PROCESSING_MODE: auto
   AEM_OUTPUT_VALUE: NONE
+
+dotenv:
+  - '{{.AEM_ENV}}.env'  # VCS-tracked, env-specific
+  - '.env.{{.AEM_ENV}}' # VCS-ignored, env-specific
+  - '.env'              # VCS-ignored, user-specific
 
 tasks:
   setup:
@@ -19,6 +20,7 @@ tasks:
     cmds:
       - task: aem:setup
       - task: dispatcher:setup
+      - task: aem:check
 
   resetup:
     desc: destroy then setup again AEM instances and dispatcher

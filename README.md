@@ -206,7 +206,7 @@ instance:
         - ACME_VAR=value
       sling_props: []
     local_publish:
-      http_url: [[.Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4502" ]]
+      http_url: [[.Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4503" ]]
       user: admin
       password: admin
       run_modes: [ local ]

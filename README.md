@@ -32,7 +32,7 @@ Universal tool to manage AEM instances everywhere!
 * [Configuration](#configuration)
   * [Generating default configuration](#generating-default-configuration)
   * [Configuration precedence](#configuration-precedence)
-  * [Scripts](#scripts)
+  * [Context-specific customization](#context-specific-customization)
     * [Improving performance](#improving-performance)
     * [Increasing verbosity](#increasing-verbosity)
 * [Contributing](#contributing)
@@ -407,7 +407,7 @@ For example: `instance.local.quickstart.dist_file` could be overridden by enviro
 
 Also note that some configuration options may be ultimately overridden by CLI flags, like `--output-format`.
 
-## Scripts
+## Context-specific customization
 
 By default, fail-safe options are in use. However, consider using the configuration options listed below to achieve a more desired tool experience. 
 

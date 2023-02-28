@@ -231,7 +231,7 @@ func (p Project) GettingStarted() (string, error) {
 	text := fmt.Sprintf(strings.Join([]string{
 		"The next step is providing AEM files (JAR or SDK ZIP, license, service packs) to directory '" + common.LibDir + "'.",
 		"Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '" + cfg.FileDefault + "'.",
-		"Make sure to exclude the directory '" + common.HomeDir + "'from VCS versioning and IDE indexing.",
+		"Make sure to exclude the directory '" + common.HomeDir + "' from VCS versioning and IDE indexing.",
 		"Finally, use tasks to manage AEM instances:",
 		"",
 

@@ -12,11 +12,9 @@ import (
 )
 
 var (
-	EnvFileExt      = "env"
-	EnvFileSpecific = "aem." + EnvFileExt
-	EnvFileDefault  = "." + EnvFileExt
-	EnvVar          = "AEM_ENV"
-	EnvLocal        = "local"
+	EnvFileExt = "env"
+	EnvVar     = "AEM_ENV"
+	EnvLocal   = "local"
 )
 
 func IsWindows() bool {
@@ -36,8 +34,11 @@ func EnvVarsLoad() {
 	if name == "" {
 		name = EnvLocal
 	}
-	nameFile := name + "." + EnvFileExt
-	for _, file := range []string{EnvFileSpecific, nameFile, EnvFileDefault} {
+	for _, file := range []string{
+		name + "." + EnvFileExt,
+		"." + EnvFileExt + "." + name,
+		"." + EnvFileExt,
+	} {
 		if pathx.Exists(file) {
 			if err := godotenv.Overload(file); err != nil {
 				log.Fatalf("cannot load env file '%s': %s", file, err)

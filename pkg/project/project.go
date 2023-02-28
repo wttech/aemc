@@ -147,18 +147,27 @@ func copyEmbedFiles(efs *embed.FS, dirPrefix string) error {
 	})
 }
 
+// need to be in sync with osx.EnvVarsLoad()
 func (p Project) prepareGitIgnore(kind Kind) error {
 	switch kind {
 	case KindAppClassic, KindAppCloud:
 		return filex.AppendString(GitIgnoreFile, strings.Join([]string{
+			"",
 			"# " + common.AppName,
-			"aem/home/",
+			common.HomeDir + "/",
 			"dispatcher/target/",
+			"." + osx.EnvFileExt,
+			"." + osx.EnvFileExt + ".*",
+			"",
 		}, osx.LineSep()))
 	default:
 		return filex.AppendString(GitIgnoreFile, strings.Join([]string{
+			"",
 			"# " + common.AppName,
-			"aem/home/",
+			common.HomeDir + "/",
+			"." + osx.EnvFileExt,
+			"." + osx.EnvFileExt + ".*",
+			"",
 		}, osx.LineSep()))
 	}
 }

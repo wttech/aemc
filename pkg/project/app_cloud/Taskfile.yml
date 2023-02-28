@@ -4,7 +4,10 @@
 
 version: '3'
 
-dotenv: ['aem.env', 'local.env', '.env']
+dotenv:
+  - '{{ .AEM_ENV | default("local") }}.env'  # VCS-tracked, env-specific
+  - '.env.{{ .AEM_ENV | default("local") }}' # VCS-ignored, env-specific
+  - '.env'                                   # VCS-ignored, user-specific
 
 env:
   AEM_INSTANCE_PROCESSING_MODE: auto

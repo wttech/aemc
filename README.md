@@ -184,48 +184,48 @@ Correct the `dist_file`, `license_file`, `unpack_dir` properties to provide esse
 instance:
 
   # Defined by single value (only remote)
-  config_url: ''
+  config_url: ""
 
   # Defined strictly with full details (local or remote)
   config:
     local_author:
-      http_url: http://127.0.0.1:4502
+      http_url: [[.Env.AEM_AUTHOR_HTTP_URL | default "http://127.0.0.1:4502" ]]
       user: admin
       password: admin
       run_modes: [ local ]
       jvm_opts:
-        - '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:14502'
-        - '-Djava.io.tmpdir=[[.Path]]/aem/home/tmp'
-        - '-Duser.language=en'
-        - '-Duser.country=US'
-        - '-Duser.timezone=UTC'
+        - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
+        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=[[.Env.AEM_AUTHOR_DEBUG_ADDR | default "0.0.0.0:14502" ]]
+        - -Duser.language=en
+        - -Duser.country=US
+        - -Duser.timezone=UTC
       start_opts: []
       secret_vars:
-        - 'ACME_SECRET=value'
+        - ACME_SECRET=value
       env_vars:
-        - 'ACME_VAR=value'
+        - ACME_VAR=value
       sling_props: []
     local_publish:
-      http_url: http://127.0.0.1:4503
+      http_url: [[.Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4502" ]]
       user: admin
       password: admin
       run_modes: [ local ]
       jvm_opts:
-        - '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:14503'
-        - '-Djava.io.tmpdir=[[.Path]]/aem/home/tmp'
-        - '-Duser.language=en'
-        - '-Duser.country=US'
-        - '-Duser.timezone=UTC'
+        - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
+        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=[[.Env.AEM_PUBLISH_DEBUG_ADDR | default "0.0.0.0:14502" ]]
+        - -Duser.language=en
+        - -Duser.country=US
+        - -Duser.timezone=UTC
       start_opts: []
       secret_vars:
-        - 'ACME_SECRET=value'
+        - ACME_SECRET=value
       env_vars:
-        - 'ACME_VAR=value'
+        - ACME_VAR=value
       sling_props: []
 
   # Filters for defined
   filter:
-    id: ''
+    id: ""
     author: false
     publish: false
 
@@ -289,7 +289,7 @@ instance:
     # Source files
     quickstart:
       # AEM SDK ZIP or JAR
-      dist_file: 'aem/home/lib/{aem-sdk,cq-quickstart}-*.{zip,jar}'
+      dist_file: "aem/home/lib/{aem-sdk,cq-quickstart}-*.{zip,jar}"
       # AEM License properties file
       license_file: "aem/home/lib/license.properties"
 
@@ -321,14 +321,28 @@ instance:
         start_level: 20
         refresh_packages: true
 
-# Java options used to launch AEM instances
 java:
-  # Pre-installed local JDK dir
-  home_dir: "" # "[[.Env.JAVA_HOME]]"
-  # Auto-managed JDK download URL
-  download_url: "" # "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_x64_mac_hotspot_11.0.18_10.tar.gz"
-  # Validate if following Java version constraints are met
+  # Require following versions before e.g running AEM instances
   version_constraints: ">= 11, < 12"
+
+  # Pre-installed local JDK dir
+  # a) keep it empty to download open source Java automatically for current OS and architecture
+  # b) set it to absolute path or to env var '[[.Env.JAVA_HOME]]' to indicate where closed source Java like Oracle is installed
+  home_dir: ""
+
+  # Auto-installed JDK options
+  download:
+    # Source URL with template vars support
+    url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.18_10.[[.ArchiveExt]]"
+    # Map source URL template vars to be compatible
+    replacements:
+      # Map GOARCH values to the ones used by Adoptium Java
+      "x86_64": "x64"
+      "amd64": "x64"
+      "386": "x86-32"
+      # Enforce non-ARM Java as some AEM features are not working on ARM (e.g Scene 7)
+      "arm64": "x64"
+      "aarch64": "x64"
 
 # AEM application build
 app:

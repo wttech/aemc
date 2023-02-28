@@ -7,17 +7,9 @@ import (
 	"strings"
 )
 
-func (c *CLI) projectCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "project",
-		Aliases: []string{"prj"},
-		Short:   "Manages project",
-	}
-	cmd.AddCommand(c.projectInitCmd())
-	return cmd
-}
+const projectKindFlag = "project-kind"
 
-func (c *CLI) projectInitCmd() *cobra.Command {
+func (c *CLI) initCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "initialize",
 		Aliases: []string{"init"},
@@ -27,14 +19,14 @@ func (c *CLI) projectInitCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			kindName, _ := cmd.Flags().GetString("kind")
+			kindName, _ := cmd.Flags().GetString(projectKindFlag)
 			kind, err := c.project.KindDetermine(kindName)
 			if err != nil {
 				c.Error(err)
 				return
 			}
 			if kind == project.KindUnknown {
-				c.Fail(fmt.Sprintf("project kind cannot be determined; specify it with flag '--kind=[%s]'", strings.Join(project.KindStrings(), "|")))
+				c.Fail(fmt.Sprintf("project kind cannot be determined; specify it with flag '--%s=[%s]'", projectKindFlag, strings.Join(project.KindStrings(), "|")))
 				return
 			}
 			changed, err := c.project.InitializeWithChanged(kind)
@@ -55,6 +47,6 @@ func (c *CLI) projectInitCmd() *cobra.Command {
 			}
 		},
 	}
-	cmd.Flags().String("kind", project.KindAuto, fmt.Sprintf("Type of AEM to work with (%s)", strings.Join(project.KindStrings(), "|")))
+	cmd.Flags().String(projectKindFlag, project.KindAuto, fmt.Sprintf("Type of AEM to work with (%s)", strings.Join(project.KindStrings(), "|")))
 	return cmd
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/filex"
+	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"io/fs"
 	"strings"
@@ -30,6 +31,8 @@ const (
 	KindAppClassic = "app_classic"
 	KindAppCloud   = "app_cloud"
 	KindUnknown    = "unknown"
+
+	GitIgnoreFile = ".gitignore"
 )
 
 func Kinds() []Kind {
@@ -89,6 +92,16 @@ func (p Project) initializeWithChanged(kind Kind) (bool, error) {
 }
 
 func (p Project) initialize(kind Kind) error {
+	if err := p.prepareDefaultFiles(kind); err != nil {
+		return err
+	}
+	if err := p.prepareGitIgnore(kind); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p Project) prepareDefaultFiles(kind Kind) error {
 	log.Infof("preparing default files for project of kind '%s'", kind)
 	switch kind {
 	case KindInstance:
@@ -132,6 +145,22 @@ func copyEmbedFiles(efs *embed.FS, dirPrefix string) error {
 		}
 		return nil
 	})
+}
+
+func (p Project) prepareGitIgnore(kind Kind) error {
+	switch kind {
+	case KindAppClassic, KindAppCloud:
+		return filex.AppendString(GitIgnoreFile, strings.Join([]string{
+			"# " + common.AppName,
+			"aem/home/",
+			"dispatcher/target/",
+		}, osx.LineSep()))
+	default:
+		return filex.AppendString(GitIgnoreFile, strings.Join([]string{
+			"# " + common.AppName,
+			"aem/home/",
+		}, osx.LineSep()))
+	}
 }
 
 func (p Project) KindDetermine(name string) (Kind, error) {

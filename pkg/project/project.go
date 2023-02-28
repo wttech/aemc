@@ -115,14 +115,14 @@ func (p Project) prepareDefaultFiles(kind Kind) error {
 		if err := copyEmbedFiles(&commonFiles, "common/"); err != nil {
 			return err
 		}
-		if err := copyEmbedFiles(&appClassicFiles, "classic/"); err != nil {
+		if err := copyEmbedFiles(&appClassicFiles, "app_classic/"); err != nil {
 			return err
 		}
 	case KindAppCloud:
 		if err := copyEmbedFiles(&commonFiles, "common/"); err != nil {
 			return err
 		}
-		if err := copyEmbedFiles(&appCloudFiles, "cloud/"); err != nil {
+		if err := copyEmbedFiles(&appCloudFiles, "app_cloud/"); err != nil {
 			return err
 		}
 	default:

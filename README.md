@@ -98,6 +98,7 @@ sh aemw version
 ```
 
 Project initialization comes with ready-to-use tasks powered by [Task tool](https://taskfile.dev/) which are aggregating one or many AEM Compose CLI commands into useful procedures.
+
 To list all available tasks, run:
 
 ```shell

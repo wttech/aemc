@@ -25,7 +25,7 @@ echo "Releasing $VERSION_TAG"
 echo "Bumping version in files"
 
 README_FILE="README.MD"
-PROJECT_WRAPPER_SCRIPT="project/aemw"
+PROJECT_WRAPPER_SCRIPT="pkg/project/common/aemw"
 
 # <https://stackoverflow.com/a/57766728>
 if [ "$(uname)" = "Darwin" ]; then

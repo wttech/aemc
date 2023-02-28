@@ -12,10 +12,11 @@ env:
 
 tasks:
   setup:
-    desc: setup AEM instances
+    desc: start and provision AEM instances
     cmds:
-      - task: aem:setup
-      - task: aem:check
+      - task: start
+      - task: provision
+      - task: check
 
   resetup:
     desc: destroy then setup again AEM instances
@@ -27,54 +28,40 @@ tasks:
     desc: start AEM instances
     aliases: [up]
     cmds:
-      - task: aem:up
+      - sh aemw instance launch
 
   stop:
     desc: stop AEM instances
     aliases: [down]
-    cmds:
-      - task: aem:down
+    cmds: [sh aemw instance stop]
 
   restart:
     desc: restart AEM instances
     cmds:
-      - task: aem:down
-      - task: aem:up
+      - task: stop
+      - task: start
 
   destroy:
     desc: destroy AEM instances
-    cmds:
-      - task: stop
-      - task: aem:destroy
+    deps: [stop]
+    cmds: [sh aemw instance destroy]
 
-  aem:setup:
-    desc: start and provision AEM instances then build and deploy AEM application
-    cmds:
-      - task: aem:start
-      - task: aem:provision
-
-  aem:start:
-    desc: start AEM instances
-    aliases: [aem:up]
-    cmds:
-      - sh aemw instance launch
-
-  aem:status:
+  status:
     desc: check status of AEM instances
     env:
       AEM_OUTPUT_VALUE: ALL
     cmds:
       - sh aemw instance status
 
-  aem:provision:
+  provision:
     desc: provision AEM instances by installing packages and applying configurations
-    aliases: [aem:configure]
+    aliases: [configure]
     cmds:
-      - task: aem:provision:repl-agent-publish
-      - task: aem:provision:crx
-      - task: aem:provision:apm
+      - task: provision:repl-agent-publish
+      - task: provision:crx
+      - task: provision:apm
 
-  aem:provision:repl-agent-publish:
+  provision:repl-agent-publish:
     desc: configure replication agent on AEM author instance
     internal: true
     cmds:
@@ -88,13 +75,13 @@ tasks:
         "
         echo "$PROPS" | sh aemw repl agent setup -A --location "author" --name "publish"
 
-  aem:provision:crx:
+  provision:crx:
     desc: enable CRX/DE on AEM instances
     internal: true
     cmds:
       - 'sh aemw osgi config save --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet" --input-string "alias: /crx/server"'
 
-  aem:provision:apm:
+  provision:apm:
     desc: deploy APM tool
     internal: true
     vars:
@@ -102,26 +89,16 @@ tasks:
     cmds:
       - sh aemw package deploy --url "https://github.com/wttech/APM/releases/download/apm-{{.APM_VERSION}}/apm-all-{{.APM_VERSION}}.zip"
 
-  aem:destroy:
-    desc: destroy AEM instances
-    deps: [aem:stop]
-    cmds: [sh aemw instance destroy]
+  check:
+    deps: [author:check, publish:check]
 
-  aem:stop:
-    desc: stop AEM instances
-    aliases: [aem:down]
-    cmds: [sh aemw instance stop]
-
-  aem:check:
-    deps: [aem:author:check, aem:publish:check]
-
-  aem:author:check:
+  author:check:
     desc: check health of AEM author instance
     cmds:
       - curl -s -u "{{.AEM_AUTHOR_USER}}:{{.AEM_AUTHOR_PASSWORD}}" "{{.AEM_AUTHOR_HTTP_URL}}/libs/granite/core/content/login.html" | grep -q "QUICKSTART_HOMEPAGE"
       - curl -s -u "{{.AEM_AUTHOR_USER}}:{{.AEM_AUTHOR_PASSWORD}}" "{{.AEM_AUTHOR_HTTP_URL}}/etc/replication/agents.author/publish.test.html" | grep -q "Replication (TEST) of /content successful"
 
-  aem:publish:check:
+  publish:check:
     desc: check health of AEM publish instance
     cmds:
       - curl -s -u "{{.AEM_PUBLISH_USER}}:{{.AEM_PUBLISH_PASSWORD}}" "{{.AEM_PUBLISH_HTTP_URL}}/libs/granite/core/content/login.html" | grep -q "QUICKSTART_HOMEPAGE"

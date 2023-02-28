@@ -142,12 +142,28 @@ tasks:
 
   aem:build:
     desc: build AEM application using Maven
+    sources:
+      - pom.xml
+      - all/pom.xml
+      - all/src/**
+      - core/pom.xml
+      - core/src/**
+      - ui.apps/pom.xml
+      - ui.apps/src/**
+      - ui.apps.structure/pom.xml
+      - ui.apps.structure/src/**
+      - ui.config/pom.xml
+      - ui.config/src/**
+      - ui.content/pom.xml
+      - ui.content/src/**
+      - ui.frontend/*
+      - ui.frontend/src/**
+    generates:
+      - all/target/*.all-*.zip
+    env:
+      AEM_BUILD_ARGS: '' # '-PfedDev -DskipTests'
     cmds:
-      - >
-        sh aemw app build
-        --command "mvn clean package"
-        --sources "pom.xml,all,core,ui.apps,ui.apps.structure,ui.config,ui.content,ui.frontend,ui.tests"
-        --file "all/target/*.all-*.zip"
+      - mvn clean package {{ .AEM_BUILD_ARGS }}
 
   aem:deploy:
     desc: deploy AEM application

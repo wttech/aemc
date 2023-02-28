@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/wttech/aemc/pkg/common"
 )
 
 var appVersion = "<unknown>"
@@ -24,7 +25,7 @@ func NewAppInfo() AppInfo {
 }
 
 func (a AppInfo) String() string {
-	return fmt.Sprintf("AEM CLI %s (commit %s on %s)", a.Version, a.Commit, a.CommitDate)
+	return fmt.Sprintf("%s %s (commit %s on %s)", common.AppName, a.Version, a.Commit, a.CommitDate)
 }
 
 func (c *CLI) versionCmd() *cobra.Command {

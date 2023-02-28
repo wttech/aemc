@@ -30,10 +30,6 @@ type ConfigValues struct {
 		} `mapstructure:"log" yaml:"log"`
 	} `mapstructure:"output" yaml:"output"`
 
-	App struct {
-		SourceExcludes []string `mapstructure:"sources_ignored" yaml:"sources_ignored"`
-	} `mapstructure:"app" yaml:"app"`
-
 	Java struct {
 		VersionConstraints string `mapstructure:"version_constraints" yaml:"version_constraints"`
 		HomeDir            string `mapstructure:"home_dir" yaml:"home_dir"`

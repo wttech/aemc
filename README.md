@@ -97,6 +97,33 @@ For example:
 sh aemw version
 ```
 
+Project initialization comes with ready-to-use tasks powered by [Task tool](https://taskfile.dev/) which are aggregating one or many AEM Compose CLI commands into useful procedures.
+
+To list all available tasks, run:
+
+```shell
+sh taskw --list
+```
+
+For example:
+
+```shell
+sh taskw setup
+```
+
+Some tasks like `aem:build` may accept parameters.
+For example, to build AEM application with:
+
+- Applying frontend development mode Maven profile
+- Unit tests skipping 
+- UI tests skipping
+
+Simply run command with appending [task variable](https://taskfile.dev/usage/#variables) to the end:
+
+```shell
+sh taskw setup AEM_BUILD_ARGS="-PfedDev -DskipTests -pl '!ui.tests'"
+```
+
 ## CLI - Building & installing from source
 
 Ensure having installed [Go](https://go.dev/dl/) then run command:

@@ -115,6 +115,4 @@ fi
 export TASK_COLOR_GREEN=35
 export TASK_TEMP_DIR="${AEM_DIR}/tmp/task"
 
-./aemw config export -f aem.env >/dev/null 2>&1
-
 "./${BIN_EXEC_FILE}" "$@"

@@ -5,7 +5,7 @@
 version: '3'
 
 env:
-  AEM_ENV: '{{default "local" .AEM_ENV }}'
+  AEM_ENV: '{{.AEM_ENV | default "local"}}'
   AEM_INSTANCE_PROCESSING_MODE: auto
   AEM_OUTPUT_VALUE: NONE
 

@@ -149,16 +149,16 @@ func (im *InstanceManager) New(id, url, user, password string) *Instance {
 	return res
 }
 
-func (im *InstanceManager) AwaitOne(instance Instance) {
-	im.AwaitStartedOne(instance)
+func (im *InstanceManager) AwaitOne(instance Instance) error {
+	return im.AwaitStartedOne(instance)
 }
 
-func (im *InstanceManager) AwaitAll() {
-	im.AwaitStartedAll()
+func (im *InstanceManager) AwaitAll() error {
+	return im.AwaitStartedAll()
 }
 
-func (im *InstanceManager) Await(instances []Instance) {
-	im.AwaitStarted(instances)
+func (im *InstanceManager) Await(instances []Instance) error {
+	return im.AwaitStarted(instances)
 }
 
 func (im *InstanceManager) Configure(config *cfg.Config) {

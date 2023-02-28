@@ -110,7 +110,7 @@ For example:
 sh taskw setup
 ```
 
-Some tasks may accept parameters like `aem:build`. To build AEM application with:
+Some tasks like `aem:build` may accept parameters. To build AEM application with:
 
 - Applying frontend development mode Maven profile
 - Unit tests skipping 
@@ -121,10 +121,6 @@ Simply run command (append [task variables](https://taskfile.dev/usage/#variable
 ```shell
 sh taskw setup AEM_BUILD_ARGS="-PfedDev -DskipTests -pl '!ui.tests'"
 ```
-
-### AEM application build
-
-
 
 ## CLI - Building & installing from source
 

@@ -114,7 +114,7 @@ func (o *Opts) checkVersion() error {
 	if err != nil {
 		return err
 	}
-	if !o.VersionConstraints.Check(currentVersion) {
+	if o.VersionConstraints != nil && !o.VersionConstraints.Check(currentVersion) {
 		return fmt.Errorf("java current version '%s' does not meet contraints '%s'", currentVersion, o.VersionConstraints)
 	}
 	return nil
@@ -222,6 +222,7 @@ func (o *Opts) readCurrentVersion() (string, error) {
 		return "", fmt.Errorf("cannot extract java version from output")
 	}
 	result := stringsx.Between(line, "\"", "\"")
+	result = strings.Split(result, "_")[0]
 	return strings.TrimSpace(result), nil
 }
 
@@ -237,5 +238,7 @@ func (o *Opts) Configure(config *cfg.Config) {
 	o.DownloadURLReplacements = opts.Download.Replacements
 	if len(opts.VersionConstraints) > 0 {
 		o.VersionConstraints = version.MustConstraints(version.NewConstraint(opts.VersionConstraints))
+	} else if opts.VersionConstraints == "" {
+		o.VersionConstraints = nil
 	}
 }

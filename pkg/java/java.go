@@ -43,7 +43,7 @@ func NewOpts(baseOpts *base.Opts) *Opts {
 			"arm64":   "x64",
 			"aarch64": "x64",
 		},
-		VersionConstraints: nil,
+		VersionConstraints: version.MustConstraints(version.NewConstraint(">= 11, < 12")),
 	}
 }
 
@@ -238,5 +238,7 @@ func (o *Opts) Configure(config *cfg.Config) {
 	o.DownloadURLReplacements = opts.Download.Replacements
 	if len(opts.VersionConstraints) > 0 {
 		o.VersionConstraints = version.MustConstraints(version.NewConstraint(opts.VersionConstraints))
+	} else if opts.VersionConstraints == "" {
+		o.VersionConstraints = nil
 	}
 }

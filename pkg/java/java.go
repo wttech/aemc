@@ -2,6 +2,10 @@ package java
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"strings"
+
 	"github.com/hashicorp/go-version"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
@@ -13,9 +17,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
-	"os"
-	"os/exec"
-	"strings"
 )
 
 type Opts struct {
@@ -67,7 +68,7 @@ func (o *Opts) jdkDir() string {
 }
 
 func (o *Opts) Prepare() error {
-	if o.DownloadURL != "" {
+	if o.HomeDir == "" && o.DownloadURL != "" {
 		if err := o.download(); err != nil {
 			return err
 		}

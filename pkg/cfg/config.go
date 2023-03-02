@@ -90,21 +90,8 @@ func (c *Config) readFromFile(file string, templating bool) {
 			log.Fatalf("cannot parse AEM config file '%s': %s", file, err)
 			return
 		}
-		var ext string
-		if osx.IsWindows() {
-			ext = "zip"
-		} else {
-			ext = "tar.gz"
-		}
-		data := map[string]any{
-			"Env":        osx.EnvVarsMap(),
-			"Path":       pathx.Normalize("."),
-			"Os":         runtime.GOOS,
-			"Arch":       runtime.GOARCH,
-			"ArchiveExt": ext,
-		}
 		var tplOut bytes.Buffer
-		if err = tpl.Execute(&tplOut, data); err != nil {
+		if err = tpl.Execute(&tplOut, c.tplData()); err != nil {
 			log.Fatalf("cannot render AEM config template properly '%s': %s", file, err)
 			return
 		}
@@ -121,6 +108,24 @@ func (c *Config) readFromFile(file string, templating bool) {
 		log.Fatalf("cannot load AEM config file properly '%s': %s", file, err)
 		return
 	}
+}
+
+// TODO config defaults are not interpolated, maybe they should with data below
+func (c *Config) tplData() map[string]any {
+	var ext string
+	if osx.IsWindows() {
+		ext = "zip"
+	} else {
+		ext = "tar.gz"
+	}
+	data := map[string]any{
+		"Env":        osx.EnvVarsMap(),
+		"Path":       pathx.Normalize("."),
+		"Os":         runtime.GOOS,
+		"Arch":       runtime.GOARCH,
+		"ArchiveExt": ext,
+	}
+	return data
 }
 
 func File() string {

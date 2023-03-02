@@ -69,6 +69,8 @@ func NewLocal(i *Instance) *LocalInstance {
 	li.StartOpts = []string{}
 	li.RunModes = []string{"local"}
 	li.JvmOpts = []string{
+		"-server",
+		"-Djava.awt.headless=true",
 		"-Djava.io.tmpdir=" + pathx.Canonical(i.manager.aem.baseOpts.TmpDir),
 		"-Duser.language=en", "-Duser.country=US", "-Duser.timezone=UTC", "-Duser.name=" + common.AppId,
 	}
@@ -128,6 +130,12 @@ func (li LocalInstance) LockDir() string {
 func (li LocalInstance) QuickstartDir() string {
 	return pathx.Canonical(fmt.Sprintf("%s/%s", li.Dir(), "crx-quickstart"))
 }
+
+func (li LocalInstance) BundleDir(id int) string {
+	return pathx.Canonical(fmt.Sprintf("%s/launchpad/felix/%d", li.QuickstartDir(), id))
+}
+
+// crx-quickstart/launchpad/felix
 
 func (li LocalInstance) binScriptWindows(name string) string {
 	return pathx.Canonical(fmt.Sprintf("%s/bin/%s.bat", li.QuickstartDir(), name))

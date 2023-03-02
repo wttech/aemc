@@ -12,16 +12,16 @@ func (c *CLI) cryptoCmd() *cobra.Command {
 		Use:   "crypto",
 		Short: "Manages Crypto Support",
 	}
-	cmd.AddCommand(c.cryptoConfigureCmd())
+	cmd.AddCommand(c.cryptoSetupCmd())
 	cmd.AddCommand(c.cryptoProtectCmd())
 	return cmd
 }
 
-func (c *CLI) cryptoConfigureCmd() *cobra.Command {
+func (c *CLI) cryptoSetupCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "configure",
-		Aliases: []string{"setup"},
-		Short:   "Configure Crypto keys",
+		Use:     "setup",
+		Aliases: []string{"configure"},
+		Short:   "Setup Crypto keys",
 		Run: func(cmd *cobra.Command, args []string) {
 			instances, err := c.aem.InstanceManager().Some()
 			if err != nil {
@@ -29,11 +29,11 @@ func (c *CLI) cryptoConfigureCmd() *cobra.Command {
 				return
 			}
 
-			hmacFile, _ := cmd.Flags().GetBool("hmac-file")
-			masterFile, _ := cmd.Flags().GetBool("master-file")
+			hmacFile, _ := cmd.Flags().GetString("hmac-file")
+			masterFile, _ := cmd.Flags().GetString("master-file")
 
 			configured, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
-				changed, err := instance.Crypto().Configure(hmacFile, masterFile)
+				changed, err := instance.Crypto().Setup(hmacFile, masterFile)
 				if err != nil {
 					return nil, err
 				}

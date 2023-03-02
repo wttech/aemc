@@ -178,3 +178,18 @@ func ChecksumDir(dir string, pathIgnored []string) (string, error) {
 	dirSum := fmt.Sprintf("%x", hash.Sum(nil))
 	return dirSum, nil
 }
+
+func Equals(file1 string, file2 string) (bool, error) {
+	if pathx.Exists(file1) != pathx.Exists(file2) {
+		return false, nil
+	}
+	sum1, err := ChecksumFile(file1)
+	if err != nil {
+		return false, err
+	}
+	sum2, err := ChecksumFile(file2)
+	if err != nil {
+		return false, err
+	}
+	return sum1 == sum2, nil
+}

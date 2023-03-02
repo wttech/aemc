@@ -30,20 +30,11 @@ type Opts struct {
 
 func NewOpts(baseOpts *base.Opts) *Opts {
 	return &Opts{
-		baseOpts: baseOpts,
-
-		HomeDir:     "",
-		DownloadURL: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.18_10.[[.ArchiveExt]]",
-		DownloadURLReplacements: map[string]string{
-			// Map GOARCH values to be compatible with Adoptium
-			"x86_64": "x64",
-			"amd64":  "x64",
-			"386":    "x86-32",
-			// Enforce non-ARM Java as some AEM features are not working on ARM (e.g Scene7)
-			"arm64":   "x64",
-			"aarch64": "x64",
-		},
-		VersionConstraints: version.MustConstraints(version.NewConstraint(">= 11, < 12")),
+		baseOpts:                baseOpts,
+		HomeDir:                 "",
+		DownloadURL:             "",
+		DownloadURLReplacements: nil,
+		VersionConstraints:      nil,
 	}
 }
 

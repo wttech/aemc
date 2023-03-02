@@ -90,21 +90,8 @@ func (c *Config) readFromFile(file string, templating bool) {
 			log.Fatalf("cannot parse AEM config file '%s': %s", file, err)
 			return
 		}
-		var ext string
-		if osx.IsWindows() {
-			ext = "zip"
-		} else {
-			ext = "tar.gz"
-		}
-		data := map[string]any{
-			"Env":        osx.EnvVarsMap(),
-			"Path":       pathx.Normalize("."),
-			"Os":         runtime.GOOS,
-			"Arch":       runtime.GOARCH,
-			"ArchiveExt": ext,
-		}
 		var tplOut bytes.Buffer
-		if err = tpl.Execute(&tplOut, data); err != nil {
+		if err = tpl.Execute(&tplOut, c.tplData()); err != nil {
 			log.Fatalf("cannot render AEM config template properly '%s': %s", file, err)
 			return
 		}
@@ -121,6 +108,24 @@ func (c *Config) readFromFile(file string, templating bool) {
 		log.Fatalf("cannot load AEM config file properly '%s': %s", file, err)
 		return
 	}
+}
+
+// TODO config defaults are not interpolated, maybe they should with data below
+func (c *Config) tplData() map[string]any {
+	var ext string
+	if osx.IsWindows() {
+		ext = "zip"
+	} else {
+		ext = "tar.gz"
+	}
+	data := map[string]any{
+		"Env":        osx.EnvVarsMap(),
+		"Path":       pathx.Normalize("."),
+		"Os":         runtime.GOOS,
+		"Arch":       runtime.GOARCH,
+		"ArchiveExt": ext,
+	}
+	return data
 }
 
 func File() string {
@@ -156,7 +161,7 @@ func (c *Config) InitializeWithChanged() (bool, error) {
 	if !pathx.Exists(templateFile) {
 		return false, fmt.Errorf("config file template does not exist: '%s'", templateFile)
 	}
-	if err := filex.Copy(templateFile, file); err != nil {
+	if err := filex.Copy(templateFile, file, false); err != nil {
 		return false, fmt.Errorf("cannot copy config file template: '%w'", err)
 	}
 	return true, nil
@@ -181,4 +186,31 @@ func (c *Config) ConfigureLogger() {
 		log.Fatalf("unsupported log level specified: '%s'", c.values.Log.Level)
 	}
 	log.SetLevel(level)
+}
+
+func (c *Config) ExportWithChanged(file string) (bool, error) {
+	currentYml, err := fmtx.MarshalYML(c.values)
+	if err != nil {
+		return false, err
+	}
+
+	executable, err := os.Executable()
+	if err != nil {
+		return false, err
+	}
+	log.Infof("config file can be used by command '%s=%s %s'", FileEnvVar, pathx.Canonical(file), executable)
+
+	if pathx.Exists(file) {
+		oldYml, err := filex.ReadString(file)
+		if err != nil {
+			return false, err
+		}
+		if oldYml == currentYml {
+			return false, nil
+		}
+	}
+	if err := filex.WriteString(file, currentYml); err != nil {
+		return false, err
+	}
+	return true, nil
 }

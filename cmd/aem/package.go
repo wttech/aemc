@@ -114,7 +114,7 @@ func (c *CLI) pkgUploadCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("uploaded", uploaded)
-			if mapsx.HasSome(uploaded, OutputChanged, true) {
+			if mapsx.SomeHas(uploaded, OutputChanged, true) {
 				c.Changed("package uploaded")
 			} else {
 				c.Ok("package not uploaded (up-to-date)")
@@ -158,7 +158,7 @@ func (c *CLI) pkgInstallCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("installed", installed)
-			if mapsx.HasSome(installed, OutputChanged, true) {
+			if mapsx.SomeHas(installed, OutputChanged, true) {
 				c.Changed("package installed")
 			} else {
 				c.Ok("package already installed (up-to-date)")
@@ -207,7 +207,7 @@ func (c *CLI) pkgDeployCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("deployed", deployed)
-			if mapsx.HasSome(deployed, OutputChanged, true) {
+			if mapsx.SomeHas(deployed, OutputChanged, true) {
 				c.Changed("package deployed")
 			} else {
 				c.Ok("package already deployed (up-to-date)")
@@ -251,7 +251,7 @@ func (c *CLI) pkgUninstallCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("uninstalled", uninstalled)
-			if mapsx.HasSome(uninstalled, OutputChanged, true) {
+			if mapsx.SomeHas(uninstalled, OutputChanged, true) {
 				c.Changed("package uninstalled")
 			} else {
 				c.Ok("package already uninstalled")
@@ -295,7 +295,7 @@ func (c *CLI) pkgDeleteCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("deleted", deleted)
-			if mapsx.HasSome(deleted, OutputChanged, true) {
+			if mapsx.SomeHas(deleted, OutputChanged, true) {
 				c.Changed("package deleted")
 			} else {
 				c.Ok("package not deleted (does not exist)")
@@ -354,7 +354,7 @@ func (c *CLI) pkgPurgeCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("purged", purged)
-			if mapsx.HasSome(purged, OutputChanged, true) {
+			if mapsx.SomeHas(purged, OutputChanged, true) {
 				c.Changed("package purged")
 			} else {
 				c.Ok("package already purged")

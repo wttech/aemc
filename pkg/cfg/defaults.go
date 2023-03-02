@@ -6,6 +6,7 @@ import (
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/instance"
+	"time"
 )
 
 func setDefaults(v *viper.Viper) {
@@ -14,17 +15,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("log.full_timestamp", true)
 
 	v.SetDefault("base.tmp_dir", common.TmpDir)
-
-	v.SetDefault("java.download.url", "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.18_10.[[.ArchiveExt]]")
-	v.SetDefault("java.download.replacements", map[string]string{
-		// Map GOARCH values to be compatible with Adoptium
-		"x86_64": "x64",
-		"amd64":  "x64",
-		"386":    "x86-32",
-		// Enforce non-ARM Java as some AEM features are not working on ARM (e.g Scene7)
-		"arm64":   "x64",
-		"aarch64": "x64",
-	})
 
 	v.SetDefault("input.format", fmtx.YML)
 	v.SetDefault("input.file", common.STDIn)
@@ -67,4 +57,8 @@ func setDefaults(v *viper.Viper) {
 		"cq:lastModified",
 		"transportPassword",
 	})
+
+	v.SetDefault("instance.osgi.shutdown_delay", time.Second*3)
+
+	v.SetDefault("instance.crypto.key_bundle_symbolic_name", "com.adobe.granite.crypto.file")
 }

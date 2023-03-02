@@ -25,6 +25,7 @@ type Instance struct {
 	osgi           *OSGi
 	sling          *Sling
 	packageManager *PackageManager
+	crypto         *Crypto
 
 	id       string
 	user     string
@@ -93,6 +94,10 @@ func (i Instance) Sling() *Sling {
 
 func (i Instance) PackageManager() *PackageManager {
 	return i.packageManager
+}
+
+func (i Instance) Crypto() *Crypto {
+	return i.crypto
 }
 
 func (i Instance) IDInfo() IDInfo {

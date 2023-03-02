@@ -29,6 +29,6 @@ func Has[T comparable](data map[string]any, key string, value T) bool {
 	return false
 }
 
-func HasSome[T comparable](dataList []map[string]any, key string, value T) bool {
+func SomeHas[T comparable](dataList []map[string]any, key string, value T) bool {
 	return lo.SomeBy(dataList, func(data map[string]any) bool { return Has(data, key, value) })
 }

@@ -124,6 +124,8 @@ type ConfigValues struct {
 		} `mapstructure:"package" yaml:"package"`
 
 		OSGi struct {
+			ShutdownDelay time.Duration `mapstructure:"shutdown_delay" yaml:"shutdown_delay"`
+
 			Bundle struct {
 				Install struct {
 					Start           bool `mapstructure:"start" yaml:"start"`
@@ -132,5 +134,9 @@ type ConfigValues struct {
 				} `mapstructure:"install" yaml:"install"`
 			} `mapstructure:"bundle" yaml:"bundle"`
 		} `mapstructure:"osgi" yaml:"osgi"`
+
+		Crypto struct {
+			KeyBundleSymbolicName string `mapstructure:"key_bundle_symbolic_name" yaml:"key_bundle_symbolic_name"`
+		} `mapstructure:"crypto" yaml:"crypto"`
 	} `mapstructure:"instance" yaml:"instance"`
 }

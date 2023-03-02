@@ -221,6 +221,8 @@ instance:
       password: admin
       run_modes: [ local ]
       jvm_opts:
+        - -server
+        - -Djava.awt.headless=true
         - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
         - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=[[.Env.AEM_AUTHOR_DEBUG_ADDR | default "0.0.0.0:14502" ]]
         - -Duser.language=en
@@ -238,6 +240,8 @@ instance:
       password: admin
       run_modes: [ local ]
       jvm_opts:
+        - -server
+        - -Djava.awt.headless=true
         - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
         - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=[[.Env.AEM_PUBLISH_DEBUG_ADDR | default "0.0.0.0:14502" ]]
         - -Duser.language=en

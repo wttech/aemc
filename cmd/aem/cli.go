@@ -27,7 +27,8 @@ import (
 )
 
 const (
-	OutputChanged = "changed"
+	OutputChanged  = "changed"
+	OutputInstance = "instance"
 )
 
 type CLI struct {
@@ -373,4 +374,14 @@ func formatValueChanged(changed bool) string {
 		text = color.YellowString("true")
 	}
 	return text
+}
+
+func InstancesChanged(instanceData []map[string]any) []pkg.Instance {
+	var result []pkg.Instance
+	for _, data := range instanceData {
+		if data[OutputChanged] == true {
+			result = append(result, data[OutputInstance].(pkg.Instance))
+		}
+	}
+	return result
 }

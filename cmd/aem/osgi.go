@@ -72,7 +72,7 @@ func (c *CLI) osgiBundleInstall() *cobra.Command {
 				return
 			}
 			c.SetOutput("installed", installed)
-			if mapsx.HasSome(installed, OutputChanged, true) {
+			if mapsx.SomeHas(installed, OutputChanged, true) {
 				c.Changed("bundle installed")
 			} else {
 				c.Ok("bundle already installed")
@@ -113,7 +113,7 @@ func (c *CLI) osgiBundleUninstall() *cobra.Command {
 				return
 			}
 			c.SetOutput("uninstalled", uninstalled)
-			if mapsx.HasSome(uninstalled, OutputChanged, true) {
+			if mapsx.SomeHas(uninstalled, OutputChanged, true) {
 				c.Changed("bundle uninstalled")
 			} else {
 				c.Ok("bundle already uninstalled")
@@ -206,7 +206,7 @@ func (c *CLI) osgiBundleStartCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("started", started)
-			if mapsx.HasSome(started, OutputChanged, true) {
+			if mapsx.SomeHas(started, OutputChanged, true) {
 				c.Changed("bundle started")
 			} else {
 				c.Ok("bundle already started (up-to-date)")
@@ -252,7 +252,7 @@ func (c *CLI) osgiBundleStopCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("stopped", stopped)
-			if mapsx.HasSome(stopped, OutputChanged, true) {
+			if mapsx.SomeHas(stopped, OutputChanged, true) {
 				c.Changed("bundle stopped")
 			} else {
 				c.Ok("bundle already stopped (up-to-date)")
@@ -416,7 +416,7 @@ func (c *CLI) osgiComponentEnableCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("enabled", enabled)
-			if mapsx.HasSome(enabled, OutputChanged, true) {
+			if mapsx.SomeHas(enabled, OutputChanged, true) {
 				c.Changed("component enabled")
 			} else {
 				c.Ok("component already enabled (up-to-date)")
@@ -459,7 +459,7 @@ func (c *CLI) osgiComponentDisableCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("disabled", disabled)
-			if mapsx.HasSome(disabled, OutputChanged, true) {
+			if mapsx.SomeHas(disabled, OutputChanged, true) {
 				c.Changed("component disabled")
 			} else {
 				c.Ok("component already disabled (up-to-date)")
@@ -609,7 +609,7 @@ func (c *CLI) osgiConfigSave() *cobra.Command {
 				return
 			}
 			c.SetOutput("saved", saved)
-			if mapsx.HasSome(saved, OutputChanged, true) {
+			if mapsx.SomeHas(saved, OutputChanged, true) {
 				c.Changed("config saved")
 			} else {
 				c.Ok("config already saved (up-to-date)")
@@ -651,7 +651,7 @@ func (c *CLI) osgiConfigDelete() *cobra.Command {
 				return
 			}
 			c.SetOutput("deleted", deleted)
-			if mapsx.HasSome(deleted, OutputChanged, true) {
+			if mapsx.SomeHas(deleted, OutputChanged, true) {
 				c.Changed("config deleted")
 			} else {
 				c.Ok("config already deleted (does not exist)")

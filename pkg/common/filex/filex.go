@@ -73,7 +73,7 @@ func AmendString(file string, updater func(string) string) error {
 
 var fileCopyBufferSize = 4 * 1024 // 4 kB <https://stackoverflow.com/a/3034155>
 
-func Copy(sourcePath, destinationPath string) error {
+func Copy(sourcePath, destinationPath string, overwrite bool) error {
 	sourceStat, err := os.Stat(sourcePath)
 	if err != nil {
 		return err
@@ -89,9 +89,11 @@ func Copy(sourcePath, destinationPath string) error {
 		return err
 	}
 	defer source.Close()
-	_, err = os.Stat(destinationPath)
-	if err == nil {
-		return fmt.Errorf("cannot copy file from '%s' to '%s' as destination already exists", sourcePath, destinationPath)
+	if !overwrite {
+		_, err = os.Stat(destinationPath)
+		if err == nil {
+			return fmt.Errorf("cannot copy file from '%s' to '%s' as destination already exists", sourcePath, destinationPath)
+		}
 	}
 	destination, err := os.Create(destinationPath)
 	if err != nil {
@@ -177,4 +179,19 @@ func ChecksumDir(dir string, pathIgnored []string) (string, error) {
 	}
 	dirSum := fmt.Sprintf("%x", hash.Sum(nil))
 	return dirSum, nil
+}
+
+func Equals(file1 string, file2 string) (bool, error) {
+	if !pathx.Exists(file1) || !pathx.Exists(file2) {
+		return false, nil
+	}
+	sum1, err := ChecksumFile(file1)
+	if err != nil {
+		return false, err
+	}
+	sum2, err := ChecksumFile(file2)
+	if err != nil {
+		return false, err
+	}
+	return sum1 == sum2, nil
 }

@@ -52,9 +52,9 @@ func (c *CLI) cryptoSetupCmd() *cobra.Command {
 					c.Error(err)
 					return
 				}
-				c.Changed("Crypto configured")
+				c.Changed("keys set up")
 			} else {
-				c.Ok("Crypto already configured")
+				c.Ok("keys already set up")
 			}
 		},
 	}

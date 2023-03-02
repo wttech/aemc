@@ -3,6 +3,7 @@ package pkg
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 // OSGi Facade for communicating with OSGi framework.
@@ -64,6 +65,7 @@ func (o *OSGi) shutdown(shutdownType string) error {
 	} else if response.IsError() {
 		return fmt.Errorf("%s > cannot trigger OSGi shutdown of type '%s': %s", o.instance.ID(), shutdownType, response.Status())
 	}
+	time.Sleep(3 * time.Second) // TODO make it configurable
 	log.Infof("%s > triggered OSGi shutdown of type '%s'", o.instance.ID(), shutdownType)
 	return nil
 }

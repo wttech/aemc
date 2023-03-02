@@ -21,7 +21,7 @@ func (c *CLI) cryptoSetupCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "setup",
 		Aliases: []string{"configure"},
-		Short:   "Setup Crypto keys",
+		Short:   "Setup keys",
 		Run: func(cmd *cobra.Command, args []string) {
 			instances, err := c.aem.InstanceManager().Some()
 			if err != nil {
@@ -58,10 +58,8 @@ func (c *CLI) cryptoSetupCmd() *cobra.Command {
 			}
 		},
 	}
-	cmd.Flags().StringP("hmac-file", "h", common.LibDir+"/crypto/hmac", "Path to file 'hmac'")
-	cmd.MarkFlagRequired("hmac-file")
-	cmd.Flags().StringP("master-file", "m", common.LibDir+"/crypto/master", "Path to file 'master'")
-	cmd.MarkFlagRequired("master-file")
+	cmd.Flags().String("hmac-file", common.LibDir+"/crypto/data/hmac", "Path to file 'hmac'")
+	cmd.Flags().String("master-file", common.LibDir+"/crypto/data/master", "Path to file 'master'")
 	return cmd
 }
 

@@ -132,7 +132,7 @@ func (li LocalInstance) QuickstartDir() string {
 }
 
 func (li LocalInstance) BundleDir(id int) string {
-	return pathx.Canonical(fmt.Sprintf("%s/launchpad/felix/%d", li.QuickstartDir(), id))
+	return pathx.Canonical(fmt.Sprintf("%s/launchpad/felix/bundle%d", li.QuickstartDir(), id))
 }
 
 // crx-quickstart/launchpad/felix
@@ -259,7 +259,7 @@ func (li LocalInstance) copyLicenseFile() error {
 	source := pathx.Canonical(li.Opts().Quickstart.LicenseFile)
 	dest := pathx.Canonical(li.LicenseFile())
 	log.Infof("%s > copying license file from '%s' to '%s'", li.instance.ID(), source, dest)
-	if err := filex.Copy(source, dest); err != nil {
+	if err := filex.Copy(source, dest, true); err != nil {
 		return fmt.Errorf("%s > cannot copy license file from '%s' to '%s': %s", li.instance.ID(), source, dest, err)
 	}
 	return nil

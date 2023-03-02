@@ -156,7 +156,7 @@ func (c *Config) InitializeWithChanged() (bool, error) {
 	if !pathx.Exists(templateFile) {
 		return false, fmt.Errorf("config file template does not exist: '%s'", templateFile)
 	}
-	if err := filex.Copy(templateFile, file); err != nil {
+	if err := filex.Copy(templateFile, file, false); err != nil {
 		return false, fmt.Errorf("cannot copy config file template: '%w'", err)
 	}
 	return true, nil

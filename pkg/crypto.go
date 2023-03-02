@@ -40,7 +40,7 @@ func (c Crypto) Setup(hmacFile string, masterFile string) (bool, error) {
 	if keyBundle == nil {
 		return false, fmt.Errorf("%s > cannot find Crypto key bundle using symbolic name '%s'", c.instance.ID(), c.keyBundleSymbolicName)
 	}
-	keyDir := c.instance.Local().BundleDir(keyBundle.ID)
+	keyDir := fmt.Sprintf("bundle%d/data", c.instance.Local().BundleDir(keyBundle.ID))
 	hmacTargetFile := fmt.Sprintf("%s/hmac", keyDir)
 	masterTargetFile := fmt.Sprintf("%s/master", keyDir)
 
@@ -56,11 +56,11 @@ func (c Crypto) Setup(hmacFile string, masterFile string) (bool, error) {
 		log.Infof("%s > skipping setting Crypto keys (hmac '%s', master '%s') as they are up-to-date", c.instance.ID(), hmacFile, masterFile)
 		return false, nil
 	}
-	if err := filex.Copy(hmacFile, hmacTargetFile); err != nil {
-		return false, fmt.Errorf("%s > cannot copy Crypto hmac file from '%s' to '%s'", c.instance.ID(), hmacFile, hmacTargetFile)
+	if err := filex.Copy(hmacFile, hmacTargetFile, true); err != nil {
+		return false, fmt.Errorf("%s > cannot copy Crypto hmac file from '%s' to '%s': %w", c.instance.ID(), hmacFile, hmacTargetFile, err)
 	}
-	if err := filex.Copy(hmacFile, hmacTargetFile); err != nil {
-		return false, fmt.Errorf("%s > cannot copy Crypto master file from '%s' to '%s'", c.instance.ID(), masterFile, masterTargetFile)
+	if err := filex.Copy(hmacFile, hmacTargetFile, true); err != nil {
+		return false, fmt.Errorf("%s > cannot copy Crypto master file from '%s' to '%s'> %w", c.instance.ID(), masterFile, masterTargetFile, err)
 	}
 	if err := osgi.Restart(); err != nil {
 		return false, err

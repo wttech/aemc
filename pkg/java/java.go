@@ -85,7 +85,7 @@ func (o *Opts) download() error {
 		url = strings.ReplaceAll(url, search, replace)
 	}
 	archiveFile := fmt.Sprintf("%s/%s", o.archiveDir(), httpx.FileNameFromURL(url))
-	log.Infof("downloading new JDK 222 from URL '%s' to file '%s'", url, archiveFile)
+	log.Infof("downloading new JDK from URL '%s' to file '%s'", url, archiveFile)
 	if err := httpx.DownloadOnce(url, archiveFile); err != nil {
 		return err
 	}

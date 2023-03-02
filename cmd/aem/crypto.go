@@ -48,7 +48,7 @@ func (c *CLI) cryptoSetupCmd() *cobra.Command {
 			}
 			c.SetOutput("configured", configured)
 			if mapsx.SomeHas(configured, OutputChanged, true) {
-				if err := c.aem.InstanceManager().AwaitStarted(instances); err != nil {
+				if err := c.aem.InstanceManager().AwaitStarted(instances); err != nil { // TODO await only changed
 					c.Error(err)
 					return
 				}

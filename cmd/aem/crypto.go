@@ -38,8 +38,8 @@ func (c *CLI) cryptoSetupCmd() *cobra.Command {
 					return nil, err
 				}
 				return map[string]any{
-					OutputChanged: changed,
-					"instance":    instance,
+					OutputChanged:  changed,
+					OutputInstance: instance,
 				}, nil
 			})
 			if err != nil {
@@ -47,14 +47,15 @@ func (c *CLI) cryptoSetupCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("configured", configured)
+
 			if mapsx.SomeHas(configured, OutputChanged, true) {
-				if err := c.aem.InstanceManager().AwaitStarted(instances); err != nil { // TODO await only changed
+				if err := c.aem.InstanceManager().AwaitStarted(InstancesChanged(configured)); err != nil {
 					c.Error(err)
 					return
 				}
-				c.Changed("keys set up")
+				c.Changed("Crypto set up")
 			} else {
-				c.Ok("keys already set up (up-to-date)")
+				c.Ok("Crypto already set up (up-to-date)")
 			}
 		},
 	}
@@ -75,13 +76,13 @@ func (c *CLI) cryptoProtectCmd() *cobra.Command {
 				return
 			}
 			plainValue, _ := cmd.Flags().GetString("value")
-			unprotectedValue, err := instance.Crypto().Protect(plainValue)
+			protectedValue, err := instance.Crypto().Protect(plainValue)
 			if err != nil {
 				c.Error(err)
 				return
 			}
-			c.SetOutput("value", unprotectedValue)
-			c.Ok("value protected")
+			c.SetOutput("value", protectedValue)
+			c.Ok("value protected by Crypto")
 		},
 	}
 	cmd.Flags().StringP("value", "v", "", "Value to protect")

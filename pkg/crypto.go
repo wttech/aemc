@@ -40,7 +40,7 @@ func (c Crypto) Setup(hmacFile string, masterFile string) (bool, error) {
 	if keyBundle == nil {
 		return false, fmt.Errorf("%s > cannot find Crypto key bundle using symbolic name '%s'", c.instance.ID(), c.keyBundleSymbolicName)
 	}
-	keyDir := fmt.Sprintf("bundle%d/data", c.instance.Local().BundleDir(keyBundle.ID))
+	keyDir := fmt.Sprintf("%s/data", c.instance.Local().BundleDir(keyBundle.ID))
 	hmacTargetFile := fmt.Sprintf("%s/hmac", keyDir)
 	masterTargetFile := fmt.Sprintf("%s/master", keyDir)
 

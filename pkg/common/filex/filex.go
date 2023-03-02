@@ -182,7 +182,7 @@ func ChecksumDir(dir string, pathIgnored []string) (string, error) {
 }
 
 func Equals(file1 string, file2 string) (bool, error) {
-	if pathx.Exists(file1) != pathx.Exists(file2) {
+	if !pathx.Exists(file1) || !pathx.Exists(file2) {
 		return false, nil
 	}
 	sum1, err := ChecksumFile(file1)

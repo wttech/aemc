@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"github.com/wttech/aemc/pkg/common"
 	"golang.org/x/exp/maps"
 	"strings"
 )
@@ -20,6 +21,8 @@ func (ra ReplAgent) Name() string {
 }
 
 func (ra ReplAgent) Setup(props map[string]any) (bool, error) {
+	props["provisioner"] = common.AppId // enforce at least one-time provisioning due to 'transportPassword' property
+
 	changed := false
 	pageState, err := ra.page.State()
 	if err != nil {

@@ -182,3 +182,30 @@ func (c *Config) ConfigureLogger() {
 	}
 	log.SetLevel(level)
 }
+
+func (c *Config) ExportWithChanged(file string) (bool, error) {
+	currentYml, err := fmtx.MarshalYML(c.values)
+	if err != nil {
+		return false, err
+	}
+
+	executable, err := os.Executable()
+	if err != nil {
+		return false, err
+	}
+	log.Infof("config file can be used by command '%s=%s %s'", FileEnvVar, pathx.Canonical(file), executable)
+
+	if pathx.Exists(file) {
+		oldYml, err := filex.ReadString(file)
+		if err != nil {
+			return false, err
+		}
+		if oldYml == currentYml {
+			return false, nil
+		}
+	}
+	if err := filex.WriteString(file, currentYml); err != nil {
+		return false, err
+	}
+	return true, nil
+}

@@ -14,6 +14,7 @@ func (c *CLI) configCmd() *cobra.Command {
 		Short:   "Manages configuration",
 	}
 	cmd.AddCommand(c.configInitCmd())
+	cmd.AddCommand(c.configExportCmd())
 	cmd.AddCommand(c.configValueCmd())
 	cmd.AddCommand(c.configValuesCmd())
 	return cmd
@@ -38,6 +39,33 @@ func (c *CLI) configInitCmd() *cobra.Command {
 			}
 		},
 	}
+	return cmd
+}
+
+func (c *CLI) configExportCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "export",
+		Aliases: []string{"save"},
+		Short:   "Exports current configuration",
+		Run: func(cmd *cobra.Command, args []string) {
+			file, _ := cmd.Flags().GetString("file")
+			changed, err := c.config.ExportWithChanged(file)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+
+			c.SetOutput("file", file)
+
+			if changed {
+				c.Changed("config exported")
+			} else {
+				c.Ok("config already exported")
+			}
+		},
+	}
+	cmd.Flags().StringP("file", "f", "", "Target file path")
+	cmd.MarkFlagRequired("file")
 	return cmd
 }
 

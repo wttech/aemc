@@ -12,7 +12,7 @@ func (c *CLI) cryptoCmd() *cobra.Command {
 		Short: "Manages Crypto Support",
 	}
 	cmd.AddCommand(c.cryptoConfigureCmd())
-	cmd.AddCommand(c.cryptoUnprotectCmd())
+	cmd.AddCommand(c.cryptoProtectCmd())
 	return cmd
 }
 
@@ -50,16 +50,16 @@ func (c *CLI) cryptoConfigureCmd() *cobra.Command {
 	return cmd
 }
 
-func (c *CLI) cryptoUnprotectCmd() *cobra.Command {
+func (c *CLI) cryptoProtectCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "unprotect",
-		Aliases: []string{"decrypt", "value", "val"},
-		Short:   "Read unprotected value",
+		Use:     "protect",
+		Aliases: []string{"encrypt"},
+		Short:   "Protect value",
 		Run: func(cmd *cobra.Command, args []string) {
 			plainValue := ""               // TODO implement this
 			unprotectedValue := plainValue // TODO implement this
 			c.SetOutput("value", unprotectedValue)
-			c.Ok("value unprotected")
+			c.Ok("value protected")
 		},
 	}
 	return cmd

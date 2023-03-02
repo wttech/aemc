@@ -14,6 +14,8 @@ type OSGi struct {
 	componentManager *OSGiComponentManager
 	eventManager     *OSGiEventManager
 	configManager    *OSGiConfigManager
+
+	shutdownDelay time.Duration
 }
 
 func NewOSGi(instance *Instance) *OSGi {
@@ -24,6 +26,8 @@ func NewOSGi(instance *Instance) *OSGi {
 		componentManager: NewComponentManager(instance),
 		eventManager:     &OSGiEventManager{instance: instance},
 		configManager:    &OSGiConfigManager{instance: instance},
+
+		shutdownDelay: time.Second * 3,
 	}
 }
 
@@ -65,7 +69,7 @@ func (o *OSGi) shutdown(shutdownType string) error {
 	} else if response.IsError() {
 		return fmt.Errorf("%s > cannot trigger OSGi shutdown of type '%s': %s", o.instance.ID(), shutdownType, response.Status())
 	}
-	time.Sleep(3 * time.Second) // TODO make it configurable
+	time.Sleep(o.shutdownDelay)
 	log.Infof("%s > triggered OSGi shutdown of type '%s'", o.instance.ID(), shutdownType)
 	return nil
 }

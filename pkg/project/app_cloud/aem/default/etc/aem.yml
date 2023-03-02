@@ -137,11 +137,17 @@ instance:
 
   # OSGi Framework
   osgi:
+    shutdown_delay: 3s
+
     bundle:
       install:
         start: true
         start_level: 20
         refresh_packages: true
+
+  # Crypto Support
+  crypto:
+    key_bundle_symbolic_name: com.adobe.granite.crypto.file
 
 java:
   # Require following versions before e.g running AEM instances

@@ -6,6 +6,7 @@ import (
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/instance"
+	"time"
 )
 
 func setDefaults(v *viper.Viper) {
@@ -56,4 +57,8 @@ func setDefaults(v *viper.Viper) {
 		"cq:lastModified",
 		"transportPassword",
 	})
+
+	v.SetDefault("instance.osgi.shutdown_delay", time.Second*3)
+
+	v.SetDefault("instance.crypto.key_bundle_symbolic_name", "com.adobe.granite.crypto.file")
 }

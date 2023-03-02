@@ -275,9 +275,14 @@ func configureInstance(inst Instance, config *cfg.Config) {
 	inst.repo.PropertyChangeIgnored = repoOpts.PropertyChangeIgnored
 
 	osgiOpts := instanceOpts.OSGi
+	inst.osgi.shutdownDelay = osgiOpts.ShutdownDelay
+
 	inst.osgi.bundleManager.InstallStart = osgiOpts.Bundle.Install.Start
 	inst.osgi.bundleManager.InstallStartLevel = osgiOpts.Bundle.Install.StartLevel
 	inst.osgi.bundleManager.InstallRefreshPackages = osgiOpts.Bundle.Install.RefreshPackages
+
+	cryptoOpts := instanceOpts.Crypto
+	inst.crypto.keyBundleSymbolicName = cryptoOpts.KeyBundleSymbolicName
 }
 
 func (im *InstanceManager) configureCheckOpts(config *cfg.Config) {

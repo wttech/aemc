@@ -54,7 +54,7 @@ func (c *CLI) cryptoSetupCmd() *cobra.Command {
 				}
 				c.Changed("keys set up")
 			} else {
-				c.Ok("keys already set up")
+				c.Ok("keys already set up (up-to-date)")
 			}
 		},
 	}

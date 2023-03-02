@@ -31,7 +31,7 @@ func (c Crypto) Setup(hmacFile string, masterFile string) (bool, error) {
 	if !pathx.Exists(masterFile) {
 		return false, fmt.Errorf("%s > Crypto master file '%s' does not exist", c.instance.ID(), masterFile)
 	}
-	log.Infof("%s > setting up Crypto keys (hmac '%s', master '%s')", c.instance.ID(), hmacFile, masterFile)
+	log.Debugf("%s > setting up Crypto keys (hmac '%s', master '%s')", c.instance.ID(), hmacFile, masterFile)
 	osgi := c.instance.OSGI()
 	keyBundle, err := osgi.BundleManager().Find(c.keyBundleSymbolicName)
 	if err != nil {
@@ -53,19 +53,21 @@ func (c Crypto) Setup(hmacFile string, masterFile string) (bool, error) {
 		return false, err
 	}
 	if hmacOk && masterOk {
-		log.Infof("%s > skipping setting Crypto keys (hmac '%s', master '%s') as they are up-to-date", c.instance.ID(), hmacFile, masterFile)
+		log.Debugf("%s > skipping setting Crypto keys (hmac '%s', master '%s') as they are up-to-date", c.instance.ID(), hmacFile, masterFile)
 		return false, nil
 	}
+	log.Debugf("%s > copying Crypto hmac file from '%s' to '%s'", c.instance.ID(), hmacFile, hmacTargetFile)
 	if err := filex.Copy(hmacFile, hmacTargetFile, true); err != nil {
 		return false, fmt.Errorf("%s > cannot copy Crypto hmac file from '%s' to '%s': %w", c.instance.ID(), hmacFile, hmacTargetFile, err)
 	}
-	if err := filex.Copy(hmacFile, hmacTargetFile, true); err != nil {
+	log.Debugf("%s > copying Crypto master file from '%s' to '%s'", c.instance.ID(), masterFile, masterTargetFile)
+	if err := filex.Copy(masterFile, masterTargetFile, true); err != nil {
 		return false, fmt.Errorf("%s > cannot copy Crypto master file from '%s' to '%s'> %w", c.instance.ID(), masterFile, masterTargetFile, err)
 	}
 	if err := osgi.Restart(); err != nil {
 		return false, err
 	}
-	log.Infof("%s > set up Crypto keys (hmac '%s', master '%s')", c.instance.ID(), hmacFile, masterFile)
+	log.Debugf("%s > set up Crypto keys (hmac '%s', master '%s')", c.instance.ID(), hmacFile, masterFile)
 	return true, nil
 }
 

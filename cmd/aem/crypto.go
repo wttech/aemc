@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg"
+	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/mapsx"
 )
 
@@ -27,26 +28,40 @@ func (c *CLI) cryptoConfigureCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+
+			hmacFile, _ := cmd.Flags().GetBool("hmac-file")
+			masterFile, _ := cmd.Flags().GetBool("master-file")
+
 			configured, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
-				// TODO read keys from flags or by convention 'aem/etc/crypto/hmac' and 'aem/etc/crypto/master'
+				changed, err := instance.Crypto().Configure(hmacFile, masterFile)
+				if err != nil {
+					return nil, err
+				}
 				return map[string]any{
-					OutputChanged: true,
+					OutputChanged: changed,
 					"instance":    instance,
 				}, nil
 			})
-			// TODO restart OSGi framework afterward
 			if err != nil {
 				c.Error(err)
 				return
 			}
 			c.SetOutput("configured", configured)
-			if mapsx.HasSome(configured, OutputChanged, true) {
+			if mapsx.SomeHas(configured, OutputChanged, true) {
+				if err := c.aem.InstanceManager().AwaitStarted(instances); err != nil {
+					c.Error(err)
+					return
+				}
 				c.Changed("Crypto configured")
 			} else {
 				c.Ok("Crypto already configured")
 			}
 		},
 	}
+	cmd.Flags().StringP("hmac-file", "h", common.LibDir+"/crypto/hmac", "Path to file 'hmac'")
+	cmd.MarkFlagRequired("hmac-file")
+	cmd.Flags().StringP("master-file", "m", common.LibDir+"/crypto/master", "Path to file 'master'")
+	cmd.MarkFlagRequired("master-file")
 	return cmd
 }
 
@@ -56,11 +71,22 @@ func (c *CLI) cryptoProtectCmd() *cobra.Command {
 		Aliases: []string{"encrypt"},
 		Short:   "Protect value",
 		Run: func(cmd *cobra.Command, args []string) {
-			plainValue := ""               // TODO implement this
-			unprotectedValue := plainValue // TODO implement this
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			plainValue, _ := cmd.Flags().GetString("value")
+			unprotectedValue, err := instance.Crypto().Protect(plainValue)
+			if err != nil {
+				c.Error(err)
+				return
+			}
 			c.SetOutput("value", unprotectedValue)
 			c.Ok("value protected")
 		},
 	}
+	cmd.Flags().StringP("value", "v", "", "Value to protect")
+	cmd.MarkFlagRequired("value")
 	return cmd
 }

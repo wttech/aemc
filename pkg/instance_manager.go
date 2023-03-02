@@ -141,6 +141,7 @@ func (im *InstanceManager) New(id, url, user, password string) *Instance {
 	res.packageManager = NewPackageManager(res)
 	res.osgi = NewOSGi(res)
 	res.sling = NewSling(res)
+	res.crypto = NewCrypto(res)
 
 	if res.IsLocal() {
 		res.local = NewLocal(res)

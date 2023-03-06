@@ -174,31 +174,6 @@ java:
       "arm64": "x64"
       "aarch64": "x64"
 
-# AEM application build
-app:
-  # Exclude the following paths when determining if the build should be executed or not
-  sources_ignored:
-    - "**/aem/home/**"
-    - "**/.*"
-    - "**/.*/**"
-    - "!.content.xml"
-    - "**/target"
-    - "**/target/**"
-    - "**/build"
-    - "**/build/**"
-    - "**/dist"
-    - "**/dist/**"
-    - "**/generated"
-    - "**/generated/**"
-    - "package-lock.json"
-    - "**/package-lock.json"
-    - "*.log"
-    - "*.tmp"
-    - "**/node_modules"
-    - "**/node_modules/**"
-    - "**/node"
-    - "**/node/**"
-
 base:
   # Location of temporary files (downloaded AEM packages, etc)
   tmp_dir: aem/home/tmp

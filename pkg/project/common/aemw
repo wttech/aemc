@@ -94,7 +94,7 @@ BIN_ARCHIVE_EXT="tar.gz"
 if [ "$OS" = "windows" ] ; then
   BIN_ARCHIVE_EXT="zip"
 fi
-BIN_DOWNLOAD_URL="https://github.com/wttech/aemc/releases/download/v${VERSION}/${BIN_DOWNLOAD_NAME}_${OS}_${ARCH}.${BIN_ARCHIVE_EXT}"
+BIN_DOWNLOAD_URL="https://github.com/wttech/aemc/releases/download/v${VERSION}/${BIN_DOWNLOAD_NAME}_${VERSION}_${OS}_${ARCH}.${BIN_ARCHIVE_EXT}"
 BIN_ROOT="${DOWNLOAD_DIR}/${BIN_DOWNLOAD_NAME}/${VERSION}"
 BIN_ARCHIVE_FILE="${BIN_ROOT}/${BIN_DOWNLOAD_NAME}.${BIN_ARCHIVE_EXT}"
 BIN_ARCHIVE_DIR="${BIN_ROOT}/${BIN_DOWNLOAD_NAME}"

@@ -34,7 +34,7 @@ archives:
   - id: aemc-cli
     builds:
       - aemc-cli
-    name_template: "aemc-cli_{{ .Os }}_{{ .Arch }}"
+    name_template: "aemc-cli_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
         format: zip

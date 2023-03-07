@@ -417,7 +417,7 @@ func (li LocalInstance) recreateSlingPropsFile() error {
 	defer file.Close()
 	_, err = propsLoaded.Write(file, properties.ISO_8859_1)
 	if err != nil {
-		return fmt.Errorf("%s > cannot save Sling properties file '%s'", li.instance.ID(), filePath)
+		return fmt.Errorf("%s > cannot save Sling properties file '%s': %w", li.instance.ID(), filePath, err)
 	}
 	log.Infof("%s > configured instance Sling properties in file '%s'", li.instance.ID(), filePath)
 	return nil

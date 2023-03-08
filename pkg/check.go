@@ -316,6 +316,33 @@ func (c ReachableHTTPChecker) Check(instance Instance) CheckResult {
 	}
 }
 
+func NewPathHTTPChecker(path string, statusCode int, containedText string) PathHTTPChecker {
+	return PathHTTPChecker{
+		Path:          path,
+		StatusCode:    statusCode,
+		ContainedText: containedText,
+	}
+}
+
+func (c PathHTTPChecker) Spec() CheckSpec {
+	return CheckSpec{Mandatory: false}
+}
+
+type PathHTTPChecker struct {
+	Path          string
+	StatusCode    int
+	ContainedText string
+}
+
+func (c PathHTTPChecker) Check(_ Instance) CheckResult {
+	// TODO implement this
+
+	return CheckResult{
+		ok:      false, // TODO true
+		message: fmt.Sprintf("path checked: %s", c.Path),
+	}
+}
+
 func bundleStablePercent(bundles *osgi.BundleList, unstableBundles []osgi.BundleListItem) string {
 	return stringsx.PercentExplained(bundles.Total()-len(unstableBundles), bundles.Total(), 0)
 }

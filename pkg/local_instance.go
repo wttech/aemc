@@ -304,16 +304,28 @@ func (li LocalInstance) IsCreated() bool {
 	return li.createLock().IsLocked()
 }
 
+func (li LocalInstance) initLock() osx.Lock[localInstanceInitLock] {
+	return osx.NewLock(fmt.Sprintf("%s/init.yml", li.LockDir()), func() (localInstanceInitLock, error) {
+		return localInstanceInitLock{Initialized: true}, nil
+	})
+}
+
+type localInstanceInitLock struct {
+	Initialized bool `yaml:"initialized"`
+}
+
 func (li LocalInstance) IsInitialized() bool {
-	return li.startLock().IsLocked()
+	return li.initLock().IsLocked()
 }
 
 func (li LocalInstance) Start() error {
 	if !li.IsCreated() {
 		return fmt.Errorf("%s > cannot start as it is not created", li.instance.ID())
 	}
-	if err := li.update(); err != nil {
-		return err
+	if !li.Opts().ServiceMode {
+		if err := li.update(); err != nil {
+			return err
+		}
 	}
 	log.Infof("%s > starting", li.instance.ID())
 	if err := li.checkPortsOpen(); err != nil {
@@ -326,11 +338,18 @@ func (li LocalInstance) Start() error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("%s > cannot execute start script: %w", li.instance.ID(), err)
 	}
-	if err := li.awaitAuth(); err != nil {
-		return err
+	if !li.Opts().ServiceMode {
+		if err := li.awaitAuth(); err != nil {
+			return err
+		}
+		if err := li.updateLock().Lock(); err != nil {
+			return err
+		}
 	}
-	if err := li.startLock().Lock(); err != nil {
-		return err
+	if !li.IsInitialized() {
+		if err := li.initLock().Lock(); err != nil {
+			return err
+		}
 	}
 	log.Infof("%s > started", li.instance.ID())
 	return nil
@@ -358,7 +377,7 @@ func (li LocalInstance) update() error {
 			return err
 		}
 	} else { // next boot
-		state, err := li.startLock().State()
+		state, err := li.updateLock().State()
 		if err != nil {
 			return err
 		}
@@ -454,14 +473,14 @@ func (li LocalInstance) checkPortsOpen() error {
 	return nil
 }
 
-func (li LocalInstance) startLock() osx.Lock[localInstanceStartLock] {
-	return osx.NewLock(fmt.Sprintf("%s/start.yml", li.LockDir()), func() (localInstanceStartLock, error) {
-		var zero localInstanceStartLock
+func (li LocalInstance) updateLock() osx.Lock[localInstanceUpdateLock] {
+	return osx.NewLock(fmt.Sprintf("%s/start.yml", li.LockDir()), func() (localInstanceUpdateLock, error) {
+		var zero localInstanceUpdateLock
 		overrides, err := li.overrideDirsChecksum()
 		if err != nil {
 			return zero, err
 		}
-		return localInstanceStartLock{
+		return localInstanceUpdateLock{
 			Version:    li.Version,
 			HTTPPort:   li.instance.HTTP().Port(),
 			RunModes:   strings.Join(li.RunModes, ","),
@@ -475,7 +494,7 @@ func (li LocalInstance) startLock() osx.Lock[localInstanceStartLock] {
 	})
 }
 
-type localInstanceStartLock struct {
+type localInstanceUpdateLock struct {
 	Version    string `yaml:"version"`
 	JVMOpts    string `yaml:"jvm_opts"`
 	RunModes   string `yaml:"run_modes"`
@@ -778,7 +797,7 @@ func (li LocalInstance) OutOfDate() bool {
 }
 
 func (li LocalInstance) UpToDate() bool {
-	check, err := li.startLock().State()
+	check, err := li.updateLock().State()
 	if err != nil {
 		log.Debugf("%s > cannot check if is up-to-date: %s", li.instance.ID(), err)
 		return false

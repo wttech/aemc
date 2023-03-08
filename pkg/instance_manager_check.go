@@ -22,6 +22,7 @@ type CheckOpts struct {
 	Unreachable         ReachableHTTPChecker
 	StatusStopped       StatusStoppedChecker
 	AwaitStoppedTimeout TimeoutChecker
+	LoginPage           PathHTTPChecker
 }
 
 func (im *InstanceManager) NewCheckOpts() *CheckOpts {
@@ -38,6 +39,7 @@ func (im *InstanceManager) NewCheckOpts() *CheckOpts {
 		StatusStopped:       NewStatusStoppedChecker(),
 		AwaitStoppedTimeout: NewTimeoutChecker("stopped", time.Minute*10),
 		Unreachable:         NewReachableChecker(false),
+		LoginPage:           NewPathHTTPChecker("/libs/granite/core/content/login.html", 200, "QUICKSTART_HOMEPAGE"),
 	}
 }
 
@@ -118,14 +120,25 @@ func (im *InstanceManager) AwaitStarted(instances []Instance) error {
 	if len(instances) == 0 {
 		return nil
 	}
-	log.Infof(InstanceMsg(instances, "awaiting up"))
-	return im.CheckUntilDone(instances, im.CheckOpts, []Checker{
-		im.CheckOpts.AwaitStartedTimeout,
-		im.CheckOpts.Reachable,
-		im.CheckOpts.BundleStable,
-		im.CheckOpts.EventStable,
-		im.CheckOpts.Installer,
-	})
+	log.Infof(InstanceMsg(instances, "awaiting started"))
+	var checkers []Checker
+	if im.LocalOpts.ServiceMode {
+		checkers = []Checker{
+			im.CheckOpts.AwaitStartedTimeout,
+			im.CheckOpts.Reachable,
+			im.CheckOpts.LoginPage,
+		}
+	} else {
+		checkers = []Checker{
+			im.CheckOpts.AwaitStartedTimeout,
+			im.CheckOpts.Reachable,
+			im.CheckOpts.BundleStable,
+			im.CheckOpts.EventStable,
+			im.CheckOpts.Installer,
+			im.CheckOpts.LoginPage,
+		}
+	}
+	return im.CheckUntilDone(instances, im.CheckOpts, checkers)
 }
 
 func (im *InstanceManager) AwaitStoppedOne(instance Instance) error {
@@ -140,7 +153,7 @@ func (im *InstanceManager) AwaitStopped(instances []Instance) error {
 	if len(instances) == 0 {
 		return nil
 	}
-	log.Infof(InstanceMsg(instances, "awaiting down"))
+	log.Infof(InstanceMsg(instances, "awaiting stopped"))
 	return im.CheckUntilDone(instances, im.CheckOpts, []Checker{
 		im.CheckOpts.AwaitStoppedTimeout,
 		im.CheckOpts.StatusStopped,

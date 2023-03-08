@@ -34,6 +34,7 @@ type LocalOpts struct {
 	BackupDir   string
 	OverrideDir string
 	ToolDir     string
+	ServiceMode bool
 	JavaOpts    *java.Opts
 	OakRun      *OakRun
 	Quickstart  *Quickstart
@@ -48,6 +49,7 @@ func (im *InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
 		BackupDir:   BackupDir,
 		OverrideDir: OverrideDir,
 		ToolDir:     common.ToolDir,
+		ServiceMode: false,
 		JavaOpts:    im.aem.javaOpts,
 		Quickstart:  NewQuickstart(),
 	}
@@ -189,23 +191,25 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		return []Instance{}, err
 	}
 
-	log.Infof(InstanceMsg(instances, "checking started & out-of-date"))
+	if !im.LocalOpts.ServiceMode {
+		log.Infof(InstanceMsg(instances, "checking started & out-of-date"))
 
-	var outdated []Instance
-	for _, i := range instances {
-		if i.local.IsRunning() && i.local.OutOfDate() {
-			outdated = append(outdated, i)
+		var outdated []Instance
+		for _, i := range instances {
+			if i.local.IsRunning() && i.local.OutOfDate() {
+				outdated = append(outdated, i)
 
-			log.Infof("%s > is already started but out-of-date", i.ID())
-			err := i.local.Stop()
-			if err != nil {
-				return nil, err
+				log.Infof("%s > is already started but out-of-date", i.ID())
+				err := i.local.Stop()
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
-	}
 
-	if err := im.AwaitStopped(outdated); err != nil {
-		return outdated, err
+		if err := im.AwaitStopped(outdated); err != nil {
+			return outdated, err
+		}
 	}
 
 	log.Infof(InstanceMsg(instances, "starting"))

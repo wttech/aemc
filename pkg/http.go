@@ -17,12 +17,12 @@ type HTTP struct {
 
 func NewHTTP(instance *Instance, baseURL string) *HTTP {
 	return &HTTP{
-		client:   newInstanceHTTPClient(baseURL),
+		client:   NewResty(baseURL),
 		instance: instance,
 	}
 }
 
-func newInstanceHTTPClient(baseURL string) *resty.Client {
+func NewResty(baseURL string) *resty.Client {
 	client := resty.New()
 	client.SetBaseURL(baseURL)
 	client.SetDisableWarn(true)
@@ -35,7 +35,7 @@ func (hc *HTTP) Request() *resty.Request {
 }
 
 func (hc *HTTP) RequestWithOptions(options func(client *resty.Client)) *resty.Request {
-	client := newInstanceHTTPClient(hc.BaseURL()).SetBasicAuth(hc.instance.User(), hc.instance.Password())
+	client := NewResty(hc.BaseURL()).SetBasicAuth(hc.instance.User(), hc.instance.Password())
 	options(client)
 	return client.R()
 }

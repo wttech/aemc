@@ -99,6 +99,7 @@ type ConfigValues struct {
 			BackupDir   string `mapstructure:"backup_dir" yaml:"backup_dir"`
 			OverrideDir string `mapstructure:"override_dir" yaml:"override_dir"`
 			ToolDir     string `mapstructure:"tool_dir" yaml:"tool_dir"`
+			ServiceMode bool   `mapstructure:"service_mode" yaml:"service_mode"`
 
 			Quickstart struct {
 				DistFile    string `mapstructure:"dist_file" yaml:"dist_file"`

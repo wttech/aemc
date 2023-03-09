@@ -432,4 +432,6 @@ func (im *InstanceManager) configureLocalOpts(config *cfg.Config) {
 	if len(opts.OakRun.StorePath) > 0 {
 		im.LocalOpts.OakRun.StorePath = opts.OakRun.StorePath
 	}
+
+	im.LocalOpts.ServiceMode = opts.ServiceMode
 }

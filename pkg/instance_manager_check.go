@@ -39,7 +39,7 @@ func (im *InstanceManager) NewCheckOpts() *CheckOpts {
 		StatusStopped:       NewStatusStoppedChecker(),
 		AwaitStoppedTimeout: NewTimeoutChecker("stopped", time.Minute*10),
 		Unreachable:         NewReachableChecker(false),
-		LoginPage:           NewPathHTTPChecker("/libs/granite/core/content/login.html", 200, "QUICKSTART_HOMEPAGE"),
+		LoginPage:           NewPathHTTPChecker("login page", "/libs/granite/core/content/login.html", 200, "QUICKSTART_HOMEPAGE"),
 	}
 }
 

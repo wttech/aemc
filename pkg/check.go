@@ -7,6 +7,8 @@ import (
 	"github.com/wttech/aemc/pkg/common/netx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/osgi"
+	"io"
+	"strings"
 	"time"
 )
 
@@ -312,7 +314,66 @@ func (c ReachableHTTPChecker) Check(instance Instance) CheckResult {
 	}
 	return CheckResult{
 		ok:      false,
-		message: fmt.Sprintf("not reachable: %s", address),
+		message: fmt.Sprintf("not reachable (%s)", address),
+	}
+}
+
+func NewPathHTTPChecker(name string, path string, statusCode int, containedText string) PathHTTPChecker {
+	return PathHTTPChecker{
+		Name:         name,
+		Path:         path,
+		ResponseCode: statusCode,
+		ResponseText: containedText,
+	}
+}
+
+func (c PathHTTPChecker) Spec() CheckSpec {
+	return CheckSpec{Mandatory: false}
+}
+
+type PathHTTPChecker struct {
+	Name         string
+	Path         string
+	ResponseCode int
+	ResponseText string
+}
+
+func (c PathHTTPChecker) Check(instance Instance) CheckResult {
+	client := NewResty(instance.HTTP().BaseURL())
+	response, err := client.NewRequest().Get(c.Path)
+	if err != nil {
+		return CheckResult{
+			ok:      false,
+			message: fmt.Sprintf("%s request error", c.Name),
+			err:     err,
+		}
+	}
+	if c.ResponseCode > 0 && response.StatusCode() != c.ResponseCode {
+		return CheckResult{
+			ok:      false,
+			message: fmt.Sprintf("%s responds with unexpected code (%d)", c.Name, response.StatusCode()),
+		}
+	}
+	if c.ResponseText != "" {
+		textBytes, err := io.ReadAll(response.RawBody())
+		if err != nil {
+			return CheckResult{
+				ok:      false,
+				message: fmt.Sprintf("%s response read error", c.Name),
+				err:     err,
+			}
+		}
+		text := string(textBytes)
+		if !strings.Contains(text, c.ResponseText) {
+			return CheckResult{
+				ok:      false,
+				message: fmt.Sprintf("%s responds without text: %s", c.Name, c.ResponseText),
+			}
+		}
+	}
+	return CheckResult{
+		ok:      true,
+		message: fmt.Sprintf("%s ready", c.Name),
 	}
 }
 

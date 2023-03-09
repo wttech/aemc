@@ -50,6 +50,8 @@ func setDefaults(v *viper.Viper) {
 		"java.util.ResourceBundle",
 	})
 
+	v.SetDefault("instance.local.service_mode", false)
+
 	v.SetDefault("instance.package.snapshot_deploy_skipping", true)
 
 	v.SetDefault("instance.repo.property_change_ignored", []string{

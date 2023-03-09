@@ -70,18 +70,6 @@ var appClassicFiles embed.FS
 var appCloudFiles embed.FS
 
 func (p Project) InitializeWithChanged(kind Kind) (bool, error) {
-	projectChanged, err := p.initializeWithChanged(kind)
-	if err != nil {
-		return false, err
-	}
-	configChanged, err := p.config.InitializeWithChanged()
-	if err != nil {
-		return false, err
-	}
-	return projectChanged || configChanged, nil
-}
-
-func (p Project) initializeWithChanged(kind Kind) (bool, error) {
 	if p.config.TemplateFileExists() {
 		return false, nil
 	}

@@ -22,7 +22,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("output.no_color", color.NoColor)
 	v.SetDefault("output.value", common.OutputValueAll)
 	v.SetDefault("output.log.file", common.LogFile)
-	v.SetDefault("output.log.console", true)
+	v.SetDefault("output.log.mode", OutputLogConsole)
 
 	v.SetDefault("instance.processing_mode", instance.ProcessingAuto)
 

@@ -60,7 +60,7 @@ func NewCLI(aem *pkg.Aem, config *cfg.Config) *CLI {
 	result.project = project.New(config)
 
 	result.outputLogFile = common.LogFile
-	result.outputLogMode = cfg.OutputLogFile
+	result.outputLogMode = cfg.OutputLogConsole
 	result.outputValue = common.OutputValueAll
 	result.outputFormat = fmtx.Text
 	result.outputBuffer = bytes.NewBufferString("")

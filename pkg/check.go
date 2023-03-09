@@ -314,7 +314,7 @@ func (c ReachableHTTPChecker) Check(instance Instance) CheckResult {
 	}
 	return CheckResult{
 		ok:      false,
-		message: fmt.Sprintf("not reachable: %s", address),
+		message: fmt.Sprintf("not reachable (%s)", address),
 	}
 }
 
@@ -344,14 +344,14 @@ func (c PathHTTPChecker) Check(instance Instance) CheckResult {
 	if err != nil {
 		return CheckResult{
 			ok:      false,
-			message: fmt.Sprintf("%s: request error", c.Name),
+			message: fmt.Sprintf("%s request error", c.Name),
 			err:     err,
 		}
 	}
 	if c.ResponseCode > 0 && response.StatusCode() != c.ResponseCode {
 		return CheckResult{
 			ok:      false,
-			message: fmt.Sprintf("%s: responds with unexpected code '%d'", c.Name, response.StatusCode()),
+			message: fmt.Sprintf("%s responds with unexpected code (%d)", c.Name, response.StatusCode()),
 		}
 	}
 	if c.ResponseText != "" {
@@ -367,7 +367,7 @@ func (c PathHTTPChecker) Check(instance Instance) CheckResult {
 		if !strings.Contains(text, c.ResponseText) {
 			return CheckResult{
 				ok:      false,
-				message: fmt.Sprintf("%s responds without text '%s'", c.Name, c.ResponseText),
+				message: fmt.Sprintf("%s responds without text: %s", c.Name, c.ResponseText),
 			}
 		}
 	}

@@ -193,26 +193,14 @@ func OutputFormats() []string {
 }
 
 const (
+	OutputLogNone    = "none"
 	OutputLogFile    = "file"
 	OutputLogConsole = "console"
 	OutputLogBoth    = "both"
 )
 
 func OutputLogModes() []string {
-	return []string{OutputLogConsole, OutputLogFile, OutputLogBoth}
-}
-
-func (c *Config) ConfigureLogger() {
-	log.SetFormatter(&log.TextFormatter{
-		TimestampFormat: c.values.Log.TimestampFormat,
-		FullTimestamp:   c.values.Log.FullTimestamp,
-		ForceColors:     !c.values.Output.NoColor,
-	})
-	level, err := log.ParseLevel(c.values.Log.Level)
-	if err != nil {
-		log.Fatalf("unsupported log level specified: '%s'", c.values.Log.Level)
-	}
-	log.SetLevel(level)
+	return []string{OutputLogConsole, OutputLogFile, OutputLogBoth, OutputLogNone}
 }
 
 func (c *Config) ExportWithChanged(file string) (bool, error) {

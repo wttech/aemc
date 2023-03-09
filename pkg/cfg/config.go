@@ -192,6 +192,16 @@ func OutputFormats() []string {
 	return []string{fmtx.Text, fmtx.YML, fmtx.JSON}
 }
 
+const (
+	OutputLogFile    = "file"
+	OutputLogConsole = "console"
+	OutputLogBoth    = "both"
+)
+
+func OutputLogModes() []string {
+	return []string{OutputLogConsole, OutputLogFile, OutputLogBoth}
+}
+
 func (c *Config) ConfigureLogger() {
 	log.SetFormatter(&log.TextFormatter{
 		TimestampFormat: c.values.Log.TimestampFormat,

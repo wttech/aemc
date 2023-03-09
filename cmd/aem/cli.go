@@ -42,14 +42,14 @@ type CLI struct {
 	started time.Time
 	ended   time.Time
 
-	outputFormat     string
-	outputValue      string
-	outputBuffer     *bytes.Buffer
-	outputLogFile    string
-	outputLogConsole bool
-	outputResponse   *OutputResponse
-	outputWriter     io.Writer
-	outputNoColor    bool
+	outputFormat   string
+	outputValue    string
+	outputBuffer   *bytes.Buffer
+	outputLogFile  string
+	outputLogMode  string
+	outputResponse *OutputResponse
+	outputWriter   io.Writer
+	outputNoColor  bool
 }
 
 func NewCLI(aem *pkg.Aem, config *cfg.Config) *CLI {
@@ -60,7 +60,7 @@ func NewCLI(aem *pkg.Aem, config *cfg.Config) *CLI {
 	result.project = project.New(config)
 
 	result.outputLogFile = common.LogFile
-	result.outputLogConsole = true
+	result.outputLogMode = cfg.OutputLogFile
 	result.outputValue = common.OutputValueAll
 	result.outputFormat = fmtx.Text
 	result.outputBuffer = bytes.NewBufferString("")
@@ -112,30 +112,32 @@ func (c *CLI) configureOutput() {
 	c.outputValue = opts.Value
 	c.outputFormat = strings.ReplaceAll(opts.Format, "yaml", "yml")
 	c.outputLogFile = opts.Log.File
-	c.outputLogConsole = opts.Log.Console
+	c.outputLogMode = opts.Log.Mode
 
 	if c.outputValue != common.OutputValueNone && c.outputValue != common.OutputValueAll {
 		c.outputFormat = fmtx.Text
-		c.outputLogConsole = false
-	}
-	if c.outputFormat != fmtx.Text {
-		c.outputLogConsole = false
 	}
 	if !lo.Contains(cfg.OutputFormats(), c.outputFormat) {
 		log.Fatalf("unsupported CLI output format detected '%s'! supported ones are: %s", c.outputFormat, strings.Join(cfg.OutputFormats(), ", "))
 	}
 
+	var outputWriter io.Writer
 	if c.outputFormat == fmtx.Text {
-		if !c.outputLogConsole {
-			outputWriter := c.openOutputLogFile()
-			c.aem.SetOutput(outputWriter)
-			log.SetOutput(outputWriter)
+		switch c.outputLogMode {
+		case cfg.OutputLogConsole:
+			outputWriter = c.aem.Output() // use default / STDOUT
+			break
+		case cfg.OutputLogFile:
+			outputWriter = c.openOutputLogFile()
+			break
+		case cfg.OutputLogBoth:
+			outputWriter = io.MultiWriter(os.Stdout, c.openOutputLogFile())
 		}
 	} else {
-		outputWriter := io.MultiWriter(c.outputBuffer, c.openOutputLogFile())
-		c.aem.SetOutput(outputWriter)
-		log.SetOutput(outputWriter)
+		outputWriter = io.MultiWriter(c.outputBuffer, c.openOutputLogFile())
 	}
+	c.aem.SetOutput(outputWriter)
+	log.SetOutput(outputWriter)
 }
 
 func (c *CLI) openOutputLogFile() *os.File {

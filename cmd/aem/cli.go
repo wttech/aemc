@@ -42,14 +42,14 @@ type CLI struct {
 	started time.Time
 	ended   time.Time
 
-	outputFormat     string
-	outputValue      string
-	outputBuffer     *bytes.Buffer
-	outputLogFile    string
-	outputLogConsole bool
-	outputResponse   *OutputResponse
-	outputWriter     io.Writer
-	outputNoColor    bool
+	outputFormat   string
+	outputValue    string
+	outputBuffer   *bytes.Buffer
+	outputLogFile  string
+	outputLogMode  string
+	outputResponse *OutputResponse
+	outputWriter   io.Writer
+	outputNoColor  bool
 }
 
 func NewCLI(aem *pkg.Aem, config *cfg.Config) *CLI {
@@ -60,7 +60,7 @@ func NewCLI(aem *pkg.Aem, config *cfg.Config) *CLI {
 	result.project = project.New(config)
 
 	result.outputLogFile = common.LogFile
-	result.outputLogConsole = true
+	result.outputLogMode = cfg.OutputLogFile
 	result.outputValue = common.OutputValueAll
 	result.outputFormat = fmtx.Text
 	result.outputBuffer = bytes.NewBufferString("")
@@ -97,8 +97,8 @@ func (c *CLI) Exec() {
 }
 
 func (c *CLI) configure() {
-	c.config.ConfigureLogger()
 	c.configureOutput()
+	c.configureLogger()
 	c.aem.Configure(c.config)
 	c.started = time.Now()
 }
@@ -106,36 +106,68 @@ func (c *CLI) configure() {
 func (c *CLI) configureOutput() {
 	opts := c.config.Values().Output
 
-	c.outputNoColor = opts.NoColor
-	color.NoColor = opts.NoColor
-
 	c.outputValue = opts.Value
 	c.outputFormat = strings.ReplaceAll(opts.Format, "yaml", "yml")
 	c.outputLogFile = opts.Log.File
-	c.outputLogConsole = opts.Log.Console
+	c.outputLogMode = opts.Log.Mode
 
 	if c.outputValue != common.OutputValueNone && c.outputValue != common.OutputValueAll {
 		c.outputFormat = fmtx.Text
-		c.outputLogConsole = false
 	}
-	if c.outputFormat != fmtx.Text {
-		c.outputLogConsole = false
+
+	noColor := opts.NoColor
+	if c.outputFormat != fmtx.Text || c.outputLogMode != cfg.OutputLogConsole {
+		noColor = true
 	}
+	c.outputNoColor = noColor
+	color.NoColor = noColor
+
 	if !lo.Contains(cfg.OutputFormats(), c.outputFormat) {
 		log.Fatalf("unsupported CLI output format detected '%s'! supported ones are: %s", c.outputFormat, strings.Join(cfg.OutputFormats(), ", "))
 	}
 
 	if c.outputFormat == fmtx.Text {
-		if !c.outputLogConsole {
-			outputWriter := c.openOutputLogFile()
-			c.aem.SetOutput(outputWriter)
+		outputWriterLogDefault := log.StandardLogger().Out
+		switch c.outputLogMode {
+		case cfg.OutputLogNone:
+			outputWriter := io.Discard
 			log.SetOutput(outputWriter)
+			c.aem.SetOutput(outputWriter)
+			break
+		case cfg.OutputLogFile:
+			outputWriter := c.openOutputLogFile()
+			log.SetOutput(outputWriter)
+			c.aem.SetOutput(outputWriter)
+			break
+		case cfg.OutputLogBoth:
+			log.SetOutput(io.MultiWriter(outputWriterLogDefault, c.openOutputLogFile()))
+			c.aem.SetOutput(io.MultiWriter(os.Stdout, c.openOutputLogFile()))
+			break
+		case cfg.OutputLogConsole:
+			log.SetOutput(outputWriterLogDefault)
+			c.aem.SetOutput(os.Stdout)
+			break
+		default:
+			log.Fatalf("unsupported output log mode specified: '%s'", c.outputLogMode)
 		}
 	} else {
 		outputWriter := io.MultiWriter(c.outputBuffer, c.openOutputLogFile())
 		c.aem.SetOutput(outputWriter)
 		log.SetOutput(outputWriter)
 	}
+}
+
+func (c *CLI) configureLogger() {
+	log.SetFormatter(&log.TextFormatter{
+		ForceColors:     !c.outputNoColor,
+		TimestampFormat: c.config.Values().Log.TimestampFormat,
+		FullTimestamp:   c.config.Values().Log.FullTimestamp,
+	})
+	level, err := log.ParseLevel(c.config.Values().Log.Level)
+	if err != nil {
+		log.Fatalf("unsupported log level specified: '%s'", c.config.Values().Log.Level)
+	}
+	log.SetLevel(level)
 }
 
 func (c *CLI) openOutputLogFile() *os.File {
@@ -220,7 +252,7 @@ func (c *CLI) printDataValue() {
 
 func (c *CLI) printDataAll() {
 	if len(c.outputResponse.Data) > 0 {
-		c.printOutputDataIndented(textio.NewPrefixWriter(os.Stdout, ""), c.outputResponse.Data, "")
+		c.printOutputDataIndented(textio.NewPrefixWriter(c.aem.Output(), ""), c.outputResponse.Data, "")
 	}
 }
 

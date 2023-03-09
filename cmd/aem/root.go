@@ -51,9 +51,9 @@ func (c *CLI) rootFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(&(c.config.Values().Output.Log.File),
 		"output-log-file", c.config.Values().Output.Log.File,
 		"Controls output file path")
-	cmd.PersistentFlags().BoolVar(&(c.config.Values().Output.Log.Console),
-		"output-log-console", c.config.Values().Output.Log.Console,
-		"Print outputs and log entries to console instead of writing to file (when format is \"text\")")
+	cmd.PersistentFlags().StringVar(&(c.config.Values().Output.Log.Mode),
+		"output-log-mode", c.config.Values().Output.Log.Mode,
+		"Controls where outputs and logs should be written to when format is \"text\""+(strings.Join(cfg.OutputLogModes(), "|")+")"))
 	cmd.PersistentFlags().StringVar(&(c.config.Values().Output.Value),
 		"output-value", c.config.Values().Output.Value,
 		"Limits output to single variable")

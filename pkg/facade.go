@@ -28,8 +28,17 @@ func NewAem() *Aem {
 	return result
 }
 
+func (a *Aem) Output() io.Writer {
+	return a.output
+}
+
 func (a *Aem) SetOutput(output io.Writer) {
 	a.output = output
+}
+
+func (a *Aem) CommandOutput(cmd *exec.Cmd) {
+	cmd.Stdout = a.output
+	cmd.Stderr = a.output
 }
 
 func (a *Aem) BaseOpts() *base.Opts {
@@ -48,9 +57,4 @@ func (a *Aem) Configure(config *cfg.Config) {
 	a.baseOpts.Configure(config)
 	a.javaOpts.Configure(config)
 	a.instanceManager.Configure(config)
-}
-
-func (a *Aem) CommandOutput(cmd *exec.Cmd) {
-	cmd.Stdout = a.output
-	cmd.Stderr = a.output
 }

@@ -25,8 +25,8 @@ type ConfigValues struct {
 		NoColor bool   `mapstructure:"no_color" yaml:"no_color"`
 		Value   string `mapstructure:"value" yaml:"value"`
 		Log     struct {
-			File    string `mapstructure:"file" yaml:"file"`
-			Console bool   `mapstructure:"console" yaml:"console"`
+			File string `mapstructure:"file" yaml:"file"`
+			Mode string `mapstructure:"mode" yaml:"mode"`
 		} `mapstructure:"log" yaml:"log"`
 	} `mapstructure:"output" yaml:"output"`
 

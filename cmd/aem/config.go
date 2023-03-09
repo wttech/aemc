@@ -75,6 +75,7 @@ func (c *CLI) configValuesCmd() *cobra.Command {
 		Aliases: []string{"get-all"},
 		Short:   "Read all configuration values",
 		Run: func(cmd *cobra.Command, args []string) {
+			c.SetOutput("file", cfg.FileEffective())
 			c.SetOutput("values", c.config.Values())
 			c.Ok("config values read")
 		},

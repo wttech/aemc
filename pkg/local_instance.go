@@ -81,6 +81,15 @@ func NewLocal(i *Instance) *LocalInstance {
 }
 
 func (li LocalInstance) State() LocalInstanceState {
+	if li.Opts().ServiceMode {
+		return LocalInstanceState{
+			ID:         li.instance.ID(),
+			URL:        li.instance.http.BaseURL(),
+			Attributes: li.instance.Attributes(),
+			AemVersion: li.instance.AemVersion(),
+			Dir:        li.Dir(),
+		}
+	}
 	return LocalInstanceState{
 		ID:           li.instance.ID(),
 		URL:          li.instance.http.BaseURL(),

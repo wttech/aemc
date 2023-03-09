@@ -38,9 +38,9 @@ func (c *Config) Values() *ConfigValues {
 // NewConfig creates a new config
 func NewConfig() *Config {
 	result := new(Config)
-
 	result.viper = newViper()
-	result.readFromFile(File(), true)
+
+	result.readFromFile(FileEffective(), true)
 	result.readFromEnv()
 
 	var v ConfigValues
@@ -49,7 +49,6 @@ func NewConfig() *Config {
 		log.Fatalf(fmt.Sprintf("cannot unmarshal AEM config values properly: %s", err))
 	}
 	result.values = &v
-
 	return result
 }
 
@@ -74,6 +73,10 @@ func (c *Config) readFromEnv() {
 }
 
 func (c *Config) readFromFile(file string, templating bool) {
+	if file == "" {
+		log.Debugf("skipping reading AEM config file as it is not provided")
+		return
+	}
 	exists, err := pathx.ExistsStrict(file)
 	if err != nil {
 		log.Debugf("skipping reading AEM config file '%s': %s", file, err)
@@ -126,6 +129,16 @@ func (c *Config) tplData() map[string]any {
 		"ArchiveExt": ext,
 	}
 	return data
+}
+
+func FileEffective() string {
+	var file string
+	for _, file := range []string{File(), TemplateFile()} {
+		if pathx.Exists(file) {
+			return file
+		}
+	}
+	return file
 }
 
 func File() string {

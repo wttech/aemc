@@ -125,7 +125,7 @@ func (c *CLI) configureOutput() {
 	if c.outputFormat == fmtx.Text {
 		switch c.outputLogMode {
 		case cfg.OutputLogConsole:
-			outputWriter = c.aem.Output() // use default / STDOUT
+			outputWriter = os.Stdout
 			break
 		case cfg.OutputLogFile:
 			outputWriter = c.openOutputLogFile()

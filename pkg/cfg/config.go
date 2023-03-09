@@ -35,6 +35,10 @@ func (c *Config) Values() *ConfigValues {
 	return c.values
 }
 
+func (c *Config) ValuesMap() map[string]any {
+	return c.viper.AllSettings()
+}
+
 // NewConfig creates a new config
 func NewConfig() *Config {
 	result := new(Config)

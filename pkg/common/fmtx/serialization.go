@@ -110,9 +110,15 @@ type TextMarshaler interface {
 }
 
 func MarshalText(value any) string {
+	var result string
 	marshaller, ok := value.(TextMarshaler)
 	if ok {
-		return marshaller.MarshalText()
+		result = marshaller.MarshalText()
+	} else {
+		result = fmt.Sprintf("%v", value)
 	}
-	return fmt.Sprintf("%v", value)
+	if len(result) == 0 {
+		return "<empty>"
+	}
+	return result
 }

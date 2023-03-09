@@ -76,7 +76,7 @@ func (c *CLI) configValuesCmd() *cobra.Command {
 		Short:   "Read all configuration values",
 		Run: func(cmd *cobra.Command, args []string) {
 			c.SetOutput("file", cfg.FileEffective())
-			c.SetOutput("values", c.config.Values())
+			c.SetOutput("values", c.config.ValuesMap())
 			c.Ok("config values read")
 		},
 	}
@@ -100,13 +100,13 @@ func (c *CLI) configValueCmd() *cobra.Command {
 				err   error
 			)
 			if key != "" {
-				value, err = tplx.RenderKey(key, c.config.Values())
+				value, err = tplx.RenderKey(key, c.config.ValuesMap())
 				if err != nil {
 					c.Error(fmt.Errorf("cannot read config value using key '%s': %w", key, err))
 					return
 				}
 			} else {
-				value, err = tplx.RenderString(template, c.config.Values())
+				value, err = tplx.RenderString(template, c.config.ValuesMap())
 				if err != nil {
 					c.Error(fmt.Errorf("cannot read config value using template '%s': %w", template, err))
 					return

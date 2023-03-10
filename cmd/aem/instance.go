@@ -282,7 +282,7 @@ func (c *CLI) instanceAwaitCmd() *cobra.Command {
 func (c *CLI) instanceListCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:     "list",
-		Aliases: []string{"ls", "status"},
+		Aliases: []string{"ls", "status", "show"},
 		Short:   "Lists all AEM instance(s)",
 		Run: func(cmd *cobra.Command, args []string) {
 			instances, err := c.aem.InstanceManager().Some()

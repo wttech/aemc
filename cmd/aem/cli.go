@@ -109,7 +109,11 @@ func (c *CLI) configureOutput() {
 	c.outputValue = opts.Value
 	c.outputFormat = strings.ReplaceAll(opts.Format, "yaml", "yml")
 	c.outputLogFile = opts.Log.File
+
 	c.outputLogMode = opts.Log.Mode
+	if c.outputLogMode == "" {
+		c.outputLogMode = cfg.OutputLogConsole
+	}
 
 	if c.outputValue != common.OutputValueNone && c.outputValue != common.OutputValueAll {
 		c.outputFormat = fmtx.Text

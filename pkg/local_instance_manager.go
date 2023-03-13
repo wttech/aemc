@@ -199,7 +199,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 			if i.local.IsRunning() && i.local.OutOfDate() {
 				outdated = append(outdated, i)
 
-				log.Infof("%s > is already started but out-of-date", i.ID())
+				log.Infof("%s > already started but out-of-date", i.ID())
 				err := i.local.Stop()
 				if err != nil {
 					return nil, err

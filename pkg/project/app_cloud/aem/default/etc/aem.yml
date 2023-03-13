@@ -8,8 +8,8 @@ instance:
   config:
     local_author:
       http_url: [[.Env.AEM_AUTHOR_HTTP_URL | default "http://127.0.0.1:4502" ]]
-      user: admin
-      password: admin
+      user: [[.Env.AEM_AUTHOR_USER | default "admin" ]]
+      password: [[.Env.AEM_AUTHOR_PASSWORD | default "admin" ]]
       run_modes: [ local ]
       jvm_opts:
         - -server
@@ -27,8 +27,8 @@ instance:
       sling_props: []
     local_publish:
       http_url: [[.Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4503" ]]
-      user: admin
-      password: admin
+      user: [[.Env.AEM_PUBLISH_USER | default "admin" ]]
+      password: [[.Env.AEM_PUBLISH_PASSWORD | default "admin" ]]
       run_modes: [ local ]
       jvm_opts:
         - -server
@@ -134,6 +134,10 @@ instance:
     snapshot_patterns: [ "**/*-SNAPSHOT.zip" ]
     # Use checksums to avoid re-deployments when snapshot AEM packages are unchanged
     snapshot_deploy_skipping: true
+    # Disable following workflow for a package deployment time only
+    workflows_disabled:
+      - /libs/settings/workflow/launcher/config/asset_processing_on_sdk_create # /conf/global/settings/workflow/launcher/config/asset_processing_on_sdk_create
+      - /libs/settings/workflow/launcher/config/asset_processing_on_sdk_mod # /conf/global/settings/workflow/launcher/config/asset_processing_on_sdk_mod
 
   # OSGi Framework
   osgi:

@@ -136,8 +136,7 @@ instance:
     snapshot_deploy_skipping: true
     # Disable following workflow for a package deployment time only
     workflows_disabled:
-      - /libs/settings/workflow/launcher/config/asset_processing_on_sdk_create # /conf/global/settings/workflow/launcher/config/asset_processing_on_sdk_create
-      - /libs/settings/workflow/launcher/config/asset_processing_on_sdk_mod # /conf/global/settings/workflow/launcher/config/asset_processing_on_sdk_mod
+      - /libs/settings/workflow/launcher/config/asset_processing_on_sdk_* # /conf/global/settings/workflow/launcher/config/asset_processing_on_sdk_*
 
   # OSGi Framework
   osgi:

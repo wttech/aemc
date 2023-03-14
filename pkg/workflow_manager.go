@@ -26,7 +26,7 @@ func (w *WorkflowManager) ToggleLaunchers(libPaths []string, action func() error
 	all := w.FindLaunchers(libPaths)
 	var disabled []WorkflowLauncher
 	for _, launcher := range all {
-		_, err := launcher.Disable()
+		_, err := launcher.Disable() // TODO store info about 'managed by aemc'; to know which one to restore
 		if err == nil {
 			disabled = append(disabled, launcher)
 		} else {

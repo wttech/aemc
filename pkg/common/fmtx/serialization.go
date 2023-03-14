@@ -3,6 +3,7 @@ package fmtx
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"gopkg.in/yaml.v3"
@@ -21,7 +22,7 @@ const (
 	JSON string = "json"
 )
 
-func UnmarshalDataInFormat(dataFormat string, reader io.Reader, out any) error {
+func UnmarshalDataInFormat(dataFormat string, reader io.ReadCloser, out any) error {
 	switch dataFormat {
 	case YML:
 		return UnmarshalYML(reader, out)
@@ -51,7 +52,12 @@ func MarshalJSON(i any) (string, error) {
 	return string(bytes), nil
 }
 
-func UnmarshalJSON(body io.Reader, out any) error {
+func UnmarshalJSON(body io.ReadCloser, out any) error {
+	defer func(body io.ReadCloser) {
+		if err := body.Close(); err != nil {
+			log.Debugfgit("cannot close JSON stream properly: %w", err)
+		}
+	}(body)
 	err := json.NewDecoder(body).Decode(out)
 	if err != nil {
 		return fmt.Errorf("cannot decode stream as JSON: %w", err)
@@ -67,7 +73,12 @@ func MarshalYML(i any) (string, error) {
 	return string(bytes), nil
 }
 
-func UnmarshalYML(body io.Reader, out any) error {
+func UnmarshalYML(body io.ReadCloser, out any) error {
+	defer func(body io.ReadCloser) {
+		if err := body.Close(); err != nil {
+			log.Debugf("cannot close YML stream properly: %s", err)
+		}
+	}(body)
 	err := yaml.NewDecoder(body).Decode(out)
 	if err != nil {
 		return fmt.Errorf("cannot decode stream as YML: %w", err)

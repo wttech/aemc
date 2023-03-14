@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	EncryptJsonPath = "/system/console/crypto/.json"
+	CryptoProtectPath = "/system/console/crypto/.json"
 )
 
 type Crypto struct {
@@ -83,13 +83,12 @@ func (c Crypto) Protect(value string) (string, error) {
 	var form = map[string]any{"datum": value}
 	log.Infof("%s > Protecting text using crypto.", c.instance.ID())
 	requestFormData := c.instance.http.RequestFormData(form)
-	response, err := requestFormData.Post(EncryptJsonPath)
+	response, err := requestFormData.Post(CryptoProtectPath)
 
 	if err != nil {
-		return "", fmt.Errorf("%s > Error while encrypting text using crypto: %s", c.instance.ID(), err)
+		return "", fmt.Errorf("%s > cannot encrypt text using crypto: %s", c.instance.ID(), err)
 	} else if response.IsError() {
 		return "", fmt.Errorf("%s > cannot encrypt text using crypto: %s", c.instance.ID(), response.Status())
-
 	}
 
 	bodyReader := response.RawBody()
@@ -97,14 +96,14 @@ func (c Crypto) Protect(value string) (string, error) {
 	defer func(bodyReader io.ReadCloser) {
 		err := bodyReader.Close()
 		if err != nil {
-			log.Errorf("%s > cannot close crypto response body reader: %s", c.instance.ID(), err)
+			_ = fmt.Errorf("%s > cannot close connection with crypto response: %s", c.instance.ID(), err)
 		}
 	}(bodyReader)
 
 	var body CryptoResponseBody
 
 	if err = fmtx.UnmarshalJSON(bodyReader, &body); err != nil {
-		return "", fmt.Errorf("%s > cannot unmarshal crypto response body: %s", c.instance.ID(), err)
+		return "", fmt.Errorf("%s > cannot parse crypto response: %s", c.instance.ID(), err)
 	}
 
 	return body.Protected, nil

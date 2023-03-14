@@ -86,11 +86,10 @@ func (c Crypto) Protect(value string) (string, error) {
 	response, err := requestFormData.Post(EncryptJsonPath)
 
 	if err != nil {
-		log.Errorf("%s > cannot protect text using crypto: %s", c.instance.ID(), err)
-		return "", err
+		return "", fmt.Errorf("%s > Error while encrypting text using crypto: %s", c.instance.ID(), err)
 	} else if response.IsError() {
-		log.Errorf("%s > cannot protect text using crypto: %s", c.instance.ID(), response.Status())
-		return "", nil
+		return "", fmt.Errorf("%s > cannot encrypt text using crypto: %s", c.instance.ID(), response.Status())
+
 	}
 
 	bodyReader := response.RawBody()
@@ -98,17 +97,14 @@ func (c Crypto) Protect(value string) (string, error) {
 	defer func(bodyReader io.ReadCloser) {
 		err := bodyReader.Close()
 		if err != nil {
-			log.Errorf("%s > cloud not close reader: %s", c.instance.ID(), err)
+			log.Errorf("%s > cannot close crypto response body reader: %s", c.instance.ID(), err)
 		}
 	}(bodyReader)
 
 	var body CryptoResponseBody
 
-	err = fmtx.UnmarshalJSON(bodyReader, &body)
-
-	if err != nil {
-		log.Errorf("%s > error during unmarshaling crypto response body: %s", c.instance.ID(), err)
-		return "", err
+	if err = fmtx.UnmarshalJSON(bodyReader, &body); err != nil {
+		return "", fmt.Errorf("%s > cannot unmarshal crypto response body: %s", c.instance.ID(), err)
 	}
 
 	return body.Protected, nil

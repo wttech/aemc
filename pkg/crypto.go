@@ -4,13 +4,23 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/filex"
+	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
+	"io"
+)
+
+const (
+	EncryptJsonPath = "/system/console/crypto/.json"
 )
 
 type Crypto struct {
 	instance *Instance
 
 	keyBundleSymbolicName string
+}
+
+type CryptoResponseBody struct {
+	Protected string
 }
 
 func NewCrypto(instance *Instance) *Crypto {
@@ -70,5 +80,36 @@ func (c Crypto) Setup(hmacFile string, masterFile string) (bool, error) {
 }
 
 func (c Crypto) Protect(value string) (string, error) {
-	return value, nil // TODO implement this
+	var form = map[string]any{"datum": value}
+	log.Infof("%s > Protecting text using crypto.", c.instance.ID())
+	requestFormData := c.instance.http.RequestFormData(form)
+	response, err := requestFormData.Post(EncryptJsonPath)
+
+	if err != nil {
+		log.Errorf("%s > cannot protect text using crypto: %s", c.instance.ID(), err)
+		return "", err
+	} else if response.IsError() {
+		log.Errorf("%s > cannot protect text using crypto: %s", c.instance.ID(), response.Status())
+		return "", nil
+	}
+
+	bodyReader := response.RawBody()
+
+	defer func(bodyReader io.ReadCloser) {
+		err := bodyReader.Close()
+		if err != nil {
+			log.Errorf("%s > cloud not close reader: %s", c.instance.ID(), err)
+		}
+	}(bodyReader)
+
+	var body CryptoResponseBody
+
+	err = fmtx.UnmarshalJSON(bodyReader, &body)
+
+	if err != nil {
+		log.Errorf("%s > error during unmarshaling crypto response body: %s", c.instance.ID(), err)
+		return "", err
+	}
+
+	return body.Protected, nil
 }

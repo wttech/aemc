@@ -81,7 +81,7 @@ func (c *CLI) cryptoProtectCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			c.SetOutput("protected", protectedValue)
+			c.SetOutput("value", protectedValue)
 			c.Ok("value protected by Crypto")
 		},
 	}

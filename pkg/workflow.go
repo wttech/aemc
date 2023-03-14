@@ -12,13 +12,6 @@ type WorkflowLauncher struct {
 	path string
 }
 
-type WorkflowLauncherState struct {
-	Properties map[string]any
-
-	Path   string `yaml:"path" json:"path"`
-	Exists bool   `yaml:"exists" json:"exists"`
-}
-
 func (l WorkflowLauncher) LibNode() RepoNode {
 	return l.manager.instance.repo.Node(l.path)
 }
@@ -83,7 +76,5 @@ func (l WorkflowLauncher) String() string {
 }
 
 const (
-	WorkflowLauncherLibRoot     = "/libs/settings/workflow/launcher"
-	WorkflowLauncherConfigRoot  = "/conf/global/settings/workflow/launcher"
 	WorkflowLauncherEnabledProp = "enabled"
 )

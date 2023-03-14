@@ -226,8 +226,16 @@ func (n RepoNode) Copy(targetPath string) error {
 	return nil // TODO impl this
 }
 
+func (n RepoNode) CopyWithChanged(targetPath string) (bool, error) {
+	return false, nil
+}
+
 func (n RepoNode) Move(targetPath string, replace bool) error {
 	return nil // TODO impl this
+}
+
+func (n RepoNode) MoveWithChanged(targetPath string, replace bool) (bool, error) {
+	return false, nil
 }
 
 func (n RepoNode) String() string {
@@ -261,7 +269,7 @@ func (n RepoNode) MarshalText() string {
 	return sb.String()
 }
 
-func (n RepoNode) Traverse() RepoNodeTraversor {
+func (n RepoNode) Traversor() RepoNodeTraversor {
 	return RepoNodeTraversor{nodes: langx.NewStackWithValue(n)}
 }
 

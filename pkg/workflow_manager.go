@@ -10,7 +10,7 @@ type WorkflowManager struct {
 func NewWorkflowManager(i *Instance) *WorkflowManager {
 	return &WorkflowManager{
 		instance: i,
-		
+
 		libRoot:    WorkflowLauncherLibRoot,
 		configRoot: WorkflowLauncherConfigRoot,
 	}

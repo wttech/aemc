@@ -91,6 +91,26 @@ func (r Repo) Delete(path string) error {
 	return nil
 }
 
+func (r Repo) Copy(sourcePath string, targetPath string) error {
+	log.Infof("%s > copying node from '%s' to '%s'", r.instance.ID(), sourcePath, targetPath)
+	resp, err := r.requestFormData("copy", map[string]any{":dest": targetPath}).Post(sourcePath)
+	if err = r.handleResponse(fmt.Sprintf("%s > cannot copy node from '%s' to '%s'", r.instance.ID(), sourcePath, targetPath), resp, err); err != nil {
+		return err
+	}
+	log.Infof("%s > copied node from '%s' to '%s'", r.instance.ID(), sourcePath, targetPath)
+	return nil
+}
+
+func (r Repo) Move(sourcePath string, targetPath string, replace bool) error {
+	log.Infof("%s > moving node from '%s' to '%s'", r.instance.ID(), sourcePath, targetPath)
+	resp, err := r.requestFormData("move", map[string]any{":dest": targetPath, ":replace": replace}).Post(sourcePath)
+	if err = r.handleResponse(fmt.Sprintf("%s > cannot move node from '%s' to '%s'", r.instance.ID(), sourcePath, targetPath), resp, err); err != nil {
+		return err
+	}
+	log.Infof("%s > moved node from '%s' to '%s'", r.instance.ID(), sourcePath, targetPath)
+	return nil
+}
+
 func (r Repo) requestFormData(operation string, props map[string]any) *resty.Request {
 	request := r.instance.http.Request()
 	request.SetHeader("Accept", "application/json")

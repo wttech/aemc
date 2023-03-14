@@ -26,6 +26,8 @@ func (c *CLI) repoNodeCmd() *cobra.Command {
 	cmd.AddCommand(c.repoNodeReadCmd())
 	cmd.AddCommand(c.repoNodeSaveCmd())
 	cmd.AddCommand(c.repoNodeDeleteCmd())
+	cmd.AddCommand(c.repoNodeCopyCmd())
+	cmd.AddCommand(c.repoNodeMoveCmd())
 	cmd.AddCommand(c.repoNodeChildrenCmd())
 
 	return cmd
@@ -157,6 +159,100 @@ func (c *CLI) repoNodeDeleteCmd() *cobra.Command {
 		},
 	}
 	repoNodeDefineFlags(cmd)
+	return cmd
+}
+
+func (c *CLI) repoNodeCopyCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "copy",
+		Short:   "Copy node",
+		Aliases: []string{"cp"},
+		Run: func(cmd *cobra.Command, args []string) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			sourcePath, _ := cmd.Flags().GetString("source-path")
+			targetPath, _ := cmd.Flags().GetString("target-path")
+			copied, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
+				sourceNode := instance.Repo().Node(sourcePath)
+				changed, err := sourceNode.CopyWithChanged(targetPath)
+				if err != nil {
+					return nil, err
+				}
+				targetNode := instance.Repo().Node(targetPath)
+				return map[string]any{
+					OutputChanged: changed,
+					"sourceNode":  sourceNode,
+					"targetNode":  targetNode,
+					"instance":    instance,
+				}, nil
+			})
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("copied", copied)
+			if mapsx.SomeHas(copied, OutputChanged, true) {
+				c.Changed("node copied")
+			} else {
+				c.Ok("node already copied (up-to-date)")
+			}
+		},
+	}
+	cmd.Flags().StringP("source-path", "s", "", "Source path")
+	cmd.MarkFlagRequired("source-path")
+	cmd.Flags().StringP("target-path", "t", "", "Target path")
+	cmd.MarkFlagRequired("target-path")
+	return cmd
+}
+
+func (c *CLI) repoNodeMoveCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "move",
+		Short:   "Move node",
+		Aliases: []string{"mv"},
+		Run: func(cmd *cobra.Command, args []string) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			sourcePath, _ := cmd.Flags().GetString("source-path")
+			targetPath, _ := cmd.Flags().GetString("target-path")
+			replace, _ := cmd.Flags().GetBool("replace")
+			moved, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
+				sourceNode := instance.Repo().Node(sourcePath)
+				changed, err := sourceNode.MoveWithChanged(targetPath, replace)
+				if err != nil {
+					return nil, err
+				}
+				targetNode := instance.Repo().Node(targetPath)
+				return map[string]any{
+					OutputChanged: changed,
+					"sourceNode":  sourceNode,
+					"targetNode":  targetNode,
+					"instance":    instance,
+				}, nil
+			})
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("moved", moved)
+			if mapsx.SomeHas(moved, OutputChanged, true) {
+				c.Changed("node moved")
+			} else {
+				c.Ok("node already moved (up-to-date)")
+			}
+		},
+	}
+	cmd.Flags().StringP("source-path", "s", "", "Source path")
+	cmd.MarkFlagRequired("source-path")
+	cmd.Flags().StringP("target-path", "t", "", "Target path")
+	cmd.MarkFlagRequired("target-path")
+	cmd.Flags().BoolP("replace", "r", false, "Replace target node if it already exists")
 	return cmd
 }
 

@@ -222,6 +222,14 @@ func (n RepoNode) SaveProp(name string, value any) error {
 	return n.repo.Save(n.path, map[string]any{name: value})
 }
 
+func (n RepoNode) Copy(targetPath string) error {
+	return nil // TODO impl this
+}
+
+func (n RepoNode) Move(targetPath string, replace bool) error {
+	return nil // TODO impl this
+}
+
 func (n RepoNode) String() string {
 	return fmt.Sprintf("node '%s'", n.path)
 }

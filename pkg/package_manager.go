@@ -18,6 +18,7 @@ type PackageManager struct {
 
 	SnapshotDeploySkipping bool
 	SnapshotPatterns       []string
+	WorkflowsDisabled      []string
 }
 
 func NewPackageManager(res *Instance) *PackageManager {

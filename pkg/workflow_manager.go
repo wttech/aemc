@@ -34,6 +34,7 @@ func (w *WorkflowManager) ToggleLaunchers(libPaths []string, action func() error
 		}
 	}
 	defer func() {
+		// TODO add retry mechanism until done
 		for _, launcher := range disabled {
 			if _, err := launcher.Enable(); err != nil {
 				log.Warnf("%s > workflow launcher '%s' temporarily disabled cannot be reenabled", w.instance.ID(), launcher.path)

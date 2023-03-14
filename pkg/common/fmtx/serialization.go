@@ -55,7 +55,7 @@ func MarshalJSON(i any) (string, error) {
 func UnmarshalJSON(body io.ReadCloser, out any) error {
 	defer func(body io.ReadCloser) {
 		if err := body.Close(); err != nil {
-			log.Debugfgit("cannot close JSON stream properly: %w", err)
+			log.Debugf("cannot close JSON stream properly: %s", err)
 		}
 	}(body)
 	err := json.NewDecoder(body).Decode(out)

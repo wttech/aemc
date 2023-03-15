@@ -96,9 +96,6 @@ func (c *CLI) pkgUploadCmd() *cobra.Command {
 				if err != nil {
 					return nil, err
 				}
-				if changed {
-					c.aem.InstanceManager().AwaitStartedOne(instance)
-				}
 				p, err := instance.PackageManager().ByFile(path)
 				if err != nil {
 					return nil, err
@@ -110,6 +107,10 @@ func (c *CLI) pkgUploadCmd() *cobra.Command {
 				}, nil
 			})
 			if err != nil {
+				c.Error(err)
+				return
+			}
+			if err := c.aem.InstanceManager().AwaitStarted(InstancesChanged(uploaded)); err != nil {
 				c.Error(err)
 				return
 			}
@@ -144,9 +145,6 @@ func (c *CLI) pkgInstallCmd() *cobra.Command {
 				if err != nil {
 					return nil, err
 				}
-				if changed {
-					c.aem.InstanceManager().AwaitStartedOne(instance)
-				}
 				return map[string]any{
 					OutputChanged: changed,
 					"package":     p,
@@ -154,6 +152,10 @@ func (c *CLI) pkgInstallCmd() *cobra.Command {
 				}, nil
 			})
 			if err != nil {
+				c.Error(err)
+				return
+			}
+			if err := c.aem.InstanceManager().AwaitStarted(InstancesChanged(installed)); err != nil {
 				c.Error(err)
 				return
 			}
@@ -189,9 +191,6 @@ func (c *CLI) pkgDeployCmd() *cobra.Command {
 				if err != nil {
 					return nil, err
 				}
-				if changed {
-					c.aem.InstanceManager().AwaitStartedOne(instance)
-				}
 				p, err := instance.PackageManager().ByFile(path)
 				if err != nil {
 					return nil, err
@@ -203,6 +202,10 @@ func (c *CLI) pkgDeployCmd() *cobra.Command {
 				}, nil
 			})
 			if err != nil {
+				c.Error(err)
+				return
+			}
+			if err := c.aem.InstanceManager().AwaitStarted(InstancesChanged(deployed)); err != nil {
 				c.Error(err)
 				return
 			}
@@ -237,9 +240,6 @@ func (c *CLI) pkgUninstallCmd() *cobra.Command {
 				if err != nil {
 					return nil, err
 				}
-				if changed {
-					c.aem.InstanceManager().AwaitStartedOne(instance)
-				}
 				return map[string]any{
 					OutputChanged: changed,
 					"package":     p,
@@ -247,6 +247,10 @@ func (c *CLI) pkgUninstallCmd() *cobra.Command {
 				}, nil
 			})
 			if err != nil {
+				c.Error(err)
+				return
+			}
+			if err := c.aem.InstanceManager().AwaitStarted(InstancesChanged(uninstalled)); err != nil {
 				c.Error(err)
 				return
 			}
@@ -281,9 +285,6 @@ func (c *CLI) pkgDeleteCmd() *cobra.Command {
 				if err != nil {
 					return nil, err
 				}
-				if changed {
-					c.aem.InstanceManager().AwaitStartedOne(instance)
-				}
 				return map[string]any{
 					OutputChanged: changed,
 					"package":     p,
@@ -291,6 +292,10 @@ func (c *CLI) pkgDeleteCmd() *cobra.Command {
 				}, nil
 			})
 			if err != nil {
+				c.Error(err)
+				return
+			}
+			if err := c.aem.InstanceManager().AwaitStarted(InstancesChanged(deleted)); err != nil {
 				c.Error(err)
 				return
 			}
@@ -334,7 +339,6 @@ func (c *CLI) pkgPurgeCmd() *cobra.Command {
 						}
 						if uninstalled {
 							changed = true
-							c.aem.InstanceManager().AwaitStartedOne(instance)
 						}
 					}
 					deleted, err := p.DeleteWithChanged()
@@ -350,6 +354,10 @@ func (c *CLI) pkgPurgeCmd() *cobra.Command {
 				}, nil
 			})
 			if err != nil {
+				c.Error(err)
+				return
+			}
+			if err := c.aem.InstanceManager().AwaitStarted(InstancesChanged(purged)); err != nil {
 				c.Error(err)
 				return
 			}
@@ -385,7 +393,10 @@ func (c *CLI) pkgBuildCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			c.aem.InstanceManager().AwaitStartedOne(*instance)
+			if err := c.aem.InstanceManager().AwaitStartedOne(*instance); err != nil {
+				c.Error(err)
+				return
+			}
 			c.SetOutput("package", p)
 			c.SetOutput("instance", instance)
 			c.Changed("package built")

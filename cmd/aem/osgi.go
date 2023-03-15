@@ -595,9 +595,6 @@ func (c *CLI) osgiConfigSave() *cobra.Command {
 				if err != nil {
 					return nil, err
 				}
-				if changed {
-					c.aem.InstanceManager().AwaitStartedOne(instance)
-				}
 				return map[string]any{
 					OutputChanged: changed,
 					"config":      config,
@@ -605,6 +602,10 @@ func (c *CLI) osgiConfigSave() *cobra.Command {
 				}, nil
 			})
 			if err != nil {
+				c.Error(err)
+				return
+			}
+			if err := c.aem.InstanceManager().AwaitStarted(InstancesChanged(saved)); err != nil {
 				c.Error(err)
 				return
 			}
@@ -637,9 +638,6 @@ func (c *CLI) osgiConfigDelete() *cobra.Command {
 				if err != nil {
 					return nil, err
 				}
-				if changed {
-					c.aem.InstanceManager().AwaitStartedOne(instance)
-				}
 				return map[string]any{
 					OutputChanged: changed,
 					"config":      config,
@@ -647,6 +645,10 @@ func (c *CLI) osgiConfigDelete() *cobra.Command {
 				}, nil
 			})
 			if err != nil {
+				c.Error(err)
+				return
+			}
+			if err := c.aem.InstanceManager().AwaitStarted(InstancesChanged(deleted)); err != nil {
 				c.Error(err)
 				return
 			}

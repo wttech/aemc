@@ -6,21 +6,26 @@ import (
 	"github.com/spf13/cast"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
+	"time"
 )
 
 type WorkflowManager struct {
 	instance *Instance
 
-	libRoot    string
-	configRoot string
+	LibRoot            string
+	ConfigRoot         string
+	ToggleRetryTimeout time.Duration
+	ToggleRetryDelay   time.Duration
 }
 
 func NewWorkflowManager(i *Instance) *WorkflowManager {
 	return &WorkflowManager{
 		instance: i,
 
-		libRoot:    WorkflowLauncherLibRoot,
-		configRoot: WorkflowLauncherConfigRoot,
+		LibRoot:            WorkflowLauncherLibRoot,
+		ConfigRoot:         WorkflowLauncherConfigRoot,
+		ToggleRetryTimeout: time.Minute * 5,
+		ToggleRetryDelay:   time.Second * 10,
 	}
 }
 
@@ -56,9 +61,25 @@ func (w *WorkflowManager) findLaunchers(paths []string) ([]WorkflowLauncher, err
 	return result, nil
 }
 
+func (w *WorkflowManager) doLauncherAction(name string, callback func() error) error {
+	started := time.Now()
+	for {
+		err := callback()
+		if err == nil {
+			return nil
+		}
+		if time.Now().After(started.Add(w.ToggleRetryTimeout)) {
+			return fmt.Errorf("%s > awaiting workflow launcher action '%s' timed out after %s: %w", w.instance.ID(), name, w.ToggleRetryTimeout, err)
+		}
+		time.Sleep(w.ToggleRetryDelay)
+	}
+}
+
 func (w *WorkflowManager) disableLaunchers(launchers []WorkflowLauncher) {
 	for _, launcher := range launchers {
-		if err := w.disableLauncher(launcher); err != nil {
+		if err := w.doLauncherAction("disable", func() error {
+			return w.disableLauncher(launcher)
+		}); err != nil {
 			log.Warnf("%s", err)
 			continue
 		}
@@ -93,7 +114,9 @@ func (w *WorkflowManager) disableLauncher(launcher WorkflowLauncher) error {
 
 func (w *WorkflowManager) enableLaunchers(launchers []WorkflowLauncher) {
 	for _, launcher := range launchers {
-		if err := w.enableLauncher(launcher); err != nil {
+		if err := w.doLauncherAction("enable", func() error {
+			return w.enableLauncher(launcher)
+		}); err != nil {
 			log.Warnf("%s", err)
 			continue
 		}

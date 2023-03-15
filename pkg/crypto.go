@@ -4,13 +4,22 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/filex"
+	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
+)
+
+const (
+	CryptoProtectPath = "/system/console/crypto/.json"
 )
 
 type Crypto struct {
 	instance *Instance
 
 	keyBundleSymbolicName string
+}
+
+type CryptoProtectResult struct {
+	Protected string
 }
 
 func NewCrypto(instance *Instance) *Crypto {
@@ -70,5 +79,19 @@ func (c Crypto) Setup(hmacFile string, masterFile string) (bool, error) {
 }
 
 func (c Crypto) Protect(value string) (string, error) {
-	return value, nil // TODO implement this
+	log.Infof("%s > Protecting text using crypto.", c.instance.ID())
+	response, err := c.instance.http.RequestFormData(map[string]any{"datum": value}).Post(CryptoProtectPath)
+
+	if err != nil {
+		return "", fmt.Errorf("%s > cannot encrypt text using crypto: %w", c.instance.ID(), err)
+	} else if response.IsError() {
+		return "", fmt.Errorf("%s > cannot encrypt text using crypto: %s", c.instance.ID(), response.Status())
+	}
+
+	var result CryptoProtectResult
+	if err = fmtx.UnmarshalJSON(response.RawBody(), &result); err != nil {
+		return "", fmt.Errorf("%s > cannot parse crypto response: %w", c.instance.ID(), err)
+	}
+
+	return result.Protected, nil
 }

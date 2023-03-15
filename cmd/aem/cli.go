@@ -343,12 +343,12 @@ func (c *CLI) ReadInput(out any) error {
 	file := c.config.Values().Input.File
 
 	if len(str) > 0 {
-		err := fmtx.UnmarshalDataInFormat(format, strings.NewReader(str), out)
+		err := fmtx.UnmarshalDataInFormat(format, io.NopCloser(strings.NewReader(str)), out)
 		if err != nil {
 			return fmt.Errorf("cannot parse string input properly: %w", err)
 		}
 	} else if file == common.STDIn {
-		err := fmtx.UnmarshalDataInFormat(format, bufio.NewReader(os.Stdin), out)
+		err := fmtx.UnmarshalDataInFormat(format, io.NopCloser(bufio.NewReader(os.Stdin)), out)
 		if err != nil {
 			return fmt.Errorf("cannot parse STDIN input properly: %w", err)
 		}

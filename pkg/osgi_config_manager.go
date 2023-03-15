@@ -40,7 +40,7 @@ func (cm *OSGiConfigManager) listPIDs() (*osgi.ConfigPIDs, error) {
 		return nil, fmt.Errorf("%s > cannot find config list in HTML response", cm.instance.ID())
 	}
 	var res osgi.ConfigPIDs
-	if err = fmtx.UnmarshalJSON(bytes.NewBufferString(pids), &res); err != nil {
+	if err = fmtx.UnmarshalJSON(io.NopCloser(bytes.NewBufferString(pids)), &res); err != nil {
 		return nil, fmt.Errorf("%s > cannot parse config list JSON found in HTML response: %w", cm.instance.ID(), err)
 	}
 	return &res, nil

@@ -186,8 +186,15 @@ func (c *CLI) pkgDeployCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			force, _ := cmd.Flags().GetBool("force")
 			deployed, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
-				changed, err := instance.PackageManager().DeployWithChanged(path)
+				changed := false
+				if force {
+					err = instance.PackageManager().Deploy(path)
+					changed = true
+				} else {
+					changed, err = instance.PackageManager().DeployWithChanged(path)
+				}
 				if err != nil {
 					return nil, err
 				}
@@ -218,6 +225,7 @@ func (c *CLI) pkgDeployCmd() *cobra.Command {
 		},
 	}
 	pkgDefineFileAndUrlFlags(cmd)
+	cmd.Flags().BoolP("force", "f", false, "Deploy even when already deployed")
 	return cmd
 }
 

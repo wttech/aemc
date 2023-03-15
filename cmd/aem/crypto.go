@@ -85,12 +85,9 @@ func (c *CLI) cryptoProtectCmd() *cobra.Command {
 			c.Ok("value protected by Crypto")
 		},
 	}
-	cmd.Flags().StringP("value", "v", "", "Value to protect")
-	err := cmd.MarkFlagRequired("value")
 
-	if err != nil {
-		return nil
-	}
+	cmd.Flags().StringP("value", "v", "", "Value to protect")
+	_ = cmd.MarkFlagRequired("value")
 
 	return cmd
 }

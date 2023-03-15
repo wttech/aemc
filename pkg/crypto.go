@@ -80,18 +80,17 @@ func (c Crypto) Setup(hmacFile string, masterFile string) (bool, error) {
 
 func (c Crypto) Protect(value string) (string, error) {
 	log.Infof("%s > Protecting text using crypto.", c.instance.ID())
-	requestFormData := c.instance.http.RequestFormData(map[string]any{"datum": value})
-	response, err := requestFormData.Post(CryptoProtectPath)
+	response, err := c.instance.http.RequestFormData(map[string]any{"datum": value}).Post(CryptoProtectPath)
 
 	if err != nil {
-		return "", fmt.Errorf("%s > cannot encrypt text using crypto: %s", c.instance.ID(), err)
+		return "", fmt.Errorf("%s > cannot encrypt text using crypto: %w", c.instance.ID(), err)
 	} else if response.IsError() {
 		return "", fmt.Errorf("%s > cannot encrypt text using crypto: %s", c.instance.ID(), response.Status())
 	}
 
 	var result CryptoProtectResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &result); err != nil {
-		return "", fmt.Errorf("%s > cannot parse crypto response: %s", c.instance.ID(), err)
+		return "", fmt.Errorf("%s > cannot parse crypto response: %w", c.instance.ID(), err)
 	}
 
 	return result.Protected, nil

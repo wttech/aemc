@@ -18,6 +18,7 @@ type PackageManager struct {
 
 	SnapshotDeploySkipping bool
 	SnapshotPatterns       []string
+	ToggledWorkflows       []string
 }
 
 func NewPackageManager(res *Instance) *PackageManager {
@@ -26,6 +27,7 @@ func NewPackageManager(res *Instance) *PackageManager {
 
 		SnapshotDeploySkipping: false,
 		SnapshotPatterns:       []string{"**/*-SNAPSHOT.zip"},
+		ToggledWorkflows:       []string{},
 	}
 }
 
@@ -265,10 +267,9 @@ func (pm *PackageManager) Deploy(localPath string) error {
 	if err != nil {
 		return err
 	}
-	if err := pm.Install(remotePath); err != nil {
-		return err
-	}
-	return nil
+	return pm.instance.workflowManager.ToggleLaunchers(pm.ToggledWorkflows, func() error {
+		return pm.Install(remotePath)
+	})
 }
 
 func (pm *PackageManager) deployLock(file string, checksum string) osx.Lock[packageDeployLock] {

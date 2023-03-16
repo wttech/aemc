@@ -87,7 +87,7 @@ func TestRepoTraverse(t *testing.T) {
 	aem := pkg.NewAem()
 
 	instance := aem.InstanceManager().NewLocalAuthor()
-	it := instance.Repo().Node("/etc/dam").Traverse()
+	it := instance.Repo().Node("/etc/dam").Traversor()
 
 	traversed := 0
 	for {

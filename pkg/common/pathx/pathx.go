@@ -189,3 +189,7 @@ func Normalize(path string) string {
 func Canonical(path string) string {
 	return Abs(Normalize(path))
 }
+
+func DirAndFileName(path string) (string, string) {
+	return stringsx.BeforeLast(path, "/"), stringsx.AfterLast(path, "/")
+}

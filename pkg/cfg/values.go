@@ -122,7 +122,15 @@ type ConfigValues struct {
 		Package struct {
 			SnapshotDeploySkipping bool     `mapstructure:"snapshot_deploy_skipping" yaml:"snapshot_deploy_skipping"`
 			SnapshotPatterns       []string `mapstructure:"snapshot_patterns" yaml:"snapshot_patterns"`
+			ToggledWorkflows       []string `mapstructure:"toggled_workflows" yaml:"toggled_workflows"`
 		} `mapstructure:"package" yaml:"package"`
+
+		Workflow struct {
+			LibRoot            string        `mapstructure:"lib_root" yaml:"lib_root"`
+			ConfigRoot         string        `mapstructure:"config_root" yaml:"lib_root"`
+			ToggleRetryDelay   time.Duration `mapstructure:"toggle_retry_delay" yaml:"toggle_retry_delay"`
+			ToggleRetryTimeout time.Duration `mapstructure:"toggle_retry_timeout" yaml:"toggle_retry_timeout"`
+		} `mapstructure:"workflow" yaml:"workflow"`
 
 		OSGi struct {
 			ShutdownDelay time.Duration `mapstructure:"shutdown_delay" yaml:"shutdown_delay"`

@@ -139,6 +139,7 @@ func (im *InstanceManager) New(id, url, user, password string) *Instance {
 	res.status = NewStatus(res)
 	res.repo = NewRepo(res)
 	res.packageManager = NewPackageManager(res)
+	res.workflowManager = NewWorkflowManager(res)
 	res.osgi = NewOSGi(res)
 	res.sling = NewSling(res)
 	res.crypto = NewCrypto(res)
@@ -267,6 +268,9 @@ func configureInstance(inst Instance, config *cfg.Config) {
 	if packageOpts.SnapshotPatterns != nil {
 		inst.packageManager.SnapshotPatterns = packageOpts.SnapshotPatterns
 	}
+	if packageOpts.ToggledWorkflows != nil {
+		inst.packageManager.ToggledWorkflows = packageOpts.ToggledWorkflows
+	}
 
 	statusOpts := instanceOpts.Status
 	inst.status.Timeout = statusOpts.Timeout
@@ -283,6 +287,12 @@ func configureInstance(inst Instance, config *cfg.Config) {
 
 	cryptoOpts := instanceOpts.Crypto
 	inst.crypto.keyBundleSymbolicName = cryptoOpts.KeyBundleSymbolicName
+
+	workflowOpts := instanceOpts.Workflow
+	inst.workflowManager.LibRoot = workflowOpts.LibRoot
+	inst.workflowManager.ConfigRoot = workflowOpts.ConfigRoot
+	inst.workflowManager.ToggleRetryDelay = workflowOpts.ToggleRetryDelay
+	inst.workflowManager.ToggleRetryTimeout = workflowOpts.ToggleRetryTimeout
 }
 
 func (im *InstanceManager) configureCheckOpts(config *cfg.Config) {

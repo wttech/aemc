@@ -287,6 +287,12 @@ func configureInstance(inst Instance, config *cfg.Config) {
 
 	cryptoOpts := instanceOpts.Crypto
 	inst.crypto.keyBundleSymbolicName = cryptoOpts.KeyBundleSymbolicName
+
+	workflowOpts := instanceOpts.Workflow
+	inst.workflowManager.LibRoot = workflowOpts.LibRoot
+	inst.workflowManager.ConfigRoot = workflowOpts.ConfigRoot
+	inst.workflowManager.ToggleRetryDelay = workflowOpts.ToggleRetryDelay
+	inst.workflowManager.ToggleRetryTimeout = workflowOpts.ToggleRetryTimeout
 }
 
 func (im *InstanceManager) configureCheckOpts(config *cfg.Config) {

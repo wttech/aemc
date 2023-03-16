@@ -63,4 +63,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("instance.osgi.shutdown_delay", time.Second*3)
 
 	v.SetDefault("instance.crypto.key_bundle_symbolic_name", "com.adobe.granite.crypto.file")
+
+	v.SetDefault("instance.workflow.lib_root", "/libs/settings/workflow/launcher")
+	v.SetDefault("instance.workflow.config_root", "/conf/global/settings/workflow/launcher")
+	v.SetDefault("instance.workflow.toggle_retry_delay", time.Second*10)
+	v.SetDefault("instance.workflow.toggle_retry_timeout", time.Minute*5)
 }

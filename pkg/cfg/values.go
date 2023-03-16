@@ -140,4 +140,21 @@ type ConfigValues struct {
 			KeyBundleSymbolicName string `mapstructure:"key_bundle_symbolic_name" yaml:"key_bundle_symbolic_name"`
 		} `mapstructure:"crypto" yaml:"crypto"`
 	} `mapstructure:"instance" yaml:"instance"`
+
+	Content struct {
+		FilesDotContent      []string   `mapstructure:"files_dot_content" yaml:"files_dot_content"`
+		FilesDeleted         []PathRule `mapstructure:"files_deleted" yaml:"files_deleted"`
+		FilesFlattened       []string   `mapstructure:"files_flattened" yaml:"files_flattened"`
+		PropertiesSkipped    []PathRule `mapstructure:"properties_skipped" yaml:"properties_skipped"`
+		MixinTypesSkipped    []PathRule `mapstructure:"mixin_types_skipped" yaml:"mixin_types_skipped"`
+		NamespacesSkipped    bool       `mapstructure:"namespaces_skipped" yaml:"namespaces_skipped"`
+		ParentsBackupEnabled bool       `mapstructure:"parents_backup_enabled" yaml:"parents_backup_enabled"`
+		ParentsBackupSuffix  string     `mapstructure:"parents_backup_suffix" yaml:"parents_backup_suffix"`
+	} `mapstructure:"content" yaml:"content"`
+}
+
+type PathRule struct {
+	Patterns      []string `mapstructure:"patterns" yaml:"patterns"`
+	ExcludedPaths []string `mapstructure:"excluded_paths" yaml:"excluded_paths"`
+	IncludedPaths []string `mapstructure:"included_paths" yaml:"included_paths"`
 }

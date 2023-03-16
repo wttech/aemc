@@ -30,6 +30,7 @@ func (c *CLI) rootCmd() *cobra.Command {
 	cmd.AddCommand(c.replCmd())
 	cmd.AddCommand(c.cryptoCmd())
 	cmd.AddCommand(c.fileCmd())
+	cmd.AddCommand(c.contentCmd())
 	c.rootFlags(cmd)
 	return cmd
 }

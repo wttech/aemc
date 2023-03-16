@@ -7,7 +7,7 @@ instance:
   # Defined strictly with full details (local or remote)
   config:
     local_author:
-      http_url: [[.Env.AEM_AUTHOR_HTTP_URL | default "http://127.0.0.1:4502" ]]
+      http_url: [ [ .Env.AEM_AUTHOR_HTTP_URL | default "http://127.0.0.1:4502" ] ]
       user: admin
       password: admin
       run_modes: [ local ]
@@ -19,14 +19,14 @@ instance:
         - -Duser.language=en
         - -Duser.country=US
         - -Duser.timezone=UTC
-      start_opts: []
+      start_opts: [ ]
       secret_vars:
         - ACME_SECRET=value
       env_vars:
         - ACME_VAR=value
-      sling_props: []
+      sling_props: [ ]
     local_publish:
-      http_url: [[.Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4503" ]]
+      http_url: [ [ .Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4503" ] ]
       user: admin
       password: admin
       run_modes: [ local ]
@@ -38,12 +38,12 @@ instance:
         - -Duser.language=en
         - -Duser.country=US
         - -Duser.timezone=UTC
-      start_opts: []
+      start_opts: [ ]
       secret_vars:
         - ACME_SECRET=value
       env_vars:
         - ACME_VAR=value
-      sling_props: []
+      sling_props: [ ]
 
   # Filters for defined
   filter:
@@ -75,7 +75,7 @@ instance:
       duration: 10m
     # Bundle state tracking
     bundle_stable:
-      symbolic_names_ignored: []
+      symbolic_names_ignored: [ ]
     # OSGi events tracking
     event_stable:
       # Topics indicating that instance is not stable
@@ -194,3 +194,53 @@ output:
     file: aem/home/var/log/aem.log
     # Controls where outputs and logs should be written to when format is 'text' (console|file|both)
     mode: console
+
+content:
+  files_dot_content:
+    - "**/.content.xml"
+  files_deleted:
+    - patterns: "**/_jcr_content/folderThumbnail*"
+      included_paths: [ "**/content/dam/*" ]
+    - patterns: "**/_jcr_content/renditions/*"
+      excluded_paths: [ "**/_jcr_content/renditions/original*" ]
+      included_paths: [ "**/content/dam/*" ]
+    - patterns:
+        - "**/.vlt"
+        - "**/.vlt*.tmp"
+        - "**/install/*.jar"
+  files_flattened:
+    - "**/_cq_design_dialog/.content.xml"
+    - "**/_cq_dialog/.content.xml"
+    - "**/_cq_htmlTag/.content.xml"
+    - "**/_cq_template/.content.xml"
+  properties_skipped:
+    - patterns: "jcr:uuid"
+      excluded_paths: [ "**/home/users/*", "**/home/groups/*" ]
+    - patterns: "cq:lastModified"
+      excluded_paths: [ "**/content/experience-fragments/*" ]
+    - patterns: [ "dam:sha1", "dam:size" ]
+      included_paths: [ "**/content/dam/*.svg/*" ]
+    - patterns:
+        - "jcr:lastModifiedBy"
+        - "jcr:created*"
+        - "jcr:isCheckedOut"
+        - "cq:lastReplicat*"
+        - "cq:lastRolledout*"
+        - "dam:extracted"
+        - "dam:assetState"
+        - "dc:modified"
+        - "*_x0040_*"
+        - "cq:name"
+        - "cq:parentPath"
+        - "dam:copiedAt"
+        - "dam:parentAssetID"
+        - "dam:relativePath"
+  mixin_types_skipped:
+    - patterns: "dam:Thumbnails"
+      included_paths: [ "**/content/dam/*" ]
+    - patterns:
+        - "cq:ReplicationStatus"
+        - "mix:versionable"
+  namespaces_skipped: true
+  parents_backup_enabled: true
+  parents_backup_suffix: ".bak"

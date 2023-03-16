@@ -140,7 +140,7 @@ type EventStableChecker struct {
 }
 
 func (c EventStableChecker) Spec() CheckSpec {
-	return CheckSpec{Mandatory: false}
+	return CheckSpec{Mandatory: true}
 }
 
 func (c EventStableChecker) Check(instance Instance) CheckResult {

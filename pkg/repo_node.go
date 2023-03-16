@@ -128,7 +128,7 @@ type RepoNodeState struct {
 }
 
 func (n RepoNode) State() (*RepoNodeState, error) {
-	exists, err := n.ReadExists()
+	exists, err := n.Exists()
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (n RepoNode) State() (*RepoNodeState, error) {
 	}, nil
 }
 
-func (n RepoNode) ReadExists() (bool, error) {
+func (n RepoNode) Exists() (bool, error) {
 	return n.repo.Exists(n.path)
 }
 
@@ -189,7 +189,7 @@ func (n RepoNode) SaveWithChanged(props map[string]any) (bool, error) {
 }
 
 func (n RepoNode) DeleteWithChanged() (bool, error) {
-	exists, err := n.ReadExists()
+	exists, err := n.Exists()
 	if err != nil {
 		return false, err
 	}
@@ -204,7 +204,7 @@ func (n RepoNode) DeleteWithChanged() (bool, error) {
 }
 
 func (n RepoNode) Delete() error {
-	exists, err := n.ReadExists()
+	exists, err := n.Exists()
 	if err != nil {
 		return err
 	}

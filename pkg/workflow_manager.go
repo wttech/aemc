@@ -3,7 +3,6 @@ package pkg
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cast"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"time"
@@ -78,76 +77,44 @@ func (w *WorkflowManager) doLauncherAction(name string, callback func() error) e
 func (w *WorkflowManager) disableLaunchers(launchers []WorkflowLauncher) {
 	for _, launcher := range launchers {
 		if err := w.doLauncherAction("disable", func() error {
-			return w.disableLauncher(launcher)
+			if err := launcher.Prepare(); err != nil {
+				return err
+			}
+			enabled, err := launcher.IsEnabled()
+			if err != nil {
+				return err
+			}
+			if enabled {
+				if err := launcher.Disable(); err != nil {
+					return err
+				}
+			}
+			return nil
 		}); err != nil {
 			log.Warnf("%s", err)
 			continue
 		}
 	}
-}
-
-func (w *WorkflowManager) disableLauncher(launcher WorkflowLauncher) error {
-	configNode := launcher.ConfigNode()
-	libNode := launcher.LibNode()
-	configState, err := configNode.State()
-	if err != nil {
-		return fmt.Errorf("%s > cannot read workflow launcher config '%s': %w", w.instance.ID(), configNode.path, err)
-	}
-	if !configState.Exists {
-		if err := libNode.Copy(configNode.Path()); err != nil {
-			return fmt.Errorf("%s > workflow launcher config node '%s' cannot be copied from lib node '%s': %s", w.instance.ID(), configNode.path, libNode.path, err)
-		}
-		configState, err = configNode.State()
-		if err != nil {
-			return fmt.Errorf("%s > cannot read workflow launcher config just copied '%s': %w", w.instance.ID(), configNode.path, err)
-		}
-	}
-	enabledAny, enabledFound := configState.Properties[WorkflowLauncherEnabledProp]
-	enabled := enabledFound && cast.ToBool(enabledAny)
-	if enabled {
-		if err := configNode.Save(map[string]any{
-			WorkflowLauncherEnabledProp: false,
-			WorkflowLauncherToggledProp: true,
-		}); err != nil {
-			return fmt.Errorf("%s > cannot disable workflow launcher '%s': %w", w.instance.ID(), configNode.path, err)
-		}
-		log.Infof("%s > disabled workflow launcher '%s'", w.instance.ID(), configNode.path)
-	}
-	return nil
 }
 
 func (w *WorkflowManager) enableLaunchers(launchers []WorkflowLauncher) {
 	for _, launcher := range launchers {
 		if err := w.doLauncherAction("enable", func() error {
-			return w.enableLauncher(launcher)
+			toggled, err := launcher.IsToggled()
+			if err != nil {
+				return err
+			}
+			if toggled {
+				if err := launcher.Enable(); err != nil {
+					return err
+				}
+			}
+			return nil
 		}); err != nil {
 			log.Warnf("%s", err)
 			continue
 		}
 	}
-}
-
-func (w *WorkflowManager) enableLauncher(launcher WorkflowLauncher) error {
-	configNode := launcher.ConfigNode()
-	configState, err := configNode.State()
-	if err != nil {
-		return fmt.Errorf("%s > cannot read config of workflow launcher '%s': %w", w.instance.ID(), configNode.path, err)
-	}
-	if !configState.Exists {
-		return fmt.Errorf("%s > config node of workflow launcher does not exist '%s': %w", w.instance.ID(), configNode.path, err)
-	}
-	toggledAny, toggledFound := configState.Properties[WorkflowLauncherToggledProp]
-	toggled := toggledFound && cast.ToBool(toggledAny)
-	if toggled {
-		if err := configNode.Save(map[string]any{
-			WorkflowLauncherEnabledProp: true,
-			WorkflowLauncherToggledProp: nil,
-		}); err != nil {
-			return fmt.Errorf("%s > cannot enable workflow launcher '%s': %w", w.instance.ID(), configNode.path, err)
-		}
-		log.Infof("%s > enabled workflow launcher '%s'", w.instance.ID(), configNode.path)
-	}
-	return nil
 }
 
 const (

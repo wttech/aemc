@@ -268,6 +268,9 @@ func configureInstance(inst Instance, config *cfg.Config) {
 	if packageOpts.SnapshotPatterns != nil {
 		inst.packageManager.SnapshotPatterns = packageOpts.SnapshotPatterns
 	}
+	if packageOpts.ToggledWorkflows != nil {
+		inst.packageManager.ToggledWorkflows = packageOpts.ToggledWorkflows
+	}
 
 	statusOpts := instanceOpts.Status
 	inst.status.Timeout = statusOpts.Timeout

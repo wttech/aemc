@@ -27,6 +27,7 @@ func NewPackageManager(res *Instance) *PackageManager {
 
 		SnapshotDeploySkipping: false,
 		SnapshotPatterns:       []string{"**/*-SNAPSHOT.zip"},
+		ToggledWorkflows:       []string{},
 	}
 }
 

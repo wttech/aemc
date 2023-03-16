@@ -122,6 +122,7 @@ type ConfigValues struct {
 		Package struct {
 			SnapshotDeploySkipping bool     `mapstructure:"snapshot_deploy_skipping" yaml:"snapshot_deploy_skipping"`
 			SnapshotPatterns       []string `mapstructure:"snapshot_patterns" yaml:"snapshot_patterns"`
+			ToggledWorkflows       []string `mapstructure:"toggled_workflows" yaml:"toggled_workflows"`
 		} `mapstructure:"package" yaml:"package"`
 
 		OSGi struct {

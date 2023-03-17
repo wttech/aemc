@@ -93,6 +93,12 @@ func (c *CLI) Exec() error {
 	return c.cmd.Execute()
 }
 
+func (c *CLI) MustExec() {
+	if err := c.Exec(); err != nil {
+		log.Fatalf("%s CLI error: %s", common.AppName, err)
+	}
+}
+
 func (c *CLI) configure() {
 	c.configureOutput()
 	c.configureLogger()

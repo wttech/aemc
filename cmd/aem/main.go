@@ -8,5 +8,5 @@ func main() {
 	osx.EnvVarsLoad()
 
 	cli := NewCLI()
-	cli.Exec()
+	cli.MustExec()
 }

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
-	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common/lox"
 	"github.com/wttech/aemc/pkg/instance"
+	"golang.org/x/exp/maps"
 	nurl "net/url"
 	"sort"
 	"strings"
@@ -18,17 +18,18 @@ type InstanceManager struct {
 	Instances      []Instance
 	LocalOpts      *LocalOpts
 	CheckOpts      *CheckOpts
-	ProcessingMode instance.ProcessingMode
+	ProcessingMode string
 }
 
 func NewInstanceManager(aem *Aem) *InstanceManager {
 	result := new(InstanceManager)
 	result.aem = aem
 
-	result.ProcessingMode = instance.ProcessingParallel
+	result.ProcessingMode = aem.config.Values().GetString("instance.processing_mode")
+
 	result.LocalOpts = result.NewLocalOpts(result)
-	result.CheckOpts = result.NewCheckOpts()
-	result.Instances = result.NewLocalPair()
+	result.CheckOpts = result.NewCheckOpts(result)
+	result.Instances = result.newInstances()
 
 	return result
 }
@@ -163,56 +164,53 @@ func (im *InstanceManager) Await(instances []Instance) error {
 	return im.AwaitStarted(instances)
 }
 
-func (im *InstanceManager) Configure(config *cfg.Config) {
-	im.configureInstances(config)
-	im.configureCheckOpts(config)
-	im.configureLocalOpts(config)
-	im.configureRest(config)
-}
-
-func (im *InstanceManager) configureInstances(config *cfg.Config) {
-	opts := config.Values().Instance
+func (im *InstanceManager) newInstances() []Instance {
 	var defined []Instance
 
-	if len(opts.Config) > 0 {
-		for ID, iCfg := range opts.Config {
-			i, err := im.NewByURL(iCfg.HTTPURL)
-			if err != nil {
-				log.Warn(fmt.Errorf("cannot create instance from URL '%s': %w", iCfg.HTTPURL, err))
-				continue
-			}
-			i.id = ID
-			if len(iCfg.User) > 0 {
-				i.user = iCfg.User
-			}
-			if len(iCfg.Password) > 0 {
-				i.password = iCfg.Password
-			}
-			if i.IsLocal() {
-				if len(iCfg.StartOpts) > 0 {
-					i.local.StartOpts = iCfg.StartOpts
-				}
-				if len(iCfg.JVMOpts) > 0 {
-					i.local.JvmOpts = iCfg.JVMOpts
-				}
-				if len(iCfg.RunModes) > 0 {
-					i.local.RunModes = iCfg.RunModes
-				}
-				i.local.EnvVars = iCfg.EnvVars
-				i.local.SecretVars = iCfg.SecretVars
-				i.local.SlingProps = iCfg.SlingProps
-				if len(iCfg.Version) > 0 {
-					i.local.Version = iCfg.Version
-				}
-			}
-			defined = append(defined, *i)
-		}
-	} else if len(opts.ConfigURL) > 0 {
-		iURL, err := im.NewByURL(opts.ConfigURL)
+	cv := im.aem.config.Values()
+	configURL := cv.GetString("instance.config_url")
+	configIDs := maps.Keys(cv.GetStringMap("instance.config"))
+
+	if configURL != "" {
+		iURL, err := im.NewByURL(configURL)
 		if err != nil {
-			log.Info(fmt.Sprintf("cannot use instance with URL '%s'", opts.ConfigURL))
+			log.Info(fmt.Sprintf("cannot use instance with URL '%s'", configURL))
 		} else {
 			defined = append(defined, *iURL)
+		}
+	} else if len(configIDs) > 0 {
+		for _, id := range configIDs {
+			httpURL := cv.GetString(fmt.Sprintf("instance.config.%s.http_url", id))
+			i, err := im.NewByURL(httpURL)
+			if err != nil {
+				log.Warn(fmt.Errorf("cannot create instance from URL '%s': %w", httpURL, err))
+				continue
+			}
+			i.id = id
+
+			user := cv.GetString(fmt.Sprintf("instance.config.%s.user", id))
+			if user != "" {
+				i.user = user
+			}
+			password := cv.GetString(fmt.Sprintf("instance.config.%s.password", id))
+			if password != "" {
+				i.password = password
+			}
+
+			if i.IsLocal() {
+				version := cv.GetString(fmt.Sprintf("instance.config.%s.version", id))
+				if version != "" {
+					i.local.Version = version
+				}
+
+				i.local.StartOpts = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.start_opts", id))
+				i.local.JvmOpts = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.jvm_opts", id))
+				i.local.RunModes = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.run_modes", id))
+				i.local.EnvVars = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.env_vars", id))
+				i.local.SecretVars = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.secret_vars", id))
+				i.local.SlingProps = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.sling_props", id))
+			}
+			defined = append(defined, *i)
 		}
 	}
 
@@ -221,25 +219,29 @@ func (im *InstanceManager) configureInstances(config *cfg.Config) {
 	}
 
 	var filtered []Instance
-	if len(opts.Filter.ID) > 0 {
+	filterID := cv.GetString("instance.filter.id")
+
+	if filterID != "" {
 		for _, i := range defined {
-			if i.id == opts.Filter.ID {
+			if i.id == filterID {
 				filtered = append(filtered, i)
 				break
 			}
 		}
 	} else {
-		if opts.Filter.Author == opts.Filter.Publish {
+		filterAuthor := cv.GetBool("instance.filter.author")
+		filterPublish := cv.GetBool("instance.filter.publish")
+		if filterAuthor == filterPublish {
 			filtered = defined
 		} else {
-			if opts.Filter.Author {
+			if filterAuthor {
 				for _, i := range defined {
 					if i.IsAuthor() {
 						filtered = append(filtered, i)
 					}
 				}
 			}
-			if opts.Filter.Publish {
+			if filterPublish {
 				for _, i := range defined {
 					if i.IsPublish() {
 						filtered = append(filtered, i)
@@ -249,87 +251,11 @@ func (im *InstanceManager) configureInstances(config *cfg.Config) {
 		}
 	}
 
-	for _, inst := range filtered {
-		configureInstance(inst, config)
-	}
-
 	sort.SliceStable(filtered, func(i, j int) bool {
 		return strings.Compare(filtered[i].id, filtered[j].id) < 0
 	})
 
-	im.Instances = filtered
-}
-
-func configureInstance(inst Instance, config *cfg.Config) {
-	instanceOpts := config.Values().Instance
-
-	packageOpts := instanceOpts.Package
-	inst.packageManager.SnapshotDeploySkipping = packageOpts.SnapshotDeploySkipping
-	if packageOpts.SnapshotPatterns != nil {
-		inst.packageManager.SnapshotPatterns = packageOpts.SnapshotPatterns
-	}
-	if packageOpts.ToggledWorkflows != nil {
-		inst.packageManager.ToggledWorkflows = packageOpts.ToggledWorkflows
-	}
-
-	statusOpts := instanceOpts.Status
-	inst.status.Timeout = statusOpts.Timeout
-
-	repoOpts := instanceOpts.Repo
-	inst.repo.PropertyChangeIgnored = repoOpts.PropertyChangeIgnored
-
-	osgiOpts := instanceOpts.OSGi
-	inst.osgi.shutdownDelay = osgiOpts.ShutdownDelay
-
-	inst.osgi.bundleManager.InstallStart = osgiOpts.Bundle.Install.Start
-	inst.osgi.bundleManager.InstallStartLevel = osgiOpts.Bundle.Install.StartLevel
-	inst.osgi.bundleManager.InstallRefreshPackages = osgiOpts.Bundle.Install.RefreshPackages
-
-	cryptoOpts := instanceOpts.Crypto
-	inst.crypto.keyBundleSymbolicName = cryptoOpts.KeyBundleSymbolicName
-
-	workflowOpts := instanceOpts.Workflow
-	inst.workflowManager.LibRoot = workflowOpts.LibRoot
-	inst.workflowManager.ConfigRoot = workflowOpts.ConfigRoot
-	inst.workflowManager.ToggleRetryDelay = workflowOpts.ToggleRetryDelay
-	inst.workflowManager.ToggleRetryTimeout = workflowOpts.ToggleRetryTimeout
-}
-
-func (im *InstanceManager) configureCheckOpts(config *cfg.Config) {
-	opts := config.Values().Instance.Check
-
-	im.CheckOpts.Warmup = opts.Warmup
-	im.CheckOpts.Interval = opts.Interval
-	im.CheckOpts.DoneThreshold = opts.DoneThreshold
-
-	if opts.BundleStable.SymbolicNamesIgnored != nil {
-		im.CheckOpts.BundleStable.SymbolicNamesIgnored = opts.BundleStable.SymbolicNamesIgnored
-	}
-	if opts.EventStable.ReceivedMaxAge > 0 {
-		im.CheckOpts.EventStable.ReceivedMaxAge = opts.EventStable.ReceivedMaxAge
-	}
-	if opts.EventStable.TopicsUnstable != nil {
-		im.CheckOpts.EventStable.TopicsUnstable = opts.EventStable.TopicsUnstable
-	}
-	if opts.EventStable.DetailsIgnored != nil {
-		im.CheckOpts.EventStable.DetailsIgnored = opts.EventStable.DetailsIgnored
-	}
-	im.CheckOpts.AwaitStrict = opts.AwaitStrict
-	if opts.AwaitStartedTimeout.Duration > 0 {
-		im.CheckOpts.AwaitStartedTimeout.Duration = opts.AwaitStartedTimeout.Duration
-	}
-	if opts.AwaitStoppedTimeout.Duration > 0 {
-		im.CheckOpts.AwaitStoppedTimeout.Duration = opts.AwaitStoppedTimeout.Duration
-	}
-	im.CheckOpts.Installer.State = opts.Installer.State
-	im.CheckOpts.Installer.Pause = opts.Installer.Pause
-
-	im.CheckOpts.Reachable.Timeout = opts.Reachable.Timeout
-	im.CheckOpts.Unreachable.Timeout = opts.Unreachable.Timeout
-}
-
-func (im *InstanceManager) configureRest(config *cfg.Config) {
-	im.ProcessingMode = instance.ProcessingMode(config.Values().Instance.ProcessingMode)
+	return filtered
 }
 
 func InstanceIds(instances []Instance) string {

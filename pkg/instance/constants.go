@@ -17,8 +17,6 @@ const (
 	AemVersionUnknown    = "<unknown>"
 )
 
-type ProcessingMode string
-
 const (
 	ProcessingAuto     = "auto"
 	ProcessingParallel = "parallel"

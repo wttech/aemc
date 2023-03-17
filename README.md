@@ -277,11 +277,14 @@ instance:
     # Wait only for those instances whose state has been changed internally (unaware of external changes)
     await_strict: true
     # Max time to wait for the instance to be healthy after executing the start script or e.g deploying a package
-    await_started_timeout:
-      duration: 30m
+    await_started:
+      timeout: 30m
     # Max time to wait for the instance to be stopped after executing the stop script
-    await_stopped_timeout:
-      duration: 10m
+    await_stopped:
+      timeout: 10m
+    # Max time in which socket connection to instance should be established
+    reachable:
+      timeout: 3s
     # Bundle state tracking
     bundle_stable:
       symbolic_names_ignored: []

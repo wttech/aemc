@@ -26,7 +26,7 @@ func (c *CLI) configInitCmd() *cobra.Command {
 		Aliases: []string{"init"},
 		Short:   "Initialize configuration",
 		Run: func(cmd *cobra.Command, args []string) {
-			changed, err := c.config.InitializeWithChanged()
+			changed, err := c.aem.Config().InitializeWithChanged()
 			if err != nil {
 				c.Error(err)
 				return
@@ -49,23 +49,16 @@ func (c *CLI) configExportCmd() *cobra.Command {
 		Short:   "Exports current configuration",
 		Run: func(cmd *cobra.Command, args []string) {
 			file, _ := cmd.Flags().GetString("file")
-			changed, err := c.config.ExportWithChanged(file)
-			if err != nil {
+			if err := c.aem.Config().Export(file); err != nil {
 				c.Error(err)
 				return
 			}
-
 			c.SetOutput("file", file)
-
-			if changed {
-				c.Changed("config exported")
-			} else {
-				c.Ok("config already exported")
-			}
+			c.Changed("config exported")
 		},
 	}
 	cmd.Flags().StringP("file", "f", "", "Target file path")
-	cmd.MarkFlagRequired("file")
+	_ = cmd.MarkFlagRequired("file")
 	return cmd
 }
 
@@ -100,13 +93,13 @@ func (c *CLI) configValueCmd() *cobra.Command {
 				err   error
 			)
 			if key != "" {
-				value, err = tplx.RenderKey(key, c.config.ValuesMap())
+				value, err = tplx.RenderKey(key, c.aem.Config().Values().AllSettings())
 				if err != nil {
 					c.Error(fmt.Errorf("cannot read config value using key '%s': %w", key, err))
 					return
 				}
 			} else {
-				value, err = tplx.RenderString(template, c.config.ValuesMap())
+				value, err = tplx.RenderString(template, c.aem.Config().Values().AllSettings())
 				if err != nil {
 					c.Error(fmt.Errorf("cannot read config value using template '%s': %w", template, err))
 					return

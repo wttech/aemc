@@ -272,8 +272,8 @@ func (c *CLI) instanceAwaitCmd() *cobra.Command {
 			c.Ok("instance(s) awaited")
 		},
 	}
-	cmd.Flags().IntVar(&(c.config.Values().Instance.Check.DoneThreshold),
-		"done-threshold", c.config.Values().Instance.Check.DoneThreshold,
+	cmd.Flags().IntVar(&(c.aem.InstanceManager().CheckOpts.DoneThreshold),
+		"done-threshold", c.aem.InstanceManager().CheckOpts.DoneThreshold,
 		"Number of successful checks indicating done")
 	cmd.Flags().Bool("done-never", false, "Repeat checks endlessly")
 	return cmd

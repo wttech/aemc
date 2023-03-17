@@ -65,14 +65,15 @@ instance:
     interval: 5s
     # Number of successful check attempts that indicates end of checking
     done_threshold: 3
-    # Wait only for those instances whose state has been changed internally (unaware of external changes)
-    await_strict: true
     # Max time to wait for the instance to be healthy after executing the start script or e.g deploying a package
-    await_started_timeout:
-      duration: 30m
+    await_started:
+      timeout: 30m
     # Max time to wait for the instance to be stopped after executing the stop script
-    await_stopped_timeout:
-      duration: 10m
+    await_stopped:
+      timeout: 10m
+    # Max time in which socket connection to instance should be established
+    reachable:
+      timeout: 3s
     # Bundle state tracking
     bundle_stable:
       symbolic_names_ignored: []
@@ -98,6 +99,9 @@ instance:
 
   # Managed locally (set up automatically)
   local:
+    # Wait only for those instances whose state has been changed internally (unaware of external changes)
+    await_strict: true
+
     # Current runtime dir (Sling launchpad, JCR repository)
     unpack_dir: "aem/home/var/instance"
     # Archived runtime dir (AEM backup files '*.aemb.zst')
@@ -188,5 +192,5 @@ output:
   log:
     # File path of logs written especially when output format is different than 'text'
     file: aem/home/var/log/aem.log
-    # Controls if script outputs and log entries should be printed to console instead of written to file when output format is 'text'
-    console: true
+    # Controls where outputs and logs should be written to when format is 'text' (console|file|both)
+    mode: console

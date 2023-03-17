@@ -67,13 +67,8 @@ func NewLocal(i *Instance) *LocalInstance {
 	li := &LocalInstance{instance: i}
 	li.Version = "1"
 	li.StartOpts = []string{}
-	li.RunModes = []string{"local"}
-	li.JvmOpts = []string{
-		"-server",
-		"-Djava.awt.headless=true",
-		"-Djava.io.tmpdir=" + pathx.Canonical(i.manager.aem.baseOpts.TmpDir),
-		"-Duser.language=en", "-Duser.country=US", "-Duser.timezone=UTC", "-Duser.name=" + common.AppId,
-	}
+	li.RunModes = []string{}
+	li.JvmOpts = []string{}
 	li.EnvVars = []string{}
 	li.SecretVars = []string{}
 	li.SlingProps = []string{}

@@ -22,12 +22,14 @@ type PackageManager struct {
 }
 
 func NewPackageManager(res *Instance) *PackageManager {
+	cv := res.manager.aem.config.Values()
+
 	return &PackageManager{
 		instance: res,
 
-		SnapshotDeploySkipping: false,
-		SnapshotPatterns:       []string{"**/*-SNAPSHOT.zip"},
-		ToggledWorkflows:       []string{},
+		SnapshotDeploySkipping: cv.GetBool("instance.package.snapshot_deploy_skipping"),
+		SnapshotPatterns:       cv.GetStringSlice("instance.package.snapshot_patterns"),
+		ToggledWorkflows:       cv.GetStringSlice("instance.package.toggled_workflows"),
 	}
 }
 

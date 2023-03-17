@@ -33,8 +33,14 @@ type Status struct {
 	Timeout time.Duration
 }
 
-func NewStatus(res *Instance) *Status {
-	return &Status{instance: res, Timeout: time.Millisecond * 500}
+func NewStatus(i *Instance) *Status {
+	cv := i.manager.aem.config.Values()
+
+	return &Status{
+		instance: i,
+
+		Timeout: cv.GetDuration("instance.status.timeout"),
+	}
 }
 
 func (sm Status) SystemProps() (map[string]string, error) {

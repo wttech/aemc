@@ -34,21 +34,12 @@ func (c *Config) Values() *viper.Viper {
 	return c.viper
 }
 
-// NewConfig creates a new config
 func NewConfig() *Config {
 	result := new(Config)
-	result.viper = newViper()
-
+	result.setDefaults()
 	result.readFromFile(FileEffective(), true)
 	result.readFromEnv()
-
 	return result
-}
-
-func newViper() *viper.Viper {
-	v := viper.New()
-	setDefaults(v)
-	return v
 }
 
 func (c *Config) readFromEnv() {
@@ -96,6 +87,14 @@ func (c *Config) readFromFile(file string, templating bool) {
 		log.Fatalf("cannot load AEM config file properly '%s': %s", file, err)
 		return
 	}
+}
+
+func (c *Config) tplString(text string) string {
+	result, err := tplx.RenderString(text, c.tplData())
+	if err != nil {
+		log.Fatalf("cannot render AEM config string\nerror: %s\nvalue:\n%s", err, text)
+	}
+	return result
 }
 
 // TODO config defaults are not interpolated, maybe they should with data below

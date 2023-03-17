@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
-	"github.com/wttech/aemc/pkg/base"
 	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/filex"
@@ -20,21 +19,19 @@ import (
 )
 
 type Opts struct {
-	baseOpts *base.Opts
-
 	HomeDir                 string
 	DownloadURL             string
 	DownloadURLReplacements map[string]string
 	VersionConstraints      version.Constraints
 }
 
-func NewOpts(baseOpts *cfg.Config) *Opts {
+func NewOpts(config *cfg.Config) *Opts {
+	cv := config.Values()
 	return &Opts{
-		baseOpts:                baseOpts,
-		HomeDir:                 "",
-		DownloadURL:             "",
-		DownloadURLReplacements: nil,
-		VersionConstraints:      nil,
+		HomeDir:                 cv.GetString("java.home_dir"),
+		DownloadURL:             cv.GetString("java.download.url"),
+		DownloadURLReplacements: cv.GetStringMapString("java.download.replacements"),
+		VersionConstraints:      version.MustConstraints(version.NewConstraint(cv.GetString("java.version_constraints"))),
 	}
 }
 
@@ -215,21 +212,4 @@ func (o *Opts) readCurrentVersion() (string, error) {
 	result := stringsx.Between(line, "\"", "\"")
 	result = strings.Split(result, "_")[0]
 	return strings.TrimSpace(result), nil
-}
-
-func (o *Opts) Configure(config *cfg.Config) {
-	opts := config.Values().Java
-
-	if len(opts.HomeDir) > 0 {
-		o.HomeDir = opts.HomeDir
-	}
-	if len(opts.Download.URL) > 0 {
-		o.DownloadURL = opts.Download.URL
-	}
-	o.DownloadURLReplacements = opts.Download.Replacements
-	if len(opts.VersionConstraints) > 0 {
-		o.VersionConstraints = version.MustConstraints(version.NewConstraint(opts.VersionConstraints))
-	} else if opts.VersionConstraints == "" {
-		o.VersionConstraints = nil
-	}
 }

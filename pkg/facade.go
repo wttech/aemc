@@ -26,7 +26,7 @@ func NewAem() *Aem {
 	result := new(Aem)
 	result.output = os.Stdout
 	result.config = cfg.NewConfig()
-	result.project = project.New(result)
+	result.project = project.New(result.config)
 	result.baseOpts = base.NewOpts(result.config)
 	result.javaOpts = java.NewOpts(result.config)
 	result.instanceManager = NewInstanceManager(result)

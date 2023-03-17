@@ -39,7 +39,9 @@ type CLI struct {
 	started time.Time
 	ended   time.Time
 
-	// TODO output struct here
+	inputFormat string
+	inputString string
+	inputFile   string
 
 	outputFormat   string
 	outputValue    string
@@ -56,6 +58,13 @@ func NewCLI() *CLI {
 
 	result.aem = pkg.NewAem()
 
+	cv := result.aem.Config().Values()
+
+	result.inputFormat = cv.GetString("input.format")
+	result.inputString = cv.GetString("input.string")
+	result.inputFile = cv.GetString("input.file")
+
+	// TODO output also configured here?
 	result.outputLogFile = common.LogFile
 	result.outputLogMode = cfg.OutputLogConsole
 	result.outputValue = common.OutputValueAll
@@ -102,27 +111,22 @@ func (c *CLI) MustExec() {
 func (c *CLI) configure() {
 	c.configureOutput()
 	c.configureLogger()
-	c.aem.Configure(c.config)
 	c.started = time.Now()
 }
 
 func (c *CLI) configureOutput() {
-	opts := c.config.Values().Output
+	cv := c.aem.Config().Values()
 
-	c.outputValue = opts.Value
-	c.outputFormat = strings.ReplaceAll(opts.Format, "yaml", "yml")
-	c.outputLogFile = opts.Log.File
-
-	c.outputLogMode = opts.Log.Mode
-	if c.outputLogMode == "" {
-		c.outputLogMode = cfg.OutputLogConsole
-	}
+	c.outputValue = cv.GetString("output.value")
+	c.outputFormat = strings.ReplaceAll(cv.GetString("output.format"), "yaml", "yml")
+	c.outputLogFile = cv.GetString("output.log.file")
+	c.outputLogMode = cv.GetString("output.log.mode")
 
 	if c.outputValue != common.OutputValueNone && c.outputValue != common.OutputValueAll {
 		c.outputFormat = fmtx.Text
 	}
 
-	noColor := opts.NoColor
+	noColor := cv.GetBool("output.no_color")
 	if c.outputFormat != fmtx.Text || c.outputLogMode != cfg.OutputLogConsole {
 		noColor = true
 	}
@@ -165,14 +169,17 @@ func (c *CLI) configureOutput() {
 }
 
 func (c *CLI) configureLogger() {
+	cv := c.aem.Config().Values()
+
 	log.SetFormatter(&log.TextFormatter{
 		ForceColors:     !c.outputNoColor,
-		TimestampFormat: c.config.Values().Log.TimestampFormat,
-		FullTimestamp:   c.config.Values().Log.FullTimestamp,
+		TimestampFormat: cv.GetString("log.timestamp_format"),
+		FullTimestamp:   cv.GetBool("log.full_timestamp"),
 	})
-	level, err := log.ParseLevel(c.config.Values().Log.Level)
+	levelName := cv.GetString("log.level")
+	level, err := log.ParseLevel(levelName)
 	if err != nil {
-		log.Fatalf("unsupported log level specified: '%s'", c.config.Values().Log.Level)
+		log.Fatalf("unsupported log level specified: '%s'", levelName)
 	}
 	log.SetLevel(level)
 }
@@ -341,25 +348,21 @@ func (c *CLI) Error(err error) {
 }
 
 func (c *CLI) ReadInput(out any) error {
-	format := c.config.Values().Input.Format
-	str := c.config.Values().Input.String
-	file := c.config.Values().Input.File
-
-	if len(str) > 0 {
-		err := fmtx.UnmarshalDataInFormat(format, io.NopCloser(strings.NewReader(str)), out)
+	if c.inputString != "" {
+		err := fmtx.UnmarshalDataInFormat(c.inputFormat, io.NopCloser(strings.NewReader(c.inputString)), out)
 		if err != nil {
 			return fmt.Errorf("cannot parse string input properly: %w", err)
 		}
-	} else if file == common.STDIn {
-		err := fmtx.UnmarshalDataInFormat(format, io.NopCloser(bufio.NewReader(os.Stdin)), out)
+	} else if c.inputFile == common.STDIn {
+		err := fmtx.UnmarshalDataInFormat(c.inputFormat, io.NopCloser(bufio.NewReader(os.Stdin)), out)
 		if err != nil {
 			return fmt.Errorf("cannot parse STDIN input properly: %w", err)
 		}
 	} else {
-		if !pathx.Exists(file) {
-			return fmt.Errorf("cannot load input file as it does not exist '%s'", file)
+		if !pathx.Exists(c.inputFile) {
+			return fmt.Errorf("cannot load input file as it does not exist '%s'", c.inputFile)
 		}
-		if err := fmtx.UnmarshalFileInFormat(format, file, out); err != nil {
+		if err := fmtx.UnmarshalFileInFormat(c.inputFormat, c.inputFile, out); err != nil {
 			return err
 		}
 	}

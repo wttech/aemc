@@ -6,7 +6,6 @@ import (
 	"github.com/magiconair/properties"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
-	"github.com/wttech/aemc/pkg"
 	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/filex"
@@ -17,11 +16,11 @@ import (
 )
 
 type Project struct {
-	aem *pkg.Aem
+	config *cfg.Config
 }
 
-func New(aem *pkg.Aem) *Project {
-	return &Project{aem}
+func New(config *cfg.Config) *Project {
+	return &Project{config}
 }
 
 type Kind string
@@ -71,7 +70,7 @@ var appClassicFiles embed.FS
 var appCloudFiles embed.FS
 
 func (p Project) InitializeWithChanged(kind Kind) (bool, error) {
-	if p.aem.Config().TemplateFileExists() {
+	if p.config.TemplateFileExists() {
 		return false, nil
 	}
 	if err := p.initialize(kind); err != nil {

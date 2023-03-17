@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg/cfg"
-	"github.com/wttech/aemc/pkg/instance"
 	"strings"
 )
 
@@ -36,42 +35,45 @@ func (c *CLI) rootCmd() *cobra.Command {
 
 func (c *CLI) rootFlags(cmd *cobra.Command) {
 	// input/output
-	cmd.PersistentFlags().StringVar(&(c.config.Values().Input.Format),
-		"input-format", c.config.Values().Input.Format,
+	cmd.PersistentFlags().StringVar(&(c.inputFormat),
+		"input-format", c.inputFormat,
 		"Controls input format ("+strings.Join(cfg.InputFormats(), "|")+")")
-	cmd.PersistentFlags().StringVar(&(c.config.Values().Input.File),
-		"input-file", c.config.Values().Input.File,
+	cmd.PersistentFlags().StringVar(&(c.inputFile),
+		"input-file", c.inputFile,
 		"Provides input as file path")
-	cmd.PersistentFlags().StringVar(&(c.config.Values().Input.String),
-		"input-string", c.config.Values().Input.String,
+	cmd.PersistentFlags().StringVar(&(c.inputString),
+		"input-string", c.inputString,
 		"Provides input as string")
-	cmd.PersistentFlags().StringVar(&(c.config.Values().Output.Format),
-		"output-format", c.config.Values().Output.Format,
+	cmd.PersistentFlags().StringVar(&(c.outputFormat),
+		"output-format", c.outputFormat,
 		"Controls output format ("+strings.Join(cfg.OutputFormats(), "|")+")")
-	cmd.PersistentFlags().StringVar(&(c.config.Values().Output.Log.File),
-		"output-log-file", c.config.Values().Output.Log.File,
+	cmd.PersistentFlags().StringVar(&(c.outputLogFile),
+		"output-log-file", c.outputLogFile,
 		"Controls output file path")
-	cmd.PersistentFlags().StringVar(&(c.config.Values().Output.Log.Mode),
-		"output-log-mode", c.config.Values().Output.Log.Mode,
+	cmd.PersistentFlags().StringVar(&(c.outputLogMode),
+		"output-log-mode", c.outputLogMode,
 		"Controls where outputs and logs should be written to when format is \"text\""+(strings.Join(cfg.OutputLogModes(), "|")+")"))
-	cmd.PersistentFlags().StringVar(&(c.config.Values().Output.Value),
-		"output-value", c.config.Values().Output.Value,
+	cmd.PersistentFlags().StringVar(&(c.outputValue),
+		"output-value", c.outputValue,
 		"Limits output to single variable")
 
 	// instance filtering
-	cmd.PersistentFlags().StringVarP(&(c.config.Values().Instance.ConfigURL),
-		"instance-url", "U", c.config.Values().Instance.ConfigURL,
-		"Use only AEM instance at specified URL")
-	cmd.PersistentFlags().StringVarP(&(c.config.Values().Instance.Filter.ID),
-		"instance-id", "I", c.config.Values().Instance.Filter.ID,
-		"Use only AEM instance with specified ID")
-	cmd.PersistentFlags().BoolVarP(&(c.config.Values().Instance.Filter.Author),
-		"instance-author", "A", c.config.Values().Instance.Filter.Author,
-		"Use only AEM author instance")
-	cmd.PersistentFlags().BoolVarP(&(c.config.Values().Instance.Filter.Publish),
-		"instance-publish", "P", c.config.Values().Instance.Filter.Publish,
-		"Use only AEM publish instance")
-	cmd.PersistentFlags().StringVar(&(c.config.Values().Instance.ProcessingMode),
-		"instance-processing", c.config.Values().Instance.ProcessingMode,
-		"Controls processing mode for instances ("+(strings.Join(instance.ProcessingModes(), "|")+")"))
+	// TODO ...
+	/*
+		cmd.PersistentFlags().StringVarP(&(c.config.Values().Instance.ConfigURL),
+			"instance-url", "U", c.config.Values().Instance.ConfigURL,
+			"Use only AEM instance at specified URL")
+		cmd.PersistentFlags().StringVarP(&(c.config.Values().Instance.Filter.ID),
+			"instance-id", "I", c.config.Values().Instance.Filter.ID,
+			"Use only AEM instance with specified ID")
+		cmd.PersistentFlags().BoolVarP(&(c.config.Values().Instance.Filter.Author),
+			"instance-author", "A", c.config.Values().Instance.Filter.Author,
+			"Use only AEM author instance")
+		cmd.PersistentFlags().BoolVarP(&(c.config.Values().Instance.Filter.Publish),
+			"instance-publish", "P", c.config.Values().Instance.Filter.Publish,
+			"Use only AEM publish instance")
+		cmd.PersistentFlags().StringVar(&(c.config.Values().Instance.ProcessingMode),
+			"instance-processing", c.config.Values().Instance.ProcessingMode,
+			"Controls processing mode for instances ("+(strings.Join(instance.ProcessingModes(), "|")+")"))
+	*/
 }

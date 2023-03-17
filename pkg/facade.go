@@ -5,6 +5,7 @@ import (
 	"github.com/wttech/aemc/pkg/base"
 	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/java"
+	"github.com/wttech/aemc/pkg/project"
 	"io"
 	"os"
 	"os/exec"
@@ -14,6 +15,7 @@ import (
 type Aem struct {
 	output          io.Writer
 	config          *cfg.Config
+	project         *project.Project
 	baseOpts        *base.Opts
 	javaOpts        *java.Opts
 	instanceManager *InstanceManager
@@ -24,6 +26,7 @@ func NewAem() *Aem {
 	result := new(Aem)
 	result.output = os.Stdout
 	result.config = cfg.NewConfig()
+	result.project = project.New(result)
 	result.baseOpts = base.NewOpts(result.config)
 	result.javaOpts = java.NewOpts(result.config)
 	result.instanceManager = NewInstanceManager(result)
@@ -57,10 +60,4 @@ func (a *Aem) JavaOpts() *java.Opts {
 
 func (a *Aem) InstanceManager() *InstanceManager {
 	return a.instanceManager
-}
-
-func (a *Aem) Configure(config *cfg.Config) {
-	a.baseOpts.Configure(config)
-	a.javaOpts.Configure(config)
-	a.instanceManager.Configure(config)
 }

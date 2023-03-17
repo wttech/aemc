@@ -35,11 +35,11 @@ type CLI struct {
 	aem     *pkg.Aem
 	project *project.Project
 
-	cmd   *cobra.Command
-	error error
-
+	cmd     *cobra.Command
 	started time.Time
 	ended   time.Time
+
+	// TODO output struct here
 
 	outputFormat   string
 	outputValue    string
@@ -51,11 +51,10 @@ type CLI struct {
 	outputNoColor  bool
 }
 
-func NewCLI(aem *pkg.Aem) *CLI {
+func NewCLI() *CLI {
 	result := new(CLI)
 
-	result.aem = aem
-	result.project = project.New(aem)
+	result.aem = pkg.NewAem()
 
 	result.outputLogFile = common.LogFile
 	result.outputLogMode = cfg.OutputLogConsole
@@ -90,8 +89,8 @@ func outputResponseDefault() *OutputResponse {
 	}
 }
 
-func (c *CLI) Exec() {
-	c.error = c.cmd.Execute()
+func (c *CLI) Exec() error {
+	return c.cmd.Execute()
 }
 
 func (c *CLI) configure() {

@@ -50,6 +50,9 @@ func setDefaults(v *viper.Viper) {
 		"java.util.ResourceBundle",
 	})
 
+	v.SetDefault("instance.local.oak_run.download_url", "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.44.0/oak-run-1.44.0.jar")
+	v.SetDefault("instance.local.oak_run.store_path", "crx-quickstart/repository/segmentstore")
+
 	v.SetDefault("instance.local.service_mode", false)
 
 	v.SetDefault("instance.package.snapshot_deploy_skipping", true)

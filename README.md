@@ -313,7 +313,7 @@ instance:
     backup_dir: "aem/home/var/backup"
 
     # Oak Run tool options (offline instance management)
-    oakrun:
+    oak_run:
       download_url: "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.44.0/oak-run-1.44.0.jar"
       store_path: "crx-quickstart/repository/segmentstore"
 

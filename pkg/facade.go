@@ -13,6 +13,7 @@ import (
 // Aem is a facade to access AEM-related API
 type Aem struct {
 	output          io.Writer
+	config          *cfg.Config
 	baseOpts        *base.Opts
 	javaOpts        *java.Opts
 	instanceManager *InstanceManager
@@ -22,8 +23,9 @@ type Aem struct {
 func NewAem() *Aem {
 	result := new(Aem)
 	result.output = os.Stdout
-	result.baseOpts = base.NewOpts()
-	result.javaOpts = java.NewOpts(result.baseOpts)
+	result.config = cfg.NewConfig()
+	result.baseOpts = base.NewOpts(result.config)
+	result.javaOpts = java.NewOpts(result.config)
 	result.instanceManager = NewInstanceManager(result)
 	return result
 }
@@ -39,6 +41,10 @@ func (a *Aem) SetOutput(output io.Writer) {
 func (a *Aem) CommandOutput(cmd *exec.Cmd) {
 	cmd.Stdout = a.output
 	cmd.Stderr = a.output
+}
+
+func (a *Aem) Config() *cfg.Config {
+	return a.config
 }
 
 func (a *Aem) BaseOpts() *base.Opts {

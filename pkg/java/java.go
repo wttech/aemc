@@ -28,7 +28,7 @@ type Opts struct {
 	VersionConstraints      version.Constraints
 }
 
-func NewOpts(baseOpts *base.Opts) *Opts {
+func NewOpts(baseOpts *cfg.Config) *Opts {
 	return &Opts{
 		baseOpts:                baseOpts,
 		HomeDir:                 "",

@@ -34,7 +34,6 @@ const (
 type CLI struct {
 	aem     *pkg.Aem
 	project *project.Project
-	config  *cfg.Config
 
 	cmd   *cobra.Command
 	error error
@@ -52,12 +51,11 @@ type CLI struct {
 	outputNoColor  bool
 }
 
-func NewCLI(aem *pkg.Aem, config *cfg.Config) *CLI {
+func NewCLI(aem *pkg.Aem) *CLI {
 	result := new(CLI)
 
 	result.aem = aem
-	result.config = config
-	result.project = project.New(config)
+	result.project = project.New(aem)
 
 	result.outputLogFile = common.LogFile
 	result.outputLogMode = cfg.OutputLogConsole

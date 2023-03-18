@@ -78,7 +78,7 @@ func (p *Package) InstallWithChanged() (bool, error) {
 	if !state.Exists {
 		return false, fmt.Errorf("%s > package '%s' cannot be installed as it does not exist", p.manager.instance.ID(), p.PID.String())
 	}
-	if !state.Data.Installed() { // TODO checksum comparison needed here
+	if !state.Data.Installed() {
 		return true, p.manager.Install(state.Data.Path)
 	}
 	return false, nil

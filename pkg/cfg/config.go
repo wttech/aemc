@@ -97,7 +97,6 @@ func (c *Config) tplString(text string) string {
 	return result
 }
 
-// TODO config defaults are not interpolated, maybe they should with data below
 func (c *Config) tplData() map[string]any {
 	var ext string
 	if osx.IsWindows() {

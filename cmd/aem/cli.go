@@ -54,27 +54,10 @@ type CLI struct {
 }
 
 func NewCLI() *CLI {
-	result := new(CLI)
-
-	result.aem = pkg.NewAem()
-
-	cv := result.aem.Config().Values()
-
-	result.inputFormat = cv.GetString("input.format")
-	result.inputString = cv.GetString("input.string")
-	result.inputFile = cv.GetString("input.file")
-
-	// TODO output also configured here?
-	result.outputLogFile = common.LogFile
-	result.outputLogMode = cfg.OutputLogConsole
-	result.outputValue = common.OutputValueAll
-	result.outputFormat = fmtx.Text
-	result.outputBuffer = bytes.NewBufferString("")
-	result.outputResponse = outputResponseDefault()
-	result.outputNoColor = color.NoColor
-	result.cmd = result.rootCmd()
-
-	return result
+	c := new(CLI)
+	c.aem = pkg.NewAem()
+	c.cmd = c.rootCmd()
+	return c
 }
 
 // OutputResponse defines a structure of data to be printed
@@ -108,15 +91,16 @@ func (c *CLI) MustExec() {
 	}
 }
 
-func (c *CLI) configure() {
-	c.configureOutput()
-	c.configureLogger()
-	c.started = time.Now()
-}
-
-func (c *CLI) configureOutput() {
+// onStart initializes CLI settings (not the NewCLI method) because since that moment PFlags are available (they are bound to Viper config)
+func (c *CLI) onStart() {
 	cv := c.aem.Config().Values()
 
+	c.inputFormat = cv.GetString("input.format")
+	c.inputString = cv.GetString("input.string")
+	c.inputFile = cv.GetString("input.file")
+
+	c.outputBuffer = bytes.NewBufferString("")
+	c.outputResponse = outputResponseDefault()
 	c.outputValue = cv.GetString("output.value")
 	c.outputFormat = strings.ReplaceAll(cv.GetString("output.format"), "yaml", "yml")
 	c.outputLogFile = cv.GetString("output.log.file")
@@ -134,7 +118,7 @@ func (c *CLI) configureOutput() {
 	color.NoColor = noColor
 
 	if !lo.Contains(cfg.OutputFormats(), c.outputFormat) {
-		log.Fatalf("unsupported CLI output format detected '%s'! supported ones are: %s", c.outputFormat, strings.Join(cfg.OutputFormats(), ", "))
+		log.Fatalf("unsupported output format detected '%s'! supported ones are: %s", c.outputFormat, strings.Join(cfg.OutputFormats(), ", "))
 	}
 
 	if c.outputFormat == fmtx.Text {
@@ -166,10 +150,6 @@ func (c *CLI) configureOutput() {
 		c.aem.SetOutput(outputWriter)
 		log.SetOutput(outputWriter)
 	}
-}
-
-func (c *CLI) configureLogger() {
-	cv := c.aem.Config().Values()
 
 	log.SetFormatter(&log.TextFormatter{
 		ForceColors:     !c.outputNoColor,
@@ -182,26 +162,12 @@ func (c *CLI) configureLogger() {
 		log.Fatalf("unsupported log level specified: '%s'", levelName)
 	}
 	log.SetLevel(level)
+
+	c.started = time.Now()
 }
 
-func (c *CLI) openOutputLogFile() *os.File {
-	err := pathx.Ensure(path.Dir(c.outputLogFile))
-	if err != nil {
-		return nil
-	}
-	file, err := os.OpenFile(c.outputLogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatalf(fmt.Sprintf("cannot open/create AEM output file properly at path '%s': %s", c.outputLogFile, err))
-	}
-	return file
-}
-
-func (c *CLI) elapsed() time.Duration {
-	return c.ended.Sub(c.started)
-}
-
-// Exit reads response data then prints currently captured output then exits app with proper status code
-func (c *CLI) exit() {
+// onEnd reads response data then prints currently captured output then exits app with proper status code
+func (c *CLI) onEnd() {
 	c.ended = time.Now()
 	c.outputResponse.Ended = c.ended
 	c.outputResponse.Elapsed = c.elapsed()
@@ -217,6 +183,22 @@ func (c *CLI) exit() {
 		os.Exit(1)
 	}
 	os.Exit(0)
+}
+
+func (c *CLI) elapsed() time.Duration {
+	return c.ended.Sub(c.started)
+}
+
+func (c *CLI) openOutputLogFile() *os.File {
+	err := pathx.Ensure(path.Dir(c.outputLogFile))
+	if err != nil {
+		return nil
+	}
+	file, err := os.OpenFile(c.outputLogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf(fmt.Sprintf("cannot open/create AEM output file properly at path '%s': %s", c.outputLogFile, err))
+	}
+	return file
 }
 
 func (c *CLI) printOutputText() {
@@ -315,12 +297,16 @@ func (c *CLI) printOutputMarshaled() {
 			log.Fatalf("cannot serialize CLI output to to target JSON format!")
 		}
 		fmt.Println(json)
+		break
 	case fmtx.YML:
 		yml, err := fmtx.MarshalYML(c.outputResponse)
 		if err != nil {
 			log.Fatalf("cannot serialize CLI output to to target YML format!")
 		}
 		fmt.Println(yml)
+		break
+	default:
+		log.Fatalf("cannot serialize CLI output to unsupported format '%s'", c.outputFormat)
 	}
 }
 

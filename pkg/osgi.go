@@ -19,6 +19,8 @@ type OSGi struct {
 }
 
 func NewOSGi(instance *Instance) *OSGi {
+	cv := instance.manager.aem.config.Values()
+
 	return &OSGi{
 		instance: instance,
 
@@ -27,7 +29,7 @@ func NewOSGi(instance *Instance) *OSGi {
 		eventManager:     &OSGiEventManager{instance: instance},
 		configManager:    &OSGiConfigManager{instance: instance},
 
-		shutdownDelay: time.Second * 3,
+		shutdownDelay: cv.GetDuration("instance.osgi.shutdown_delay"),
 	}
 }
 

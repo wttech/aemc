@@ -9,7 +9,10 @@ import (
 	"time"
 )
 
-func setDefaults(v *viper.Viper) {
+func (c *Config) setDefaults() {
+	v := viper.New()
+	c.viper = v
+
 	v.SetDefault("log.level", "info")
 	v.SetDefault("log.timestamp_format", "2006-01-02 15:04:05")
 	v.SetDefault("log.full_timestamp", true)
@@ -18,49 +21,64 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("input.format", fmtx.YML)
 	v.SetDefault("input.file", common.STDIn)
+
 	v.SetDefault("output.format", fmtx.Text)
 	v.SetDefault("output.no_color", color.NoColor)
 	v.SetDefault("output.value", common.OutputValueAll)
 	v.SetDefault("output.log.file", common.LogFile)
 	v.SetDefault("output.log.mode", OutputLogConsole)
 
+	v.SetDefault("java.home_dir", "")
+	v.SetDefault("java.version_constraints", ">= 11, < 12")
+	v.SetDefault("java.download.url", c.tplString("https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.18_10.[[.ArchiveExt]]"))
+	v.SetDefault("java.download.replacements", map[string]string{"darwin": "mac", "x86_64": "x64", "amd64": "x64", "386": "x86-32", "arm64": "x64", "aarch64": "x64"})
+
 	v.SetDefault("instance.processing_mode", instance.ProcessingAuto)
 
-	v.SetDefault("instance.check.warmup", "1s")
-	v.SetDefault("instance.check.interval", "5s")
-	v.SetDefault("instance.check.done_threshold", 5)
+	v.SetDefault("instance.check.warmup", time.Second*1)
+	v.SetDefault("instance.check.interval", time.Second*5)
+	v.SetDefault("instance.check.done_threshold", 3)
 	v.SetDefault("instance.check.installer.state", true)
 	v.SetDefault("instance.check.installer.pause", true)
 
 	v.SetDefault("instance.check.await_strict", true)
-	v.SetDefault("instance.check.await_started_timeout.duration", "30m")
-	v.SetDefault("instance.check.await_stopped_timeout.duration", "10m")
-	v.SetDefault("instance.check.reachable.timeout", "3s")
-	v.SetDefault("instance.check.unreachable.timeout", "3s")
+	v.SetDefault("instance.check.await_started.timeout", time.Minute*30)
+	v.SetDefault("instance.check.await_stopped.timeout", time.Minute*10)
 
-	v.SetDefault("instance.check.event_stable.received_max_age", "5s")
-	v.SetDefault("instance.check.event_stable.topics_unstable", []string{
-		"org/osgi/framework/ServiceEvent/*",
-		"org/osgi/framework/FrameworkEvent/*",
-		"org/osgi/framework/BundleEvent/*",
-	})
-	v.SetDefault("instance.check.event_stable.details_ignored", []string{
-		"*.*MBean",
-		"org.osgi.service.component.runtime.ServiceComponentRuntime",
-		"java.util.ResourceBundle",
-	})
+	v.SetDefault("instance.check.reachable.timeout", time.Second*3)
 
+	v.SetDefault("instance.check.event_stable.received_max_age", time.Second*5)
+	v.SetDefault("instance.check.event_stable.topics_unstable", []string{"org/osgi/framework/ServiceEvent/*", "org/osgi/framework/FrameworkEvent/*", "org/osgi/framework/BundleEvent/*"})
+	v.SetDefault("instance.check.event_stable.details_ignored", []string{"*.*MBean", "org.osgi.service.component.runtime.ServiceComponentRuntime", "java.util.ResourceBundle"})
+
+	v.SetDefault("instance.check.installer.state", true)
+	v.SetDefault("instance.check.installer.pause", true)
+
+	v.SetDefault("instance.local.tool_dir", common.ToolDir)
+	v.SetDefault("instance.local.unpack_dir", common.VarDir+"/instance")
+	v.SetDefault("instance.local.override_dir", common.DefaultDir+"/"+common.VarDirName+"/instance")
+
+	v.SetDefault("instance.local.quickstart.dist_file", common.LibDir+"/{aem-sdk,cq-quickstart}-*.{zip,jar}")
+	v.SetDefault("instance.local.quickstart.license_file", common.LibDir+"/license.properties")
+
+	v.SetDefault("instance.local.await_strict", true)
 	v.SetDefault("instance.local.service_mode", false)
 
-	v.SetDefault("instance.package.snapshot_deploy_skipping", true)
+	v.SetDefault("instance.local.oak_run.download_url", "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.44.0/oak-run-1.44.0.jar")
+	v.SetDefault("instance.local.oak_run.store_path", "crx-quickstart/repository/segmentstore")
 
-	v.SetDefault("instance.repo.property_change_ignored", []string{
-		"jcr:created",
-		"cq:lastModified",
-		"transportPassword",
-	})
+	v.SetDefault("instance.status.timeout", time.Millisecond*500)
+
+	v.SetDefault("instance.package.snapshot_deploy_skipping", true)
+	v.SetDefault("instance.package.snapshot_patterns", []string{"**/*-SNAPSHOT.zip"})
+	v.SetDefault("instance.package.toggled_workflows", []string{})
+
+	v.SetDefault("instance.repo.property_change_ignored", []string{"jcr:created", "cq:lastModified", "transportPassword"})
 
 	v.SetDefault("instance.osgi.shutdown_delay", time.Second*3)
+	v.SetDefault("instance.osgi.bundle.install.start", true)
+	v.SetDefault("instance.osgi.bundle.install.start_level", 20)
+	v.SetDefault("instance.osgi.bundle.install.refresh_packages", true)
 
 	v.SetDefault("instance.crypto.key_bundle_symbolic_name", "com.adobe.granite.crypto.file")
 

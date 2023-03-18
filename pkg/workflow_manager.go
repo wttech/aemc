@@ -18,13 +18,15 @@ type WorkflowManager struct {
 }
 
 func NewWorkflowManager(i *Instance) *WorkflowManager {
+	cv := i.manager.aem.config.Values()
+
 	return &WorkflowManager{
 		instance: i,
 
-		LibRoot:            WorkflowLauncherLibRoot,
-		ConfigRoot:         WorkflowLauncherConfigRoot,
-		ToggleRetryTimeout: time.Minute * 5,
-		ToggleRetryDelay:   time.Second * 10,
+		LibRoot:            cv.GetString("instance.workflow.lib_root"),
+		ConfigRoot:         cv.GetString("instance.workflow.config_root"),
+		ToggleRetryTimeout: cv.GetDuration("instance.workflow.toggle_retry_timeout"),
+		ToggleRetryDelay:   cv.GetDuration("instance.workflow.toggle_retry_delay"),
 	}
 }
 

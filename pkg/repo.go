@@ -22,15 +22,13 @@ type Repo struct {
 	PropertyChangeIgnored []string
 }
 
-func NewRepo(res *Instance) *Repo {
-	return &Repo{
-		instance: *res,
+func NewRepo(i *Instance) *Repo {
+	cv := i.manager.aem.config.Values()
 
-		PropertyChangeIgnored: []string{
-			"jcr:created",
-			"cq:lastModified",
-			"transportPassword",
-		},
+	return &Repo{
+		instance: *i,
+
+		PropertyChangeIgnored: cv.GetStringSlice("instance.repo.property_change_ignored"),
 	}
 }
 

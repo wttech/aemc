@@ -9,20 +9,12 @@ type Opts struct {
 	TmpDir string
 }
 
-func NewOpts() *Opts {
+func NewOpts(config *cfg.Config) *Opts {
 	return &Opts{
-		TmpDir: "aem/home/tmp",
+		TmpDir: config.Values().GetString("base.tmp_dir"),
 	}
 }
 
 func (o *Opts) Prepare() error {
 	return pathx.Ensure(o.TmpDir)
-}
-
-func (o *Opts) Configure(config *cfg.Config) {
-	opts := config.Values().Base
-
-	if len(opts.TmpDir) > 0 {
-		o.TmpDir = opts.TmpDir
-	}
 }

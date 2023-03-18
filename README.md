@@ -210,15 +210,13 @@ Correct the `dist_file`, `license_file`, `unpack_dir` properties to provide esse
 # AEM instances to work with
 instance:
 
-  # Defined by single value (only remote)
-  config_url: ""
-
-  # Defined strictly with full details (local or remote)
+  # Full details of local or remote instances
   config:
     local_author:
+      active: [[.Env.AEM_AUTHOR_ACTIVE | default true ]]
       http_url: [[.Env.AEM_AUTHOR_HTTP_URL | default "http://127.0.0.1:4502" ]]
-      user: admin
-      password: admin
+      user: [[.Env.AEM_AUTHOR_USER | default "admin" ]]
+      password: [[.Env.AEM_AUTHOR_PASSWORD | default "admin" ]]
       run_modes: [ local ]
       jvm_opts:
         - -server
@@ -235,15 +233,16 @@ instance:
         - ACME_VAR=value
       sling_props: []
     local_publish:
+      active: [[.Env.AEM_PUBLISH_ACTIVE | default true ]]
       http_url: [[.Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4503" ]]
-      user: admin
-      password: admin
+      user: [[.Env.AEM_PUBLISH_USER | default "admin" ]]
+      password: [[.Env.AEM_PUBLISH_PASSWORD | default "admin" ]]
       run_modes: [ local ]
       jvm_opts:
         - -server
         - -Djava.awt.headless=true
         - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
-        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=[[.Env.AEM_PUBLISH_DEBUG_ADDR | default "0.0.0.0:14502" ]]
+        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=[[.Env.AEM_PUBLISH_DEBUG_ADDR | default "0.0.0.0:14503" ]]
         - -Duser.language=en
         - -Duser.country=US
         - -Duser.timezone=UTC
@@ -253,12 +252,6 @@ instance:
       env_vars:
         - ACME_VAR=value
       sling_props: []
-
-  # Filters for defined
-  filter:
-    id: ""
-    author: false
-    publish: false
 
   # Tuning performance & reliability
   # 'auto'     - for more than 1 local instances - 'serial', otherwise 'parallel'
@@ -277,11 +270,14 @@ instance:
     # Wait only for those instances whose state has been changed internally (unaware of external changes)
     await_strict: true
     # Max time to wait for the instance to be healthy after executing the start script or e.g deploying a package
-    await_started_timeout:
-      duration: 30m
+    await_started:
+      timeout: 30m
     # Max time to wait for the instance to be stopped after executing the stop script
-    await_stopped_timeout:
-      duration: 10m
+    await_stopped:
+      timeout: 10m
+    # Max time in which socket connection to instance should be established
+    reachable:
+      timeout: 3s
     # Bundle state tracking
     bundle_stable:
       symbolic_names_ignored: []
@@ -313,7 +309,7 @@ instance:
     backup_dir: "aem/home/var/backup"
 
     # Oak Run tool options (offline instance management)
-    oakrun:
+    oak_run:
       download_url: "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.44.0/oak-run-1.44.0.jar"
       store_path: "crx-quickstart/repository/segmentstore"
 
@@ -343,14 +339,22 @@ instance:
     snapshot_patterns: [ "**/*-SNAPSHOT.zip" ]
     # Use checksums to avoid re-deployments when snapshot AEM packages are unchanged
     snapshot_deploy_skipping: true
+    # Disable following workflow launchers for a package deployment time only
+    toggled_workflows: [/libs/settings/workflow/launcher/config/asset_processing_on_sdk_*,/libs/settings/workflow/launcher/config/dam_*]
 
   # OSGi Framework
   osgi:
+    shutdown_delay: 3s
+
     bundle:
       install:
         start: true
         start_level: 20
         refresh_packages: true
+
+  # Crypto Support
+  crypto:
+    key_bundle_symbolic_name: com.adobe.granite.crypto.file
 
 java:
   # Require following versions before e.g running AEM instances
@@ -365,13 +369,15 @@ java:
   download:
     # Source URL with template vars support
     url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.18_10.[[.ArchiveExt]]"
-    # Map source URL template vars to be compatible
+    # Map source URL template vars to be compatible with Adoptium Java
     replacements:
-      # Map GOARCH values to the ones used by Adoptium Java
+      # Var 'Os' (GOOS)
+      "darwin": "mac"
+      # Var 'Arch' (GOARCH)
       "x86_64": "x64"
       "amd64": "x64"
       "386": "x86-32"
-      # Enforce non-ARM Java as some AEM features are not working on ARM (e.g Scene7)
+      # enforce non-ARM Java as some AEM features are not working on ARM (e.g Scene7)
       "arm64": "x64"
       "aarch64": "x64"
 
@@ -393,8 +399,8 @@ output:
   log:
     # File path of logs written especially when output format is different than 'text'
     file: aem/home/var/log/aem.log
-    # Controls if script outputs and log entries should be printed to console instead of written to file when output format is 'text'
-    console: true
+    # Controls where outputs and logs should be written to when format is 'text' (console|file|both)
+    mode: console
 ```
 
 After instructing tool where the AEM instances files are located then, finally, instances may be created and launched:

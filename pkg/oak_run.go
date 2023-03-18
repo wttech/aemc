@@ -16,11 +16,13 @@ const (
 )
 
 func NewOakRun(localOpts *LocalOpts) *OakRun {
+	cfg := localOpts.manager.aem.config.Values()
+
 	return &OakRun{
 		localOpts: localOpts,
 
-		DownloadURL: "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.44.0/oak-run-1.44.0.jar",
-		StorePath:   "crx-quickstart/repository/segmentstore",
+		DownloadURL: cfg.GetString("instance.local.oak_run.download_url"),
+		StorePath:   cfg.GetString("instance.local.oak_run.store_path"),
 	}
 }
 

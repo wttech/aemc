@@ -10,7 +10,7 @@ import (
 func TestInstanceNewLocalAuthor(t *testing.T) {
 	t.Parallel()
 
-	aem := pkg.NewAem()
+	aem := pkg.DefaultAEM()
 	instance := aem.InstanceManager().NewLocalAuthor()
 
 	assert.Equal(t, "http://127.0.0.1:4502", instance.HTTP().BaseURL())
@@ -21,7 +21,7 @@ func TestInstanceNewLocalAuthor(t *testing.T) {
 func TestInstanceNewLocalPublish(t *testing.T) {
 	t.Parallel()
 
-	aem := pkg.NewAem()
+	aem := pkg.DefaultAEM()
 	instance := aem.InstanceManager().NewLocalPublish()
 
 	assert.Equal(t, "http://127.0.0.1:4503", instance.HTTP().BaseURL())

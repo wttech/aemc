@@ -16,7 +16,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
-	"github.com/wttech/aemc/pkg/project"
 	"io"
 	"os"
 	"path"
@@ -32,15 +31,13 @@ const (
 )
 
 type CLI struct {
-	aem     *pkg.Aem
-	project *project.Project
-	config  *cfg.Config
-
-	cmd   *cobra.Command
-	error error
-
+	cmd     *cobra.Command
 	started time.Time
 	ended   time.Time
+
+	inputFormat string
+	inputString string
+	inputFile   string
 
 	outputFormat   string
 	outputValue    string
@@ -50,25 +47,16 @@ type CLI struct {
 	outputResponse *OutputResponse
 	outputWriter   io.Writer
 	outputNoColor  bool
+
+	config *cfg.Config
+	aem    *pkg.AEM
 }
 
-func NewCLI(aem *pkg.Aem, config *cfg.Config) *CLI {
-	result := new(CLI)
-
-	result.aem = aem
-	result.config = config
-	result.project = project.New(config)
-
-	result.outputLogFile = common.LogFile
-	result.outputLogMode = cfg.OutputLogConsole
-	result.outputValue = common.OutputValueAll
-	result.outputFormat = fmtx.Text
-	result.outputBuffer = bytes.NewBufferString("")
-	result.outputResponse = outputResponseDefault()
-	result.outputNoColor = color.NoColor
-	result.cmd = result.rootCmd()
-
-	return result
+func NewCLI() *CLI {
+	c := new(CLI)
+	c.config = cfg.NewConfig()
+	c.cmd = c.rootCmd()
+	return c
 }
 
 // OutputResponse defines a structure of data to be printed
@@ -92,34 +80,38 @@ func outputResponseDefault() *OutputResponse {
 	}
 }
 
-func (c *CLI) Exec() {
-	c.error = c.cmd.Execute()
+func (c *CLI) Exec() error {
+	return c.cmd.Execute()
 }
 
-func (c *CLI) configure() {
-	c.configureOutput()
-	c.configureLogger()
-	c.aem.Configure(c.config)
-	c.started = time.Now()
-}
-
-func (c *CLI) configureOutput() {
-	opts := c.config.Values().Output
-
-	c.outputValue = opts.Value
-	c.outputFormat = strings.ReplaceAll(opts.Format, "yaml", "yml")
-	c.outputLogFile = opts.Log.File
-
-	c.outputLogMode = opts.Log.Mode
-	if c.outputLogMode == "" {
-		c.outputLogMode = cfg.OutputLogConsole
+func (c *CLI) MustExec() {
+	if err := c.Exec(); err != nil {
+		log.Error(err)
 	}
+}
+
+// onStart initializes CLI settings (not the NewCLI method) because since that moment PFlags are available (they are bound to Viper config)
+// note that using 'c.aem' before that moment may lead to unexpected behavior
+func (c *CLI) onStart() {
+	c.aem = pkg.NewAEM(c.config)
+	cv := c.config.Values()
+
+	c.inputFormat = cv.GetString("input.format")
+	c.inputString = cv.GetString("input.string")
+	c.inputFile = cv.GetString("input.file")
+
+	c.outputBuffer = bytes.NewBufferString("")
+	c.outputResponse = outputResponseDefault()
+	c.outputValue = cv.GetString("output.value")
+	c.outputFormat = strings.ReplaceAll(cv.GetString("output.format"), "yaml", "yml")
+	c.outputLogFile = cv.GetString("output.log.file")
+	c.outputLogMode = cv.GetString("output.log.mode")
 
 	if c.outputValue != common.OutputValueNone && c.outputValue != common.OutputValueAll {
 		c.outputFormat = fmtx.Text
 	}
 
-	noColor := opts.NoColor
+	noColor := cv.GetBool("output.no_color")
 	if c.outputFormat != fmtx.Text || c.outputLogMode != cfg.OutputLogConsole {
 		noColor = true
 	}
@@ -152,46 +144,31 @@ func (c *CLI) configureOutput() {
 			c.aem.SetOutput(os.Stdout)
 			break
 		default:
-			log.Fatalf("unsupported output log mode specified: '%s'", c.outputLogMode)
+			log.Fatalf("unsupported CLI output log mode specified: '%s'", c.outputLogMode)
 		}
 	} else {
 		outputWriter := io.MultiWriter(c.outputBuffer, c.openOutputLogFile())
 		c.aem.SetOutput(outputWriter)
 		log.SetOutput(outputWriter)
 	}
-}
 
-func (c *CLI) configureLogger() {
 	log.SetFormatter(&log.TextFormatter{
 		ForceColors:     !c.outputNoColor,
-		TimestampFormat: c.config.Values().Log.TimestampFormat,
-		FullTimestamp:   c.config.Values().Log.FullTimestamp,
+		TimestampFormat: cv.GetString("log.timestamp_format"),
+		FullTimestamp:   cv.GetBool("log.full_timestamp"),
 	})
-	level, err := log.ParseLevel(c.config.Values().Log.Level)
+	levelName := cv.GetString("log.level")
+	level, err := log.ParseLevel(levelName)
 	if err != nil {
-		log.Fatalf("unsupported log level specified: '%s'", c.config.Values().Log.Level)
+		log.Fatalf("unsupported CLI log level specified: '%s'", levelName)
 	}
 	log.SetLevel(level)
+
+	c.started = time.Now()
 }
 
-func (c *CLI) openOutputLogFile() *os.File {
-	err := pathx.Ensure(path.Dir(c.outputLogFile))
-	if err != nil {
-		return nil
-	}
-	file, err := os.OpenFile(c.outputLogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatalf(fmt.Sprintf("cannot open/create AEM output file properly at path '%s': %s", c.outputLogFile, err))
-	}
-	return file
-}
-
-func (c *CLI) elapsed() time.Duration {
-	return c.ended.Sub(c.started)
-}
-
-// Exit reads response data then prints currently captured output then exits app with proper status code
-func (c *CLI) exit() {
+// onEnd reads response data then prints currently captured output then exits app with proper status code
+func (c *CLI) onEnd() {
 	c.ended = time.Now()
 	c.outputResponse.Ended = c.ended
 	c.outputResponse.Elapsed = c.elapsed()
@@ -207,6 +184,22 @@ func (c *CLI) exit() {
 		os.Exit(1)
 	}
 	os.Exit(0)
+}
+
+func (c *CLI) elapsed() time.Duration {
+	return c.ended.Sub(c.started)
+}
+
+func (c *CLI) openOutputLogFile() *os.File {
+	err := pathx.Ensure(path.Dir(c.outputLogFile))
+	if err != nil {
+		return nil
+	}
+	file, err := os.OpenFile(c.outputLogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf(fmt.Sprintf("cannot open/create CLI output file '%s': %s", c.outputLogFile, err))
+	}
+	return file
 }
 
 func (c *CLI) printOutputText() {
@@ -305,12 +298,16 @@ func (c *CLI) printOutputMarshaled() {
 			log.Fatalf("cannot serialize CLI output to to target JSON format!")
 		}
 		fmt.Println(json)
+		break
 	case fmtx.YML:
 		yml, err := fmtx.MarshalYML(c.outputResponse)
 		if err != nil {
 			log.Fatalf("cannot serialize CLI output to to target YML format!")
 		}
 		fmt.Println(yml)
+		break
+	default:
+		log.Fatalf("cannot serialize CLI output to unsupported format '%s'", c.outputFormat)
 	}
 }
 
@@ -338,25 +335,21 @@ func (c *CLI) Error(err error) {
 }
 
 func (c *CLI) ReadInput(out any) error {
-	format := c.config.Values().Input.Format
-	str := c.config.Values().Input.String
-	file := c.config.Values().Input.File
-
-	if len(str) > 0 {
-		err := fmtx.UnmarshalDataInFormat(format, io.NopCloser(strings.NewReader(str)), out)
+	if c.inputString != "" {
+		err := fmtx.UnmarshalDataInFormat(c.inputFormat, io.NopCloser(strings.NewReader(c.inputString)), out)
 		if err != nil {
 			return fmt.Errorf("cannot parse string input properly: %w", err)
 		}
-	} else if file == common.STDIn {
-		err := fmtx.UnmarshalDataInFormat(format, io.NopCloser(bufio.NewReader(os.Stdin)), out)
+	} else if c.inputFile == common.STDIn {
+		err := fmtx.UnmarshalDataInFormat(c.inputFormat, io.NopCloser(bufio.NewReader(os.Stdin)), out)
 		if err != nil {
 			return fmt.Errorf("cannot parse STDIN input properly: %w", err)
 		}
 	} else {
-		if !pathx.Exists(file) {
-			return fmt.Errorf("cannot load input file as it does not exist '%s'", file)
+		if !pathx.Exists(c.inputFile) {
+			return fmt.Errorf("cannot load input file as it does not exist '%s'", c.inputFile)
 		}
-		if err := fmtx.UnmarshalFileInFormat(format, file, out); err != nil {
+		if err := fmtx.UnmarshalFileInFormat(c.inputFormat, c.inputFile, out); err != nil {
 			return err
 		}
 	}

@@ -16,7 +16,7 @@ fi
 GIT_STAT=$(git diff --stat)
 
 if [ "$GIT_STAT" != '' ]; then
-  echo "Unable to release. Uncommited changes detected!"
+  echo "Unable to release. Uncommitted changes detected!"
   exit 1
 fi
 

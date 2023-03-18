@@ -17,12 +17,14 @@ type OSGiBundleManager struct {
 }
 
 func NewBundleManager(instance *Instance) *OSGiBundleManager {
+	cv := instance.manager.aem.config.Values()
+
 	return &OSGiBundleManager{
 		instance: instance,
 
-		InstallStart:           true,
-		InstallStartLevel:      20,
-		InstallRefreshPackages: true,
+		InstallStart:           cv.GetBool("instance.osgi.bundle.install.start"),
+		InstallStartLevel:      cv.GetInt("instance.osgi.bundle.install.start_level"),
+		InstallRefreshPackages: cv.GetBool("instance.osgi.bundle.install.refresh_packages"),
 	}
 }
 

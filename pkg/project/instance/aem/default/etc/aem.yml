@@ -1,12 +1,10 @@
 # AEM instances to work with
 instance:
 
-  # Defined by single value (only remote)
-  config_url: ""
-
-  # Defined strictly with full details (local or remote)
+  # Full details of local or remote instances
   config:
     local_author:
+      active: [[.Env.AEM_AUTHOR_ACTIVE | default true ]]
       http_url: [[.Env.AEM_AUTHOR_HTTP_URL | default "http://127.0.0.1:4502" ]]
       user: [[.Env.AEM_AUTHOR_USER | default "admin" ]]
       password: [[.Env.AEM_AUTHOR_PASSWORD | default "admin" ]]
@@ -26,6 +24,7 @@ instance:
         - ACME_VAR=value
       sling_props: []
     local_publish:
+      active: [[.Env.AEM_PUBLISH_ACTIVE | default true ]]
       http_url: [[.Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4503" ]]
       user: [[.Env.AEM_PUBLISH_USER | default "admin" ]]
       password: [[.Env.AEM_PUBLISH_PASSWORD | default "admin" ]]
@@ -45,12 +44,6 @@ instance:
         - ACME_VAR=value
       sling_props: []
 
-  # Filters for defined
-  filter:
-    id: ""
-    author: false
-    publish: false
-
   # Tuning performance & reliability
   # 'auto'     - for more than 1 local instances - 'serial', otherwise 'parallel'
   # 'parallel' - for working with remote instances
@@ -65,14 +58,15 @@ instance:
     interval: 5s
     # Number of successful check attempts that indicates end of checking
     done_threshold: 3
-    # Wait only for those instances whose state has been changed internally (unaware of external changes)
-    await_strict: true
     # Max time to wait for the instance to be healthy after executing the start script or e.g deploying a package
-    await_started_timeout:
-      duration: 30m
+    await_started:
+      timeout: 30m
     # Max time to wait for the instance to be stopped after executing the stop script
-    await_stopped_timeout:
-      duration: 10m
+    await_stopped:
+      timeout: 10m
+    # Max time in which socket connection to instance should be established
+    reachable:
+      timeout: 3s
     # Bundle state tracking
     bundle_stable:
       symbolic_names_ignored: []
@@ -98,13 +92,16 @@ instance:
 
   # Managed locally (set up automatically)
   local:
+    # Wait only for those instances whose state has been changed internally (unaware of external changes)
+    await_strict: true
+
     # Current runtime dir (Sling launchpad, JCR repository)
     unpack_dir: "aem/home/var/instance"
     # Archived runtime dir (AEM backup files '*.aemb.zst')
     backup_dir: "aem/home/var/backup"
 
     # Oak Run tool options (offline instance management)
-    oakrun:
+    oak_run:
       download_url: "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.44.0/oak-run-1.44.0.jar"
       store_path: "crx-quickstart/repository/segmentstore"
 
@@ -188,5 +185,5 @@ output:
   log:
     # File path of logs written especially when output format is different than 'text'
     file: aem/home/var/log/aem.log
-    # Controls if script outputs and log entries should be printed to console instead of written to file when output format is 'text'
-    console: true
+    # Controls where outputs and logs should be written to when format is 'text' (console|file|both)
+    mode: console

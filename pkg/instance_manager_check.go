@@ -8,39 +8,46 @@ import (
 )
 
 type CheckOpts struct {
+	manager *InstanceManager
+
 	Warmup        time.Duration
 	Interval      time.Duration
 	DoneThreshold int
 	DoneNever     bool
 	AwaitStrict   bool
 
-	Reachable           ReachableHTTPChecker
-	BundleStable        BundleStableChecker
-	EventStable         EventStableChecker
-	Installer           InstallerChecker
-	AwaitStartedTimeout TimeoutChecker
-	Unreachable         ReachableHTTPChecker
-	StatusStopped       StatusStoppedChecker
-	AwaitStoppedTimeout TimeoutChecker
-	LoginPage           PathHTTPChecker
+	Reachable     ReachableHTTPChecker
+	BundleStable  BundleStableChecker
+	EventStable   EventStableChecker
+	Installer     InstallerChecker
+	AwaitStarted  AwaitChecker
+	Unreachable   ReachableHTTPChecker
+	StatusStopped StatusStoppedChecker
+	AwaitStopped  AwaitChecker
+	LoginPage     PathHTTPChecker
 }
 
-func (im *InstanceManager) NewCheckOpts() *CheckOpts {
-	return &CheckOpts{
-		Warmup:        time.Second * 1,
-		Interval:      time.Second * 5,
-		DoneThreshold: 3,
+func NewCheckOpts(manager *InstanceManager) *CheckOpts {
+	cv := manager.aem.config.Values()
 
-		Reachable:           NewReachableChecker(true),
-		BundleStable:        NewBundleStableChecker(),
-		EventStable:         NewEventStableChecker(),
-		AwaitStartedTimeout: NewTimeoutChecker("started", time.Minute*30),
-		Installer:           NewInstallerChecker(),
-		StatusStopped:       NewStatusStoppedChecker(),
-		AwaitStoppedTimeout: NewTimeoutChecker("stopped", time.Minute*10),
-		Unreachable:         NewReachableChecker(false),
-		LoginPage:           NewPathHTTPChecker("login page", "/libs/granite/core/content/login.html", 200, "QUICKSTART_HOMEPAGE"),
-	}
+	result := &CheckOpts{manager: manager}
+
+	result.Warmup = cv.GetDuration("instance.check.warmup")
+	result.Interval = cv.GetDuration("instance.check.interval")
+	result.DoneThreshold = cv.GetInt("instance.check.done_threshold")
+	result.AwaitStrict = cv.GetBool("instance.local.await_strict")
+
+	result.Reachable = NewReachableChecker(result, true)
+	result.BundleStable = NewBundleStableChecker(result)
+	result.EventStable = NewEventStableChecker(result)
+	result.AwaitStarted = NewAwaitChecker(result, "started")
+	result.Installer = NewInstallerChecker(result)
+	result.StatusStopped = NewStatusStoppedChecker()
+	result.AwaitStopped = NewAwaitChecker(result, "stopped")
+	result.Unreachable = NewReachableChecker(result, false)
+	result.LoginPage = NewPathReadyChecker(result, "login page", "/libs/granite/core/content/login.html", 200, "QUICKSTART_HOMEPAGE")
+
+	return result
 }
 
 func (im *InstanceManager) CheckUntilDone(instances []Instance, opts *CheckOpts, checks []Checker) error {
@@ -124,13 +131,13 @@ func (im *InstanceManager) AwaitStarted(instances []Instance) error {
 	var checkers []Checker
 	if im.LocalOpts.ServiceMode {
 		checkers = []Checker{
-			im.CheckOpts.AwaitStartedTimeout,
+			im.CheckOpts.AwaitStarted,
 			im.CheckOpts.Reachable,
 			im.CheckOpts.LoginPage,
 		}
 	} else {
 		checkers = []Checker{
-			im.CheckOpts.AwaitStartedTimeout,
+			im.CheckOpts.AwaitStarted,
 			im.CheckOpts.Reachable,
 			im.CheckOpts.BundleStable,
 			im.CheckOpts.EventStable,
@@ -155,7 +162,7 @@ func (im *InstanceManager) AwaitStopped(instances []Instance) error {
 	}
 	log.Infof(InstanceMsg(instances, "awaiting stopped"))
 	return im.CheckUntilDone(instances, im.CheckOpts, []Checker{
-		im.CheckOpts.AwaitStoppedTimeout,
+		im.CheckOpts.AwaitStopped,
 		im.CheckOpts.StatusStopped,
 		im.CheckOpts.Unreachable,
 	})

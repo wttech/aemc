@@ -126,7 +126,7 @@ func (im *InstanceManager) newFromConfig(id string) *Instance {
 	i.password = cv.GetString(fmt.Sprintf("instance.config.%s.password", id))
 
 	if i.IsLocal() {
-		cv.SetDefault(fmt.Sprintf("instance.config.%s.user", id), "1")
+		cv.SetDefault(fmt.Sprintf("instance.config.%s.version", id), "1")
 		i.local.Version = cv.GetString(fmt.Sprintf("instance.config.%s.version", id))
 
 		i.local.StartOpts = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.start_opts", id))

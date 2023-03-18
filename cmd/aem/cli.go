@@ -119,7 +119,7 @@ func (c *CLI) onStart() {
 	color.NoColor = noColor
 
 	if !lo.Contains(cfg.OutputFormats(), c.outputFormat) {
-		log.Fatalf("unsupported output format detected '%s'! supported ones are: %s", c.outputFormat, strings.Join(cfg.OutputFormats(), ", "))
+		log.Fatalf("unsupported CLI output format detected '%s'! supported ones are: %s", c.outputFormat, strings.Join(cfg.OutputFormats(), ", "))
 	}
 
 	if c.outputFormat == fmtx.Text {
@@ -144,7 +144,7 @@ func (c *CLI) onStart() {
 			c.aem.SetOutput(os.Stdout)
 			break
 		default:
-			log.Fatalf("unsupported output log mode specified: '%s'", c.outputLogMode)
+			log.Fatalf("unsupported CLI output log mode specified: '%s'", c.outputLogMode)
 		}
 	} else {
 		outputWriter := io.MultiWriter(c.outputBuffer, c.openOutputLogFile())
@@ -160,7 +160,7 @@ func (c *CLI) onStart() {
 	levelName := cv.GetString("log.level")
 	level, err := log.ParseLevel(levelName)
 	if err != nil {
-		log.Fatalf("unsupported log level specified: '%s'", levelName)
+		log.Fatalf("unsupported CLI log level specified: '%s'", levelName)
 	}
 	log.SetLevel(level)
 
@@ -197,7 +197,7 @@ func (c *CLI) openOutputLogFile() *os.File {
 	}
 	file, err := os.OpenFile(c.outputLogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatalf(fmt.Sprintf("cannot open/create AEM output file properly at path '%s': %s", c.outputLogFile, err))
+		log.Fatalf(fmt.Sprintf("cannot open/create CLI output file '%s': %s", c.outputLogFile, err))
 	}
 	return file
 }

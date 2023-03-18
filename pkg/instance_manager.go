@@ -13,7 +13,7 @@ import (
 )
 
 type InstanceManager struct {
-	aem *Aem
+	aem *AEM
 
 	Instances []Instance
 	LocalOpts *LocalOpts
@@ -26,7 +26,7 @@ type InstanceManager struct {
 	ProcessingMode  string
 }
 
-func NewInstanceManager(aem *Aem) *InstanceManager {
+func NewInstanceManager(aem *AEM) *InstanceManager {
 	result := new(InstanceManager)
 	result.aem = aem
 
@@ -283,7 +283,7 @@ func InstanceMsg(instances []Instance, msg string) string {
 }
 
 // InstanceProcess is a workaround for <https://stackoverflow.com/a/71132286/3360007> (ideally should be a method of manager)
-func InstanceProcess[R any](aem *Aem, instances []Instance, processor func(instance Instance) (R, error)) ([]R, error) {
+func InstanceProcess[R any](aem *AEM, instances []Instance, processor func(instance Instance) (R, error)) ([]R, error) {
 	parallel := false
 	mode := aem.InstanceManager().ProcessingMode
 	if mode == instance.ProcessingParallel {

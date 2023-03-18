@@ -33,7 +33,7 @@ func (c *CLI) rootCmd() *cobra.Command {
 }
 
 func (c *CLI) rootFlags(cmd *cobra.Command) {
-	cv := c.aem.Config().Values()
+	cv := c.config.Values()
 
 	cmd.PersistentFlags().String("input-format", cv.GetString("input.format"), "Controls input format ("+strings.Join(cfg.InputFormats(), "|")+")")
 	_ = cv.BindPFlag("input.format", cmd.PersistentFlags().Lookup("input-format"))

@@ -16,7 +16,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
-	"github.com/wttech/aemc/pkg/project"
 	"io"
 	"os"
 	"path"
@@ -32,9 +31,6 @@ const (
 )
 
 type CLI struct {
-	aem     *pkg.Aem
-	project *project.Project
-
 	cmd     *cobra.Command
 	started time.Time
 	ended   time.Time
@@ -51,11 +47,14 @@ type CLI struct {
 	outputResponse *OutputResponse
 	outputWriter   io.Writer
 	outputNoColor  bool
+
+	config *cfg.Config
+	aem    *pkg.AEM
 }
 
 func NewCLI() *CLI {
 	c := new(CLI)
-	c.aem = pkg.NewAem()
+	c.config = cfg.NewConfig()
 	c.cmd = c.rootCmd()
 	return c
 }
@@ -92,8 +91,10 @@ func (c *CLI) MustExec() {
 }
 
 // onStart initializes CLI settings (not the NewCLI method) because since that moment PFlags are available (they are bound to Viper config)
+// note that using 'c.aem' before that moment may lead to unexpected behavior
 func (c *CLI) onStart() {
-	cv := c.aem.Config().Values()
+	c.aem = pkg.NewAEM(c.config)
+	cv := c.config.Values()
 
 	c.inputFormat = cv.GetString("input.format")
 	c.inputString = cv.GetString("input.string")

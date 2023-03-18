@@ -15,12 +15,12 @@ func (c *CLI) initCmd() *cobra.Command {
 		Aliases: []string{"init"},
 		Short:   "Initializes project files and configuration",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := c.project.EnsureDirs(); err != nil {
+			if err := c.aem.Project().EnsureDirs(); err != nil {
 				c.Error(err)
 				return
 			}
 			kindName, _ := cmd.Flags().GetString(projectKindFlag)
-			kind, err := c.project.KindDetermine(kindName)
+			kind, err := c.aem.Project().KindDetermine(kindName)
 			if err != nil {
 				c.Error(err)
 				return
@@ -29,12 +29,12 @@ func (c *CLI) initCmd() *cobra.Command {
 				c.Fail(fmt.Sprintf("project kind cannot be determined; specify it with flag '--%s=[%s]'", projectKindFlag, strings.Join(project.KindStrings(), "|")))
 				return
 			}
-			changed, err := c.project.InitializeWithChanged(kind)
+			changed, err := c.aem.Project().InitializeWithChanged(kind)
 			if err != nil {
 				c.Error(err)
 				return
 			}
-			gettingStarted, err := c.project.GettingStarted()
+			gettingStarted, err := c.aem.Project().GettingStarted()
 			if err != nil {
 				c.Error(err)
 				return

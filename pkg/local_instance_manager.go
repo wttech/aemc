@@ -40,7 +40,7 @@ type LocalOpts struct {
 	SDK         *SDK
 }
 
-func (im *InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
+func NewLocalOpts(manager *InstanceManager) *LocalOpts {
 	cfg := manager.aem.config.Values()
 
 	result := &LocalOpts{manager: manager}
@@ -49,7 +49,7 @@ func (im *InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
 	result.OverrideDir = cfg.GetString("instance.local.override_dir")
 	result.ToolDir = cfg.GetString("instance.local.tool_dir")
 	result.ServiceMode = cfg.GetBool("instance.local.service_mode")
-	result.JavaOpts = im.aem.javaOpts
+	result.JavaOpts = manager.aem.javaOpts
 	result.Quickstart = NewQuickstart(result)
 	result.SDK = NewSDK(result)
 	result.OakRun = NewOakRun(result)

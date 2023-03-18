@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg/cfg"
+	"github.com/wttech/aemc/pkg/instance"
 	"strings"
 )
 
@@ -57,23 +58,22 @@ func (c *CLI) rootFlags(cmd *cobra.Command) {
 		"output-value", c.outputValue,
 		"Limits output to single variable")
 
-	// instance filtering
-	// TODO ...
-	/*
-		cmd.PersistentFlags().StringVarP(&(c.config.Values().Instance.ConfigURL),
-			"instance-url", "U", c.config.Values().Instance.ConfigURL,
-			"Use only AEM instance at specified URL")
-		cmd.PersistentFlags().StringVarP(&(c.config.Values().Instance.Filter.ID),
-			"instance-id", "I", c.config.Values().Instance.Filter.ID,
-			"Use only AEM instance with specified ID")
-		cmd.PersistentFlags().BoolVarP(&(c.config.Values().Instance.Filter.Author),
-			"instance-author", "A", c.config.Values().Instance.Filter.Author,
-			"Use only AEM author instance")
-		cmd.PersistentFlags().BoolVarP(&(c.config.Values().Instance.Filter.Publish),
-			"instance-publish", "P", c.config.Values().Instance.Filter.Publish,
-			"Use only AEM publish instance")
-		cmd.PersistentFlags().StringVar(&(c.config.Values().Instance.ProcessingMode),
-			"instance-processing", c.config.Values().Instance.ProcessingMode,
-			"Controls processing mode for instances ("+(strings.Join(instance.ProcessingModes(), "|")+")"))
-	*/
+	cmd.PersistentFlags().StringVarP(&(c.aem.InstanceManager().AdHocURL),
+		"instance-url", "U", c.aem.InstanceManager().AdHocURL,
+		"Use only AEM instance at ad-hoc specified URL")
+	cmd.PersistentFlags().StringVarP(&(c.aem.InstanceManager().FilterID),
+		"instance-id", "I", c.aem.InstanceManager().FilterID,
+		"Use only AEM instance configured with the exact ID")
+
+	cmd.PersistentFlags().BoolVarP(&(c.aem.InstanceManager().FilterAuthors),
+		"instance-author", "A", c.aem.InstanceManager().FilterAuthors,
+		"Use only AEM author instance")
+	cmd.PersistentFlags().BoolVarP(&(c.aem.InstanceManager().FilterPublishes),
+		"instance-publish", "P", c.aem.InstanceManager().FilterPublishes,
+		"Use only AEM publish instance")
+	cmd.MarkFlagsMutuallyExclusive("instance-author", "instance-publish")
+
+	cmd.PersistentFlags().StringVar(&(c.aem.InstanceManager().ProcessingMode),
+		"instance-processing", c.aem.InstanceManager().ProcessingMode,
+		"Controls processing mode for instances ("+(strings.Join(instance.ProcessingModes(), "|")+")"))
 }

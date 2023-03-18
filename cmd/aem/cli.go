@@ -104,7 +104,7 @@ func (c *CLI) Exec() error {
 
 func (c *CLI) MustExec() {
 	if err := c.Exec(); err != nil {
-		log.Fatalf("%s CLI error: %s", common.AppName, err)
+		log.Error(err)
 	}
 }
 

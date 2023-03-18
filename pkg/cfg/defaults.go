@@ -37,7 +37,7 @@ func (c *Config) setDefaults() {
 
 	v.SetDefault("instance.check.warmup", time.Second*1)
 	v.SetDefault("instance.check.interval", time.Second*5)
-	v.SetDefault("instance.check.done_threshold", 5)
+	v.SetDefault("instance.check.done_threshold", 3)
 	v.SetDefault("instance.check.installer.state", true)
 	v.SetDefault("instance.check.installer.pause", true)
 

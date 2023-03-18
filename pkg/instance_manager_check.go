@@ -27,7 +27,7 @@ type CheckOpts struct {
 	LoginPage     PathHTTPChecker
 }
 
-func (im *InstanceManager) NewCheckOpts(manager *InstanceManager) *CheckOpts {
+func NewCheckOpts(manager *InstanceManager) *CheckOpts {
 	cv := manager.aem.config.Values()
 
 	result := &CheckOpts{manager: manager}

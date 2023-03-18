@@ -1,12 +1,10 @@
 # AEM instances to work with
 instance:
 
-  # Defined by single value (only remote)
-  config_url: ""
-
-  # Defined strictly with full details (local or remote)
+  # Full details of local or remote instances
   config:
     local_author:
+      active: [[.Env.AEM_AUTHOR_ACTIVE | default true ]]
       http_url: [[.Env.AEM_AUTHOR_HTTP_URL | default "http://127.0.0.1:4502" ]]
       user: [[.Env.AEM_AUTHOR_USER | default "admin" ]]
       password: [[.Env.AEM_AUTHOR_PASSWORD | default "admin" ]]
@@ -26,6 +24,7 @@ instance:
         - ACME_VAR=value
       sling_props: []
     local_publish:
+      active: [[.Env.AEM_PUBLISH_ACTIVE | default true ]]
       http_url: [[.Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4503" ]]
       user: [[.Env.AEM_PUBLISH_USER | default "admin" ]]
       password: [[.Env.AEM_PUBLISH_PASSWORD | default "admin" ]]
@@ -44,12 +43,6 @@ instance:
       env_vars:
         - ACME_VAR=value
       sling_props: []
-
-  # Filters for defined
-  filter:
-    id: ""
-    author: false
-    publish: false
 
   # Tuning performance & reliability
   # 'auto'     - for more than 1 local instances - 'serial', otherwise 'parallel'

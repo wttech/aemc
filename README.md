@@ -211,7 +211,7 @@ Correct the `dist_file`, `license_file`, `unpack_dir` properties to provide esse
 instance:
 
   # Defined by single value (only remote)
-  config_url: ""
+  adhoc_url: ""
 
   # Defined strictly with full details (local or remote)
   config:
@@ -253,12 +253,6 @@ instance:
       env_vars:
         - ACME_VAR=value
       sling_props: []
-
-  # Filters for defined
-  filter:
-    id: ""
-    author: false
-    publish: false
 
   # Tuning performance & reliability
   # 'auto'     - for more than 1 local instances - 'serial', otherwise 'parallel'

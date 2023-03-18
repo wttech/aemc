@@ -15,21 +15,31 @@ import (
 type InstanceManager struct {
 	aem *Aem
 
-	Instances      []Instance
-	LocalOpts      *LocalOpts
-	CheckOpts      *CheckOpts
-	ProcessingMode string
+	Instances []Instance
+	LocalOpts *LocalOpts
+	CheckOpts *CheckOpts
+
+	AdHocURL        string
+	FilterID        string
+	FilterAuthors   bool
+	FilterPublishes bool
+	ProcessingMode  string
 }
 
 func NewInstanceManager(aem *Aem) *InstanceManager {
 	result := new(InstanceManager)
 	result.aem = aem
 
-	result.ProcessingMode = aem.config.Values().GetString("instance.processing_mode")
+	cv := aem.config.Values()
 
-	result.LocalOpts = result.NewLocalOpts(result)
-	result.CheckOpts = result.NewCheckOpts(result)
-	result.Instances = result.newInstances()
+	result.AdHocURL = cv.GetString("instance.adhoc_url")
+	result.FilterID = cv.GetString("instance.filter.id")
+	result.FilterAuthors = cv.GetBool("instance.filter.authors")
+	result.FilterPublishes = cv.GetBool("instance.filter.publishes")
+	result.ProcessingMode = cv.GetString("instance.processing_mode")
+
+	result.LocalOpts = NewLocalOpts(result)
+	result.CheckOpts = NewCheckOpts(result)
 
 	return result
 }
@@ -67,7 +77,101 @@ func (im *InstanceManager) Some() ([]Instance, error) {
 }
 
 func (im *InstanceManager) All() []Instance {
-	return im.Instances
+	result := im.newAdHocOrFromConfig()
+	return im.filter(result)
+}
+
+func (im *InstanceManager) newAdHocOrFromConfig() []Instance {
+	if im.AdHocURL != "" {
+		iURL, err := im.NewByURL(im.AdHocURL)
+		if err != nil {
+			log.Fatalf("cannot create instance from ad hoc URL '%s': %s", im.AdHocURL, err)
+		}
+		return []Instance{*iURL}
+	}
+	cv := im.aem.config.Values()
+	configIDs := maps.Keys(cv.GetStringMap("instance.config"))
+	if len(configIDs) > 0 {
+		var result []Instance
+		for _, id := range configIDs {
+			cv.SetDefault(fmt.Sprintf("instance.config.%s.active", id), true)
+			active := cv.GetBool(fmt.Sprintf("instance.config.%s.active", id))
+			if active {
+				if i := im.newFromConfig(id); i != nil {
+					result = append(result, *i)
+				}
+			}
+		}
+		return result
+	}
+	return im.NewLocalPair()
+}
+
+func (im *InstanceManager) newFromConfig(id string) *Instance {
+	cv := im.aem.config.Values()
+
+	httpURL := cv.GetString(fmt.Sprintf("instance.config.%s.http_url", id))
+	i, err := im.NewByURL(httpURL)
+	if err != nil {
+		log.Fatalf("cannot create instance from config with ID '%s' using URL '%s': %s", id, httpURL, err)
+		return nil
+	}
+
+	i.id = id
+
+	cv.SetDefault(fmt.Sprintf("instance.config.%s.user", id), i.user)
+	i.user = cv.GetString(fmt.Sprintf("instance.config.%s.user", id))
+
+	cv.SetDefault(fmt.Sprintf("instance.config.%s.password", id), i.password)
+	i.password = cv.GetString(fmt.Sprintf("instance.config.%s.password", id))
+
+	if i.IsLocal() {
+		cv.SetDefault(fmt.Sprintf("instance.config.%s.user", id), "1")
+		i.local.Version = cv.GetString(fmt.Sprintf("instance.config.%s.version", id))
+
+		i.local.StartOpts = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.start_opts", id))
+		i.local.JvmOpts = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.jvm_opts", id))
+		i.local.RunModes = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.run_modes", id))
+		i.local.EnvVars = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.env_vars", id))
+		i.local.SecretVars = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.secret_vars", id))
+		i.local.SlingProps = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.sling_props", id))
+	}
+	return i
+}
+
+func (im *InstanceManager) filter(instances []Instance) []Instance {
+	result := []Instance{}
+	if im.FilterID != "" {
+		for _, i := range instances {
+			if i.id == im.FilterID {
+				result = append(result, i)
+				break
+			}
+		}
+	} else {
+		if im.FilterAuthors == im.FilterPublishes {
+			result = instances
+		} else {
+			if im.FilterAuthors {
+				for _, i := range instances {
+					if i.IsAuthor() {
+						result = append(result, i)
+					}
+				}
+			}
+			if im.FilterPublishes {
+				for _, i := range instances {
+					if i.IsPublish() {
+						result = append(result, i)
+					}
+				}
+			}
+		}
+	}
+	sort.SliceStable(result, func(i, j int) bool {
+		return strings.Compare(result[i].id, result[j].id) < 0
+	})
+	return result
 }
 
 func (im *InstanceManager) Remotes() []Instance {
@@ -162,100 +266,6 @@ func (im *InstanceManager) AwaitAll() error {
 
 func (im *InstanceManager) Await(instances []Instance) error {
 	return im.AwaitStarted(instances)
-}
-
-func (im *InstanceManager) newInstances() []Instance {
-	var defined []Instance
-
-	cv := im.aem.config.Values()
-	configURL := cv.GetString("instance.config_url")
-	configIDs := maps.Keys(cv.GetStringMap("instance.config"))
-
-	if configURL != "" {
-		iURL, err := im.NewByURL(configURL)
-		if err != nil {
-			log.Info(fmt.Sprintf("cannot use instance with URL '%s'", configURL))
-		} else {
-			defined = append(defined, *iURL)
-		}
-	} else if len(configIDs) > 0 {
-		for _, id := range configIDs {
-			httpURL := cv.GetString(fmt.Sprintf("instance.config.%s.http_url", id))
-			i, err := im.NewByURL(httpURL)
-			if err != nil {
-				log.Warn(fmt.Errorf("cannot create instance from URL '%s': %w", httpURL, err))
-				continue
-			}
-			i.id = id
-
-			user := cv.GetString(fmt.Sprintf("instance.config.%s.user", id))
-			if user != "" {
-				i.user = user
-			}
-			password := cv.GetString(fmt.Sprintf("instance.config.%s.password", id))
-			if password != "" {
-				i.password = password
-			}
-
-			if i.IsLocal() {
-				version := cv.GetString(fmt.Sprintf("instance.config.%s.version", id))
-				if version != "" {
-					i.local.Version = version
-				}
-
-				i.local.StartOpts = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.start_opts", id))
-				i.local.JvmOpts = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.jvm_opts", id))
-				i.local.RunModes = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.run_modes", id))
-				i.local.EnvVars = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.env_vars", id))
-				i.local.SecretVars = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.secret_vars", id))
-				i.local.SlingProps = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.sling_props", id))
-			}
-			defined = append(defined, *i)
-		}
-	}
-
-	if len(defined) == 0 {
-		defined = im.NewLocalPair()
-	}
-
-	var filtered []Instance
-	filterID := cv.GetString("instance.filter.id")
-
-	if filterID != "" {
-		for _, i := range defined {
-			if i.id == filterID {
-				filtered = append(filtered, i)
-				break
-			}
-		}
-	} else {
-		filterAuthor := cv.GetBool("instance.filter.author")
-		filterPublish := cv.GetBool("instance.filter.publish")
-		if filterAuthor == filterPublish {
-			filtered = defined
-		} else {
-			if filterAuthor {
-				for _, i := range defined {
-					if i.IsAuthor() {
-						filtered = append(filtered, i)
-					}
-				}
-			}
-			if filterPublish {
-				for _, i := range defined {
-					if i.IsPublish() {
-						filtered = append(filtered, i)
-					}
-				}
-			}
-		}
-	}
-
-	sort.SliceStable(filtered, func(i, j int) bool {
-		return strings.Compare(filtered[i].id, filtered[j].id) < 0
-	})
-
-	return filtered
 }
 
 func InstanceIds(instances []Instance) string {

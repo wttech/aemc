@@ -10,10 +10,6 @@ import (
 	"path/filepath"
 )
 
-const (
-	SdkToolDirName = "sdk"
-)
-
 func NewSDK(localOpts *LocalOpts) *SDK {
 	return &SDK{localOpts: localOpts}
 }
@@ -23,7 +19,7 @@ type SDK struct {
 }
 
 func (s SDK) Dir() string {
-	return s.localOpts.ToolDir + "/" + SdkToolDirName
+	return fmt.Sprintf("%s/%s", s.localOpts.manager.aem.baseOpts.ToolDir, "sdk")
 }
 
 type SDKLock struct {

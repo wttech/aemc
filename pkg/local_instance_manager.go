@@ -10,7 +10,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/timex"
-	"github.com/wttech/aemc/pkg/java"
 	"os"
 	"strings"
 	"time"
@@ -32,9 +31,7 @@ type LocalOpts struct {
 	UnpackDir   string
 	BackupDir   string
 	OverrideDir string
-	ToolDir     string
 	ServiceMode bool
-	JavaOpts    *java.Opts
 	OakRun      *OakRun
 	Quickstart  *Quickstart
 	SDK         *SDK
@@ -47,9 +44,7 @@ func NewLocalOpts(manager *InstanceManager) *LocalOpts {
 	result.UnpackDir = cfg.GetString("instance.local.unpack_dir")
 	result.BackupDir = cfg.GetString("instance.local.backup_dir")
 	result.OverrideDir = cfg.GetString("instance.local.override_dir")
-	result.ToolDir = cfg.GetString("instance.local.tool_dir")
 	result.ServiceMode = cfg.GetBool("instance.local.service_mode")
-	result.JavaOpts = manager.aem.javaOpts
 	result.Quickstart = NewQuickstart(result)
 	result.SDK = NewSDK(result)
 	result.OakRun = NewOakRun(result)
@@ -81,7 +76,7 @@ func (o *LocalOpts) Initialize() error {
 	if err := o.manager.aem.baseOpts.Prepare(); err != nil {
 		return err
 	}
-	if err := o.JavaOpts.Prepare(); err != nil {
+	if err := o.manager.aem.javaOpts.Prepare(); err != nil {
 		return err
 	}
 	if sdk {

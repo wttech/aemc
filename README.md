@@ -384,6 +384,8 @@ java:
 base:
   # Location of temporary files (downloaded AEM packages, etc)
   tmp_dir: aem/home/tmp
+`  # Location of supportive tools (downloaded Java, OakRun, unpacked AEM SDK)
+  tool_dir: aem/home/opt
 
 log:
   level: info

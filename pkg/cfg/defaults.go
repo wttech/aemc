@@ -18,6 +18,7 @@ func (c *Config) setDefaults() {
 	v.SetDefault("log.full_timestamp", true)
 
 	v.SetDefault("base.tmp_dir", common.TmpDir)
+	v.SetDefault("base.tool_dir", common.ToolDir)
 
 	v.SetDefault("input.format", fmtx.YML)
 	v.SetDefault("input.file", common.STDIn)

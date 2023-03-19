@@ -9,8 +9,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
-	"github.com/wttech/aemc/pkg/cfg"
-	"github.com/wttech/aemc/pkg/common"
+	"github.com/wttech/aemc/pkg/base"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/httpx"
 	"github.com/wttech/aemc/pkg/common/osx"
@@ -19,15 +18,20 @@ import (
 )
 
 type Opts struct {
+	baseOpts *base.Opts
+
 	HomeDir                 string
 	DownloadURL             string
 	DownloadURLReplacements map[string]string
 	VersionConstraints      version.Constraints
 }
 
-func NewOpts(config *cfg.Config) *Opts {
-	cv := config.Values()
+func NewOpts(baseOpts *base.Opts) *Opts {
+	cv := baseOpts.Config().Values()
+
 	return &Opts{
+		baseOpts: baseOpts,
+
 		HomeDir:                 cv.GetString("java.home_dir"),
 		DownloadURL:             cv.GetString("java.download.url"),
 		DownloadURLReplacements: cv.GetStringMapString("java.download.replacements"),
@@ -39,20 +43,20 @@ type DownloadLock struct {
 	Source string `yaml:"source"`
 }
 
-func (o *Opts) workDir() string {
-	return common.ToolDir + "/java"
+func (o *Opts) toolDir() string {
+	return fmt.Sprintf("%s/%s", o.baseOpts.ToolDir, "java")
 }
 
 func (o *Opts) archiveDir() string {
-	return fmt.Sprintf("%s/%s", o.workDir(), "archive")
+	return fmt.Sprintf("%s/%s", o.toolDir(), "archive")
 }
 
 func (o *Opts) downloadLock() osx.Lock[DownloadLock] {
-	return osx.NewLock(fmt.Sprintf("%s/lock/create.yml", o.workDir()), func() (DownloadLock, error) { return DownloadLock{Source: o.DownloadURL}, nil })
+	return osx.NewLock(fmt.Sprintf("%s/lock/create.yml", o.toolDir()), func() (DownloadLock, error) { return DownloadLock{Source: o.DownloadURL}, nil })
 }
 
 func (o *Opts) jdkDir() string {
-	return fmt.Sprintf("%s/%s", o.workDir(), "jdk")
+	return fmt.Sprintf("%s/%s", o.toolDir(), "jdk")
 }
 
 func (o *Opts) Prepare() error {

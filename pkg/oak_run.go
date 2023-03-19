@@ -11,18 +11,14 @@ import (
 	"path/filepath"
 )
 
-const (
-	OakRunToolDirName = "oak-run"
-)
-
 func NewOakRun(localOpts *LocalOpts) *OakRun {
-	cfg := localOpts.manager.aem.config.Values()
+	cv := localOpts.manager.aem.Config().Values()
 
 	return &OakRun{
 		localOpts: localOpts,
 
-		DownloadURL: cfg.GetString("instance.local.oak_run.download_url"),
-		StorePath:   cfg.GetString("instance.local.oak_run.store_path"),
+		DownloadURL: cv.GetString("instance.local.oak_run.download_url"),
+		StorePath:   cv.GetString("instance.local.oak_run.store_path"),
 	}
 }
 
@@ -38,7 +34,7 @@ type OakRunLock struct {
 }
 
 func (or OakRun) Dir() string {
-	return or.localOpts.ToolDir + "/" + OakRunToolDirName
+	return or.localOpts.manager.aem.baseOpts.ToolDir + "/oak-run"
 }
 
 func (or OakRun) lock() osx.Lock[OakRunLock] {
@@ -102,7 +98,7 @@ func (or OakRun) SetPassword(instanceDir string, user string, password string) e
 
 func (or OakRun) RunScript(instanceDir string, scriptFile string) error {
 	storeDir := fmt.Sprintf("%s/%s", instanceDir, or.StorePath)
-	cmd, err := or.localOpts.JavaOpts.Command(
+	cmd, err := or.localOpts.manager.aem.javaOpts.Command(
 		"-Djava.io.tmpdir="+pathx.Canonical(or.localOpts.manager.aem.baseOpts.TmpDir),
 		"-jar", or.JarFile(),
 		"console", storeDir, "--read-write", fmt.Sprintf(":load %s", scriptFile),

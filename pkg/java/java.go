@@ -10,7 +10,6 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/base"
-	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/httpx"
 	"github.com/wttech/aemc/pkg/common/osx"
@@ -27,9 +26,12 @@ type Opts struct {
 	VersionConstraints      version.Constraints
 }
 
-func NewOpts(config *cfg.Config) *Opts {
-	cv := config.Values()
+func NewOpts(baseOpts *base.Opts) *Opts {
+	cv := baseOpts.Config().Values()
+
 	return &Opts{
+		baseOpts: baseOpts,
+
 		HomeDir:                 cv.GetString("java.home_dir"),
 		DownloadURL:             cv.GetString("java.download.url"),
 		DownloadURLReplacements: cv.GetStringMapString("java.download.replacements"),

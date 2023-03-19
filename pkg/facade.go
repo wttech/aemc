@@ -31,7 +31,7 @@ func NewAEM(config *cfg.Config) *AEM {
 	result.config = config
 	result.project = project.New(result.config)
 	result.baseOpts = base.NewOpts(result.config)
-	result.javaOpts = java.NewOpts(result.config)
+	result.javaOpts = java.NewOpts(result.baseOpts)
 	result.instanceManager = NewInstanceManager(result)
 	return result
 }

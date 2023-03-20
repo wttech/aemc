@@ -1,0 +1,25 @@
+![AEM Compose Logo](https://github.com/wttech/aemc-ansible/raw/main/docs/logo-with-text.png)
+[![WTT Logo](https://github.com/wttech/aemc-ansible/raw/main/docs/wtt-logo.png)](https://www.wundermanthompson.com/service/technology)
+
+[![Apache License, Version 2.0, January 2004](https://github.com/wttech/aemc-ansible/raw/main/docs/apache-license-badge.svg)](http://www.apache.org/licenses/)
+
+# AEM Compose - Docker Example
+
+Setup and launch AEM instances running as Docker containers.
+
+## Prerequisites
+
+- Docker 20.x and higher
+
+# Usage 
+
+  1. Build images using command:
+        
+      ```shell
+      sh build-all.sh 
+      ```
+  2. Run containers using command:
+    
+      ```shell
+      sh run-all.sh 
+      ```

@@ -2,4 +2,4 @@
 
 UNIT=${1:-base}
 
-docker build --no-cache -t "acme/aem/${UNIT}" -f "${UNIT}.Dockerfile" .
+docker build --progress=plain --no-cache -t "acme/aem/${UNIT}" -f "${UNIT}.Dockerfile" .

@@ -1,12 +1,12 @@
 services:
   author:
     image: acme/aem/author:latest
-    ports: [4502, 14502]
+    ports: [8802:4502, 8812:14502]
     volumes:
       - ./aem/home/var/instance/author/crx-quickstart:/opt/aem/home/var/instance/author/crx-quickstart
 
   publish:
     image: acme/aem/publish:latest
-    ports: [4503, 14503]
+    ports: [8803:4503, 8813:14503]
     volumes:
       - ./aem/home/var/instance/publish/crx-quickstart:/opt/aem/home/var/instance/publish/crx-quickstart

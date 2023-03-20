@@ -23,7 +23,7 @@ func (c *CLI) instanceCmd() *cobra.Command {
 	cmd.AddCommand(c.instanceListCmd())
 	cmd.AddCommand(c.instanceAwaitCmd())
 	cmd.AddCommand(c.instanceBackupCmd())
-	cmd.AddCommand(c.instanceInitializeCmd())
+	cmd.AddCommand(c.instanceInitCmd())
 	return cmd
 }
 
@@ -299,7 +299,7 @@ func (c *CLI) instanceListCmd() *cobra.Command {
 	}
 }
 
-func (c *CLI) instanceInitializeCmd() *cobra.Command {
+func (c *CLI) instanceInitCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:     "init",
 		Aliases: []string{"initialize"},

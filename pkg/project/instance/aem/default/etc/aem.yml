@@ -210,12 +210,12 @@ content:
   properties_skipped:
     - patterns: "jcr:uuid"
       excluded_paths: [ "**/home/users/*", "**/home/groups/*" ]
-    - patterns: "cq:lastModified"
+    - patterns: "cq:lastModified*"
       excluded_paths: [ "**/content/experience-fragments/*" ]
     - patterns: [ "dam:sha1", "dam:size" ]
       included_paths: [ "**/content/dam/*.svg/*" ]
     - patterns:
-        - "jcr:lastModifiedBy"
+        - "jcr:lastModified*"
         - "jcr:created*"
         - "jcr:isCheckedOut"
         - "cq:lastReplicat*"

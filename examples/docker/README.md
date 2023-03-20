@@ -10,6 +10,9 @@ Setup and launch AEM instances running as Docker containers.
 ## Prerequisites
 
 - Docker 20.x and higher
+- AEM source files put into directory *src/aem/home/lib*
+  - a) AEM SDK ZIP 
+  - b) AEM On-Prem JAR and license file
 
 # Usage 
 

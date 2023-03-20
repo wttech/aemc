@@ -1,11 +1,12 @@
-FROM rockylinux:8.7
+FROM --platform=linux/x86_64 rockylinux:8.7
 
-RUN mkdir -p /opt/aem && \
-    cd /opt/aem && \
-    curl https://raw.githubusercontent.com/wttech/aemc/main/project-init.sh | sh && \
+WORKDIR /opt/aemc
+
+RUN curl https://raw.githubusercontent.com/wttech/aemc/main/project-init.sh | sh && \
     sh aemw init --project-kind instance
 
-ADD ./aem/home/lib /opt/aem/home/lib
+ADD aem/home/lib /opt/aemc/aem/home/lib
+
+RUN sh aemw instance init
 
 ENTRYPOINT ["/bin/bash"]
-WORKDIR /opt/aem

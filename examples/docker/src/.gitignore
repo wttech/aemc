@@ -1,0 +1,5 @@
+
+# AEM Compose
+aem/home/
+.env
+.env.*

@@ -204,10 +204,11 @@ func (o *Opts) readCurrentVersion() (string, error) {
 		return "", err
 	}
 	bytes, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("cannot check java version properly: %w", err)
-	}
 	output := string(bytes)
+	if err != nil {
+		log.Error(output)
+		return "", fmt.Errorf("cannot check java version properly: '%s': %w", output, err)
+	}
 	lines := strings.Split(output, "\n")
 	line, ok := lo.Find(lines, func(line string) bool { return strings.Contains(line, " version \"") })
 	if !ok {

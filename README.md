@@ -129,7 +129,7 @@ sh taskw setup AEM_BUILD_ARGS="-PfedDev -DskipTests -pl '!ui.tests'"
 Ensure having installed [Go](https://go.dev/dl/) then run command:
 
 - latest released version: `go install github.com/wttech/aemc/cmd/aem@latest`,
-- specific released version: `go install github.com/wttech/aemc/cmd/aem@v1.1.2`,
+- specific released version: `go install github.com/wttech/aemc/cmd/aem@v1.1.4`,
 - recently committed version: `go install github.com/wttech/aemc/cmd/aem@main`,
 
 Use installed version of the tool instead of the one defined in file *aem/api.sh* by running the following command:

@@ -5,7 +5,7 @@
 
 # AEM Compose - Docker Example
 
-Setup and launch AEM instances running as Docker containers.
+Setup and launch AEM instances as Docker containers.
 
 ## Prerequisites
 

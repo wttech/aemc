@@ -1,0 +1,6 @@
+FROM --platform=linux/x86_64 acme/aem/base:latest
+
+ENV AEM_INSTANCE_CONFIG_LOCAL_AUTHOR_ACTIVE=false
+ENV AEM_INSTANCE_CONFIG_LOCAL_PUBLISH_ACTIVE=true
+
+RUN sh taskw setup

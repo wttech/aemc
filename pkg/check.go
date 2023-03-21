@@ -345,8 +345,7 @@ type PathHTTPChecker struct {
 }
 
 func (c PathHTTPChecker) Check(instance Instance) CheckResult {
-	client := NewResty(instance.HTTP().BaseURL())
-	response, err := client.SetTimeout(c.RequestTimeout).NewRequest().Get(c.Path)
+	response, err := instance.http.RequestWithTimeout(c.RequestTimeout).Get(c.Path)
 	if err != nil {
 		return CheckResult{
 			ok:      false,

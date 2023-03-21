@@ -8,5 +8,4 @@ ENV TERM=xterm
 ENV AEM_INSTANCE_CONFIG_LOCAL_AUTHOR_ACTIVE=true
 ENV AEM_INSTANCE_CONFIG_LOCAL_PUBLISH_ACTIVE=false
 
-RUN sh taskw start
-RUN sh taskw provision
+RUN sh aemw instance launch && sh aemw instance down

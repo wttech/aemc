@@ -36,6 +36,10 @@ func (c *Config) setDefaults() {
 
 	v.SetDefault("instance.processing_mode", instance.ProcessingAuto)
 
+	v.SetDefault("instance.http.timeout", time.Minute*5)
+	v.SetDefault("instance.http.debug", false)
+	v.SetDefault("instance.http.disable_warn", true)
+
 	v.SetDefault("instance.check.warmup", time.Second*1)
 	v.SetDefault("instance.check.interval", time.Second*5)
 	v.SetDefault("instance.check.done_threshold", 3)

@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
 
-UNIT=${1:-base}
+UNIT=${1:-author}
 
-docker build --progress=plain --platform linux/x86_64 -t "acme/aem/${UNIT}" -f "${UNIT}.Dockerfile" .
+docker build --platform linux/x86_64 -t "acme/aem/${UNIT}" -f "${UNIT}.Dockerfile" .

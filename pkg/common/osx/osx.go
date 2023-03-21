@@ -25,7 +25,7 @@ func IsDarwin() bool {
 	return runtime.GOOS == "darwin"
 }
 
-func isLinux() bool {
+func IsLinux() bool {
 	return !IsWindows() && !IsDarwin()
 }
 

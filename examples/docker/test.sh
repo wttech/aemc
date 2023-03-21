@@ -1,5 +1,8 @@
 #!/usr/bin/env sh
 
-UNIT=${1:-base}
+UNIT=${1:-author}
 
-docker run --platform linux/x86_64 -it --rm "acme/aem/${UNIT}"
+docker run -it --rm \
+  --platform linux/x86_64 \
+  -v "$(pwd)/src/aem/default:/opt/aemc/aem/default" \
+  "acme/aem/${UNIT}"

@@ -119,6 +119,18 @@ func (c *CLI) onStart() {
 	c.outputNoColor = noColor
 	color.NoColor = noColor
 
+	log.SetFormatter(&log.TextFormatter{
+		ForceColors:     !c.outputNoColor,
+		TimestampFormat: cv.GetString("log.timestamp_format"),
+		FullTimestamp:   cv.GetBool("log.full_timestamp"),
+	})
+	levelName := cv.GetString("log.level")
+	level, err := log.ParseLevel(levelName)
+	if err != nil {
+		log.Fatalf("unsupported CLI log level specified: '%s'", levelName)
+	}
+	log.SetLevel(level)
+
 	if !lo.Contains(cfg.OutputFormats(), c.outputFormat) {
 		log.Fatalf("unsupported CLI output format detected '%s'! supported ones are: %s", c.outputFormat, strings.Join(cfg.OutputFormats(), ", "))
 	}
@@ -152,18 +164,6 @@ func (c *CLI) onStart() {
 		c.aem.SetOutput(outputWriter)
 		log.SetOutput(outputWriter)
 	}
-
-	log.SetFormatter(&log.TextFormatter{
-		ForceColors:     !c.outputNoColor,
-		TimestampFormat: cv.GetString("log.timestamp_format"),
-		FullTimestamp:   cv.GetBool("log.full_timestamp"),
-	})
-	levelName := cv.GetString("log.level")
-	level, err := log.ParseLevel(levelName)
-	if err != nil {
-		log.Fatalf("unsupported CLI log level specified: '%s'", levelName)
-	}
-	log.SetLevel(level)
 
 	c.started = time.Now()
 }

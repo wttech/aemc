@@ -7,6 +7,8 @@
 
 Setup and launch AEM instances as Docker containers.
 
+**Warning!** The purpose of this example is to demonstrate and experiment with AEM running in Docker. However, it is widely known that AEM runtime does not fit well into Docker architecture (e.g is not lightweight and stateless).
+
 ## Prerequisites
 
 - Docker 20.x and higher

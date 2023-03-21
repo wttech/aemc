@@ -87,6 +87,7 @@ func (c *CLI) Exec() error {
 func (c *CLI) MustExec() {
 	if err := c.Exec(); err != nil {
 		log.Error(err)
+		os.Exit(1)
 	}
 }
 

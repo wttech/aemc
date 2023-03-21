@@ -2,4 +2,4 @@
 
 UNIT=${1:-base}
 
-docker build --platform linux/x86_64 -t "acme/aem/${UNIT}" -f "${UNIT}.Dockerfile" .
+docker build --progress=plain --platform linux/x86_64 -t "acme/aem/${UNIT}" -f "${UNIT}.Dockerfile" .

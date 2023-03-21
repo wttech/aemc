@@ -141,6 +141,10 @@ func (li LocalInstance) QuickstartDir() string {
 	return pathx.Canonical(fmt.Sprintf("%s/%s", li.Dir(), "crx-quickstart"))
 }
 
+func (li LocalInstance) SlingPropsFile() string {
+	return pathx.Canonical(fmt.Sprintf("%s/conf/sling.properties", li.QuickstartDir()))
+}
+
 func (li LocalInstance) BundleDir(id int) string {
 	return pathx.Canonical(fmt.Sprintf("%s/launchpad/felix/bundle%d", li.QuickstartDir(), id))
 }
@@ -246,7 +250,10 @@ func (li LocalInstance) unpackJarFile() error {
 	if err != nil {
 		return err
 	}
-	cmd, err := li.JavaOpts().Command("-jar", pathx.Canonical(jar), "-unpack")
+	cmd, err := li.JavaOpts().Command(
+		"-Djava.awt.headless=true",
+		"-jar", pathx.Canonical(jar), "-unpack",
+	)
 	if err != nil {
 		return err
 	}
@@ -254,6 +261,10 @@ func (li LocalInstance) unpackJarFile() error {
 	li.instance.manager.aem.CommandOutput(cmd)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("%s > cannot unpack files: %w", li.instance.ID(), err)
+	}
+	startScript := li.binScriptUnix("start")
+	if !pathx.Exists(startScript) {
+		return fmt.Errorf("%s > unpacking files went wrong as e.g start script does not exist '%s'", li.instance.ID(), startScript)
 	}
 	return nil
 }
@@ -438,7 +449,7 @@ func (li LocalInstance) recreateSlingPropsFile() error {
 	filePath := fmt.Sprintf("%s/conf/sling.properties", li.QuickstartDir())
 	log.Infof("%s > configuring instance Sling properties in file '%s'", li.Instance().ID(), filePath)
 	propsCombined := append(li.SlingProps, "org.apache.felix.configadmin.plugin.interpolation.secretsdir=${sling.home}/"+LocalInstanceSecretsDir)
-	propsLoaded, err := properties.LoadString(strings.Join(propsCombined, "\n"))
+	propsLoaded, err := properties.LoadString(strings.Join(propsCombined, osx.LineSep()))
 	if err != nil {
 		return fmt.Errorf("%s > cannot parse Sling properties file '%s': %w", li.instance.ID(), filePath, err)
 	}

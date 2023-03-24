@@ -11,10 +11,10 @@ import (
 type WorkflowManager struct {
 	instance *Instance
 
-	LibRoot            string
-	ConfigRoot         string
-	ToggleRetryTimeout time.Duration
-	ToggleRetryDelay   time.Duration
+	LauncherLibRoot            string
+	LauncherConfigRoot         string
+	LauncherToggleRetryTimeout time.Duration
+	LauncherToggleRetryDelay   time.Duration
 }
 
 func NewWorkflowManager(i *Instance) *WorkflowManager {
@@ -23,10 +23,10 @@ func NewWorkflowManager(i *Instance) *WorkflowManager {
 	return &WorkflowManager{
 		instance: i,
 
-		LibRoot:            cv.GetString("instance.workflow.lib_root"),
-		ConfigRoot:         cv.GetString("instance.workflow.config_root"),
-		ToggleRetryTimeout: cv.GetDuration("instance.workflow.toggle_retry_timeout"),
-		ToggleRetryDelay:   cv.GetDuration("instance.workflow.toggle_retry_delay"),
+		LauncherLibRoot:            cv.GetString("instance.workflow.launcher.lib_root"),
+		LauncherConfigRoot:         cv.GetString("instance.workflow.launcher.config_root"),
+		LauncherToggleRetryTimeout: cv.GetDuration("instance.workflow.launcher.toggle_retry.timeout"),
+		LauncherToggleRetryDelay:   cv.GetDuration("instance.workflow.launcher.toggle_retry.delay"),
 	}
 }
 
@@ -69,10 +69,10 @@ func (w *WorkflowManager) doLauncherAction(name string, callback func() error) e
 		if err == nil {
 			return nil
 		}
-		if time.Now().After(started.Add(w.ToggleRetryTimeout)) {
-			return fmt.Errorf("%s > awaiting workflow launcher action '%s' timed out after %s: %w", w.instance.ID(), name, w.ToggleRetryTimeout, err)
+		if time.Now().After(started.Add(w.LauncherToggleRetryTimeout)) {
+			return fmt.Errorf("%s > awaiting workflow launcher action '%s' timed out after %s: %w", w.instance.ID(), name, w.LauncherToggleRetryTimeout, err)
 		}
-		time.Sleep(w.ToggleRetryDelay)
+		time.Sleep(w.LauncherToggleRetryDelay)
 	}
 }
 

@@ -153,6 +153,15 @@ instance:
   crypto:
     key_bundle_symbolic_name: com.adobe.granite.crypto.file
 
+  # Workflow Manager
+  workflow:
+    launcher:
+      lib_root: /libs/settings/workflow/launcher
+      config_root: /conf/global/settings/workflow/launcher
+      toggle_retry:
+        timeout: 5m
+        delay: 10s
+
 java:
   # Require following versions before e.g running AEM instances
   version_constraints: ">= 11, < 12"

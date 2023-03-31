@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"bufio"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/cfg"
 	"io"
@@ -109,31 +108,16 @@ func filterLines(path string, lines []string, config *cfg.ConfigValues) []string
 		} else {
 			result = append(result, processedLine)
 		}
-	}
-	return mergeSinglePropertyLines(cleanNamespaces(result, config))
-}
-
-func mergeSinglePropertyLines(lines []string) []string {
-	var result []string
-	for i := 0; i < len(lines); i++ {
-		line := lines[i]
-		lineTrimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(lineTrimmed, JcrRootPrefix) || i == len(lines)-1 {
-			result = append(result, line)
-		} else if strings.HasPrefix(lineTrimmed, "<") && !strings.HasSuffix(lineTrimmed, ">") {
-			i++
-			nextLine := lines[i]
-			nextLineTrimmed := strings.TrimSpace(nextLine)
-			if !strings.HasPrefix(nextLineTrimmed, "<") && strings.HasSuffix(nextLineTrimmed, ">") {
-				result = append(result, fmt.Sprintf("%s %s", line, nextLineTrimmed))
-			} else {
-				result = append(result, line, nextLine)
-			}
-		} else {
-			result = append(result, line)
+		if len(result) > 2 && strings.HasSuffix(processedLine, ">") &&
+			!strings.HasPrefix(result[len(result)-2], JcrRootPrefix) &&
+			strings.HasPrefix(strings.TrimSpace(result[len(result)-2]), "<") &&
+			!strings.HasSuffix(result[len(result)-2], ">") &&
+			!strings.HasPrefix(strings.TrimSpace(result[len(result)-1]), "<") {
+			result[len(result)-2] += " " + strings.TrimSpace(result[len(result)-1])
+			result = result[:len(result)-1]
 		}
 	}
-	return result
+	return cleanNamespaces(result, config)
 }
 
 func cleanNamespaces(lines []string, config *cfg.ConfigValues) []string {
@@ -143,7 +127,7 @@ func cleanNamespaces(lines []string, config *cfg.ConfigValues) []string {
 
 	var result []string
 	for _, line := range lines {
-		if strings.HasPrefix(strings.TrimSpace(line), JcrRootPrefix) {
+		if strings.HasPrefix(line, JcrRootPrefix) {
 			var rootResult []string
 			for _, part := range strings.Split(line, " ") {
 				groups := regexp.MustCompile(NamespacePattern).FindStringSubmatch(part)

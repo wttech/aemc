@@ -18,7 +18,7 @@ const (
 	JcrContentFile     = ".content.xml"
 	JcrMixinTypesProp  = "jcr:mixinTypes"
 	JcrRootPrefix      = "<jcr:root"
-	ContentPropPattern = "^([^ =]+)=\"([^\"]+)\""
+	ContentPropPattern = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
 	NamespacePattern   = "^\\w+:(\\w+)=\"[^\"]+\"$"
 	JcrRoot            = "jcr_root"
 )
@@ -103,15 +103,9 @@ func cleanDotContentFile(path string, config *cfg.ConfigValues) error {
 func filterLines(path string, lines []string, config *cfg.ConfigValues) []string {
 	var result []string
 	for _, line := range lines {
-		processedLine := lineProcess(path, line, config)
-		if processedLine == "" {
-			if strings.HasSuffix(result[len(result)-1], ">") {
-				// skip line
-			} else if strings.HasSuffix(strings.TrimSpace(line), "/>") {
-				result[len(result)-1] += "/>"
-			} else if strings.HasSuffix(strings.TrimSpace(line), ">") {
-				result[len(result)-1] += ">"
-			}
+		flag, processedLine := lineProcess(path, line, config)
+		if flag {
+			result[len(result)-1] += processedLine
 		} else {
 			result = append(result, processedLine)
 		}
@@ -173,20 +167,20 @@ func cleanNamespaces(lines []string, config *cfg.ConfigValues) []string {
 	return result
 }
 
-func lineProcess(path string, line string, config *cfg.ConfigValues) string {
-	groups := regexp.MustCompile(ContentPropPattern).FindStringSubmatch(strings.TrimSpace(line))
+func lineProcess(path string, line string, config *cfg.ConfigValues) (bool, string) {
+	groups := regexp.MustCompile(ContentPropPattern).FindStringSubmatch(line)
 	if groups == nil {
-		return line
-	} else if matchAnyRule(groups[1], path, config.Content.PropertiesSkipped) {
-		return ""
+		return false, line
 	} else if groups[1] == JcrMixinTypesProp {
-		return normalizeMixins(path, line, groups[2], config)
+		return normalizeMixins(path, line, groups[2], groups[3], config)
+	} else if matchAnyRule(groups[1], path, config.Content.PropertiesSkipped) {
+		return true, groups[3]
 	} else {
-		return line
+		return false, line
 	}
 }
 
-func normalizeMixins(path string, line string, propValue string, config *cfg.ConfigValues) string {
+func normalizeMixins(path string, line string, propValue string, lineSuffix string, config *cfg.ConfigValues) (bool, string) {
 	normalizedValue := strings.Trim(propValue, "[]")
 	var resultValues []string
 	for _, value := range strings.Split(normalizedValue, ",") {
@@ -195,9 +189,9 @@ func normalizeMixins(path string, line string, propValue string, config *cfg.Con
 		}
 	}
 	if len(resultValues) == 0 {
-		return ""
+		return true, lineSuffix
 	} else {
-		return strings.ReplaceAll(line, normalizedValue, strings.Join(resultValues, ","))
+		return false, strings.ReplaceAll(line, normalizedValue, strings.Join(resultValues, ","))
 	}
 }
 
@@ -364,19 +358,18 @@ func matchString(value string, patterns []string) bool {
 }
 
 func readLines(path string) ([]string, error) {
-	file, err := os.OpenFile(path, os.O_RDONLY, os.ModePerm)
+	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	scan := bufio.NewScanner(file)
 	var lines []string
-	for scan.Scan() {
-		lines = append(lines, scan.Text())
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
 	}
-	err = scan.Err()
-	return lines, err
+	return lines, scanner.Err()
 }
 
 func writeLines(path string, lines []string) error {

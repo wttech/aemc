@@ -23,7 +23,7 @@ type Opts struct {
 	HomeDir                 string
 	DownloadURL             string
 	DownloadURLReplacements map[string]string
-	VersionConstraints      version.Constraints
+	VersionConstraints      string
 }
 
 func NewOpts(baseOpts *base.Opts) *Opts {
@@ -35,7 +35,7 @@ func NewOpts(baseOpts *base.Opts) *Opts {
 		HomeDir:                 cv.GetString("java.home_dir"),
 		DownloadURL:             cv.GetString("java.download.url"),
 		DownloadURLReplacements: cv.GetStringMapString("java.download.replacements"),
-		VersionConstraints:      version.MustConstraints(version.NewConstraint(cv.GetString("java.version_constraints"))),
+		VersionConstraints:      cv.GetString("java.version_constraints"),
 	}
 }
 
@@ -106,8 +106,14 @@ func (o *Opts) checkVersion() error {
 	if err != nil {
 		return err
 	}
-	if o.VersionConstraints != nil && !o.VersionConstraints.Check(currentVersion) {
-		return fmt.Errorf("java current version '%s' does not meet contraints '%s'", currentVersion, o.VersionConstraints)
+	if o.VersionConstraints != "" {
+		versionConstraints, err := version.NewConstraint(o.VersionConstraints)
+		if err != nil {
+			return fmt.Errorf("java version constraint '%s' is invalid: %w", o.VersionConstraints, err)
+		}
+		if !versionConstraints.Check(currentVersion) {
+			return fmt.Errorf("java current version '%s' does not meet contraints '%s'", currentVersion, o.VersionConstraints)
+		}
 	}
 	return nil
 }

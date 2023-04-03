@@ -4,31 +4,42 @@ import (
 	"fmt"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
-	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common/lox"
 	"github.com/wttech/aemc/pkg/instance"
+	"golang.org/x/exp/maps"
 	nurl "net/url"
 	"sort"
 	"strings"
 )
 
 type InstanceManager struct {
-	aem *Aem
+	aem *AEM
 
-	Instances      []Instance
-	LocalOpts      *LocalOpts
-	CheckOpts      *CheckOpts
-	ProcessingMode instance.ProcessingMode
+	Instances []Instance
+	LocalOpts *LocalOpts
+	CheckOpts *CheckOpts
+
+	AdHocURL        string
+	FilterID        string
+	FilterAuthors   bool
+	FilterPublishes bool
+	ProcessingMode  string
 }
 
-func NewInstanceManager(aem *Aem) *InstanceManager {
+func NewInstanceManager(aem *AEM) *InstanceManager {
 	result := new(InstanceManager)
 	result.aem = aem
 
-	result.ProcessingMode = instance.ProcessingParallel
-	result.LocalOpts = result.NewLocalOpts(result)
-	result.CheckOpts = result.NewCheckOpts()
-	result.Instances = result.NewLocalPair()
+	cv := aem.config.Values()
+
+	result.AdHocURL = cv.GetString("instance.adhoc_url")
+	result.FilterID = cv.GetString("instance.filter.id")
+	result.FilterAuthors = cv.GetBool("instance.filter.authors")
+	result.FilterPublishes = cv.GetBool("instance.filter.publishes")
+	result.ProcessingMode = cv.GetString("instance.processing_mode")
+
+	result.LocalOpts = NewLocalOpts(result)
+	result.CheckOpts = NewCheckOpts(result)
 
 	return result
 }
@@ -66,7 +77,101 @@ func (im *InstanceManager) Some() ([]Instance, error) {
 }
 
 func (im *InstanceManager) All() []Instance {
-	return im.Instances
+	result := im.newAdHocOrFromConfig()
+	return im.filter(result)
+}
+
+func (im *InstanceManager) newAdHocOrFromConfig() []Instance {
+	if im.AdHocURL != "" {
+		iURL, err := im.NewByURL(im.AdHocURL)
+		if err != nil {
+			log.Fatalf("cannot create instance from ad hoc URL '%s': %s", im.AdHocURL, err)
+		}
+		return []Instance{*iURL}
+	}
+	cv := im.aem.config.Values()
+	configIDs := maps.Keys(cv.GetStringMap("instance.config"))
+	if len(configIDs) > 0 {
+		var result []Instance
+		for _, id := range configIDs {
+			cv.SetDefault(fmt.Sprintf("instance.config.%s.active", id), true)
+			active := cv.GetBool(fmt.Sprintf("instance.config.%s.active", id))
+			if active {
+				if i := im.newFromConfig(id); i != nil {
+					result = append(result, *i)
+				}
+			}
+		}
+		return result
+	}
+	return im.NewLocalPair()
+}
+
+func (im *InstanceManager) newFromConfig(id string) *Instance {
+	cv := im.aem.config.Values()
+
+	httpURL := cv.GetString(fmt.Sprintf("instance.config.%s.http_url", id))
+	i, err := im.NewByURL(httpURL)
+	if err != nil {
+		log.Fatalf("cannot create instance from config with ID '%s' using URL '%s': %s", id, httpURL, err)
+		return nil
+	}
+
+	i.id = id
+
+	cv.SetDefault(fmt.Sprintf("instance.config.%s.user", id), i.user)
+	i.user = cv.GetString(fmt.Sprintf("instance.config.%s.user", id))
+
+	cv.SetDefault(fmt.Sprintf("instance.config.%s.password", id), i.password)
+	i.password = cv.GetString(fmt.Sprintf("instance.config.%s.password", id))
+
+	if i.IsLocal() {
+		cv.SetDefault(fmt.Sprintf("instance.config.%s.version", id), "1")
+		i.local.Version = cv.GetString(fmt.Sprintf("instance.config.%s.version", id))
+
+		i.local.StartOpts = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.start_opts", id))
+		i.local.JvmOpts = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.jvm_opts", id))
+		i.local.RunModes = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.run_modes", id))
+		i.local.EnvVars = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.env_vars", id))
+		i.local.SecretVars = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.secret_vars", id))
+		i.local.SlingProps = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.sling_props", id))
+	}
+	return i
+}
+
+func (im *InstanceManager) filter(instances []Instance) []Instance {
+	result := []Instance{}
+	if im.FilterID != "" {
+		for _, i := range instances {
+			if i.id == im.FilterID {
+				result = append(result, i)
+				break
+			}
+		}
+	} else {
+		if im.FilterAuthors == im.FilterPublishes {
+			result = instances
+		} else {
+			if im.FilterAuthors {
+				for _, i := range instances {
+					if i.IsAuthor() {
+						result = append(result, i)
+					}
+				}
+			}
+			if im.FilterPublishes {
+				for _, i := range instances {
+					if i.IsPublish() {
+						result = append(result, i)
+					}
+				}
+			}
+		}
+	}
+	sort.SliceStable(result, func(i, j int) bool {
+		return strings.Compare(result[i].id, result[j].id) < 0
+	})
+	return result
 }
 
 func (im *InstanceManager) Remotes() []Instance {
@@ -139,6 +244,7 @@ func (im *InstanceManager) New(id, url, user, password string) *Instance {
 	res.status = NewStatus(res)
 	res.repo = NewRepo(res)
 	res.packageManager = NewPackageManager(res)
+	res.workflowManager = NewWorkflowManager(res)
 	res.osgi = NewOSGi(res)
 	res.sling = NewSling(res)
 	res.crypto = NewCrypto(res)
@@ -162,166 +268,6 @@ func (im *InstanceManager) Await(instances []Instance) error {
 	return im.AwaitStarted(instances)
 }
 
-func (im *InstanceManager) Configure(config *cfg.Config) {
-	im.configureInstances(config)
-	im.configureCheckOpts(config)
-	im.configureLocalOpts(config)
-	im.configureRest(config)
-}
-
-func (im *InstanceManager) configureInstances(config *cfg.Config) {
-	opts := config.Values().Instance
-	var defined []Instance
-
-	if len(opts.Config) > 0 {
-		for ID, iCfg := range opts.Config {
-			i, err := im.NewByURL(iCfg.HTTPURL)
-			if err != nil {
-				log.Warn(fmt.Errorf("cannot create instance from URL '%s': %w", iCfg.HTTPURL, err))
-				continue
-			}
-			i.id = ID
-			if len(iCfg.User) > 0 {
-				i.user = iCfg.User
-			}
-			if len(iCfg.Password) > 0 {
-				i.password = iCfg.Password
-			}
-			if i.IsLocal() {
-				if len(iCfg.StartOpts) > 0 {
-					i.local.StartOpts = iCfg.StartOpts
-				}
-				if len(iCfg.JVMOpts) > 0 {
-					i.local.JvmOpts = iCfg.JVMOpts
-				}
-				if len(iCfg.RunModes) > 0 {
-					i.local.RunModes = iCfg.RunModes
-				}
-				i.local.EnvVars = iCfg.EnvVars
-				i.local.SecretVars = iCfg.SecretVars
-				i.local.SlingProps = iCfg.SlingProps
-				if len(iCfg.Version) > 0 {
-					i.local.Version = iCfg.Version
-				}
-			}
-			defined = append(defined, *i)
-		}
-	} else if len(opts.ConfigURL) > 0 {
-		iURL, err := im.NewByURL(opts.ConfigURL)
-		if err != nil {
-			log.Info(fmt.Sprintf("cannot use instance with URL '%s'", opts.ConfigURL))
-		} else {
-			defined = append(defined, *iURL)
-		}
-	}
-
-	if len(defined) == 0 {
-		defined = im.NewLocalPair()
-	}
-
-	var filtered []Instance
-	if len(opts.Filter.ID) > 0 {
-		for _, i := range defined {
-			if i.id == opts.Filter.ID {
-				filtered = append(filtered, i)
-				break
-			}
-		}
-	} else {
-		if opts.Filter.Author == opts.Filter.Publish {
-			filtered = defined
-		} else {
-			if opts.Filter.Author {
-				for _, i := range defined {
-					if i.IsAuthor() {
-						filtered = append(filtered, i)
-					}
-				}
-			}
-			if opts.Filter.Publish {
-				for _, i := range defined {
-					if i.IsPublish() {
-						filtered = append(filtered, i)
-					}
-				}
-			}
-		}
-	}
-
-	for _, inst := range filtered {
-		configureInstance(inst, config)
-	}
-
-	sort.SliceStable(filtered, func(i, j int) bool {
-		return strings.Compare(filtered[i].id, filtered[j].id) < 0
-	})
-
-	im.Instances = filtered
-}
-
-func configureInstance(inst Instance, config *cfg.Config) {
-	instanceOpts := config.Values().Instance
-
-	packageOpts := instanceOpts.Package
-	inst.packageManager.SnapshotDeploySkipping = packageOpts.SnapshotDeploySkipping
-	if packageOpts.SnapshotPatterns != nil {
-		inst.packageManager.SnapshotPatterns = packageOpts.SnapshotPatterns
-	}
-
-	statusOpts := instanceOpts.Status
-	inst.status.Timeout = statusOpts.Timeout
-
-	repoOpts := instanceOpts.Repo
-	inst.repo.PropertyChangeIgnored = repoOpts.PropertyChangeIgnored
-
-	osgiOpts := instanceOpts.OSGi
-	inst.osgi.shutdownDelay = osgiOpts.ShutdownDelay
-
-	inst.osgi.bundleManager.InstallStart = osgiOpts.Bundle.Install.Start
-	inst.osgi.bundleManager.InstallStartLevel = osgiOpts.Bundle.Install.StartLevel
-	inst.osgi.bundleManager.InstallRefreshPackages = osgiOpts.Bundle.Install.RefreshPackages
-
-	cryptoOpts := instanceOpts.Crypto
-	inst.crypto.keyBundleSymbolicName = cryptoOpts.KeyBundleSymbolicName
-}
-
-func (im *InstanceManager) configureCheckOpts(config *cfg.Config) {
-	opts := config.Values().Instance.Check
-
-	im.CheckOpts.Warmup = opts.Warmup
-	im.CheckOpts.Interval = opts.Interval
-	im.CheckOpts.DoneThreshold = opts.DoneThreshold
-
-	if opts.BundleStable.SymbolicNamesIgnored != nil {
-		im.CheckOpts.BundleStable.SymbolicNamesIgnored = opts.BundleStable.SymbolicNamesIgnored
-	}
-	if opts.EventStable.ReceivedMaxAge > 0 {
-		im.CheckOpts.EventStable.ReceivedMaxAge = opts.EventStable.ReceivedMaxAge
-	}
-	if opts.EventStable.TopicsUnstable != nil {
-		im.CheckOpts.EventStable.TopicsUnstable = opts.EventStable.TopicsUnstable
-	}
-	if opts.EventStable.DetailsIgnored != nil {
-		im.CheckOpts.EventStable.DetailsIgnored = opts.EventStable.DetailsIgnored
-	}
-	im.CheckOpts.AwaitStrict = opts.AwaitStrict
-	if opts.AwaitStartedTimeout.Duration > 0 {
-		im.CheckOpts.AwaitStartedTimeout.Duration = opts.AwaitStartedTimeout.Duration
-	}
-	if opts.AwaitStoppedTimeout.Duration > 0 {
-		im.CheckOpts.AwaitStoppedTimeout.Duration = opts.AwaitStoppedTimeout.Duration
-	}
-	im.CheckOpts.Installer.State = opts.Installer.State
-	im.CheckOpts.Installer.Pause = opts.Installer.Pause
-
-	im.CheckOpts.Reachable.Timeout = opts.Reachable.Timeout
-	im.CheckOpts.Unreachable.Timeout = opts.Unreachable.Timeout
-}
-
-func (im *InstanceManager) configureRest(config *cfg.Config) {
-	im.ProcessingMode = instance.ProcessingMode(config.Values().Instance.ProcessingMode)
-}
-
 func InstanceIds(instances []Instance) string {
 	return strings.Join(lo.Map(instances, func(i Instance, _ int) string { return i.id }), ",")
 }
@@ -337,7 +283,7 @@ func InstanceMsg(instances []Instance, msg string) string {
 }
 
 // InstanceProcess is a workaround for <https://stackoverflow.com/a/71132286/3360007> (ideally should be a method of manager)
-func InstanceProcess[R any](aem *Aem, instances []Instance, processor func(instance Instance) (R, error)) ([]R, error) {
+func InstanceProcess[R any](aem *AEM, instances []Instance, processor func(instance Instance) (R, error)) ([]R, error) {
 	parallel := false
 	mode := aem.InstanceManager().ProcessingMode
 	if mode == instance.ProcessingParallel {

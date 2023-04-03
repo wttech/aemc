@@ -10,8 +10,6 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/base"
-	"github.com/wttech/aemc/pkg/cfg"
-	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/httpx"
 	"github.com/wttech/aemc/pkg/common/osx"
@@ -25,16 +23,19 @@ type Opts struct {
 	HomeDir                 string
 	DownloadURL             string
 	DownloadURLReplacements map[string]string
-	VersionConstraints      version.Constraints
+	VersionConstraints      string
 }
 
 func NewOpts(baseOpts *base.Opts) *Opts {
+	cv := baseOpts.Config().Values()
+
 	return &Opts{
-		baseOpts:                baseOpts,
-		HomeDir:                 "",
-		DownloadURL:             "",
-		DownloadURLReplacements: nil,
-		VersionConstraints:      nil,
+		baseOpts: baseOpts,
+
+		HomeDir:                 cv.GetString("java.home_dir"),
+		DownloadURL:             cv.GetString("java.download.url"),
+		DownloadURLReplacements: cv.GetStringMapString("java.download.replacements"),
+		VersionConstraints:      cv.GetString("java.version_constraints"),
 	}
 }
 
@@ -42,20 +43,20 @@ type DownloadLock struct {
 	Source string `yaml:"source"`
 }
 
-func (o *Opts) workDir() string {
-	return common.ToolDir + "/java"
+func (o *Opts) toolDir() string {
+	return fmt.Sprintf("%s/%s", o.baseOpts.ToolDir, "java")
 }
 
 func (o *Opts) archiveDir() string {
-	return fmt.Sprintf("%s/%s", o.workDir(), "archive")
+	return fmt.Sprintf("%s/%s", o.toolDir(), "archive")
 }
 
 func (o *Opts) downloadLock() osx.Lock[DownloadLock] {
-	return osx.NewLock(fmt.Sprintf("%s/lock/create.yml", o.workDir()), func() (DownloadLock, error) { return DownloadLock{Source: o.DownloadURL}, nil })
+	return osx.NewLock(fmt.Sprintf("%s/lock/create.yml", o.toolDir()), func() (DownloadLock, error) { return DownloadLock{Source: o.DownloadURL}, nil })
 }
 
 func (o *Opts) jdkDir() string {
-	return fmt.Sprintf("%s/%s", o.workDir(), "jdk")
+	return fmt.Sprintf("%s/%s", o.toolDir(), "jdk")
 }
 
 func (o *Opts) Prepare() error {
@@ -105,8 +106,14 @@ func (o *Opts) checkVersion() error {
 	if err != nil {
 		return err
 	}
-	if o.VersionConstraints != nil && !o.VersionConstraints.Check(currentVersion) {
-		return fmt.Errorf("java current version '%s' does not meet contraints '%s'", currentVersion, o.VersionConstraints)
+	if o.VersionConstraints != "" {
+		versionConstraints, err := version.NewConstraint(o.VersionConstraints)
+		if err != nil {
+			return fmt.Errorf("java version constraint '%s' is invalid: %w", o.VersionConstraints, err)
+		}
+		if !versionConstraints.Check(currentVersion) {
+			return fmt.Errorf("java current version '%s' does not meet contraints '%s'", currentVersion, o.VersionConstraints)
+		}
 	}
 	return nil
 }
@@ -203,10 +210,11 @@ func (o *Opts) readCurrentVersion() (string, error) {
 		return "", err
 	}
 	bytes, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("cannot check java version properly: %w", err)
-	}
 	output := string(bytes)
+	if err != nil {
+		log.Error(output)
+		return "", fmt.Errorf("cannot check java version properly: '%s': %w", output, err)
+	}
 	lines := strings.Split(output, "\n")
 	line, ok := lo.Find(lines, func(line string) bool { return strings.Contains(line, " version \"") })
 	if !ok {
@@ -215,21 +223,4 @@ func (o *Opts) readCurrentVersion() (string, error) {
 	result := stringsx.Between(line, "\"", "\"")
 	result = strings.Split(result, "_")[0]
 	return strings.TrimSpace(result), nil
-}
-
-func (o *Opts) Configure(config *cfg.Config) {
-	opts := config.Values().Java
-
-	if len(opts.HomeDir) > 0 {
-		o.HomeDir = opts.HomeDir
-	}
-	if len(opts.Download.URL) > 0 {
-		o.DownloadURL = opts.Download.URL
-	}
-	o.DownloadURLReplacements = opts.Download.Replacements
-	if len(opts.VersionConstraints) > 0 {
-		o.VersionConstraints = version.MustConstraints(version.NewConstraint(opts.VersionConstraints))
-	} else if opts.VersionConstraints == "" {
-		o.VersionConstraints = nil
-	}
 }

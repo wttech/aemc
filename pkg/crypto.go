@@ -23,10 +23,12 @@ type CryptoProtectResult struct {
 }
 
 func NewCrypto(instance *Instance) *Crypto {
+	cv := instance.manager.aem.config.Values()
+
 	return &Crypto{
 		instance: instance,
 
-		keyBundleSymbolicName: "com.adobe.granite.crypto.file",
+		keyBundleSymbolicName: cv.GetString("instance.crypto.key_bundle_symbolic_name"),
 	}
 }
 

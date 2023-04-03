@@ -12,6 +12,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/instance"
+	"github.com/wttech/aemc/pkg/java"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -57,6 +58,7 @@ const (
 	LocalInstanceWorkDirName     = common.AppId
 	LocalInstanceNameCommon      = "common"
 	LocalInstanceSecretsDir      = "conf/secret"
+	LocalInstanceVersionDefault  = "1"
 )
 
 func (li LocalInstance) Instance() *Instance {
@@ -65,15 +67,10 @@ func (li LocalInstance) Instance() *Instance {
 
 func NewLocal(i *Instance) *LocalInstance {
 	li := &LocalInstance{instance: i}
-	li.Version = "1"
+	li.Version = LocalInstanceVersionDefault
 	li.StartOpts = []string{}
-	li.RunModes = []string{"local"}
-	li.JvmOpts = []string{
-		"-server",
-		"-Djava.awt.headless=true",
-		"-Djava.io.tmpdir=" + pathx.Canonical(i.manager.aem.baseOpts.TmpDir),
-		"-Duser.language=en", "-Duser.country=US", "-Duser.timezone=UTC", "-Duser.name=" + common.AppId,
-	}
+	li.RunModes = []string{}
+	li.JvmOpts = []string{}
 	li.EnvVars = []string{}
 	li.SecretVars = []string{}
 	li.SlingProps = []string{}
@@ -81,7 +78,7 @@ func NewLocal(i *Instance) *LocalInstance {
 }
 
 func (li LocalInstance) State() LocalInstanceState {
-	if li.Opts().ServiceMode {
+	if li.LocalOpts().ServiceMode {
 		return LocalInstanceState{
 			ID:         li.instance.ID(),
 			URL:        li.instance.http.BaseURL(),
@@ -101,8 +98,12 @@ func (li LocalInstance) State() LocalInstanceState {
 	}
 }
 
-func (li LocalInstance) Opts() *LocalOpts {
+func (li LocalInstance) LocalOpts() *LocalOpts {
 	return li.instance.manager.LocalOpts
+}
+
+func (li LocalInstance) JavaOpts() *java.Opts {
+	return li.instance.manager.aem.javaOpts
 }
 
 func (li LocalInstance) Name() string {
@@ -114,7 +115,7 @@ func (li LocalInstance) Name() string {
 }
 
 func (li LocalInstance) Dir() string {
-	return pathx.Canonical(fmt.Sprintf("%s/%s", li.Opts().UnpackDir, li.Name()))
+	return pathx.Canonical(fmt.Sprintf("%s/%s", li.LocalOpts().UnpackDir, li.Name()))
 }
 
 func (li LocalInstance) WorkDir() string {
@@ -123,8 +124,8 @@ func (li LocalInstance) WorkDir() string {
 
 func (li LocalInstance) OverrideDirs() []string {
 	return lo.Map([]string{
-		fmt.Sprintf("%s/%s", li.Opts().OverrideDir, LocalInstanceNameCommon),
-		fmt.Sprintf("%s/%s", li.Opts().OverrideDir, li.Name()),
+		fmt.Sprintf("%s/%s", li.LocalOpts().OverrideDir, LocalInstanceNameCommon),
+		fmt.Sprintf("%s/%s", li.LocalOpts().OverrideDir, li.Name()),
 	}, func(p string, _ int) string { return pathx.Canonical(p) })
 }
 
@@ -138,6 +139,10 @@ func (li LocalInstance) LockDir() string {
 
 func (li LocalInstance) QuickstartDir() string {
 	return pathx.Canonical(fmt.Sprintf("%s/%s", li.Dir(), "crx-quickstart"))
+}
+
+func (li LocalInstance) SlingPropsFile() string {
+	return pathx.Canonical(fmt.Sprintf("%s/conf/sling.properties", li.QuickstartDir()))
 }
 
 func (li LocalInstance) BundleDir(id int) string {
@@ -227,7 +232,7 @@ func (li LocalInstance) Create() error {
 func (li LocalInstance) createLock() osx.Lock[localInstanceCreateLock] {
 	return osx.NewLock(fmt.Sprintf("%s/create.yml", li.LockDir()), func() (localInstanceCreateLock, error) {
 		var zero localInstanceCreateLock
-		jar, err := li.Opts().Jar()
+		jar, err := li.LocalOpts().Jar()
 		if err != nil {
 			return zero, err
 		}
@@ -241,11 +246,14 @@ type localInstanceCreateLock struct {
 
 func (li LocalInstance) unpackJarFile() error {
 	log.Infof("%s > unpacking files", li.instance.ID())
-	jar, err := li.Opts().Jar()
+	jar, err := li.LocalOpts().Jar()
 	if err != nil {
 		return err
 	}
-	cmd, err := li.Opts().JavaOpts.Command("-jar", pathx.Canonical(jar), "-unpack")
+	cmd, err := li.JavaOpts().Command(
+		"-Djava.awt.headless=true",
+		"-jar", pathx.Canonical(jar), "-unpack",
+	)
 	if err != nil {
 		return err
 	}
@@ -254,18 +262,22 @@ func (li LocalInstance) unpackJarFile() error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("%s > cannot unpack files: %w", li.instance.ID(), err)
 	}
+	startScript := li.binScriptUnix("start")
+	if !pathx.Exists(startScript) {
+		return fmt.Errorf("%s > unpacking files went wrong as e.g start script does not exist '%s'", li.instance.ID(), startScript)
+	}
 	return nil
 }
 
 func (li LocalInstance) copyLicenseFile() error {
-	sdk, err := li.Opts().Quickstart.IsDistSDK()
+	sdk, err := li.LocalOpts().Quickstart.IsDistSDK()
 	if err != nil {
 		return err
 	}
 	if sdk {
 		return nil
 	}
-	source := pathx.Canonical(li.Opts().Quickstart.LicenseFile)
+	source := pathx.Canonical(li.LocalOpts().Quickstart.LicenseFile)
 	dest := pathx.Canonical(li.LicenseFile())
 	log.Infof("%s > copying license file from '%s' to '%s'", li.instance.ID(), source, dest)
 	if err := filex.Copy(source, dest, true); err != nil {
@@ -331,7 +343,7 @@ func (li LocalInstance) Start() error {
 	if !li.IsCreated() {
 		return fmt.Errorf("%s > cannot start as it is not created", li.instance.ID())
 	}
-	if !li.Opts().ServiceMode {
+	if !li.LocalOpts().ServiceMode {
 		if err := li.update(); err != nil {
 			return err
 		}
@@ -347,7 +359,7 @@ func (li LocalInstance) Start() error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("%s > cannot execute start script: %w", li.instance.ID(), err)
 	}
-	if !li.Opts().ServiceMode {
+	if !li.LocalOpts().ServiceMode {
 		if err := li.awaitAuth(); err != nil {
 			return err
 		}
@@ -415,7 +427,7 @@ func (li LocalInstance) update() error {
 }
 
 func (li LocalInstance) setPassword() error {
-	return li.Opts().OakRun.SetPassword(li.Dir(), LocalInstanceUser, li.instance.password)
+	return li.LocalOpts().OakRun.SetPassword(li.Dir(), LocalInstanceUser, li.instance.password)
 }
 
 func (li LocalInstance) copyOverrideDirs() error {
@@ -437,7 +449,7 @@ func (li LocalInstance) recreateSlingPropsFile() error {
 	filePath := fmt.Sprintf("%s/conf/sling.properties", li.QuickstartDir())
 	log.Infof("%s > configuring instance Sling properties in file '%s'", li.Instance().ID(), filePath)
 	propsCombined := append(li.SlingProps, "org.apache.felix.configadmin.plugin.interpolation.secretsdir=${sling.home}/"+LocalInstanceSecretsDir)
-	propsLoaded, err := properties.LoadString(strings.Join(propsCombined, "\n"))
+	propsLoaded, err := properties.LoadString(strings.Join(propsCombined, osx.LineSep()))
 	if err != nil {
 		return fmt.Errorf("%s > cannot parse Sling properties file '%s': %w", li.instance.ID(), filePath, err)
 	}
@@ -761,7 +773,7 @@ func (li LocalInstance) binScriptCommand(name string, verbose bool) (*exec.Cmd, 
 	}
 	cmd := execx.CommandShell(args)
 	cmd.Dir = li.Dir()
-	env, err := li.Opts().JavaOpts.Env()
+	env, err := li.JavaOpts().Env()
 	if err != nil {
 		return nil, err
 	}
@@ -838,7 +850,7 @@ func (li LocalInstance) ProposeBackupFileToMake() string {
 		nameParts = append(nameParts, li.instance.AemVersion())
 	}
 	nameParts = append(nameParts, timex.FileTimestampForNow())
-	return fmt.Sprintf("%s/%s.%s", li.Opts().BackupDir, strings.Join(nameParts, "-"), LocalInstanceBackupExtension)
+	return fmt.Sprintf("%s/%s.%s", li.LocalOpts().BackupDir, strings.Join(nameParts, "-"), LocalInstanceBackupExtension)
 }
 
 func (li LocalInstance) MakeBackup(file string) error {
@@ -864,9 +876,9 @@ func (li LocalInstance) ProposeBackupFileToUse() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		pathPattern = fmt.Sprintf("%s/%s-%s-*.%s", li.Opts().BackupDir, li.Name(), aemVersion, LocalInstanceBackupExtension)
+		pathPattern = fmt.Sprintf("%s/%s-%s-*.%s", li.LocalOpts().BackupDir, li.Name(), aemVersion, LocalInstanceBackupExtension)
 	} else {
-		pathPattern = fmt.Sprintf("%s/%s-*.%s", li.Opts().BackupDir, li.Name(), LocalInstanceBackupExtension)
+		pathPattern = fmt.Sprintf("%s/%s-*.%s", li.LocalOpts().BackupDir, li.Name(), LocalInstanceBackupExtension)
 	}
 	file, err := pathx.GlobSome(pathPattern)
 	if err != nil {

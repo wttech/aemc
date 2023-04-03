@@ -27,47 +27,19 @@ const (
 
 // Config defines a place for managing input configuration from various sources (YML file, env vars, etc)
 type Config struct {
-	viper  *viper.Viper
-	values *ConfigValues
+	viper *viper.Viper
 }
 
-func (c *Config) Values() *ConfigValues {
-	return c.values
+func (c *Config) Values() *viper.Viper {
+	return c.viper
 }
 
-func (c *Config) ValuesMap() map[string]any {
-	return c.viper.AllSettings()
-}
-
-// NewConfig creates a new config
 func NewConfig() *Config {
 	result := new(Config)
-	result.viper = newViper()
-
+	result.setDefaults()
 	result.readFromFile(FileEffective(), true)
 	result.readFromEnv()
-
-	var v ConfigValues
-	err := result.viper.Unmarshal(&v)
-	if err != nil {
-		log.Fatalf(fmt.Sprintf("cannot unmarshal AEM config values properly: %s", err))
-	}
-	result.values = &v
 	return result
-}
-
-func newViper() *viper.Viper {
-	v := viper.New()
-	setDefaults(v)
-	return v
-}
-
-func (c ConfigValues) String() string {
-	yml, err := fmtx.MarshalYML(c)
-	if err != nil {
-		log.Errorf("Cannot convert config to YML: %s", err)
-	}
-	return yml
 }
 
 func (c *Config) readFromEnv() {
@@ -117,7 +89,14 @@ func (c *Config) readFromFile(file string, templating bool) {
 	}
 }
 
-// TODO config defaults are not interpolated, maybe they should with data below
+func (c *Config) tplString(text string) string {
+	result, err := tplx.RenderString(text, c.tplData())
+	if err != nil {
+		log.Fatalf("cannot render AEM config string\nerror: %s\nvalue:\n%s", err, text)
+	}
+	return result
+}
+
 func (c *Config) tplData() map[string]any {
 	var ext string
 	if osx.IsWindows() {
@@ -203,29 +182,14 @@ func OutputLogModes() []string {
 	return []string{OutputLogConsole, OutputLogFile, OutputLogBoth, OutputLogNone}
 }
 
-func (c *Config) ExportWithChanged(file string) (bool, error) {
-	currentYml, err := fmtx.MarshalYML(c.values)
-	if err != nil {
-		return false, err
+func (c *Config) Export(file string) error {
+	if err := c.Values().SafeWriteConfigAs(file); err != nil {
+		return err
 	}
-
 	executable, err := os.Executable()
 	if err != nil {
-		return false, err
+		return err
 	}
-	log.Infof("config file can be used by command '%s=%s %s'", FileEnvVar, pathx.Canonical(file), executable)
-
-	if pathx.Exists(file) {
-		oldYml, err := filex.ReadString(file)
-		if err != nil {
-			return false, err
-		}
-		if oldYml == currentYml {
-			return false, nil
-		}
-	}
-	if err := filex.WriteString(file, currentYml); err != nil {
-		return false, err
-	}
-	return true, nil
+	log.Infof("exported config file can be used by command '%s=%s %s'", FileEnvVar, pathx.Canonical(file), executable)
+	return nil
 }

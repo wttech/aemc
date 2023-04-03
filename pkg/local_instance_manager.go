@@ -6,12 +6,10 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
-	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/timex"
-	"github.com/wttech/aemc/pkg/java"
 	"os"
 	"strings"
 	"time"
@@ -33,28 +31,24 @@ type LocalOpts struct {
 	UnpackDir   string
 	BackupDir   string
 	OverrideDir string
-	ToolDir     string
 	ServiceMode bool
-	JavaOpts    *java.Opts
 	OakRun      *OakRun
 	Quickstart  *Quickstart
 	SDK         *SDK
 }
 
-func (im *InstanceManager) NewLocalOpts(manager *InstanceManager) *LocalOpts {
-	result := &LocalOpts{
-		manager: manager,
+func NewLocalOpts(manager *InstanceManager) *LocalOpts {
+	cfg := manager.aem.config.Values()
 
-		UnpackDir:   UnpackDir,
-		BackupDir:   BackupDir,
-		OverrideDir: OverrideDir,
-		ToolDir:     common.ToolDir,
-		ServiceMode: false,
-		JavaOpts:    im.aem.javaOpts,
-		Quickstart:  NewQuickstart(),
-	}
+	result := &LocalOpts{manager: manager}
+	result.UnpackDir = cfg.GetString("instance.local.unpack_dir")
+	result.BackupDir = cfg.GetString("instance.local.backup_dir")
+	result.OverrideDir = cfg.GetString("instance.local.override_dir")
+	result.ServiceMode = cfg.GetBool("instance.local.service_mode")
+	result.Quickstart = NewQuickstart(result)
 	result.SDK = NewSDK(result)
 	result.OakRun = NewOakRun(result)
+
 	return result
 }
 
@@ -82,7 +76,7 @@ func (o *LocalOpts) Initialize() error {
 	if err := o.manager.aem.baseOpts.Prepare(); err != nil {
 		return err
 	}
-	if err := o.JavaOpts.Prepare(); err != nil {
+	if err := o.manager.aem.javaOpts.Prepare(); err != nil {
 		return err
 	}
 	if sdk {
@@ -123,10 +117,12 @@ func (o *LocalOpts) Jar() (string, error) {
 	return o.Quickstart.FindDistFile()
 }
 
-func NewQuickstart() *Quickstart {
+func NewQuickstart(localOpts *LocalOpts) *Quickstart {
+	cfg := localOpts.manager.aem.config.Values()
+
 	return &Quickstart{
-		DistFile:    DistFile,
-		LicenseFile: LicenseFile,
+		DistFile:    cfg.GetString("instance.local.quickstart.dist_file"),
+		LicenseFile: cfg.GetString("instance.local.quickstart.license_file"),
 	}
 }
 
@@ -199,7 +195,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 			if i.local.IsRunning() && i.local.OutOfDate() {
 				outdated = append(outdated, i)
 
-				log.Infof("%s > is already started but out-of-date", i.ID())
+				log.Infof("%s > already started but out-of-date", i.ID())
 				err := i.local.Stop()
 				if err != nil {
 					return nil, err
@@ -403,35 +399,4 @@ func (fl BackupList) MarshalText() string {
 		}
 	})))
 	return bs.String()
-}
-
-func (im *InstanceManager) configureLocalOpts(config *cfg.Config) {
-	opts := config.Values().Instance.Local
-
-	if len(opts.UnpackDir) > 0 {
-		im.LocalOpts.UnpackDir = opts.UnpackDir
-	}
-	if len(opts.BackupDir) > 0 {
-		im.LocalOpts.BackupDir = opts.BackupDir
-	}
-	if len(opts.OverrideDir) > 0 {
-		im.LocalOpts.OverrideDir = opts.OverrideDir
-	}
-	if len(opts.ToolDir) > 0 {
-		im.LocalOpts.ToolDir = opts.ToolDir
-	}
-	if len(opts.Quickstart.DistFile) > 0 {
-		im.LocalOpts.Quickstart.DistFile = opts.Quickstart.DistFile
-	}
-	if len(opts.Quickstart.LicenseFile) > 0 {
-		im.LocalOpts.Quickstart.LicenseFile = opts.Quickstart.LicenseFile
-	}
-	if len(opts.OakRun.DownloadURL) > 0 {
-		im.LocalOpts.OakRun.DownloadURL = opts.OakRun.DownloadURL
-	}
-	if len(opts.OakRun.StorePath) > 0 {
-		im.LocalOpts.OakRun.StorePath = opts.OakRun.StorePath
-	}
-
-	im.LocalOpts.ServiceMode = opts.ServiceMode
 }

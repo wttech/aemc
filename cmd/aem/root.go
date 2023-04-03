@@ -10,13 +10,11 @@ import (
 func (c *CLI) rootCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "aem",
-
-		// needed to properly bind CLI flags with viper values from env and YML files
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			c.configure()
+			c.onStart()
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-			c.exit()
+			c.onEnd()
 			return nil
 		},
 	}
@@ -36,43 +34,44 @@ func (c *CLI) rootCmd() *cobra.Command {
 }
 
 func (c *CLI) rootFlags(cmd *cobra.Command) {
-	// input/output
-	cmd.PersistentFlags().StringVar(&(c.config.Values().Input.Format),
-		"input-format", c.config.Values().Input.Format,
-		"Controls input format ("+strings.Join(cfg.InputFormats(), "|")+")")
-	cmd.PersistentFlags().StringVar(&(c.config.Values().Input.File),
-		"input-file", c.config.Values().Input.File,
-		"Provides input as file path")
-	cmd.PersistentFlags().StringVar(&(c.config.Values().Input.String),
-		"input-string", c.config.Values().Input.String,
-		"Provides input as string")
-	cmd.PersistentFlags().StringVar(&(c.config.Values().Output.Format),
-		"output-format", c.config.Values().Output.Format,
-		"Controls output format ("+strings.Join(cfg.OutputFormats(), "|")+")")
-	cmd.PersistentFlags().StringVar(&(c.config.Values().Output.Log.File),
-		"output-log-file", c.config.Values().Output.Log.File,
-		"Controls output file path")
-	cmd.PersistentFlags().StringVar(&(c.config.Values().Output.Log.Mode),
-		"output-log-mode", c.config.Values().Output.Log.Mode,
-		"Controls where outputs and logs should be written to when format is \"text\""+(strings.Join(cfg.OutputLogModes(), "|")+")"))
-	cmd.PersistentFlags().StringVar(&(c.config.Values().Output.Value),
-		"output-value", c.config.Values().Output.Value,
-		"Limits output to single variable")
+	cv := c.config.Values()
 
-	// instance filtering
-	cmd.PersistentFlags().StringVarP(&(c.config.Values().Instance.ConfigURL),
-		"instance-url", "U", c.config.Values().Instance.ConfigURL,
-		"Use only AEM instance at specified URL")
-	cmd.PersistentFlags().StringVarP(&(c.config.Values().Instance.Filter.ID),
-		"instance-id", "I", c.config.Values().Instance.Filter.ID,
-		"Use only AEM instance with specified ID")
-	cmd.PersistentFlags().BoolVarP(&(c.config.Values().Instance.Filter.Author),
-		"instance-author", "A", c.config.Values().Instance.Filter.Author,
-		"Use only AEM author instance")
-	cmd.PersistentFlags().BoolVarP(&(c.config.Values().Instance.Filter.Publish),
-		"instance-publish", "P", c.config.Values().Instance.Filter.Publish,
-		"Use only AEM publish instance")
-	cmd.PersistentFlags().StringVar(&(c.config.Values().Instance.ProcessingMode),
-		"instance-processing", c.config.Values().Instance.ProcessingMode,
-		"Controls processing mode for instances ("+(strings.Join(instance.ProcessingModes(), "|")+")"))
+	cmd.PersistentFlags().String("input-format", cv.GetString("input.format"), "Controls input format ("+strings.Join(cfg.InputFormats(), "|")+")")
+	_ = cv.BindPFlag("input.format", cmd.PersistentFlags().Lookup("input-format"))
+
+	cmd.PersistentFlags().String("input-file", cv.GetString("input.file"), "Provides input as file path")
+	_ = cv.BindPFlag("input.file", cmd.PersistentFlags().Lookup("input-file"))
+
+	cmd.PersistentFlags().String("input-string", cv.GetString("input.string"), "Provides input as string")
+	_ = cv.BindPFlag("input.string", cmd.PersistentFlags().Lookup("input-string"))
+
+	cmd.PersistentFlags().String("output-value", cv.GetString("output.value"),
+		"Limits output to single variable")
+	_ = cv.BindPFlag("output.value", cmd.PersistentFlags().Lookup("output-value"))
+
+	cmd.PersistentFlags().String("output-format", cv.GetString("output.format"), "Controls output format ("+strings.Join(cfg.OutputFormats(), "|")+")")
+	_ = cv.BindPFlag("output.format", cmd.PersistentFlags().Lookup("output-format"))
+
+	cmd.PersistentFlags().String("output-log-file", cv.GetString("output.log.file"), "Controls output file path")
+	_ = cv.BindPFlag("output.log.file", cmd.PersistentFlags().Lookup("output-log-file"))
+
+	cmd.PersistentFlags().String("output-log-mode", cv.GetString("output.log.mode"), "Controls where outputs and logs should be written to when format is \"text\""+(strings.Join(cfg.OutputLogModes(), "|")+")"))
+	_ = cv.BindPFlag("output.log.mode", cmd.PersistentFlags().Lookup("output-log-mode"))
+
+	cmd.PersistentFlags().StringP("instance-url", "U", cv.GetString("instance.adhoc_url"), "Use only AEM instance at ad-hoc specified URL")
+	_ = cv.BindPFlag("instance.adhoc_url", cmd.PersistentFlags().Lookup("instance-url"))
+
+	cmd.PersistentFlags().StringP("instance-id", "I", cv.GetString("instance.filter.id"), "Use only AEM instance configured with the exact ID")
+	_ = cv.BindPFlag("instance.filter.id", cmd.PersistentFlags().Lookup("instance-id"))
+
+	cmd.PersistentFlags().BoolP("instance-author", "A", cv.GetBool("instance.filter.authors"), "Use only AEM author instance")
+	_ = cv.BindPFlag("instance.filter.authors", cmd.PersistentFlags().Lookup("instance-author"))
+
+	cmd.PersistentFlags().BoolP("instance-publish", "P", cv.GetBool("instance.filter.publishes"), "Use only AEM publish instance")
+	_ = cv.BindPFlag("instance.filter.publishes", cmd.PersistentFlags().Lookup("instance-publish"))
+
+	cmd.MarkFlagsMutuallyExclusive("instance-author", "instance-publish")
+
+	cmd.PersistentFlags().String("instance-processing", cv.GetString("instance.processing_mode"), "Controls processing mode for instances ("+(strings.Join(instance.ProcessingModes(), "|")+")"))
+	_ = cv.BindPFlag("instance.processing_mode", cmd.PersistentFlags().Lookup("instance-processing"))
 }

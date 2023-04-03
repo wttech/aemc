@@ -22,15 +22,13 @@ type Repo struct {
 	PropertyChangeIgnored []string
 }
 
-func NewRepo(res *Instance) *Repo {
-	return &Repo{
-		instance: *res,
+func NewRepo(i *Instance) *Repo {
+	cv := i.manager.aem.config.Values()
 
-		PropertyChangeIgnored: []string{
-			"jcr:created",
-			"cq:lastModified",
-			"transportPassword",
-		},
+	return &Repo{
+		instance: *i,
+
+		PropertyChangeIgnored: cv.GetStringSlice("instance.repo.property_change_ignored"),
 	}
 }
 
@@ -88,6 +86,26 @@ func (r Repo) Delete(path string) error {
 		return err
 	}
 	log.Infof("%s > deleted node '%s'", r.instance.ID(), path)
+	return nil
+}
+
+func (r Repo) Copy(sourcePath string, targetPath string) error {
+	log.Infof("%s > copying node from '%s' to '%s'", r.instance.ID(), sourcePath, targetPath)
+	resp, err := r.requestFormData("copy", map[string]any{":dest": targetPath}).Post(sourcePath)
+	if err = r.handleResponse(fmt.Sprintf("%s > cannot copy node from '%s' to '%s'", r.instance.ID(), sourcePath, targetPath), resp, err); err != nil {
+		return err
+	}
+	log.Infof("%s > copied node from '%s' to '%s'", r.instance.ID(), sourcePath, targetPath)
+	return nil
+}
+
+func (r Repo) Move(sourcePath string, targetPath string, replace bool) error {
+	log.Infof("%s > moving node from '%s' to '%s'", r.instance.ID(), sourcePath, targetPath)
+	resp, err := r.requestFormData("move", map[string]any{":dest": targetPath, ":replace": replace}).Post(sourcePath)
+	if err = r.handleResponse(fmt.Sprintf("%s > cannot move node from '%s' to '%s'", r.instance.ID(), sourcePath, targetPath), resp, err); err != nil {
+		return err
+	}
+	log.Infof("%s > moved node from '%s' to '%s'", r.instance.ID(), sourcePath, targetPath)
 	return nil
 }
 

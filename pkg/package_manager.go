@@ -18,14 +18,18 @@ type PackageManager struct {
 
 	SnapshotDeploySkipping bool
 	SnapshotPatterns       []string
+	ToggledWorkflows       []string
 }
 
 func NewPackageManager(res *Instance) *PackageManager {
+	cv := res.manager.aem.config.Values()
+
 	return &PackageManager{
 		instance: res,
 
-		SnapshotDeploySkipping: false,
-		SnapshotPatterns:       []string{"**/*-SNAPSHOT.zip"},
+		SnapshotDeploySkipping: cv.GetBool("instance.package.snapshot_deploy_skipping"),
+		SnapshotPatterns:       cv.GetStringSlice("instance.package.snapshot_patterns"),
+		ToggledWorkflows:       cv.GetStringSlice("instance.package.toggled_workflows"),
 	}
 }
 
@@ -265,10 +269,9 @@ func (pm *PackageManager) Deploy(localPath string) error {
 	if err != nil {
 		return err
 	}
-	if err := pm.Install(remotePath); err != nil {
-		return err
-	}
-	return nil
+	return pm.instance.workflowManager.ToggleLaunchers(pm.ToggledWorkflows, func() error {
+		return pm.Install(remotePath)
+	})
 }
 
 func (pm *PackageManager) deployLock(file string, checksum string) osx.Lock[packageDeployLock] {

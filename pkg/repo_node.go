@@ -128,7 +128,7 @@ type RepoNodeState struct {
 }
 
 func (n RepoNode) State() (*RepoNodeState, error) {
-	exists, err := n.ReadExists()
+	exists, err := n.Exists()
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (n RepoNode) State() (*RepoNodeState, error) {
 	}, nil
 }
 
-func (n RepoNode) ReadExists() (bool, error) {
+func (n RepoNode) Exists() (bool, error) {
 	return n.repo.Exists(n.path)
 }
 
@@ -189,11 +189,11 @@ func (n RepoNode) SaveWithChanged(props map[string]any) (bool, error) {
 }
 
 func (n RepoNode) DeleteWithChanged() (bool, error) {
-	state, err := n.State()
+	exists, err := n.Exists()
 	if err != nil {
 		return false, err
 	}
-	if !state.Exists {
+	if !exists {
 		return false, nil
 	}
 	err = n.repo.Delete(n.path)
@@ -204,11 +204,11 @@ func (n RepoNode) DeleteWithChanged() (bool, error) {
 }
 
 func (n RepoNode) Delete() error {
-	state, err := n.State()
+	exists, err := n.Exists()
 	if err != nil {
 		return err
 	}
-	if !state.Exists { // TODO investigate if existence check if really needed here
+	if !exists {
 		return fmt.Errorf("%s > node '%s' cannot be deleted as it does not exist", n.repo.instance.ID(), n.path)
 	}
 	return n.repo.Delete(n.path)
@@ -220,6 +220,76 @@ func (n RepoNode) DeleteProp(name string) error {
 
 func (n RepoNode) SaveProp(name string, value any) error {
 	return n.repo.Save(n.path, map[string]any{name: value})
+}
+
+func (n RepoNode) Copy(targetPath string) error {
+	exists, err := n.repo.Exists(n.path)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("%s > node '%s' cannot be copied as it does not exist", n.repo.instance.ID(), n.path)
+	}
+	return n.repo.Copy(n.path, targetPath)
+}
+
+func (n RepoNode) CopyTo(targetDir string) error {
+	return n.Copy(fmt.Sprintf("%s/%s", targetDir, n.Name()))
+}
+
+func (n RepoNode) CopyWithChanged(targetPath string) (bool, error) {
+	targetExists, err := n.repo.Exists(targetPath)
+	if err != nil {
+		return false, err
+	}
+	if targetExists {
+		return false, nil
+	}
+	return true, n.Copy(targetPath)
+}
+
+func (n RepoNode) Move(targetPath string, replace bool) error {
+	sourceExists, err := n.repo.Exists(n.path)
+	if err != nil {
+		return err
+	}
+	if !sourceExists {
+		return fmt.Errorf("%s > node '%s' cannot be moved as it does not exist", n.repo.instance.ID(), n.path)
+	}
+	if !replace {
+		targetExists, err := n.repo.Exists(targetPath)
+		if err != nil {
+			return err
+		}
+		if targetExists {
+			return fmt.Errorf("%s > node '%s' cannot be moved to path '%s' as it already exists", n.repo.instance.ID(), n.path, targetPath)
+		}
+	}
+	return n.repo.Move(n.path, targetPath, replace)
+}
+
+func (n RepoNode) MoveTo(targetDir string, replace bool) error {
+	return n.Move(fmt.Sprintf("%s/%s", targetDir, n.Name()), replace)
+}
+
+func (n RepoNode) MoveWithChanged(targetPath string, replace bool) (bool, error) {
+	sourceExists, err := n.repo.Exists(n.path)
+	if err != nil {
+		return false, err
+	}
+	if !sourceExists {
+		return false, nil
+	}
+	if !replace {
+		targetExists, err := n.repo.Exists(targetPath)
+		if err != nil {
+			return false, err
+		}
+		if targetExists {
+			return false, fmt.Errorf("%s > node '%s' cannot be moved to path '%s' as it already exists", n.repo.instance.ID(), n.path, targetPath)
+		}
+	}
+	return true, n.repo.Move(n.path, targetPath, replace)
 }
 
 func (n RepoNode) String() string {
@@ -253,7 +323,7 @@ func (n RepoNode) MarshalText() string {
 	return sb.String()
 }
 
-func (n RepoNode) Traverse() RepoNodeTraversor {
+func (n RepoNode) Traversor() RepoNodeTraversor {
 	return RepoNodeTraversor{nodes: langx.NewStackWithValue(n)}
 }
 

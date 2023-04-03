@@ -20,7 +20,7 @@ type Project struct {
 }
 
 func New(config *cfg.Config) *Project {
-	return &Project{config: config}
+	return &Project{config}
 }
 
 type Kind string

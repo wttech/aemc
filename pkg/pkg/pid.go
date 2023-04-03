@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"fmt"
 	"github.com/antchfx/xmlquery"
+	"github.com/samber/lo"
 	"strings"
 )
 
@@ -14,15 +15,19 @@ type PID struct {
 }
 
 func (d PID) String() string {
-	return fmt.Sprintf("%s:%s:%s", d.Group, d.Name, d.Version)
+	return strings.Join(lo.Filter([]string{d.Group, d.Name, d.Version}, func(s string, _ int) bool { return s != "" }), ":")
 }
 
 func ParsePID(str string) (*PID, error) {
 	parts := strings.Split(str, ":")
-	if len(parts) != 3 {
+	switch len(parts) {
+	case 2:
+		return &PID{parts[0], parts[1], ""}, nil
+	case 3:
+		return &PID{parts[0], parts[1], parts[2]}, nil
+	default:
 		return nil, fmt.Errorf("package dependency '%s' has different format than expected 'group:name:version'", str)
 	}
-	return &PID{parts[0], parts[1], parts[2]}, nil
 }
 
 func ReadPIDFromZIP(path string) (*PID, error) {

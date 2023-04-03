@@ -40,15 +40,17 @@ type CheckSpec struct {
 	Mandatory bool // indicates if next checks should be skipped if that particular one fails
 }
 
-func NewTimeoutChecker(expectedState string, duration time.Duration) TimeoutChecker {
-	return TimeoutChecker{
+func NewAwaitChecker(opts *CheckOpts, expectedState string) AwaitChecker {
+	cv := opts.manager.aem.config.Values()
+
+	return AwaitChecker{
 		ExpectedState: expectedState,
-		Duration:      duration,
+		Duration:      cv.GetDuration(fmt.Sprintf("instance.check.await_%s.timeout", expectedState)),
 		Started:       time.Now(),
 	}
 }
 
-func (c TimeoutChecker) Check(_ Instance) CheckResult {
+func (c AwaitChecker) Check(_ Instance) CheckResult {
 	now := time.Now()
 	if now.After(c.Started.Add(c.Duration)) {
 		return CheckResult{
@@ -62,35 +64,31 @@ func (c TimeoutChecker) Check(_ Instance) CheckResult {
 	}
 }
 
-func (c TimeoutChecker) Spec() CheckSpec {
+func (c AwaitChecker) Spec() CheckSpec {
 	return CheckSpec{Mandatory: true}
 }
 
-type TimeoutChecker struct {
+type AwaitChecker struct {
 	Started       time.Time
 	Duration      time.Duration
 	ExpectedState string
 }
 
-func NewEventStableChecker() EventStableChecker {
+func NewEventStableChecker(opts *CheckOpts) EventStableChecker {
+	cv := opts.manager.aem.config.Values()
+
 	return EventStableChecker{
-		ReceivedMaxAge: time.Second * 5,
-		TopicsUnstable: []string{
-			"org/osgi/framework/ServiceEvent/*",
-			"org/osgi/framework/FrameworkEvent/*",
-			"org/osgi/framework/BundleEvent/*",
-		},
-		DetailsIgnored: []string{
-			"*.*MBean",
-			"org.osgi.service.component.runtime.ServiceComponentRuntime",
-			"java.util.ResourceBundle",
-		},
+		ReceivedMaxAge: cv.GetDuration("instance.check.event_stable.received_max_age"),
+		TopicsUnstable: cv.GetStringSlice("instance.check.event_stable.topics_unstable"),
+		DetailsIgnored: cv.GetStringSlice("instance.check.event_stable.details_ignored"),
 	}
 }
 
-func NewBundleStableChecker() BundleStableChecker {
+func NewBundleStableChecker(opts *CheckOpts) BundleStableChecker {
+	cv := opts.manager.aem.config.Values()
+
 	return BundleStableChecker{
-		SymbolicNamesIgnored: []string{},
+		SymbolicNamesIgnored: cv.GetStringSlice("instance.check.bundle_stable.symbolic_names_ignored"),
 	}
 }
 
@@ -140,7 +138,7 @@ type EventStableChecker struct {
 }
 
 func (c EventStableChecker) Spec() CheckSpec {
-	return CheckSpec{Mandatory: false}
+	return CheckSpec{Mandatory: true}
 }
 
 func (c EventStableChecker) Check(instance Instance) CheckResult {
@@ -183,10 +181,12 @@ func (c EventStableChecker) Check(instance Instance) CheckResult {
 	}
 }
 
-func NewInstallerChecker() InstallerChecker {
+func NewInstallerChecker(opts *CheckOpts) InstallerChecker {
+	cv := opts.manager.aem.config.Values()
+
 	return InstallerChecker{
-		State: true,
-		Pause: true,
+		State: cv.GetBool("instance.check.installer.state"),
+		Pause: cv.GetBool("instance.check.installer.pause"),
 	}
 }
 
@@ -282,11 +282,13 @@ func (c StatusStoppedChecker) Check(instance Instance) CheckResult {
 	}
 }
 
-func NewReachableChecker(reachable bool) ReachableHTTPChecker {
+func NewReachableChecker(opts *CheckOpts, reachable bool) ReachableHTTPChecker {
+	cv := opts.manager.aem.config.Values()
+
 	return ReachableHTTPChecker{
 		Mandatory: reachable,
 		Reachable: reachable,
-		Timeout:   time.Second * 3,
+		Timeout:   cv.GetDuration("instance.check.reachable.timeout"),
 	}
 }
 
@@ -318,12 +320,15 @@ func (c ReachableHTTPChecker) Check(instance Instance) CheckResult {
 	}
 }
 
-func NewPathHTTPChecker(name string, path string, statusCode int, containedText string) PathHTTPChecker {
+func NewPathReadyChecker(opts *CheckOpts, name string, path string, statusCode int, containedText string) PathHTTPChecker {
+	cv := opts.manager.aem.config.Values()
+
 	return PathHTTPChecker{
-		Name:         name,
-		Path:         path,
-		ResponseCode: statusCode,
-		ResponseText: containedText,
+		Name:           name,
+		Path:           path,
+		RequestTimeout: cv.GetDuration("instance.check.path_ready.timeout"),
+		ResponseCode:   statusCode,
+		ResponseText:   containedText,
 	}
 }
 
@@ -332,15 +337,15 @@ func (c PathHTTPChecker) Spec() CheckSpec {
 }
 
 type PathHTTPChecker struct {
-	Name         string
-	Path         string
-	ResponseCode int
-	ResponseText string
+	Name           string
+	Path           string
+	RequestTimeout time.Duration
+	ResponseCode   int
+	ResponseText   string
 }
 
 func (c PathHTTPChecker) Check(instance Instance) CheckResult {
-	client := NewResty(instance.HTTP().BaseURL())
-	response, err := client.NewRequest().Get(c.Path)
+	response, err := instance.http.RequestWithTimeout(c.RequestTimeout).Get(c.Path)
 	if err != nil {
 		return CheckResult{
 			ok:      false,

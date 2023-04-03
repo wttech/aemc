@@ -23,6 +23,7 @@ func (c *CLI) instanceCmd() *cobra.Command {
 	cmd.AddCommand(c.instanceListCmd())
 	cmd.AddCommand(c.instanceAwaitCmd())
 	cmd.AddCommand(c.instanceBackupCmd())
+	cmd.AddCommand(c.instanceInitCmd())
 	return cmd
 }
 
@@ -256,7 +257,9 @@ func (c *CLI) instanceAwaitCmd() *cobra.Command {
 		Aliases: []string{"wait"},
 		Short:   "Awaits stable AEM instance(s)",
 		Run: func(cmd *cobra.Command, args []string) {
+			doneThreshold, _ := cmd.Flags().GetInt("done-threshold")
 			doneNever, _ := cmd.Flags().GetBool("done-never")
+
 			instances, err := c.aem.InstanceManager().Some()
 			if err != nil {
 				c.Error(err)
@@ -264,6 +267,7 @@ func (c *CLI) instanceAwaitCmd() *cobra.Command {
 			}
 			manager := c.aem.InstanceManager()
 			manager.CheckOpts.DoneNever = doneNever
+			manager.CheckOpts.DoneThreshold = doneThreshold
 			if err := manager.Await(instances); err != nil {
 				c.Error(err)
 				return
@@ -272,10 +276,9 @@ func (c *CLI) instanceAwaitCmd() *cobra.Command {
 			c.Ok("instance(s) awaited")
 		},
 	}
-	cmd.Flags().IntVar(&(c.config.Values().Instance.Check.DoneThreshold),
-		"done-threshold", c.config.Values().Instance.Check.DoneThreshold,
-		"Number of successful checks indicating done")
+	cmd.Flags().Int("done-threshold", c.config.Values().GetInt("instance.check.done_threshold"), "Number of successful checks indicating done")
 	cmd.Flags().Bool("done-never", false, "Repeat checks endlessly")
+
 	return cmd
 }
 
@@ -292,6 +295,22 @@ func (c *CLI) instanceListCmd() *cobra.Command {
 			}
 			c.SetOutput("instances", instances)
 			c.Ok("instance(s) listed")
+		},
+	}
+}
+
+func (c *CLI) instanceInitCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:     "init",
+		Aliases: []string{"initialize"},
+		Short:   "Init prerequisites for AEM instance(s)",
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := c.aem.InstanceManager().LocalOpts.Initialize(); err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("initialized", true)
+			c.Changed("initialized prerequisites for instance(s)")
 		},
 	}
 }

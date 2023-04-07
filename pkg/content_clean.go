@@ -3,7 +3,6 @@ package pkg
 import (
 	"bufio"
 	log "github.com/sirupsen/logrus"
-	"github.com/wttech/aemc/pkg/cfg"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -22,24 +21,24 @@ const (
 	JcrRoot            = "jcr_root"
 )
 
-func prepare(root string, config *cfg.ConfigValues) error {
-	if config.Content.ParentsBackupEnabled {
+func prepare(root string, config *Content) error {
+	if config.ParentsBackupEnabled {
 		return doParentsBackup(root, config)
 	}
 	return nil
 }
 
-func BeforeClean(root string, config *cfg.ConfigValues) error {
-	if config.Content.ParentsBackupEnabled {
+func BeforeClean(root string, config *Content) error {
+	if config.ParentsBackupEnabled {
 		return doRootBackup(root, config)
 	}
 	return nil
 }
 
-func Clean(root string, config *cfg.ConfigValues) error {
+func Clean(root string, config *Content) error {
 	err := flattenFiles(root, config)
 	if err == nil {
-		if config.Content.ParentsBackupEnabled {
+		if config.ParentsBackupEnabled {
 			err = undoParentsBackup(root, config)
 		} else {
 			err = cleanParents(root, config)
@@ -79,14 +78,14 @@ func eachFiles(root string, processFileFunc func(string) error) error {
 	})
 }
 
-func cleanDotContents(root string, config *cfg.ConfigValues) error {
+func cleanDotContents(root string, config *Content) error {
 	return eachFiles(root, func(path string) error {
 		return cleanDotContentFile(path, config)
 	})
 }
 
-func cleanDotContentFile(path string, config *cfg.ConfigValues) error {
-	if !matchString(path, config.Content.FilesDotContent) {
+func cleanDotContentFile(path string, config *Content) error {
+	if !matchString(path, config.FilesDotContent) {
 		return nil
 	}
 
@@ -99,7 +98,7 @@ func cleanDotContentFile(path string, config *cfg.ConfigValues) error {
 	return err
 }
 
-func filterLines(path string, lines []string, config *cfg.ConfigValues) []string {
+func filterLines(path string, lines []string, config *Content) []string {
 	var result []string
 	for _, line := range lines {
 		flag, processedLine := lineProcess(path, line, config)
@@ -120,8 +119,8 @@ func filterLines(path string, lines []string, config *cfg.ConfigValues) []string
 	return cleanNamespaces(result, config)
 }
 
-func cleanNamespaces(lines []string, config *cfg.ConfigValues) []string {
-	if !config.Content.NamespacesSkipped {
+func cleanNamespaces(lines []string, config *Content) []string {
+	if !config.NamespacesSkipped {
 		return lines
 	}
 
@@ -151,24 +150,24 @@ func cleanNamespaces(lines []string, config *cfg.ConfigValues) []string {
 	return result
 }
 
-func lineProcess(path string, line string, config *cfg.ConfigValues) (bool, string) {
+func lineProcess(path string, line string, config *Content) (bool, string) {
 	groups := regexp.MustCompile(ContentPropPattern).FindStringSubmatch(line)
 	if groups == nil {
 		return false, line
 	} else if groups[1] == JcrMixinTypesProp {
 		return normalizeMixins(path, line, groups[2], groups[3], config)
-	} else if matchAnyRule(groups[1], path, config.Content.PropertiesSkipped) {
+	} else if matchAnyRule(groups[1], path, config.PropertiesSkipped) {
 		return true, groups[3]
 	} else {
 		return false, line
 	}
 }
 
-func normalizeMixins(path string, line string, propValue string, lineSuffix string, config *cfg.ConfigValues) (bool, string) {
+func normalizeMixins(path string, line string, propValue string, lineSuffix string, config *Content) (bool, string) {
 	normalizedValue := strings.Trim(propValue, "[]")
 	var resultValues []string
 	for _, value := range strings.Split(normalizedValue, ",") {
-		if !matchAnyRule(value, path, config.Content.MixinTypesSkipped) {
+		if !matchAnyRule(value, path, config.MixinTypesSkipped) {
 			resultValues = append(resultValues, value)
 		}
 	}
@@ -179,14 +178,14 @@ func normalizeMixins(path string, line string, propValue string, lineSuffix stri
 	}
 }
 
-func flattenFiles(root string, config *cfg.ConfigValues) error {
+func flattenFiles(root string, config *Content) error {
 	return eachFiles(root, func(path string) error {
 		return flattenFile(path, config)
 	})
 }
 
-func flattenFile(path string, config *cfg.ConfigValues) error {
-	if !matchString(path, config.Content.FilesFlattened) {
+func flattenFile(path string, config *Content) error {
+	if !matchString(path, config.FilesFlattened) {
 		return nil
 	}
 
@@ -200,24 +199,24 @@ func flattenFile(path string, config *cfg.ConfigValues) error {
 	return os.Rename(path, dest)
 }
 
-func deleteFiles(root string, config *cfg.ConfigValues) error {
+func deleteFiles(root string, config *Content) error {
 	err := eachParentFiles(root, func(parent string) error {
 		return deleteFile(parent, func() bool {
-			return matchAnyRule(parent, parent, config.Content.FilesDeleted)
+			return matchAnyRule(parent, parent, config.FilesDeleted)
 		})
 	})
 	if err == nil {
 		err = eachFiles(root, func(path string) error {
 			return deleteFile(path, func() bool {
-				return matchAnyRule(path, path, config.Content.FilesDeleted)
+				return matchAnyRule(path, path, config.FilesDeleted)
 			})
 		})
 	}
 	return err
 }
 
-func deleteBackupFiles(root string, config *cfg.ConfigValues) error {
-	patterns := []string{".*" + config.Content.ParentsBackupSuffix}
+func deleteBackupFiles(root string, config *Content) error {
+	patterns := []string{".*" + config.ParentsBackupSuffix}
 	return eachFiles(root, func(path string) error {
 		return deleteFile(path, func() bool {
 			return matchString(path, patterns)
@@ -251,10 +250,10 @@ func deleteEmptyDirs(root string) error {
 	return err
 }
 
-func doParentsBackup(root string, config *cfg.ConfigValues) error {
+func doParentsBackup(root string, config *Content) error {
 	return eachParentFiles(root, func(parent string) error {
 		return eachFilesInDir(parent, func(path string) error {
-			if !strings.HasSuffix(path, config.Content.ParentsBackupSuffix) {
+			if !strings.HasSuffix(path, config.ParentsBackupSuffix) {
 				if err := backupFile(path, config, "Doing backup of parent file: %s"); err != nil {
 					return err
 				}
@@ -264,7 +263,7 @@ func doParentsBackup(root string, config *cfg.ConfigValues) error {
 	})
 }
 
-func doRootBackup(root string, config *cfg.ConfigValues) error {
+func doRootBackup(root string, config *Content) error {
 	info, err := os.Stat(root)
 	if err != nil {
 		return err
@@ -275,7 +274,7 @@ func doRootBackup(root string, config *cfg.ConfigValues) error {
 		}
 	}
 	return eachFiles(root, func(path string) error {
-		if matchString(path, config.Content.FilesFlattened) {
+		if matchString(path, config.FilesFlattened) {
 			if err = backupFile(path, config, "Doing backup of file: %s"); err != nil {
 				return err
 			}
@@ -284,10 +283,10 @@ func doRootBackup(root string, config *cfg.ConfigValues) error {
 	})
 }
 
-func undoParentsBackup(root string, config *cfg.ConfigValues) error {
+func undoParentsBackup(root string, config *Content) error {
 	return eachFilesInDir(root, func(path string) error {
-		if strings.HasSuffix(path, config.Content.ParentsBackupSuffix) {
-			origin, _ := strings.CutSuffix(path, config.Content.ParentsBackupSuffix)
+		if strings.HasSuffix(path, config.ParentsBackupSuffix) {
+			origin, _ := strings.CutSuffix(path, config.ParentsBackupSuffix)
 			log.Printf("Undoing backup of parent file: %s", path)
 			return os.Rename(path, origin)
 		}
@@ -295,7 +294,7 @@ func undoParentsBackup(root string, config *cfg.ConfigValues) error {
 	})
 }
 
-func cleanParents(root string, config *cfg.ConfigValues) error {
+func cleanParents(root string, config *Content) error {
 	return eachParentFiles(root, func(parent string) error {
 		return eachFilesInDir(parent, func(path string) error {
 			err := deleteFile(path, nil)
@@ -321,7 +320,7 @@ func eachParentFiles(root string, processFileFunc func(string) error) error {
 	return nil
 }
 
-func matchAnyRule(value string, path string, rules []cfg.PathRule) bool {
+func matchAnyRule(value string, path string, rules []PathRule) bool {
 	result := false
 	for i := 0; i < len(rules) && !result; i++ {
 		result = matchRule(value, path, rules[i])
@@ -329,7 +328,7 @@ func matchAnyRule(value string, path string, rules []cfg.PathRule) bool {
 	return result
 }
 
-func matchRule(value string, path string, rule cfg.PathRule) bool {
+func matchRule(value string, path string, rule PathRule) bool {
 	return matchString(value, rule.Patterns) && !matchString(path, rule.ExcludedPaths) && (len(rule.IncludedPaths) == 0 || matchString(path, rule.IncludedPaths))
 }
 
@@ -369,14 +368,14 @@ func writeLines(path string, lines []string) error {
 	return nil
 }
 
-func backupFile(path string, config *cfg.ConfigValues, format string) error {
+func backupFile(path string, config *Content, format string) error {
 	source, err := os.Open(path)
 	if err != nil {
 		return err
 	}
 	defer source.Close()
 
-	destination, err := os.Create(path + config.Content.ParentsBackupSuffix)
+	destination, err := os.Create(path + config.ParentsBackupSuffix)
 	if err != nil {
 		return err
 	}

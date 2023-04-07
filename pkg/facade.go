@@ -18,6 +18,7 @@ type AEM struct {
 	project         *project.Project
 	baseOpts        *base.Opts
 	javaOpts        *java.Opts
+	contentOpts     *Content
 	instanceManager *InstanceManager
 }
 
@@ -32,6 +33,7 @@ func NewAEM(config *cfg.Config) *AEM {
 	result.project = project.New(result.config)
 	result.baseOpts = base.NewOpts(result.config)
 	result.javaOpts = java.NewOpts(result.baseOpts)
+	result.contentOpts = NewContent(result.config.Values())
 	result.instanceManager = NewInstanceManager(result)
 	return result
 }
@@ -67,4 +69,8 @@ func (a *AEM) InstanceManager() *InstanceManager {
 
 func (a *AEM) Project() *project.Project {
 	return a.project
+}
+
+func (a *AEM) ContentOpts() *Content {
+	return a.contentOpts
 }

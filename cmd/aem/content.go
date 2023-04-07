@@ -24,15 +24,9 @@ func (c *CLI) contentCleanCmd() *cobra.Command {
 		Aliases: []string{"cln"},
 		Short:   "Clean downloaded content",
 		Run: func(cmd *cobra.Command, args []string) {
-			instance, err := c.aem.InstanceManager().One()
-			if err != nil {
-				c.Error(err)
-				return
-			}
-
 			rootPath, err := cmd.Flags().GetString("root-path")
 			if err == nil {
-				err = pkg.NewCleaner(instance.Content()).Clean(rootPath)
+				err = pkg.NewCleaner(c.aem.ContentOpts()).Clean(rootPath)
 			}
 			if err != nil {
 				c.Error(fmt.Errorf("content clean failed: %w", err))

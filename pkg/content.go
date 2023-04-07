@@ -2,11 +2,10 @@ package pkg
 
 import (
 	"github.com/spf13/cast"
+	"github.com/spf13/viper"
 )
 
 type Content struct {
-	instance *Instance
-
 	FilesDotContent      []string
 	FilesDeleted         []PathRule
 	FilesFlattened       []string
@@ -23,10 +22,8 @@ type PathRule struct {
 	IncludedPaths []string
 }
 
-func NewContent(instance *Instance) *Content {
-	cv := instance.manager.aem.config.Values()
+func NewContent(cv *viper.Viper) *Content {
 	return &Content{
-		instance:             instance,
 		FilesDotContent:      cv.GetStringSlice("content.files_dot_content"),
 		FilesDeleted:         determinePathRules(cv.Get("content.files_deleted")),
 		FilesFlattened:       cv.GetStringSlice("content.files_flattened"),

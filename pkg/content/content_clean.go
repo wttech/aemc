@@ -1,4 +1,4 @@
-package pkg
+package content
 
 import (
 	"bufio"
@@ -22,10 +22,10 @@ const (
 )
 
 type Cleaner struct {
-	config *Content
+	config *Opts
 }
 
-func NewCleaner(config *Content) *Cleaner {
+func NewCleaner(config *Opts) *Cleaner {
 	return &Cleaner{
 		config: config,
 	}

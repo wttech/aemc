@@ -4,6 +4,7 @@ package pkg
 import (
 	"github.com/wttech/aemc/pkg/base"
 	"github.com/wttech/aemc/pkg/cfg"
+	"github.com/wttech/aemc/pkg/content"
 	"github.com/wttech/aemc/pkg/java"
 	"github.com/wttech/aemc/pkg/project"
 	"io"
@@ -18,7 +19,7 @@ type AEM struct {
 	project         *project.Project
 	baseOpts        *base.Opts
 	javaOpts        *java.Opts
-	contentOpts     *Content
+	contentOpts     *content.Opts
 	instanceManager *InstanceManager
 }
 
@@ -33,7 +34,7 @@ func NewAEM(config *cfg.Config) *AEM {
 	result.project = project.New(result.config)
 	result.baseOpts = base.NewOpts(result.config)
 	result.javaOpts = java.NewOpts(result.baseOpts)
-	result.contentOpts = NewContent(result.config.Values())
+	result.contentOpts = content.NewOpts(result.baseOpts)
 	result.instanceManager = NewInstanceManager(result)
 	return result
 }
@@ -71,6 +72,6 @@ func (a *AEM) Project() *project.Project {
 	return a.project
 }
 
-func (a *AEM) ContentOpts() *Content {
+func (a *AEM) ContentOpts() *content.Opts {
 	return a.contentOpts
 }

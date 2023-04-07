@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/wttech/aemc/pkg"
+	"github.com/wttech/aemc/pkg/content"
 )
 
 func (c *CLI) contentCmd() *cobra.Command {
@@ -26,7 +26,7 @@ func (c *CLI) contentCleanCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			rootPath, err := cmd.Flags().GetString("root-path")
 			if err == nil {
-				err = pkg.NewCleaner(c.aem.ContentOpts()).Clean(rootPath)
+				err = content.NewCleaner(c.aem.ContentOpts()).Clean(rootPath)
 			}
 			if err != nil {
 				c.Error(fmt.Errorf("content clean failed: %w", err))

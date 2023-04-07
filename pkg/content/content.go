@@ -1,11 +1,13 @@
-package pkg
+package content
 
 import (
 	"github.com/spf13/cast"
-	"github.com/spf13/viper"
+	"github.com/wttech/aemc/pkg/base"
 )
 
-type Content struct {
+type Opts struct {
+	baseOpts *base.Opts
+
 	FilesDotContent      []string
 	FilesDeleted         []PathRule
 	FilesFlattened       []string
@@ -22,8 +24,12 @@ type PathRule struct {
 	IncludedPaths []string
 }
 
-func NewContent(cv *viper.Viper) *Content {
-	return &Content{
+func NewOpts(baseOpts *base.Opts) *Opts {
+	cv := baseOpts.Config().Values()
+
+	return &Opts{
+		baseOpts: baseOpts,
+
 		FilesDotContent:      cv.GetStringSlice("content.files_dot_content"),
 		FilesDeleted:         determinePathRules(cv.Get("content.files_deleted")),
 		FilesFlattened:       cv.GetStringSlice("content.files_flattened"),

@@ -4,10 +4,10 @@ instance:
   # Full details of local or remote instances
   config:
     local_author:
-      active: [[.Env.AEM_AUTHOR_ACTIVE | default true ]]
-      http_url: [[.Env.AEM_AUTHOR_HTTP_URL | default "http://127.0.0.1:4502" ]]
-      user: [[.Env.AEM_AUTHOR_USER | default "admin" ]]
-      password: [[.Env.AEM_AUTHOR_PASSWORD | default "admin" ]]
+      active: [ [ .Env.AEM_AUTHOR_ACTIVE | default true ] ]
+      http_url: [ [ .Env.AEM_AUTHOR_HTTP_URL | default "http://127.0.0.1:4502" ] ]
+      user: [ [ .Env.AEM_AUTHOR_USER | default "admin" ] ]
+      password: [ [ .Env.AEM_AUTHOR_PASSWORD | default "admin" ] ]
       run_modes: [ local ]
       jvm_opts:
         - -server
@@ -17,17 +17,17 @@ instance:
         - -Duser.language=en
         - -Duser.country=US
         - -Duser.timezone=UTC
-      start_opts: []
+      start_opts: [ ]
       secret_vars:
         - ACME_SECRET=value
       env_vars:
         - ACME_VAR=value
-      sling_props: []
+      sling_props: [ ]
     local_publish:
-      active: [[.Env.AEM_PUBLISH_ACTIVE | default true ]]
-      http_url: [[.Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4503" ]]
-      user: [[.Env.AEM_PUBLISH_USER | default "admin" ]]
-      password: [[.Env.AEM_PUBLISH_PASSWORD | default "admin" ]]
+      active: [ [ .Env.AEM_PUBLISH_ACTIVE | default true ] ]
+      http_url: [ [ .Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4503" ] ]
+      user: [ [ .Env.AEM_PUBLISH_USER | default "admin" ] ]
+      password: [ [ .Env.AEM_PUBLISH_PASSWORD | default "admin" ] ]
       run_modes: [ local ]
       jvm_opts:
         - -server
@@ -37,12 +37,12 @@ instance:
         - -Duser.language=en
         - -Duser.country=US
         - -Duser.timezone=UTC
-      start_opts: []
+      start_opts: [ ]
       secret_vars:
         - ACME_SECRET=value
       env_vars:
         - ACME_VAR=value
-      sling_props: []
+      sling_props: [ ]
 
   # Tuning performance & reliability
   # 'auto'     - for more than 1 local instances - 'serial', otherwise 'parallel'
@@ -77,7 +77,7 @@ instance:
       timeout: 3s
     # Bundle state tracking
     bundle_stable:
-      symbolic_names_ignored: []
+      symbolic_names_ignored: [ ]
     # OSGi events tracking
     event_stable:
       # Topics indicating that instance is not stable
@@ -137,7 +137,7 @@ instance:
     # Use checksums to avoid re-deployments when snapshot AEM packages are unchanged
     snapshot_deploy_skipping: true
     # Disable following workflow launchers for a package deployment time only
-    toggled_workflows: [/libs/settings/workflow/launcher/config/update_asset_*,/libs/settings/workflow/launcher/config/dam_*]
+    toggled_workflows: [ /libs/settings/workflow/launcher/config/update_asset_*,/libs/settings/workflow/launcher/config/dam_* ]
 
   # OSGi Framework
   osgi:
@@ -209,3 +209,53 @@ output:
     file: aem/home/var/log/aem.log
     # Controls where outputs and logs should be written to when format is 'text' (console|file|both)
     mode: console
+
+content:
+  files_dot_content:
+    - "**/.content.xml"
+  files_deleted:
+    - patterns: "**/_jcr_content/folderThumbnail*"
+      included_paths: [ "**/content/dam/*" ]
+    - patterns: "**/_jcr_content/renditions/*"
+      excluded_paths: [ "**/_jcr_content/renditions/original*" ]
+      included_paths: [ "**/content/dam/*" ]
+    - patterns:
+        - "**/.vlt"
+        - "**/.vlt*.tmp"
+        - "**/install/*.jar"
+  files_flattened:
+    - "**/_cq_design_dialog/.content.xml"
+    - "**/_cq_dialog/.content.xml"
+    - "**/_cq_htmlTag/.content.xml"
+    - "**/_cq_template/.content.xml"
+  properties_skipped:
+    - patterns: "jcr:uuid"
+      excluded_paths: [ "**/home/users/*", "**/home/groups/*" ]
+    - patterns: "cq:lastModified*"
+      excluded_paths: [ "**/content/experience-fragments/*" ]
+    - patterns: [ "dam:sha1", "dam:size" ]
+      included_paths: [ "**/content/dam/*.svg/*" ]
+    - patterns:
+        - "jcr:lastModified*"
+        - "jcr:created*"
+        - "jcr:isCheckedOut"
+        - "cq:lastReplicat*"
+        - "cq:lastRolledout*"
+        - "dam:extracted"
+        - "dam:assetState"
+        - "dc:modified"
+        - "*_x0040_*"
+        - "cq:name"
+        - "cq:parentPath"
+        - "dam:copiedAt"
+        - "dam:parentAssetID"
+        - "dam:relativePath"
+  mixin_types_skipped:
+    - patterns: "dam:Thumbnails"
+      included_paths: [ "**/content/dam/*" ]
+    - patterns:
+        - "cq:ReplicationStatus"
+        - "mix:versionable"
+  namespaces_skipped: true
+  parents_backup_enabled: true
+  parents_backup_suffix: ".bak"

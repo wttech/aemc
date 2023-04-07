@@ -196,6 +196,7 @@ tasks:
   dispatcher:setup:
     desc: setup AEM dispatcher
     cmds:
+      - task: dispatcher:hosts
       - task: dispatcher:start
       - task: dispatcher:status
 
@@ -204,6 +205,34 @@ tasks:
     cmds:
       - task: dispatcher:destroy
       - task: dispatcher:setup
+
+  dispatcher:hosts:
+    desc:  add required by AEM dispatcher domains to hosts file
+    cmds:
+      - task: dispatcher:hosts:windows
+      - task: dispatcher:hosts:darwin
+      - task: dispatcher:hosts:linux
+
+  dispatcher:hosts:windows:
+    platforms: [windows]
+    status:
+      - powershell -command "Select-String -Path \"C:\Windows\System32\drivers\etc\hosts\" -Pattern \"{{.AEM_DISPATCHER_IP}} {{.AEM_DOMAINS}}\""
+    cmds:
+      - powershell -command "Start-Process cmd -ArgumentList \"/C echo {{.AEM_DISPATCHER_IP}} {{.AEM_DOMAINS}} >> C:\Windows\System32\drivers\etc/hosts\" -Verb runas"
+
+  dispatcher:hosts:darwin:
+    platforms: [darwin]
+    status:
+      - grep -x '{{.AEM_DISPATCHER_IP}} {{.AEM_DOMAINS}}' '/etc/hosts'
+    cmds:
+      - osascript -e "do shell script \"echo '{{.AEM_DISPATCHER_IP}} {{.AEM_DOMAINS}}' >> /etc/hosts\" with prompt \"AEM - Add domains to host file\" with administrator privileges"
+
+  dispatcher:hosts:linux:
+    platforms: [linux]
+    status:
+      - grep -x '{{.AEM_DISPATCHER_IP}} {{.AEM_DOMAINS}}' '/etc/hosts'
+    cmds:
+      - sudo echo {{.AEM_DISPATCHER_IP}} {{.AEM_DOMAINS}} >> /etc/hosts
 
   dispatcher:build:
     desc: build AEM dispatcher image

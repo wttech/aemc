@@ -21,37 +21,47 @@ const (
 	JcrRoot            = "jcr_root"
 )
 
-func prepare(root string, config *Content) error {
-	if config.ParentsBackupEnabled {
-		return doParentsBackup(root, config)
+type Cleaner struct {
+	config *Content
+}
+
+func NewCleaner(config *Content) *Cleaner {
+	return &Cleaner{
+		config: config,
+	}
+}
+
+func (c Cleaner) prepare(root string) error {
+	if c.config.ParentsBackupEnabled {
+		return c.doParentsBackup(root)
 	}
 	return nil
 }
 
-func BeforeClean(root string, config *Content) error {
-	if config.ParentsBackupEnabled {
-		return doRootBackup(root, config)
+func (c Cleaner) BeforeClean(root string) error {
+	if c.config.ParentsBackupEnabled {
+		return c.doRootBackup(root)
 	}
 	return nil
 }
 
-func Clean(root string, config *Content) error {
-	err := flattenFiles(root, config)
+func (c Cleaner) Clean(root string) error {
+	err := c.flattenFiles(root)
 	if err == nil {
-		if config.ParentsBackupEnabled {
-			err = undoParentsBackup(root, config)
+		if c.config.ParentsBackupEnabled {
+			err = c.undoParentsBackup(root)
 		} else {
-			err = cleanParents(root, config)
+			err = c.cleanParents(root)
 		}
 	}
 	if err == nil {
-		err = cleanDotContents(root, config)
+		err = c.cleanDotContents(root)
 	}
 	if err == nil {
-		err = deleteFiles(root, config)
+		err = c.deleteFiles(root)
 	}
 	if err == nil {
-		err = deleteBackupFiles(root, config)
+		err = c.deleteBackupFiles(root)
 	}
 	if err == nil {
 		err = deleteEmptyDirs(root)
@@ -78,30 +88,30 @@ func eachFiles(root string, processFileFunc func(string) error) error {
 	})
 }
 
-func cleanDotContents(root string, config *Content) error {
+func (c Cleaner) cleanDotContents(root string) error {
 	return eachFiles(root, func(path string) error {
-		return cleanDotContentFile(path, config)
+		return c.cleanDotContentFile(path)
 	})
 }
 
-func cleanDotContentFile(path string, config *Content) error {
-	if !matchString(path, config.FilesDotContent) {
+func (c Cleaner) cleanDotContentFile(path string) error {
+	if !matchString(path, c.config.FilesDotContent) {
 		return nil
 	}
 
 	log.Printf("Cleaning file %s", path)
 	inputLines, err := readLines(path)
 	if err == nil {
-		outputLines := filterLines(path, inputLines, config)
+		outputLines := c.filterLines(path, inputLines)
 		err = writeLines(path, outputLines)
 	}
 	return err
 }
 
-func filterLines(path string, lines []string, config *Content) []string {
+func (c Cleaner) filterLines(path string, lines []string) []string {
 	var result []string
 	for _, line := range lines {
-		flag, processedLine := lineProcess(path, line, config)
+		flag, processedLine := c.lineProcess(path, line)
 		if flag {
 			result[len(result)-1] += processedLine
 		} else {
@@ -116,11 +126,11 @@ func filterLines(path string, lines []string, config *Content) []string {
 			result = result[:len(result)-1]
 		}
 	}
-	return cleanNamespaces(result, config)
+	return c.cleanNamespaces(result)
 }
 
-func cleanNamespaces(lines []string, config *Content) []string {
-	if !config.NamespacesSkipped {
+func (c Cleaner) cleanNamespaces(lines []string) []string {
+	if !c.config.NamespacesSkipped {
 		return lines
 	}
 
@@ -150,24 +160,24 @@ func cleanNamespaces(lines []string, config *Content) []string {
 	return result
 }
 
-func lineProcess(path string, line string, config *Content) (bool, string) {
+func (c Cleaner) lineProcess(path string, line string) (bool, string) {
 	groups := regexp.MustCompile(ContentPropPattern).FindStringSubmatch(line)
 	if groups == nil {
 		return false, line
 	} else if groups[1] == JcrMixinTypesProp {
-		return normalizeMixins(path, line, groups[2], groups[3], config)
-	} else if matchAnyRule(groups[1], path, config.PropertiesSkipped) {
+		return c.normalizeMixins(path, line, groups[2], groups[3])
+	} else if matchAnyRule(groups[1], path, c.config.PropertiesSkipped) {
 		return true, groups[3]
 	} else {
 		return false, line
 	}
 }
 
-func normalizeMixins(path string, line string, propValue string, lineSuffix string, config *Content) (bool, string) {
+func (c Cleaner) normalizeMixins(path string, line string, propValue string, lineSuffix string) (bool, string) {
 	normalizedValue := strings.Trim(propValue, "[]")
 	var resultValues []string
 	for _, value := range strings.Split(normalizedValue, ",") {
-		if !matchAnyRule(value, path, config.MixinTypesSkipped) {
+		if !matchAnyRule(value, path, c.config.MixinTypesSkipped) {
 			resultValues = append(resultValues, value)
 		}
 	}
@@ -178,14 +188,14 @@ func normalizeMixins(path string, line string, propValue string, lineSuffix stri
 	}
 }
 
-func flattenFiles(root string, config *Content) error {
+func (c Cleaner) flattenFiles(root string) error {
 	return eachFiles(root, func(path string) error {
-		return flattenFile(path, config)
+		return c.flattenFile(path)
 	})
 }
 
-func flattenFile(path string, config *Content) error {
-	if !matchString(path, config.FilesFlattened) {
+func (c Cleaner) flattenFile(path string) error {
+	if !matchString(path, c.config.FilesFlattened) {
 		return nil
 	}
 
@@ -199,24 +209,24 @@ func flattenFile(path string, config *Content) error {
 	return os.Rename(path, dest)
 }
 
-func deleteFiles(root string, config *Content) error {
+func (c Cleaner) deleteFiles(root string) error {
 	err := eachParentFiles(root, func(parent string) error {
 		return deleteFile(parent, func() bool {
-			return matchAnyRule(parent, parent, config.FilesDeleted)
+			return matchAnyRule(parent, parent, c.config.FilesDeleted)
 		})
 	})
 	if err == nil {
 		err = eachFiles(root, func(path string) error {
 			return deleteFile(path, func() bool {
-				return matchAnyRule(path, path, config.FilesDeleted)
+				return matchAnyRule(path, path, c.config.FilesDeleted)
 			})
 		})
 	}
 	return err
 }
 
-func deleteBackupFiles(root string, config *Content) error {
-	patterns := []string{".*" + config.ParentsBackupSuffix}
+func (c Cleaner) deleteBackupFiles(root string) error {
+	patterns := []string{".*" + c.config.ParentsBackupSuffix}
 	return eachFiles(root, func(path string) error {
 		return deleteFile(path, func() bool {
 			return matchString(path, patterns)
@@ -250,11 +260,11 @@ func deleteEmptyDirs(root string) error {
 	return err
 }
 
-func doParentsBackup(root string, config *Content) error {
+func (c Cleaner) doParentsBackup(root string) error {
 	return eachParentFiles(root, func(parent string) error {
 		return eachFilesInDir(parent, func(path string) error {
-			if !strings.HasSuffix(path, config.ParentsBackupSuffix) {
-				if err := backupFile(path, config, "Doing backup of parent file: %s"); err != nil {
+			if !strings.HasSuffix(path, c.config.ParentsBackupSuffix) {
+				if err := c.backupFile(path, "Doing backup of parent file: %s"); err != nil {
 					return err
 				}
 			}
@@ -263,19 +273,19 @@ func doParentsBackup(root string, config *Content) error {
 	})
 }
 
-func doRootBackup(root string, config *Content) error {
+func (c Cleaner) doRootBackup(root string) error {
 	info, err := os.Stat(root)
 	if err != nil {
 		return err
 	}
 	if !info.IsDir() {
-		if err = backupFile(root, config, "Doing backup of root file: %s"); err != nil {
+		if err = c.backupFile(root, "Doing backup of root file: %s"); err != nil {
 			return err
 		}
 	}
 	return eachFiles(root, func(path string) error {
-		if matchString(path, config.FilesFlattened) {
-			if err = backupFile(path, config, "Doing backup of file: %s"); err != nil {
+		if matchString(path, c.config.FilesFlattened) {
+			if err = c.backupFile(path, "Doing backup of file: %s"); err != nil {
 				return err
 			}
 		}
@@ -283,10 +293,10 @@ func doRootBackup(root string, config *Content) error {
 	})
 }
 
-func undoParentsBackup(root string, config *Content) error {
+func (c Cleaner) undoParentsBackup(root string) error {
 	return eachFilesInDir(root, func(path string) error {
-		if strings.HasSuffix(path, config.ParentsBackupSuffix) {
-			origin, _ := strings.CutSuffix(path, config.ParentsBackupSuffix)
+		if strings.HasSuffix(path, c.config.ParentsBackupSuffix) {
+			origin, _ := strings.CutSuffix(path, c.config.ParentsBackupSuffix)
 			log.Printf("Undoing backup of parent file: %s", path)
 			return os.Rename(path, origin)
 		}
@@ -294,12 +304,12 @@ func undoParentsBackup(root string, config *Content) error {
 	})
 }
 
-func cleanParents(root string, config *Content) error {
+func (c Cleaner) cleanParents(root string) error {
 	return eachParentFiles(root, func(parent string) error {
 		return eachFilesInDir(parent, func(path string) error {
 			err := deleteFile(path, nil)
 			if err == nil {
-				err = cleanDotContentFile(path, config)
+				err = c.cleanDotContentFile(path)
 			}
 			return err
 		})
@@ -368,14 +378,14 @@ func writeLines(path string, lines []string) error {
 	return nil
 }
 
-func backupFile(path string, config *Content, format string) error {
+func (c Cleaner) backupFile(path string, format string) error {
 	source, err := os.Open(path)
 	if err != nil {
 		return err
 	}
 	defer source.Close()
 
-	destination, err := os.Create(path + config.ParentsBackupSuffix)
+	destination, err := os.Create(path + c.config.ParentsBackupSuffix)
 	if err != nil {
 		return err
 	}

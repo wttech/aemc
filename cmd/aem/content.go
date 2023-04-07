@@ -32,7 +32,7 @@ func (c *CLI) contentCleanCmd() *cobra.Command {
 
 			rootPath, err := cmd.Flags().GetString("root-path")
 			if err == nil {
-				err = pkg.Clean(rootPath, instance.Content())
+				err = pkg.NewCleaner(instance.Content()).Clean(rootPath)
 			}
 			if err != nil {
 				c.Error(fmt.Errorf("content clean failed: %w", err))

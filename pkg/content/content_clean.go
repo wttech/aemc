@@ -5,7 +5,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -13,12 +12,12 @@ import (
 )
 
 const (
-	JcrContentFile     = ".content.xml"
-	JcrMixinTypesProp  = "jcr:mixinTypes"
-	JcrRootPrefix      = "<jcr:root"
-	ContentPropPattern = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
-	NamespacePattern   = "^\\w+:(\\w+)=\"[^\"]+\"$"
-	JcrRoot            = "jcr_root"
+	JcrContentFile    = ".content.xml"
+	JcrMixinTypesProp = "jcr:mixinTypes"
+	JcrRootPrefix     = "<jcr:root"
+	PropPattern       = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
+	NamespacePattern  = "^\\w+:(\\w+)=\"[^\"]+\"$"
+	JcrRoot           = "jcr_root"
 )
 
 type Cleaner struct {
@@ -70,7 +69,7 @@ func (c Cleaner) Clean(root string) error {
 }
 
 func eachFilesInDir(root string, processFileFunc func(path string) error) error {
-	infos, err := ioutil.ReadDir(root)
+	infos, err := os.ReadDir(root)
 	for i := 0; i < len(infos) && err == nil; i++ {
 		if !infos[i].IsDir() {
 			err = processFileFunc(filepath.ToSlash(filepath.Join(root, infos[i].Name())))
@@ -161,7 +160,7 @@ func (c Cleaner) cleanNamespaces(lines []string) []string {
 }
 
 func (c Cleaner) lineProcess(path string, line string) (bool, string) {
-	groups := regexp.MustCompile(ContentPropPattern).FindStringSubmatch(line)
+	groups := regexp.MustCompile(PropPattern).FindStringSubmatch(line)
 	if groups == nil {
 		return false, line
 	} else if groups[1] == JcrMixinTypesProp {
@@ -244,14 +243,14 @@ func deleteFile(path string, allowedFunc func() bool) error {
 }
 
 func deleteEmptyDirs(root string) error {
-	infos, err := ioutil.ReadDir(root)
+	infos, err := os.ReadDir(root)
 	for i := 0; i < len(infos) && err == nil; i++ {
 		if infos[i].IsDir() {
 			err = deleteEmptyDirs(filepath.ToSlash(filepath.Join(root, infos[i].Name())))
 		}
 	}
 	if err == nil {
-		infos, err = ioutil.ReadDir(root)
+		infos, err = os.ReadDir(root)
 		if err == nil && len(infos) == 0 {
 			log.Printf("Deleting empty directory %s", root)
 			err = os.Remove(root)

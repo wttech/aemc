@@ -173,6 +173,17 @@ func (p Package) Create() error {
 	return p.manager.Create(state.PID)
 }
 
+func (p Package) Update() error {
+	state, err := p.State()
+	if err != nil {
+		return err
+	}
+	if !state.Exists {
+		return fmt.Errorf("%s > package '%s' cannot be update as it does not exist", p.manager.instance.ID(), p.PID.String())
+	}
+	return p.manager.Update(state.Data.Path, state.PID)
+}
+
 func (p Package) Download(localFile string) error {
 	state, err := p.State()
 	if err != nil {

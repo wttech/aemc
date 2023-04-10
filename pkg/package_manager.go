@@ -147,6 +147,37 @@ func (pm *PackageManager) Create(pid string) error {
 	return nil
 }
 
+func (pm *PackageManager) Update(remotePath string, pid string) error {
+	log.Infof("%s > updating package '%s'", pm.instance.ID(), pid)
+	pidConfig, err := pkg.ParsePID(pid)
+	if err != nil {
+		return err
+	}
+	response, err := pm.instance.http.Request().
+		SetMultipartFormData(map[string]string{
+			"path":        remotePath,
+			"packageName": pidConfig.Name,
+			"groupName":   pidConfig.Group,
+			"version":     pidConfig.Version,
+			"filter":      "[{\"root\":\"/apps\",\"rules\":[]}]",
+		}).
+		Post(UpdatePath)
+	if err != nil {
+		return fmt.Errorf("%s > cannot update package '%s': %w", pm.instance.ID(), pid, err)
+	} else if response.IsError() {
+		return fmt.Errorf("%s > cannot update package '%s': %s", pm.instance.ID(), pid, response.Status())
+	}
+	var status pkg.CommandResult
+	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
+		return fmt.Errorf("%s > cannot update package '%s'; cannot parse response: %w", pm.instance.ID(), pid, err)
+	}
+	if !status.Success {
+		return fmt.Errorf("%s > cannot update package '%s'; unexpected status: %s", pm.instance.ID(), pid, status.Message)
+	}
+	log.Infof("%s > update package '%s'", pm.instance.ID(), pid)
+	return nil
+}
+
 func (pm *PackageManager) Download(remotePath string, localFile string) error {
 	log.Infof("%s > downloading package '%s'", pm.instance.ID(), remotePath)
 	opts := httpx.DownloadOpts{}
@@ -382,4 +413,5 @@ const (
 	ListJson        = MgrPath + "/list.jsp"
 	IndexPath       = MgrPath + "/index.jsp"
 	ExecPath        = ServicePath + "/exec.json"
+	UpdatePath      = MgrPath + "/update.jsp"
 )

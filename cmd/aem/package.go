@@ -24,6 +24,7 @@ func (c *CLI) pkgCmd() *cobra.Command {
 	cmd.AddCommand(c.pkgDeleteCmd())
 	cmd.AddCommand(c.pkgPurgeCmd())
 	cmd.AddCommand(c.pkgCreateCmd())
+	cmd.AddCommand(c.pkgUpdateCmd())
 	cmd.AddCommand(c.pkgDownloadCmd())
 	cmd.AddCommand(c.pkgBuildCmd())
 	cmd.AddCommand(c.pkgFindCmd())
@@ -524,6 +525,39 @@ func (c *CLI) pkgCreateCmd() *cobra.Command {
 			c.SetOutput("package", p)
 			c.SetOutput("instance", instance)
 			c.Changed("package create")
+		},
+	}
+	pkgDefineBuildFlags(cmd)
+	return cmd
+}
+
+func (c *CLI) pkgUpdateCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "update",
+		Short: "Update package(s)",
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			p, err := pkgPIDByFlags(cmd, *instance)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			err = p.Update()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			if err := c.aem.InstanceManager().AwaitStartedOne(*instance); err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("package", p)
+			c.SetOutput("instance", instance)
+			c.Changed("package update")
 		},
 	}
 	pkgDefineBuildFlags(cmd)

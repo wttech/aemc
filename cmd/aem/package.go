@@ -491,7 +491,7 @@ func (c *CLI) pkgCreateCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			err = p.Build()
+			err = p.Create()
 			if err != nil {
 				c.Error(err)
 				return

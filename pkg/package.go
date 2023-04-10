@@ -167,8 +167,12 @@ func (p Package) Create() error {
 	if err != nil {
 		return err
 	}
-	if !state.Exists {
-		return fmt.Errorf("%s > package '%s' cannot be built as it does not exist", p.manager.instance.ID(), p.PID.String())
+	if state.Exists {
+		return fmt.Errorf("%s > package '%s' cannot be create as it exists", p.manager.instance.ID(), p.PID.String())
 	}
-	return p.manager.Create(state.Data.Group, state.Data.Name, state.Data.Version)
+	pidConfig, err := pkg.ParsePID(state.PID)
+	if err != nil {
+		return err
+	}
+	return p.manager.Create(pidConfig.Group, pidConfig.Name, pidConfig.Version)
 }

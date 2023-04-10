@@ -24,6 +24,7 @@ func (c *CLI) pkgCmd() *cobra.Command {
 	cmd.AddCommand(c.pkgDeleteCmd())
 	cmd.AddCommand(c.pkgPurgeCmd())
 	cmd.AddCommand(c.pkgCreateCmd())
+	cmd.AddCommand(c.pkgDownloadCmd())
 	cmd.AddCommand(c.pkgBuildCmd())
 	cmd.AddCommand(c.pkgFindCmd())
 	return cmd
@@ -411,7 +412,7 @@ func (c *CLI) pkgBuildCmd() *cobra.Command {
 			c.Changed("package built")
 		},
 	}
-	pkgDefineFlags(cmd)
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
 	return cmd
 }
 
@@ -420,6 +421,17 @@ func pkgDefineFlags(cmd *cobra.Command) {
 	cmd.Flags().String("file", "", "Local path on file system")
 	cmd.Flags().String("path", "", "Remote path on AEM repository")
 	cmd.MarkFlagsMutuallyExclusive("pid", "file", "path")
+}
+
+func pkgDefineDownloadFlags(cmd *cobra.Command) {
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().String("file", "", "Local path on file system")
+	cmd.Flags().String("path", "", "Remote path on AEM repository")
+	cmd.MarkFlagsMutuallyExclusive("pid", "path")
+}
+
+func pkgDefineBuildFlags(cmd *cobra.Command) {
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
 }
 
 func pkgByFlags(cmd *cobra.Command, instance pkg.Instance) (*pkg.Package, error) {
@@ -443,6 +455,15 @@ func pkgByFlags(cmd *cobra.Command, instance pkg.Instance) (*pkg.Package, error)
 		return descriptor, err
 	}
 	return nil, fmt.Errorf("flag 'pid' or 'file' or 'path' are required")
+}
+
+func pkgPIDByFlags(cmd *cobra.Command, instance pkg.Instance) (*pkg.Package, error) {
+	pid, _ := cmd.Flags().GetString("pid")
+	if len(pid) > 0 {
+		desc, err := instance.PackageManager().ByPID(pid)
+		return desc, err
+	}
+	return nil, fmt.Errorf("flag 'pid' is required")
 }
 
 func pkgDefineFileAndUrlFlags(cmd *cobra.Command) {
@@ -486,7 +507,7 @@ func (c *CLI) pkgCreateCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			p, err := pkgByFlags(cmd, *instance)
+			p, err := pkgPIDByFlags(cmd, *instance)
 			if err != nil {
 				c.Error(err)
 				return
@@ -505,6 +526,40 @@ func (c *CLI) pkgCreateCmd() *cobra.Command {
 			c.Changed("package create")
 		},
 	}
-	pkgDefineFlags(cmd)
+	pkgDefineBuildFlags(cmd)
+	return cmd
+}
+
+func (c *CLI) pkgDownloadCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "download",
+		Short: "Download package(s)",
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			p, err := pkgByFlags(cmd, *instance)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			localFile, _ := cmd.Flags().GetString("file")
+			err = p.Download(localFile)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			if err := c.aem.InstanceManager().AwaitStartedOne(*instance); err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("package", p)
+			c.SetOutput("instance", instance)
+			c.Changed("package download")
+		},
+	}
+	pkgDefineDownloadFlags(cmd)
 	return cmd
 }

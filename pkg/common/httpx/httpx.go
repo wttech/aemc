@@ -14,8 +14,9 @@ func FileNameFromURL(url string) string {
 }
 
 type DownloadOpts struct {
-	Url  string
-	File string
+	Url      string
+	File     string
+	Override bool
 
 	AuthToken         string
 	AuthBasicUser     string
@@ -29,7 +30,7 @@ func DownloadWithOpts(opts DownloadOpts) error {
 	if len(opts.File) == 0 {
 		return fmt.Errorf("destination for downloaded file is not specified")
 	}
-	if pathx.Exists(opts.File) {
+	if pathx.Exists(opts.File) && !opts.Override {
 		return fmt.Errorf("destination for downloaded file already exist")
 	}
 	client := resty.New()
@@ -59,7 +60,7 @@ func DownloadWithOpts(opts DownloadOpts) error {
 }
 
 func DownloadWithChanged(opts DownloadOpts) (bool, error) {
-	if pathx.Exists(opts.File) {
+	if pathx.Exists(opts.File) && !opts.Override {
 		return false, nil
 	}
 	if err := DownloadWithOpts(opts); err != nil {

@@ -176,3 +176,14 @@ func (p Package) Create() error {
 	}
 	return p.manager.Create(pidConfig.Group, pidConfig.Name, pidConfig.Version)
 }
+
+func (p Package) Download(localFile string) error {
+	state, err := p.State()
+	if err != nil {
+		return err
+	}
+	if !state.Exists {
+		return fmt.Errorf("%s > package '%s' cannot be download as it does not exist", p.manager.instance.ID(), p.PID.String())
+	}
+	return p.manager.Download(state.Data.Path, localFile)
+}

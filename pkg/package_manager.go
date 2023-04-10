@@ -6,6 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/fmtx"
+	"github.com/wttech/aemc/pkg/common/httpx"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/pkg"
@@ -140,6 +141,22 @@ func (pm *PackageManager) Create(group string, name string, version string) erro
 		return fmt.Errorf("%s > cannot create package '%s'; unexpected status: %s", pm.instance.ID(), pid, status.Message)
 	}
 	log.Infof("%s > create package '%s'", pm.instance.ID(), pid)
+	return nil
+}
+
+func (pm *PackageManager) Download(remotePath string, localFile string) error {
+	log.Infof("%s > downloading package '%s'", pm.instance.ID(), remotePath)
+	opts := httpx.DownloadOpts{}
+	opts.Url = pm.instance.HTTP().BaseURL() + remotePath
+	opts.File = localFile
+	opts.Override = true
+	opts.AuthBasicUser = pm.instance.User()
+	opts.AuthBasicPassword = pm.instance.Password()
+	_, err := httpx.DownloadWithChanged(opts)
+	if err != nil {
+		return fmt.Errorf("%s > cannot download package '%s': %w", pm.instance.ID(), remotePath, err)
+	}
+	log.Infof("%s > download package '%s'", pm.instance.ID(), remotePath)
 	return nil
 }
 

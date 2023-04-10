@@ -556,7 +556,7 @@ func (c *CLI) pkgUpdateCmd() *cobra.Command {
 			roots, _ := cmd.Flags().GetStringSlice("root")
 			var filter []pkg.Filter
 			for _, root := range roots {
-				filter = append(filter, pkg.Filter{Root: root})
+				filter = append(filter, pkg.Filter{Root: root, Rules: []pkg.Rule{}})
 			}
 			err = p.Update(filter)
 			if err != nil {

@@ -431,6 +431,13 @@ func pkgDefineDownloadFlags(cmd *cobra.Command) {
 	cmd.MarkFlagsMutuallyExclusive("pid", "path")
 }
 
+func pkgDefineUpdateFlags(cmd *cobra.Command) {
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().String("path", "", "Remote path on AEM repository")
+	cmd.Flags().StringSlice("root", nil, "Root path(s) on AEM repository")
+	cmd.MarkFlagsMutuallyExclusive("pid", "path")
+}
+
 func pkgDefineBuildFlags(cmd *cobra.Command) {
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
 }
@@ -546,7 +553,12 @@ func (c *CLI) pkgUpdateCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			err = p.Update()
+			roots, _ := cmd.Flags().GetStringSlice("root")
+			var filter []pkg.Filter
+			for _, root := range roots {
+				filter = append(filter, pkg.Filter{Root: root})
+			}
+			err = p.Update(filter)
 			if err != nil {
 				c.Error(err)
 				return
@@ -560,7 +572,7 @@ func (c *CLI) pkgUpdateCmd() *cobra.Command {
 			c.Changed("package update")
 		},
 	}
-	pkgDefineBuildFlags(cmd)
+	pkgDefineUpdateFlags(cmd)
 	return cmd
 }
 

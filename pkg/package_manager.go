@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
@@ -147,9 +148,23 @@ func (pm *PackageManager) Create(pid string) error {
 	return nil
 }
 
-func (pm *PackageManager) Update(remotePath string, pid string) error {
+type Filter struct {
+	Root  string `json:"root"`
+	Rules []Rule `json:"rules"`
+}
+
+type Rule struct {
+	Modifier string `json:"modifier"`
+	Pattern  string `json:"pattern"`
+}
+
+func (pm *PackageManager) Update(remotePath string, pid string, filter []Filter) error {
 	log.Infof("%s > updating package '%s'", pm.instance.ID(), pid)
 	pidConfig, err := pkg.ParsePID(pid)
+	if err != nil {
+		return err
+	}
+	filterJson, err := json.Marshal(filter)
 	if err != nil {
 		return err
 	}
@@ -159,7 +174,7 @@ func (pm *PackageManager) Update(remotePath string, pid string) error {
 			"packageName": pidConfig.Name,
 			"groupName":   pidConfig.Group,
 			"version":     pidConfig.Version,
-			"filter":      "[{\"root\":\"/apps\",\"rules\":[]}]",
+			"filter":      string(filterJson),
 		}).
 		Post(UpdatePath)
 	if err != nil {

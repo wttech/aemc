@@ -118,14 +118,17 @@ func (pm *PackageManager) IsSnapshot(localPath string) bool {
 	return stringsx.MatchSome(localPath, pm.SnapshotPatterns)
 }
 
-func (pm *PackageManager) Create(group string, name string, version string) error {
-	pid := pkg.PID{Group: group, Name: name, Version: version}
+func (pm *PackageManager) Create(pid string) error {
 	log.Infof("%s > creating package '%s'", pm.instance.ID(), pid)
+	pidConfig, err := pkg.ParsePID(pid)
+	if err != nil {
+		return err
+	}
 	response, err := pm.instance.http.Request().
 		SetFormData(map[string]string{
-			"packageName":    name,
-			"packageVersion": version,
-			"groupName":      group,
+			"packageName":    pidConfig.Name,
+			"packageVersion": pidConfig.Version,
+			"groupName":      pidConfig.Group,
 		}).
 		Post(ExecPath + "?cmd=create")
 	if err != nil {

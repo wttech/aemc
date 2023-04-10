@@ -170,11 +170,7 @@ func (p Package) Create() error {
 	if state.Exists {
 		return fmt.Errorf("%s > package '%s' cannot be create as it exists", p.manager.instance.ID(), p.PID.String())
 	}
-	pidConfig, err := pkg.ParsePID(state.PID)
-	if err != nil {
-		return err
-	}
-	return p.manager.Create(pidConfig.Group, pidConfig.Name, pidConfig.Version)
+	return p.manager.Create(state.PID)
 }
 
 func (p Package) Download(localFile string) error {

@@ -117,6 +117,32 @@ func (pm *PackageManager) IsSnapshot(localPath string) bool {
 	return stringsx.MatchSome(localPath, pm.SnapshotPatterns)
 }
 
+func (pm *PackageManager) Create(group string, name string, version string) error {
+	pid := pkg.PID{Group: group, Name: name, Version: version}
+	log.Infof("%s > creating package '%s'", pm.instance.ID(), pid)
+	response, err := pm.instance.http.Request().
+		SetFormData(map[string]string{
+			"packageName":    name,
+			"packageVersion": version,
+			"groupName":      group,
+		}).
+		Post(ExecPath + "?cmd=create")
+	if err != nil {
+		return fmt.Errorf("%s > cannot create package '%s': %w", pm.instance.ID(), pid, err)
+	} else if response.IsError() {
+		return fmt.Errorf("%s > cannot create package '%s': %s", pm.instance.ID(), pid, response.Status())
+	}
+	var status pkg.CommandResult
+	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
+		return fmt.Errorf("%s > cannot create package '%s'; cannot parse response: %w", pm.instance.ID(), pid, err)
+	}
+	if !status.Success {
+		return fmt.Errorf("%s > cannot create package '%s'; unexpected status: %s", pm.instance.ID(), pid, status.Message)
+	}
+	log.Infof("%s > create package '%s'", pm.instance.ID(), pid)
+	return nil
+}
+
 func (pm *PackageManager) Build(remotePath string) error {
 	log.Infof("%s > building package '%s'", pm.instance.ID(), remotePath)
 	response, err := pm.instance.http.Request().Post(ServiceJsonPath + remotePath + "?cmd=build")
@@ -335,4 +361,5 @@ const (
 	ServiceHtmlPath = ServicePath + "/.html"
 	ListJson        = MgrPath + "/list.jsp"
 	IndexPath       = MgrPath + "/index.jsp"
+	ExecPath        = ServicePath + "/exec.json"
 )

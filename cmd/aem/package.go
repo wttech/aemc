@@ -525,13 +525,8 @@ func (c *CLI) pkgCreateCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			if err := c.aem.InstanceManager().AwaitStartedOne(*instance); err != nil {
-				c.Error(err)
-				return
-			}
 			c.SetOutput("package", p)
-			c.SetOutput("instance", instance)
-			c.Changed("package create")
+			c.Ok("package create")
 		},
 	}
 	pkgDefineBuildFlags(cmd)
@@ -563,13 +558,8 @@ func (c *CLI) pkgUpdateCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			if err := c.aem.InstanceManager().AwaitStartedOne(*instance); err != nil {
-				c.Error(err)
-				return
-			}
 			c.SetOutput("package", p)
-			c.SetOutput("instance", instance)
-			c.Changed("package update")
+			c.Ok("package update")
 		},
 	}
 	pkgDefineUpdateFlags(cmd)
@@ -597,13 +587,8 @@ func (c *CLI) pkgDownloadCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			if err := c.aem.InstanceManager().AwaitStartedOne(*instance); err != nil {
-				c.Error(err)
-				return
-			}
 			c.SetOutput("package", p)
-			c.SetOutput("instance", instance)
-			c.Changed("package download")
+			c.Ok("package download")
 		},
 	}
 	pkgDefineDownloadFlags(cmd)

@@ -559,7 +559,7 @@ func (c *CLI) pkgUpdateCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("package", p)
-			c.Ok("package update")
+			c.Changed("package update")
 		},
 	}
 	pkgDefineUpdateFlags(cmd)

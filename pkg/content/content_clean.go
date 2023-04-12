@@ -295,7 +295,7 @@ func (c Cleaner) doRootBackup(root string) error {
 func (c Cleaner) undoParentsBackup(root string) error {
 	return eachFilesInDir(root, func(path string) error {
 		if strings.HasSuffix(path, c.config.ParentsBackupSuffix) {
-			origin, _ := strings.CutSuffix(path, c.config.ParentsBackupSuffix)
+			origin := strings.TrimSuffix(path, c.config.ParentsBackupSuffix)
 			log.Printf("Undoing backup of parent file: %s", path)
 			return os.Rename(path, origin)
 		}

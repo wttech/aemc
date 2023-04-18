@@ -172,7 +172,7 @@ func (o *Opts) Env() ([]string, error) {
 	javaPath := pathx.Canonical(homeDir + "/bin")
 	envOthers := osx.EnvVarsWithout("PATH", "JAVA_HOME")
 	envFinal := append([]string{
-		"PATH=" + javaPath + ":" + os.Getenv("PATH"),
+		"PATH=" + javaPath + osx.PathVarSep() + os.Getenv("PATH"),
 		"JAVA_HOME=" + homeDir,
 	}, envOthers...)
 	return envFinal, nil

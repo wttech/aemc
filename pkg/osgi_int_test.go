@@ -13,7 +13,7 @@ func TestOSGiBundleList(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 
-	aem := pkg.NewAem()
+	aem := pkg.DefaultAEM()
 	instance := aem.InstanceManager().NewLocalAuthor()
 
 	response, err := instance.OSGI().BundleManager().List()
@@ -28,7 +28,7 @@ func TestOSGiEventList(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 
-	aem := pkg.NewAem()
+	aem := pkg.DefaultAEM()
 	instance := aem.InstanceManager().NewLocalAuthor()
 
 	response, err := instance.OSGI().EventManager().List()

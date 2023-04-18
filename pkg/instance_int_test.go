@@ -12,7 +12,7 @@ func TestInstanceTimeLocation(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 
-	aem := pkg.NewAem()
+	aem := pkg.DefaultAEM()
 	instance := aem.InstanceManager().NewLocalAuthor()
 	instanceLocation := instance.TimeLocation()
 

@@ -74,3 +74,10 @@ func LineSep() string {
 	}
 	return "\n"
 }
+
+func PathVarSep() string {
+	if pathx.Sep() == "\\" {
+		return ";"
+	}
+	return ":"
+}

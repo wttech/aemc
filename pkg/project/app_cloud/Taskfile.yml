@@ -203,9 +203,12 @@ tasks:
     aliases: [dispatcher:up]
     dir: dispatcher
     cmds:
-      # - sh aem/home/opt/sdk/dispatcher/bin/validate.sh dispatcher/src > aem/home/var/log/dispatcher-validate.log # uncomment if possible, see: https://github.com/adobe/aem-project-archetype/issues/1043
+      - 'command -v docker || { echo "Docker is not installed! Visit: https://www.docker.com/products/docker-desktop"; exit 1; }'
+      - 'test -d ../aem/home/opt/sdk/dispatcher || { echo "Dispatcher SDK is not available. Try providing AEM SDK ZIP instead of JAR to directory: aem/home/lib"; exit 1; }'
       - rm -fr target/sdk && cp -r ../aem/home/opt/sdk/dispatcher target/sdk
+      # - sh target/sdk/bin/validate.sh src > ../aem/home/var/log/dispatcher-validate.log
       - docker tag "$(docker load --input "target/sdk/lib/dispatcher-publish-{{ARCH}}.tar.gz" | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"
+      - mkdir -p target/sdk/logs target/sdk/cache
       - docker compose up -d
 
   dispatcher:stop:
@@ -226,6 +229,10 @@ tasks:
     cmds:
       - docker compose ps
       - docker compose logs --tail 20
+
+  dispatcher:shell:
+    desc: login to AEM dispatcher shell
+    cmds: [docker exec -it dispatcher bash]
 
   dispatcher:destroy:
     desc: destroy AEM dispatcher

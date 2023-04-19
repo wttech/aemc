@@ -156,7 +156,7 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 	if err := im.LocalOpts.Initialize(); err != nil {
 		return created, err
 	}
-	log.Infof(InstanceMsg(instances, "creating"))
+	log.Infof(InstancesMsg(instances, "creating"))
 	for _, i := range instances {
 		if !i.local.IsCreated() {
 			err := i.local.Create()
@@ -188,7 +188,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 	}
 
 	if !im.LocalOpts.ServiceMode {
-		log.Infof(InstanceMsg(instances, "checking started & out-of-date"))
+		log.Infof(InstancesMsg(instances, "checking started & out-of-date"))
 
 		var outdated []Instance
 		for _, i := range instances {
@@ -208,7 +208,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		}
 	}
 
-	log.Infof(InstanceMsg(instances, "starting"))
+	log.Infof(InstancesMsg(instances, "starting"))
 
 	started := []Instance{}
 	for _, i := range instances {
@@ -248,7 +248,7 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 		log.Debugf("no instances to stop")
 		return []Instance{}, nil
 	}
-	log.Infof(InstanceMsg(instances, "stopping"))
+	log.Infof(InstancesMsg(instances, "stopping"))
 	stopped := []Instance{}
 	for _, i := range instances {
 		if i.local.IsRunning() {
@@ -285,7 +285,7 @@ func (im *InstanceManager) KillAll() ([]Instance, error) {
 }
 
 func (im *InstanceManager) Kill(instances []Instance) ([]Instance, error) {
-	log.Infof(InstanceMsg(instances, "killing"))
+	log.Infof(InstancesMsg(instances, "killing"))
 
 	killed := []Instance{}
 	for _, i := range instances {
@@ -316,7 +316,7 @@ func (im *InstanceManager) Delete(instances []Instance) ([]Instance, error) {
 		log.Debugf("no instances to delete")
 		return []Instance{}, nil
 	}
-	log.Infof(InstanceMsg(instances, "deleting"))
+	log.Infof(InstancesMsg(instances, "deleting"))
 	deleted := []Instance{}
 	for _, i := range instances {
 		if i.local.IsCreated() {
@@ -335,7 +335,7 @@ func (im *InstanceManager) Clean(instances []Instance) ([]Instance, error) {
 		log.Debugf("no instances to clean")
 		return []Instance{}, nil
 	}
-	log.Infof(InstanceMsg(instances, "cleaning"))
+	log.Infof(InstancesMsg(instances, "cleaning"))
 	cleaned := []Instance{}
 	for _, i := range instances {
 		if !i.local.IsRunning() {

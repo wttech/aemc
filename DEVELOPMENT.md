@@ -19,6 +19,26 @@ export GOPATH="$HOME/go"
 export PATH="$GOPATH/bin:$PATH"
 ```
 
+## Building
+
+Ensure having installed [Go](https://go.dev/dl/) then run command:
+
+- latest released version: `go install github.com/wttech/aemc/cmd/aem@latest`,
+- specific released version: `go install github.com/wttech/aemc/cmd/aem@v1.1.9`,
+- recently committed version: `go install github.com/wttech/aemc/cmd/aem@main`,
+
+Use installed version of the tool instead of the one defined in file *aem/api.sh* by running the following command:
+
+```shell
+export AEM_CLI_VERSION=installed
+```
+
+To start using again version from wrapper file, simply unset the environment variable:
+
+```shell
+unset AEM_CLI_VERSION
+```
+
 ## Releasing
 
 Simply run script:

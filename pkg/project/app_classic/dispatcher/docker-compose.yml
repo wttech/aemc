@@ -5,9 +5,7 @@ services:
     image: acme/aem-ams/dispatcher-publish:latest
     ports:
       - "80:80"
-    environment:
-      - DISP_ID=docker
     volumes:
       - ./target/docker/httpd/logs:/etc/httpd/logs
-      - ./target/docker/httpd/cache:/var/www/localhost/cache
-      - ./target/docker/httpd/htdocs:/var/www/localhost/htdocs
+      - ./target/docker/httpd/cache:/var/www/localhost/publish/cache
+      - ./target/docker/httpd/htdocs:/var/www/localhost/publish/htdocs

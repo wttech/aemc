@@ -15,7 +15,7 @@ RUN mkdir -p /tmp/dispatcher && cd /tmp/dispatcher && \
 # Project-specific source code
 COPY src /etc/httpd
 
-# Fix symlinks (needed when building on Windows)
+# Fix symlinks (needed when building on Windows) # TODO make it more generic
 RUN cd /etc/httpd/conf.d && rm -fr enabled_vhosts && mkdir enabled_vhosts && cd enabled_vhosts && \
     ln -s ../available_vhosts/aem_author.vhost aem_author.vhost && \
     ln -s ../available_vhosts/aem_flush.vhost aem_flush.vhost && \

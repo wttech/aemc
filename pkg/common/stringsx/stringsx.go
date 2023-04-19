@@ -89,7 +89,7 @@ func HumanCase(str string) string {
 }
 
 func AddPrefix(str string, prefix string) string {
-	if strings.HasPrefix(prefix, str) {
+	if strings.HasPrefix(str, prefix) {
 		return str
 	}
 	return prefix + str

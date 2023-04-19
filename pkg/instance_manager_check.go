@@ -52,7 +52,7 @@ func NewCheckOpts(manager *InstanceManager) *CheckOpts {
 
 func (im *InstanceManager) CheckUntilDone(instances []Instance, opts *CheckOpts, checks []Checker) error {
 	if len(instances) == 0 {
-		log.Debugf("no instances to check")
+		log.Debug("no instances to check")
 		return nil
 	}
 	time.Sleep(opts.Warmup)
@@ -66,7 +66,7 @@ func (im *InstanceManager) CheckUntilDone(instances []Instance, opts *CheckOpts,
 			if !opts.DoneNever {
 				doneTimes++
 				if doneTimes <= opts.DoneThreshold {
-					log.Infof(InstancesMsg(instances, fmt.Sprintf("checked (%d/%d)", doneTimes, opts.DoneThreshold)))
+					log.Info(InstancesMsg(instances, fmt.Sprintf("checked (%d/%d)", doneTimes, opts.DoneThreshold)))
 				}
 				if doneTimes == opts.DoneThreshold {
 					break
@@ -101,12 +101,12 @@ func (im *InstanceManager) CheckOne(i Instance, checks []Checker) ([]CheckResult
 		result := check.Check(i)
 		results = append(results, result)
 		if result.abort {
-			log.Fatalf(InstanceMsg(i, result.message))
+			log.Fatal(InstanceMsg(i, result.message))
 		}
 		if result.err != nil {
-			log.Infof(InstanceMsg(i, result.err))
+			log.Info(InstanceMsg(i, result.err))
 		} else if len(result.message) > 0 {
-			log.Infof(InstanceMsg(i, result.message))
+			log.Info(InstanceMsg(i, result.message))
 		}
 		if !result.ok && check.Spec().Mandatory {
 			break
@@ -127,7 +127,7 @@ func (im *InstanceManager) AwaitStarted(instances []Instance) error {
 	if len(instances) == 0 {
 		return nil
 	}
-	log.Infof(InstancesMsg(instances, "awaiting started"))
+	log.Info(InstancesMsg(instances, "awaiting started"))
 	var checkers []Checker
 	if im.LocalOpts.ServiceMode {
 		checkers = []Checker{
@@ -160,7 +160,7 @@ func (im *InstanceManager) AwaitStopped(instances []Instance) error {
 	if len(instances) == 0 {
 		return nil
 	}
-	log.Infof(InstancesMsg(instances, "awaiting stopped"))
+	log.Info(InstancesMsg(instances, "awaiting stopped"))
 	return im.CheckUntilDone(instances, im.CheckOpts, []Checker{
 		im.CheckOpts.AwaitStopped,
 		im.CheckOpts.StatusStopped,

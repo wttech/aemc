@@ -239,4 +239,6 @@ tasks:
   dispatcher:destroy:
     desc: destroy AEM dispatcher
     dir: dispatcher
-    cmds: [docker compose rm -fsv]
+    cmds:
+      - docker compose rm -fsv
+      - rm -fr target/sdk

@@ -205,7 +205,7 @@ tasks:
     cmds:
       - 'command -v docker || { echo "Docker is not installed! Visit: https://www.docker.com/products/docker-desktop"; exit 1; }'
       - 'test -d ../aem/home/opt/sdk/dispatcher || { echo "Dispatcher SDK is not available. Try providing AEM SDK ZIP instead of JAR to directory: aem/home/lib"; exit 1; }'
-      - rm -fr target/sdk && cp -r ../aem/home/opt/sdk/dispatcher target/sdk
+      - test -d target/sdk || rm -fr target/sdk && cp -r ../aem/home/opt/sdk/dispatcher target/sdk
       # - sh target/sdk/bin/validate.sh src > ../aem/home/var/log/dispatcher-validate.log
       - docker tag "$(docker load --input "target/sdk/lib/dispatcher-publish-{{ARCH}}.tar.gz" | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"
       - mkdir -p target/sdk/logs target/sdk/cache
@@ -237,4 +237,4 @@ tasks:
   dispatcher:destroy:
     desc: destroy AEM dispatcher
     dir: dispatcher
-    cmds: [docker compose rm]
+    cmds: [docker compose rm -fsv]

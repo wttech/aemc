@@ -14,6 +14,17 @@ RUN mkdir -p /tmp/dispatcher && cd /tmp/dispatcher && \
 # Project-specific source code
 COPY src /etc/httpd
 
+# Recreate symlinks (needed when building on Windows)
+RUN cd /etc/httpd/conf.d && rm -fr enabled_vhosts && mkdir enabled_vhosts && cd enabled_vhosts && \
+    ln -s ../available_vhosts/aem_author.vhost aem_author.vhost && \
+    ln -s ../available_vhosts/aem_flush.vhost aem_flush.vhost && \
+    ln -s ../available_vhosts/aem_health.vhost aem_health.vhost && \
+    ln -s ../available_vhosts/mysite_publish.vhost mysite_publish.vhost
+
+RUN cd /etc/httpd/conf.dispatcher.d && rm -fr enabled_farms && mkdir enabled_farms && cd enabled_farms && \
+    ln -s ../available_farms/000_ams_author_farm.any 000_ams_author_farm.any && \
+    ln -s ../available_farms/999_ams_publish_farm.any 999_ams_publish_farm.any
+
 # Local environment-specific variables
 COPY docker/src/conf.d/custom.conf /etc/httpd/conf.d/custom.conf
 COPY docker/src/conf.d/variables/default.vars /etc/httpd/conf.d/variables/default.vars

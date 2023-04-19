@@ -18,7 +18,8 @@ echo ""
 chmod +x "${AEM_WRAPPER}" "${TASK_WRAPPER}"
 sh ${AEM_WRAPPER} version
 
-echo "Success! Now initialize it by running the command:"
+echo ""
+echo "Success! Now initialize the project by running command below:"
 echo ""
 
 echo "sh ${AEM_WRAPPER} init"

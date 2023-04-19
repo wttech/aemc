@@ -87,3 +87,10 @@ func AfterLast(value string, a string) string {
 func HumanCase(str string) string {
 	return strings.ReplaceAll(strcase.ToSnake(str), "_", " ")
 }
+
+func AddPrefix(str string, prefix string) string {
+	if strings.HasPrefix(str, prefix) {
+		return str
+	}
+	return prefix + str
+}

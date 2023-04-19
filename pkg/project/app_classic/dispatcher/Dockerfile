@@ -40,8 +40,8 @@ COPY docker/src/conf.d/rewrites/xforwarded_forcessl_rewrite.rules /etc/httpd/con
 
 # Initialize doc roots
 
-RUN mkdir -p /var/www/localhost/author/cache /var/www/localhost/publish/cache /mnt/var/www/default && \
-    chown apache:apache -R /var/www/localhost /mnt/var/www/default
+RUN mkdir -p /var/www/cache/author /var/www/cache/publish /mnt/var/www/default && \
+    chown apache:apache -R /var/www /mnt/var/www
 
 # Fix for 'SSLCertificateFile: file '/etc/pki/tls/certs/localhost.crt' does not exist or is empty'
 RUN /usr/libexec/httpd-ssl-gencerts

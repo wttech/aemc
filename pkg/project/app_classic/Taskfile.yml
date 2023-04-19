@@ -247,11 +247,13 @@ tasks:
       - docker compose ps
       - docker compose logs --tail 20
 
-  dispatcher:shell:
+  dispatcher:login:
     desc: login to AEM dispatcher shell
     cmds: [docker exec -it dispatcher bash]
 
   dispatcher:destroy:
     desc: destroy AEM dispatcher
     dir: dispatcher
-    cmds: [docker compose rm -fsv]
+    cmds:
+      - docker compose rm -fsv
+      - rm -fr target/docker

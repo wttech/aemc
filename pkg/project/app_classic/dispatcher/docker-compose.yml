@@ -7,5 +7,4 @@ services:
       - "80:80"
     volumes:
       - ./target/docker/httpd/logs:/etc/httpd/logs
-      - ./target/docker/httpd/cache:/var/www/localhost/publish/cache
-      - ./target/docker/httpd/htdocs:/var/www/localhost/publish/htdocs
+      - ./target/docker/httpd/cache:/var/www/cache

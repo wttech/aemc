@@ -194,6 +194,7 @@ tasks:
       - task: dispatcher:hosts
       - task: dispatcher:start
       - task: dispatcher:status
+      - task: dispatcher:check
 
   dispatcher:resetup:
     desc: destroy then setup again AEM dispatcher
@@ -272,3 +273,10 @@ tasks:
       - cat /etc/hosts | grep -q '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}'
     cmds:
       - sudo echo {{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}} >> /etc/hosts
+
+  dispatcher:check:
+    desc: check health of AEM dispatcher
+    cmds:
+      - curl "http://{{.AEM_DISPATCHER_DOMAIN}}" -s -o /dev/null || true # warmup
+      - sleep 3
+      - curl "http://{{.AEM_DISPATCHER_DOMAIN}}" -s -o /dev/null -w "%{http_code}" | grep -q 200

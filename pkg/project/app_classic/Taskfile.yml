@@ -250,7 +250,7 @@ tasks:
       - docker compose ps
       - docker compose logs --tail 20
 
-  dispatcher:shell:
+  dispatcher:login:
     desc: login to AEM dispatcher shell
     cmds: [docker exec -it dispatcher bash]
 

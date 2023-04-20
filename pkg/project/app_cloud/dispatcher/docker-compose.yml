@@ -9,6 +9,8 @@ services:
       - AEM_HOST=host.docker.internal
       - AEM_IP=*.*.*.*
       - AEM_PORT=4503
+      - DISP_LOG_LEVEL=Warn
+      - REWRITE_LOG_LEVEL=Warn
     volumes:
       # Use project-specific dispatcher config
       - ./src:/mnt/dev/src:ro

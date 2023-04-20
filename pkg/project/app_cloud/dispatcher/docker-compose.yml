@@ -9,13 +9,6 @@ services:
       - AEM_HOST=host.docker.internal
       - AEM_IP=*.*.*.*
       - AEM_PORT=4503
-      - VHOST=publish
-      - ENVIRONMENT_TYPE=dev
-      - DISP_LOG_LEVEL=Warn
-      - REWRITE_LOG_LEVEL=Warn
-      - EXPIRATION_TIME=A2592000
-      - FORWARDED_HOST_SETTING=Off
-      - COMMERCE_ENDPOINT=http://localhost/graphql
     volumes:
       # Use project-specific dispatcher config
       - ./src:/mnt/dev/src:ro

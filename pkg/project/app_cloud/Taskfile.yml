@@ -192,7 +192,6 @@ tasks:
   dispatcher:setup:
     desc: setup AEM dispatcher
     cmds:
-      - task: dispatcher:hosts
       - task: dispatcher:start
       - task: dispatcher:status
 
@@ -272,10 +271,11 @@ tasks:
     status:
       - cat /etc/hosts | grep -qxF '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}'
     cmds:
-      - sudo echo {{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}} >> /etc/hosts
+      - sudo echo '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}' >> /etc/hosts
 
   dispatcher:check:
     desc: check health of AEM dispatcher
+    deps: [dispatcher:hosts]
     cmds:
       - curl "http://{{.AEM_DISPATCHER_DOMAIN}}" -s -o /dev/null || true # warmup
       - sleep 3

@@ -21,6 +21,7 @@ tasks:
       - task: aem:setup
       - task: dispatcher:setup
       - task: aem:check
+      - task: dispatcher:check
 
   resetup:
     desc: destroy then setup again AEM instances and dispatcher
@@ -194,7 +195,6 @@ tasks:
       - task: dispatcher:hosts
       - task: dispatcher:start
       - task: dispatcher:status
-      - task: dispatcher:check
 
   dispatcher:resetup:
     desc: destroy then setup again AEM dispatcher
@@ -256,21 +256,21 @@ tasks:
   dispatcher:hosts:windows:
     platforms: [windows]
     status:
-      - cat C:/Windows/System32/drivers/etc/hosts | grep -q '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}'
+      - cat C:/Windows/System32/drivers/etc/hosts | grep -qxF '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}  '
     cmds:
-      - powershell -command "Start-Process cmd -ArgumentList \"/C echo {{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}} >> C:\Windows\System32\drivers\etc\hosts\" -Verb runas"
+      - powershell -command "Start-Process cmd -ArgumentList \"/C echo "{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}" >> C:\Windows\System32\drivers\etc\hosts\" -Verb runas"
 
   dispatcher:hosts:darwin:
     platforms: [darwin]
     status:
-      - cat /etc/hosts | grep -q '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}'
+      - cat /etc/hosts | grep -qxF '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}'
     cmds:
       - osascript -e "do shell script \"echo '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}' >> /etc/hosts\" with prompt \"AEM - Add domains to host file\" with administrator privileges"
 
   dispatcher:hosts:linux:
     platforms: [linux]
     status:
-      - cat /etc/hosts | grep -q '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}'
+      - cat /etc/hosts | grep -qxF '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}'
     cmds:
       - sudo echo {{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}} >> /etc/hosts
 

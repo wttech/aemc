@@ -19,6 +19,37 @@ export GOPATH="$HOME/go"
 export PATH="$GOPATH/bin:$PATH"
 ```
 
+## Building & OS-wide installation
+
+Ensure having installed [Go](https://go.dev/dl/) then:
+
+### Manual installation (recommended)
+
+Use this method to develop comfortably the tool.
+
+1. Clone repository: `git clone git@github.com:wttech/aemc.git`
+2. Enter cloned directory and run command: `make`
+
+### Go installation
+
+Use this method to check particular commit/version of the tool.
+
+- latest released version: `go install github.com/wttech/aemc/cmd/aem@latest`,
+- specific released version: `go install github.com/wttech/aemc/cmd/aem@v1.1.9`,
+- recently committed version: `go install github.com/wttech/aemc/cmd/aem@main`,
+
+After installing AEM CLI by one of above methods now instruct the [wrapper script](pkg/project/common/aemw) to use it by running the following command:
+
+```shell
+export AEM_CLI_VERSION=installed
+```
+
+To start using again version defined in wrapper file, simply unset the environment variable:
+
+```shell
+unset AEM_CLI_VERSION
+```
+
 ## Releasing
 
 Simply run script:

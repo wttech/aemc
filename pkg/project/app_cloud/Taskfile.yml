@@ -177,12 +177,14 @@ tasks:
   aem:author:check:
     desc: check health of AEM author instance
     cmds:
+      - sleep 3
       - curl -s -u "{{.AEM_AUTHOR_USER}}:{{.AEM_AUTHOR_PASSWORD}}" "{{.AEM_AUTHOR_HTTP_URL}}/libs/granite/core/content/login.html" | grep -q "QUICKSTART_HOMEPAGE"
       - curl -s -u "{{.AEM_AUTHOR_USER}}:{{.AEM_AUTHOR_PASSWORD}}" "{{.AEM_AUTHOR_HTTP_URL}}/etc/replication/agents.author/publish.test.html" | grep -q "Replication (TEST) of /content successful"
 
   aem:publish:check:
     desc: check health of AEM publish instance
     cmds:
+      - sleep 3
       - curl -s -u "{{.AEM_PUBLISH_USER}}:{{.AEM_PUBLISH_PASSWORD}}" "{{.AEM_PUBLISH_HTTP_URL}}/libs/granite/core/content/login.html" | grep -q "QUICKSTART_HOMEPAGE"
       - curl -s -u "{{.AEM_PUBLISH_USER}}:{{.AEM_PUBLISH_PASSWORD}}" "{{.AEM_PUBLISH_HTTP_URL}}/etc/replication/agents.publish/flush.test.html" | grep -q "Replication (TEST) of /content successful"
 
@@ -204,9 +206,12 @@ tasks:
     aliases: [dispatcher:up]
     dir: dispatcher
     cmds:
-      # - sh aem/home/opt/sdk/dispatcher/bin/validate.sh dispatcher/src > aem/home/var/log/dispatcher-validate.log # uncomment if possible, see: https://github.com/adobe/aem-project-archetype/issues/1043
-      - rm -fr target/sdk && cp -r ../aem/home/opt/sdk/dispatcher target/sdk
+      - 'command -v docker || { echo "Docker is not installed! Visit: https://www.docker.com/products/docker-desktop"; exit 1; }'
+      - 'test -d ../aem/home/opt/sdk/dispatcher || { echo "Dispatcher SDK is not available. Try providing AEM SDK ZIP instead of JAR to directory: aem/home/lib"; exit 1; }'
+      - test -d target/sdk || rm -fr target/sdk && cp -r ../aem/home/opt/sdk/dispatcher target/sdk
+      # - sh target/sdk/bin/validate.sh src > ../aem/home/var/log/dispatcher-validate.log
       - docker tag "$(docker load --input "target/sdk/lib/dispatcher-publish-{{ARCH}}.tar.gz" | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"
+      - mkdir -p target/sdk/logs target/sdk/cache
       - docker compose up -d
 
   dispatcher:stop:
@@ -228,10 +233,17 @@ tasks:
       - docker compose ps
       - docker compose logs --tail 20
 
+  dispatcher:login:
+    desc: login to AEM dispatcher shell
+    cmds: [docker exec -it dispatcher bash]
+    ignore_error: true
+
   dispatcher:destroy:
     desc: destroy AEM dispatcher
     dir: dispatcher
-    cmds: [docker compose rm]
+    cmds:
+      - docker compose rm -fsv
+      - rm -fr target/sdk
 
   dispatcher:hosts:
     desc: add AEM dispatcher domains to hosts file

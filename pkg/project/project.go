@@ -139,20 +139,22 @@ func copyEmbedFiles(efs *embed.FS, dirPrefix string) error {
 func (p Project) prepareGitIgnore(kind Kind) error {
 	switch kind {
 	case KindAppClassic, KindAppCloud:
-		return filex.AppendString(GitIgnoreFile, strings.Join([]string{
+		return filex.AppendString(GitIgnoreFile, osx.LineSep()+strings.Join([]string{
 			"",
 			"# " + common.AppName,
 			common.HomeDir + "/",
 			"dispatcher/target/",
+			".task/",
 			"." + osx.EnvFileExt,
 			"." + osx.EnvFileExt + ".*",
 			"",
 		}, osx.LineSep()))
 	default:
-		return filex.AppendString(GitIgnoreFile, strings.Join([]string{
+		return filex.AppendString(GitIgnoreFile, osx.LineSep()+strings.Join([]string{
 			"",
 			"# " + common.AppName,
 			common.HomeDir + "/",
+			".task/",
 			"." + osx.EnvFileExt,
 			"." + osx.EnvFileExt + ".*",
 			"",

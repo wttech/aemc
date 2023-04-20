@@ -13,7 +13,7 @@ func TestRepoSaveThenRead(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 
-	aem := pkg.NewAem()
+	aem := pkg.DefaultAEM()
 	instance := aem.InstanceManager().NewLocalAuthor()
 	err := instance.Repo().Save("/var/repo_int_test_saveThenRead", map[string]any{
 		"integer": 123,
@@ -36,7 +36,7 @@ func TestRepoSaveThenRemoveProp(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 
-	aem := pkg.NewAem()
+	aem := pkg.DefaultAEM()
 	instance := aem.InstanceManager().NewLocalAuthor()
 	err := instance.Repo().Save("/var/repo_int_test_removeProp", map[string]any{
 		"first":  "1",
@@ -61,7 +61,7 @@ func TestRepoReadChildren(t *testing.T) {
 	t.Parallel()
 
 	a := assert.New(t)
-	aem := pkg.NewAem()
+	aem := pkg.DefaultAEM()
 
 	instance := aem.InstanceManager().NewLocalAuthor()
 	children, err := instance.Repo().Node("/content").Children()
@@ -73,7 +73,7 @@ func TestRepoReadParents(t *testing.T) {
 	t.Parallel()
 
 	a := assert.New(t)
-	aem := pkg.NewAem()
+	aem := pkg.DefaultAEM()
 
 	instance := aem.InstanceManager().NewLocalAuthor()
 	parents := instance.Repo().Node("/content/dam/projects").Parents()
@@ -84,7 +84,7 @@ func TestRepoTraverse(t *testing.T) {
 	t.Parallel()
 
 	a := assert.New(t)
-	aem := pkg.NewAem()
+	aem := pkg.DefaultAEM()
 
 	instance := aem.InstanceManager().NewLocalAuthor()
 	it := instance.Repo().Node("/etc/dam").Traversor()

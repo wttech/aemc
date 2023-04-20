@@ -14,7 +14,7 @@ func TestInstanceHTTPGetRequest(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 
-	aem := pkg.NewAem()
+	aem := pkg.DefaultAEM()
 	instance := aem.InstanceManager().NewLocalAuthor()
 	response, err := instance.HTTP().Request().Get("/system/console/bundles.json")
 

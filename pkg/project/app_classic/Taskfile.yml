@@ -211,6 +211,9 @@ tasks:
     desc: build AEM dispatcher image
     dir: dispatcher
     cmds:
+      # dereference symbolic links causing problems on Windows
+      - rm -fr target/src && cp -rL src target/src
+      # enforce typical architecture to avoid problems on M1/ARM Mac
       - docker build --platform linux/amd64 -t acme/aem-ams/dispatcher-publish .
 
   dispatcher:test:
@@ -225,7 +228,7 @@ tasks:
     deps: [dispatcher:build]
     dir: dispatcher
     cmds:
-      - mkdir -p target/docker/httpd/logs target/docker/httpd/cache target/docker/httpd/htdocs
+      - mkdir -p target/docker/httpd/logs target/docker/httpd/cache/author target/docker/httpd/cache/publish
       - docker compose up -d
 
   dispatcher:stop:
@@ -247,7 +250,7 @@ tasks:
       - docker compose ps
       - docker compose logs --tail 20
 
-  dispatcher:login:
+  dispatcher:shell:
     desc: login to AEM dispatcher shell
     cmds: [docker exec -it dispatcher bash]
 
@@ -256,4 +259,4 @@ tasks:
     dir: dispatcher
     cmds:
       - docker compose rm -fsv
-      - rm -fr target/docker
+      - rm -fr target/docker target/src

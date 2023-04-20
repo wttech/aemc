@@ -235,6 +235,7 @@ tasks:
   dispatcher:login:
     desc: login to AEM dispatcher shell
     cmds: [docker exec -it dispatcher bash]
+    ignore_error: true
 
   dispatcher:destroy:
     desc: destroy AEM dispatcher

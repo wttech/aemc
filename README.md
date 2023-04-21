@@ -81,11 +81,11 @@ Help command:
 
 Instance commands:
 
-<img src="docs/cli-help-instance.png" alt="CLI Help Instance" width="600"/>
+<img src="docs/cli-help-instance.png" alt="CLI Help Instance" width="480"/>
 
 Package commands:
 
-<img src="docs/cli-help-pkg.png" alt="CLI Help Package" width="600"/>
+<img src="docs/cli-help-pkg.png" alt="CLI Help Package" width="480"/>
 
 Setup task:
 

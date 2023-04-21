@@ -89,7 +89,7 @@ Package commands:
 
 Setup task:
 
-<img src="docs/cli-demo.gif" alt="CLI Demo"/>
+<img src="docs/cli-demo-short.gif" alt="CLI Demo"/>
 
 ## CLI - AEM Project Quickstart
 

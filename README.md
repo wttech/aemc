@@ -7,7 +7,7 @@
 
 **AEM Compose**
 
-Universal tool to manage AEM instances everywhere!
+AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. With a comprehensive set of commands, it simplifies tasks such as working CRX packages, OSGi configurations, JCR repository nodes, and more. Its seamless integration with Ansible enhances automation capabilities.
 
 - Reusable core designed to handle advanced dev-ops operations needed to manage AEM instances
 - Various distributions based on core for context-specific use cases:
@@ -18,7 +18,7 @@ Universal tool to manage AEM instances everywhere!
     - [Packer Example](https://github.com/wttech/aemc-ansible/tree/main/examples/packer) - starting point for baking AWS EC2 image using Ansible
     - [Local Example](https://github.com/wttech/aemc-ansible/tree/main/examples/local) - development & testing sandbox for AEM Compose project
 - Fast & lightweight
-- No dependencies - usable on all operating systems and architectures
+- Usable on all operating systems and architectures without pre-installing any dependencies
 
 # Table of Contents
 

@@ -77,19 +77,19 @@ Worth knowing:
 
 Help command:
 
-![CLI Help Home](docs/cli-help-home.png)
+<img src="docs/cli-help-home.png" alt="CLI Help Home" style="max-width: 640px"/>
 
 Instance commands:
 
-![CLI Help Instance](docs/cli-help-instance.png)
+<img src="docs/cli-help-instance.png" alt="CLI Help Instance" style="max-width: 640px"/>
 
 Package commands:
 
-![CLI Help Package](docs/cli-help-pkg.png)
+<img src="docs/cli-help-pkg.png" alt="CLI Help Package" style="max-width: 640px"/>
 
 Setup task:
 
-![CLI Demo](docs/cli-demo.gif)
+<img src="docs/cli-demo.gif" alt="CLI Demo" style="max-width: 100%"/>
 
 ## CLI - AEM Project Quickstart
 

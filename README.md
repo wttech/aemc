@@ -24,7 +24,7 @@ Universal tool to manage AEM instances everywhere!
 
 * [Distributions](#distributions)
   * [CLI - Overview](#cli---overview)
-  * [CLI - Demo](#cli---demo)
+  * [CLI - Screenshots](#cli---screenshots)
   * [CLI - AEM Project Quickstart](#cli---aem-project-quickstart)
   * [Ansible Collection](#ansible-collection)
   * [Go Scripting](#go-scripting)
@@ -73,16 +73,47 @@ Worth knowing:
 
 - On Windows use it with [Git Bash](https://gitforwindows.org/) ([CMD](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/cmd) and [PowerShell](https://learn.microsoft.com/en-us/powershell/scripting/overview) are not supported nor tested)
 
-## CLI - Demo
+## CLI - Screenshots
 
-![CLI Screenshot](docs/cli-demo.gif)
+Help command:
+
+![CLI Help Home](docs/cli-help-home.png)
+
+Instance commands:
+
+![CLI Help Instance](docs/cli-help-instance.png)
+
+Package commands:
+
+![CLI Help Package](docs/cli-help-pkg.png)
+
+Setup task:
+
+![CLI Demo](docs/cli-demo.gif)
 
 ## CLI - AEM Project Quickstart
 
-Run command below to initialize the AEM Compose tool in your project (e.g existing one or generated from [Adobe AEM Project Archetype](https://github.com/adobe/aem-project-archetype#usage)):
+Supported project types:
+
+- with structure based on [Adobe AEM Project Archetype](https://github.com/adobe/aem-project-archetype#usage), compatibility:
+
+  | AEM Compose (init) | AEM Project Archetype |
+  |--------------------|-----------------------|
+  | 1.2.0              | 41                    |
+
+- with any type of structure, however afterwards only a little customizations in *Taskfile.yml* need to be done to reflect configuration related to built AEM application artifact path and AEM dispatcher files location
+- empty folder; the project kind will be needed to be specified explicitly during initialization
+
+Run command below to initialize the AEM Compose tool in your project:
 
 ```shell
 curl https://raw.githubusercontent.com/wttech/aemc/main/project-init.sh | sh
+```
+
+and then:
+
+```shell
+sh aemw init
 ```
 
 After successful initialization, remember to always use the tool via wrapper script in the following way:
@@ -97,7 +128,7 @@ For example:
 sh aemw version
 ```
 
-Project initialization comes with ready-to-use tasks powered by [Task tool](https://taskfile.dev/) which are aggregating one or many AEM Compose CLI commands into useful procedures.
+Project initialization sets up ready-to-use tasks powered by [Task tool](https://taskfile.dev/) which are aggregating one or many AEM Compose CLI commands into useful procedures.
 
 To list all available tasks, run:
 
@@ -121,7 +152,7 @@ For example, to build AEM application with:
 Simply run command with appending [task variable](https://taskfile.dev/usage/#variables) to the end:
 
 ```shell
-sh taskw setup AEM_BUILD_ARGS="-PfedDev -DskipTests -pl '!ui.tests'"
+sh taskw aem:build AEM_BUILD_ARGS="-PfedDev -DskipTests -pl '!ui.tests'"
 ```
 
 ## Ansible Collection

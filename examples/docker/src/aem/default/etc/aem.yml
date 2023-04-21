@@ -61,9 +61,9 @@ instance:
     # Time to wait before first state checking (to avoid false-positives)
     warmup: 1s
     # Time to wait for next state checking
-    interval: 5s
+    interval: 6s
     # Number of successful check attempts that indicates end of checking
-    done_threshold: 3
+    done_threshold: 5
     # Max time to wait for the instance to be healthy after executing the start script or e.g deploying a package
     await_started:
       timeout: 30m

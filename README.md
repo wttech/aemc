@@ -89,6 +89,11 @@ Package commands:
 
 Setup task:
 
+- AEM instances are provisioned only when the configuration is changed
+- Maven AEM application build executed only when there are code changes
+- AEM dispatcher set up using Docker Compose, redeployed only when there are configuration changes as well
+- Health checks executed to confirm the stability of the environment as a whole
+
 <img src="docs/cli-demo-short.gif" alt="CLI Demo"/>
 
 ## CLI - AEM Project Quickstart

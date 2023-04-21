@@ -180,15 +180,15 @@ import "os"
 import aemc "github.com/wttech/aemc/pkg"
 
 func main() {
-    aem := aemc.NewAem()
-    instance := aem.InstanceManager().NewLocalAuthor()
+    aem := aemc.DefaultAEM()
+    instance, _ := aem.InstanceManager().NewByURL("http://admin:admin@192.168.1.2")
     changed, err := instance.PackageManager().DeployWithChanged("/tmp/my-package.zip")
     if err != nil {
         fmt.Printf("cannot deploy package: %s\n", err)
         os.Exit(1)
     }
     if changed {
-      aem.InstanceManager().AwaitStartedOne(instance)
+      aem.InstanceManager().AwaitStartedOne(*instance)
     }
     fmt.Printf("package deployed properly\n")
     os.Exit(0)

@@ -181,7 +181,7 @@ import aemc "github.com/wttech/aemc/pkg"
 
 func main() {
     aem := aemc.DefaultAEM()
-    instance, _ := aem.InstanceManager().NewByURL("http://admin:admin@192.168.1.2")
+    instance, _ := aem.InstanceManager().NewByURL("http://admin:admin@192.168.1.2:4502")
     changed, err := instance.PackageManager().DeployWithChanged("/tmp/my-package.zip")
     if err != nil {
         fmt.Printf("cannot deploy package: %s\n", err)

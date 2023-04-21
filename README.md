@@ -204,22 +204,13 @@ Check out [releases page](https://github.com/wttech/aemc/releases) to review ava
 
 # Configuration
 
-## Generating default configuration
+## Defaults
 
-To start working with tool run command:
+The tool tries to make configuration as much explicit as it could be to allow customization in an easy way.
+
+Below are listed all available configuration options ([source](pkg/project/instance/aem/default/etc/aem.yml)):
 
 ```shell
-sh aemw config init
-```
-
-It will produce:
-
-- default/template configuration file: *aem/default/etc* (VCS-tracked)
-- actual configuration file:  *aem/home/etc/aem.yml* (VCS-ignored)
-
-Correct the `dist_file`, `license_file`, `unpack_dir` properties to provide essential files to be able to launch AEM instances.
-
-```yml
 # AEM instances to work with
 instance:
 
@@ -272,6 +263,12 @@ instance:
   # 'serial'   - for working with local instances
   processing_mode: auto
 
+  # HTTP client settings
+  http:
+    timeout: 5m
+    debug: false
+    disable_warn: true
+
   # State checking
   check:
     # Time to wait before first state checking (to avoid false-positives)
@@ -280,8 +277,6 @@ instance:
     interval: 5s
     # Number of successful check attempts that indicates end of checking
     done_threshold: 3
-    # Wait only for those instances whose state has been changed internally (unaware of external changes)
-    await_strict: true
     # Max time to wait for the instance to be healthy after executing the start script or e.g deploying a package
     await_started:
       timeout: 30m
@@ -316,6 +311,9 @@ instance:
 
   # Managed locally (set up automatically)
   local:
+    # Wait only for those instances whose state has been changed internally (unaware of external changes)
+    await_strict: true
+
     # Current runtime dir (Sling launchpad, JCR repository)
     unpack_dir: "aem/home/var/instance"
     # Archived runtime dir (AEM backup files '*.aemb.zst')
@@ -353,12 +351,10 @@ instance:
     # Use checksums to avoid re-deployments when snapshot AEM packages are unchanged
     snapshot_deploy_skipping: true
     # Disable following workflow launchers for a package deployment time only
-    toggled_workflows: [/libs/settings/workflow/launcher/config/asset_processing_on_sdk_*,/libs/settings/workflow/launcher/config/dam_*]
+    toggled_workflows: [/libs/settings/workflow/launcher/config/asset_processing_on_sdk_*,/libs/settings/workflow/launcher/config/update_asset_*,/libs/settings/workflow/launcher/config/dam_*]
 
   # OSGi Framework
   osgi:
-    shutdown_delay: 3s
-
     bundle:
       install:
         start: true
@@ -368,6 +364,15 @@ instance:
   # Crypto Support
   crypto:
     key_bundle_symbolic_name: com.adobe.granite.crypto.file
+
+  # Workflow Manager
+  workflow:
+    launcher:
+      lib_root: /libs/settings/workflow/launcher
+      config_root: /conf/global/settings/workflow/launcher
+      toggle_retry:
+        timeout: 5m
+        delay: 10s
 
 java:
   # Require following versions before e.g running AEM instances
@@ -418,11 +423,18 @@ output:
     mode: console
 ```
 
-After instructing tool where the AEM instances files are located then, finally, instances may be created and launched:
+Note that environment variables may be injected in any part of config file. 
+Environment variables could be defined in one or many [dotenv files](https://github.com/wttech/aemc/blob/main/pkg/common/osx/osx.go#L32).
+
+## Overriding default configuration
+
+By default, the VCS-tracked file is loaded (*aem/default/etc*).
+However, occasionally developers might want to override the default config file and load a VCS-ignored file instead (*aem/home/etc/aem.yml*).
+
+To do so, run the command:
 
 ```shell
-aem instance create
-aem instance start
+sh aemw config init
 ```
 
 ## Configuration precedence

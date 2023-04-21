@@ -104,6 +104,8 @@ Supported project types:
 - with any type of structure, however afterwards only a little customizations in *Taskfile.yml* need to be done to reflect configuration related to built AEM application artifact path and AEM dispatcher files location
 - empty folder; the project kind will be needed to be specified explicitly during initialization
 
+---
+
 Run command below to initialize the AEM Compose tool in your project:
 
 ```shell

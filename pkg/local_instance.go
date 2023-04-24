@@ -171,17 +171,7 @@ var (
 	LocalInstancePasswordRegex = regexp.MustCompile("^[a-zA-Z0-9_]{5,}$")
 )
 
-func (li LocalInstance) Validate() error {
-	if err := li.checkPassword(); err != nil {
-		return err
-	}
-	if err := li.checkRecreationNeeded(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (li LocalInstance) checkRecreationNeeded() error {
+func (li LocalInstance) CheckRecreationNeeded() error {
 	createLock := li.createLock()
 	if createLock.IsLocked() {
 		state, err := createLock.State()
@@ -195,7 +185,7 @@ func (li LocalInstance) checkRecreationNeeded() error {
 	return nil
 }
 
-func (li LocalInstance) checkPassword() error {
+func (li LocalInstance) CheckPassword() error {
 	if !LocalInstancePasswordRegex.MatchString(li.instance.password) {
 		return fmt.Errorf("%s > password does not match regex '%s'", li.instance.ID(), LocalInstancePasswordRegex)
 	}
@@ -349,7 +339,7 @@ func (li LocalInstance) Start() error {
 		}
 	}
 	log.Infof("%s > starting", li.instance.ID())
-	if err := li.checkPortsOpen(); err != nil {
+	if err := li.CheckPortsOpen(); err != nil {
 		return err
 	}
 	cmd, err := li.binScriptCommand(LocalInstanceScriptStart, true)
@@ -482,7 +472,7 @@ func (li LocalInstance) recreateSecretsDir() error {
 	return nil
 }
 
-func (li LocalInstance) checkPortsOpen() error {
+func (li LocalInstance) CheckPortsOpen() error {
 	host := li.instance.http.Hostname()
 	ports := []string{li.instance.http.Port()}
 	for _, port := range ports {

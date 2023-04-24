@@ -121,6 +121,7 @@ func (c *CLI) onStart() {
 
 	log.SetFormatter(&log.TextFormatter{
 		ForceColors:     !c.outputNoColor,
+		DisableColors:   c.outputNoColor,
 		TimestampFormat: cv.GetString("log.timestamp_format"),
 		FullTimestamp:   cv.GetBool("log.full_timestamp"),
 	})

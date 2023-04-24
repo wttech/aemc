@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-VERSION=${TASK_VERSION:-"3.20.0"}
+VERSION=${TASK_VERSION:-"3.24.0"}
 
 # Define API
 # ==========
@@ -9,7 +9,7 @@ VERSION=${TASK_VERSION:-"3.20.0"}
 detect_os() {
   os=$(uname -s | tr '[:upper:]' '[:lower:]')
 
-  # fixed up for https://github.com/client9/shlib/issues/3
+  # fixed up for https://git hub.com/client9/shlib/issues/3
   case "$os" in
     msys*) os="windows" ;;
     mingw*) os="windows" ;;

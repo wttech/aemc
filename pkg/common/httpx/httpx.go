@@ -51,27 +51,30 @@ func DownloadWithOpts(opts DownloadOpts) error {
 	if err := pathx.Ensure(filepath.Dir(fileTmp)); err != nil {
 		return err
 	}
-	f, _ := os.Create(fileTmp)
-	defer f.Close()
 	res, err := http.Get(opts.URL)
 	if err != nil {
 		return fmt.Errorf("cannot download from URL '%s' to file '%s': %w", opts.URL, opts.File, err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("cannot download from URL '%s' to file '%s': %d", opts.URL, opts.File, res.StatusCode)
+		return fmt.Errorf("cannot download from URL '%s' to file '%s': %s", opts.URL, opts.File, res.Status)
+	}
+	fhTmp, err := os.Create(fileTmp)
+	if err != nil {
+		return fmt.Errorf("cannot download from URL '%s' as file '%s' cannot be written", opts.URL, opts.File)
 	}
 	if color.NoColor {
-		if _, err := io.Copy(f, res.Body); err != nil {
+		if _, err := io.Copy(fhTmp, res.Body); err != nil {
 			return fmt.Errorf("cannot download from URL '%s' to file '%s': %w", opts.URL, opts.File, err)
 		}
 	} else {
 		bar := pb.Full.Start64(res.ContentLength)
-		if _, err := io.Copy(bar.NewProxyWriter(f), res.Body); err != nil {
+		if _, err := io.Copy(bar.NewProxyWriter(fhTmp), res.Body); err != nil {
 			return fmt.Errorf("cannot download from URL '%s' to file '%s': %w", opts.URL, opts.File, err)
 		}
 		bar.Finish()
 	}
+	fhTmp.Close()
 	err = os.Rename(fileTmp, opts.File)
 	if err != nil {
 		return fmt.Errorf("cannot move downloaded file from temporary path '%s' to target one '%s': %s", fileTmp, opts.File, err)

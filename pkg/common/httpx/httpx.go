@@ -55,7 +55,7 @@ func DownloadWithOpts(opts DownloadOpts) error {
 	defer f.Close()
 	res, err := http.Get(opts.URL)
 	if err != nil {
-		return fmt.Errorf("canot download from URL '%s' to file '%s': %w", opts.URL, opts.File, err)
+		return fmt.Errorf("cannot download from URL '%s' to file '%s': %w", opts.URL, opts.File, err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {

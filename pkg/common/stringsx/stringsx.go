@@ -44,6 +44,19 @@ func Between(str string, start string, end string) (result string) {
 	return str[s : s+e]
 }
 
+func BetweenOrSame(str string, start string, end string) string {
+	s := strings.Index(str, start)
+	if s == -1 {
+		return str
+	}
+	s += len(start)
+	e := strings.Index(str[s:], end)
+	if e == -1 {
+		return str
+	}
+	return str[s : s+e]
+}
+
 func Before(value string, a string) string {
 	pos := strings.Index(value, a)
 	if pos == -1 {

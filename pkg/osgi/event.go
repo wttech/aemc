@@ -1,7 +1,9 @@
 package osgi
 
 import (
+	"github.com/samber/lo"
 	"github.com/wttech/aemc/pkg/common/stringsx"
+	"strings"
 )
 
 type EventList struct {
@@ -27,6 +29,10 @@ func (e Event) Service() string {
 }
 
 func (e Event) Details() string {
+	return detailsUnwrap(e.detailsDetermine())
+}
+
+func (e Event) detailsDetermine() string {
 	service := e.Service()
 	if len(service) > 0 {
 		return service
@@ -35,4 +41,13 @@ func (e Event) Details() string {
 		return e.Info
 	}
 	return e.Topic
+}
+
+func detailsUnwrap(details string) string {
+	partsLine := stringsx.BetweenOrSame(details, "[", "]")
+	parts := lo.Map(strings.Split(",", partsLine), func(s string, _ int) string { return strings.TrimSpace(s) })
+	if len(parts) > 0 {
+		return parts[0]
+	}
+	return ""
 }

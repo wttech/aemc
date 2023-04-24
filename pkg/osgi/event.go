@@ -45,7 +45,7 @@ func (e Event) detailsDetermine() string {
 
 func detailsUnwrap(details string) string {
 	partsLine := stringsx.BetweenOrSame(details, "[", "]")
-	parts := lo.Map(strings.Split(",", partsLine), func(s string, _ int) string { return strings.TrimSpace(s) })
+	parts := lo.Map(strings.Split(partsLine, ","), func(s string, _ int) string { return strings.TrimSpace(s) })
 	if len(parts) > 0 {
 		return parts[0]
 	}

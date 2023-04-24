@@ -68,7 +68,7 @@ func (o *LocalOpts) Initialize() error {
 		}
 	}
 	for _, instance := range o.manager.Locals() {
-		if err := instance.Local().Validate(); err != nil {
+		if err := instance.Local().CheckPassword(); err != nil {
 			return err
 		}
 	}
@@ -86,6 +86,11 @@ func (o *LocalOpts) Initialize() error {
 	}
 	if err := o.OakRun.Prepare(); err != nil {
 		return err
+	}
+	for _, instance := range o.manager.Locals() {
+		if err := instance.Local().CheckRecreationNeeded(); err != nil { // depends on SDK prepare
+			return err
+		}
 	}
 	return nil
 }

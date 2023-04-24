@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/antchfx/xmlquery v1.3.12
+	github.com/cheggaaa/pb/v3 v3.1.2
 	github.com/codingsince1985/checksum v1.2.6
 	github.com/dustin/go-humanize v1.0.1
 	github.com/essentialkaos/go-jar v1.0.6
@@ -35,6 +36,7 @@ require (
 require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
+	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/antchfx/xpath v1.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -51,7 +53,7 @@ require (
 	github.com/klauspost/pgzip v1.2.5 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
-	github.com/mattn/go-runewidth v0.0.9 // indirect
+	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -59,6 +61,7 @@ require (
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pierrec/lz4/v4 v4.1.14 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -67,7 +70,7 @@ require (
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	golang.org/x/crypto v0.4.0 // indirect
 	golang.org/x/net v0.7.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/sys v0.7.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

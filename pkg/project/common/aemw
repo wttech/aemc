@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-VERSION=${AEM_CLI_VERSION:-"1.2.1"}
+VERSION=${AEM_CLI_VERSION:-"1.2.2"}
 
 # Define API
 # ==========

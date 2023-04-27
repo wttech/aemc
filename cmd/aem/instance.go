@@ -226,7 +226,7 @@ func (c *CLI) instanceKillCmd() *cobra.Command {
 }
 
 func (c *CLI) instanceDeleteCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "delete",
 		Aliases: []string{"del", "destroy", "remove"},
 		Short:   "Deletes AEM instance(s)",
@@ -235,6 +235,14 @@ func (c *CLI) instanceDeleteCmd() *cobra.Command {
 			if err != nil {
 				c.Error(err)
 				return
+			}
+			kill, _ := cmd.Flags().GetBool("kill")
+			if kill {
+				_, err := c.aem.InstanceManager().Kill(localInstances)
+				if err != nil {
+					c.Error(err)
+					return
+				}
 			}
 			deletedInstances, err := c.aem.InstanceManager().Delete(localInstances)
 			if err != nil {
@@ -249,6 +257,8 @@ func (c *CLI) instanceDeleteCmd() *cobra.Command {
 			}
 		},
 	}
+	cmd.Flags().BoolP("kill", "k", false, "Kill running")
+	return cmd
 }
 
 func (c *CLI) instanceAwaitCmd() *cobra.Command {

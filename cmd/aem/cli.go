@@ -243,9 +243,9 @@ func (c *CLI) printCommandResult() {
 func (c *CLI) printDataValue() {
 	value, ok := c.outputResponse.Data[c.outputValue]
 	if !ok {
-		println("<undefined>")
+		fmt.Println("<undefined>")
 	} else {
-		println(fmtx.MarshalText(value))
+		fmt.Println(fmtx.MarshalText(value))
 	}
 }
 

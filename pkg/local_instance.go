@@ -138,7 +138,7 @@ func (li LocalInstance) overrideDirsChecksum() (string, error) {
 }
 
 func (li LocalInstance) LockDir() string {
-	return pathx.Canonical(fmt.Sprintf("%s/%s/lock", li.WorkDir(), common.VarDirName))
+	return pathx.Canonical(fmt.Sprintf("%s/%s/state", li.WorkDir(), common.VarDirName))
 }
 
 func (li LocalInstance) QuickstartDir() string {

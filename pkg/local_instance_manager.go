@@ -177,8 +177,9 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 func (im *InstanceManager) Import(instances []Instance) ([]Instance, error) {
 	imported := []Instance{}
 	log.Info(InstancesMsg(instances, "importing"))
+
 	for _, i := range instances {
-		if !i.local.IsImported() {
+		if !i.local.IsCreated() {
 			err := i.local.Import()
 			if err != nil {
 				return nil, err

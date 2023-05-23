@@ -116,7 +116,7 @@ func (li LocalInstance) Name() string {
 }
 
 func (li LocalInstance) Dir() string {
-	if len(li.UnpackDir) > 0 {
+	if li.UnpackDir != "" {
 		return li.UnpackDir
 	}
 	return pathx.Canonical(fmt.Sprintf("%s/%s", li.LocalOpts().UnpackDir, li.Name()))
@@ -226,9 +226,14 @@ func (li LocalInstance) Create() error {
 func (li LocalInstance) Import() error {
 	log.Infof("%s > importing", li.instance.ID())
 
-	if err := pathx.Ensure(li.Dir()); err != nil {
-		return fmt.Errorf("%s > cannot create its dir: %w", li.instance.ID(), err)
+	if !pathx.Exists(li.Dir()) {
+		return fmt.Errorf("%s >  %s dir doesn't exist", li.instance.ID(), li.Dir())
 	}
+
+	if !pathx.Exists(fmt.Sprintf("%s/crx-quickstart", li.Dir())) {
+		return fmt.Errorf("%s >  crx-quickstart folder is missing in unpack_dir: %s", li.instance.ID(), li.Dir())
+	}
+
 	if err := li.createLock().Lock(); err != nil {
 		return err
 	}
@@ -329,10 +334,6 @@ func (li LocalInstance) correctFiles() error {
 }
 
 func (li LocalInstance) IsCreated() bool {
-	return li.createLock().IsLocked()
-}
-
-func (li LocalInstance) IsImported() bool {
 	return li.createLock().IsLocked()
 }
 

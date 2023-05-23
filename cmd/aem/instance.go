@@ -24,7 +24,7 @@ func (c *CLI) instanceCmd() *cobra.Command {
 	cmd.AddCommand(c.instanceAwaitCmd())
 	cmd.AddCommand(c.instanceBackupCmd())
 	cmd.AddCommand(c.instanceInitCmd())
-	cmd.AddCommand(c.instanceImport())
+	cmd.AddCommand(c.instanceImportCmd())
 	return cmd
 }
 
@@ -60,7 +60,7 @@ func (c *CLI) instanceLaunchCmd() *cobra.Command {
 	}
 }
 
-func (c *CLI) instanceImport() *cobra.Command {
+func (c *CLI) instanceImportCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:     "import",
 		Short:   "Imports local AEM instance(s)",

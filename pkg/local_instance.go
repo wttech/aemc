@@ -37,6 +37,7 @@ type LocalInstance struct {
 	EnvVars    []string
 	SecretVars []string
 	SlingProps []string
+	UnpackDir  string
 }
 
 type LocalInstanceState struct {
@@ -115,7 +116,7 @@ func (li LocalInstance) Name() string {
 }
 
 func (li LocalInstance) Dir() string {
-	return pathx.Canonical(fmt.Sprintf("%s/%s", li.LocalOpts().UnpackDir, li.Name()))
+	return pathx.Canonical(fmt.Sprintf("%s/%s", li.UnpackDir, li.Name()))
 }
 
 func (li LocalInstance) WorkDir() string {
@@ -219,6 +220,19 @@ func (li LocalInstance) Create() error {
 	return nil
 }
 
+func (li LocalInstance) Import() error {
+	log.Infof("%s > importing", li.instance.ID())
+
+	if err := pathx.Ensure(li.Dir()); err != nil {
+		return fmt.Errorf("%s > cannot create its dir: %w", li.instance.ID(), err)
+	}
+	if err := li.createLock().Lock(); err != nil {
+		return err
+	}
+	log.Infof("%s > imported", li.instance.ID())
+	return nil
+}
+
 func (li LocalInstance) createLock() osx.Lock[localInstanceCreateLock] {
 	return osx.NewLock(fmt.Sprintf("%s/create.yml", li.LockDir()), func() (localInstanceCreateLock, error) {
 		var zero localInstanceCreateLock
@@ -312,6 +326,10 @@ func (li LocalInstance) correctFiles() error {
 }
 
 func (li LocalInstance) IsCreated() bool {
+	return li.createLock().IsLocked()
+}
+
+func (li LocalInstance) IsImported() bool {
 	return li.createLock().IsLocked()
 }
 

@@ -174,6 +174,21 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 	return created, nil
 }
 
+func (im *InstanceManager) Import(instances []Instance) ([]Instance, error) {
+	imported := []Instance{}
+	log.Info(InstancesMsg(instances, "importing"))
+	for _, i := range instances {
+		if !i.local.IsImported() {
+			err := i.local.Import()
+			if err != nil {
+				return nil, err
+			}
+			imported = append(imported, i)
+		}
+	}
+	return imported, nil
+}
+
 func (im *InstanceManager) StartOne(instance Instance) (bool, error) {
 	started, err := im.Start([]Instance{instance})
 	return len(started) > 0, err

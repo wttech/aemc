@@ -24,6 +24,7 @@ func (c *CLI) instanceCmd() *cobra.Command {
 	cmd.AddCommand(c.instanceAwaitCmd())
 	cmd.AddCommand(c.instanceBackupCmd())
 	cmd.AddCommand(c.instanceInitCmd())
+	cmd.AddCommand(c.instanceImport())
 	return cmd
 }
 
@@ -55,6 +56,24 @@ func (c *CLI) instanceLaunchCmd() *cobra.Command {
 			} else {
 				c.Ok("no instance(s) to launch")
 			}
+		},
+	}
+}
+
+func (c *CLI) instanceImport() *cobra.Command {
+	return &cobra.Command{
+		Use:     "import",
+		Short:   "Imports local AEM instance(s)",
+		Aliases: []string{},
+		Run: func(cmd *cobra.Command, args []string) {
+			localInstances := c.aem.InstanceManager().Locals()
+
+			importedInstances, err := c.aem.InstanceManager().Import(localInstances)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("imported", importedInstances)
 		},
 	}
 }

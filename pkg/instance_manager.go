@@ -136,12 +136,7 @@ func (im *InstanceManager) newFromConfig(id string) *Instance {
 		i.local.EnvVars = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.env_vars", id))
 		i.local.SecretVars = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.secret_vars", id))
 		i.local.SlingProps = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.sling_props", id))
-		localUnpackDir := cv.GetString(fmt.Sprintf("instance.config.%s.unpack_dir", id))
-		if len(strings.TrimSpace(localUnpackDir)) > 0 {
-			i.local.UnpackDir = localUnpackDir
-		} else {
-			i.local.UnpackDir = im.LocalOpts.UnpackDir
-		}
+		i.local.UnpackDir = cv.GetString(fmt.Sprintf("instance.config.%s.unpack_dir", id))
 	}
 	return i
 }

@@ -116,7 +116,10 @@ func (li LocalInstance) Name() string {
 }
 
 func (li LocalInstance) Dir() string {
-	return pathx.Canonical(fmt.Sprintf("%s/%s", li.UnpackDir, li.Name()))
+	if len(li.UnpackDir) > 0 {
+		return li.UnpackDir
+	}
+	return pathx.Canonical(fmt.Sprintf("%s/%s", li.LocalOpts().UnpackDir, li.Name()))
 }
 
 func (li LocalInstance) WorkDir() string {

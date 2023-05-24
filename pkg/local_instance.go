@@ -235,11 +235,11 @@ func (li LocalInstance) Import() error {
 	log.Infof("%s > importing", li.instance.ID())
 
 	if !pathx.Exists(li.Dir()) {
-		return fmt.Errorf("%s >  %s dir doesn't exist", li.instance.ID(), li.Dir())
+		return fmt.Errorf("%s > %s dir does not exist", li.instance.ID(), li.Dir())
 	}
 
-	if !pathx.Exists(fmt.Sprintf("%s/crx-quickstart", li.Dir())) {
-		return fmt.Errorf("%s >  crx-quickstart folder is missing in unpack_dir: %s", li.instance.ID(), li.Dir())
+	if !pathx.Exists(li.QuickstartDir()) {
+		return fmt.Errorf("%s > quickstart dir does not exist at path '%s'", li.instance.ID(), li.Dir())
 	}
 
 	if err := li.adapt(); err != nil {

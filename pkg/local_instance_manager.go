@@ -188,16 +188,23 @@ func (im *InstanceManager) Import(instances []Instance) ([]Instance, error) {
 		}
 	}
 
-	restarted := []Instance{}
+	running := []Instance{}
 	for _, i := range imported {
 		if i.local.IsRunning() {
-			i.local.Restart()
-			restarted = append(restarted, i)
+			running = append(running, i)
 		}
 	}
 
-	if err := im.AwaitStarted(restarted); err != nil {
-		return imported, err
+	if len(running) > 0 {
+		log.Info(InstancesMsg(running, "restarting after import due to instance was running"))
+
+		for _, i := range running {
+			i.local.Restart()
+		}
+
+		if err := im.AwaitStarted(running); err != nil {
+			return imported, err
+		}
 	}
 
 	return imported, nil

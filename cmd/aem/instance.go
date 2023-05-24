@@ -73,6 +73,7 @@ func (c *CLI) instanceImportCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+
 			c.SetOutput("imported", importedInstances)
 		},
 	}

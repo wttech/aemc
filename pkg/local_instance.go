@@ -196,6 +196,20 @@ func (li LocalInstance) CheckPassword() error {
 	return nil
 }
 
+func (li LocalInstance) adapt() error {
+	if err := li.copyCbpExecutable(); err != nil {
+		return err
+	}
+	if err := li.correctFiles(); err != nil {
+		return err
+	}
+	if err := li.createLock().Lock(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (li LocalInstance) Create() error {
 	log.Infof("%s > creating", li.instance.ID())
 	if err := pathx.DeleteIfExists(li.Dir()); err != nil {
@@ -210,13 +224,7 @@ func (li LocalInstance) Create() error {
 	if err := li.copyLicenseFile(); err != nil {
 		return err
 	}
-	if err := li.copyCbpExecutable(); err != nil {
-		return err
-	}
-	if err := li.correctFiles(); err != nil {
-		return err
-	}
-	if err := li.createLock().Lock(); err != nil {
+	if err := li.adapt(); err != nil {
 		return err
 	}
 	log.Infof("%s > created", li.instance.ID())
@@ -234,10 +242,12 @@ func (li LocalInstance) Import() error {
 		return fmt.Errorf("%s >  crx-quickstart folder is missing in unpack_dir: %s", li.instance.ID(), li.Dir())
 	}
 
-	if err := li.createLock().Lock(); err != nil {
+	if err := li.adapt(); err != nil {
 		return err
 	}
+
 	log.Infof("%s > imported", li.instance.ID())
+
 	return nil
 }
 

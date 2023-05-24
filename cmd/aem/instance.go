@@ -63,7 +63,7 @@ func (c *CLI) instanceLaunchCmd() *cobra.Command {
 func (c *CLI) instanceImportCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:     "import",
-		Short:   "Imports local AEM instance(s)",
+		Short:   "Imports AEM instance(s)",
 		Aliases: []string{},
 		Run: func(cmd *cobra.Command, args []string) {
 			localInstances := c.aem.InstanceManager().Locals()

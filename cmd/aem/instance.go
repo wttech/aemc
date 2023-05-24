@@ -75,6 +75,12 @@ func (c *CLI) instanceImportCmd() *cobra.Command {
 			}
 
 			c.SetOutput("imported", importedInstances)
+
+			if len(importedInstances) > 0 {
+				c.Changed(fmt.Sprintf("imported instance(s) (%d)", len(importedInstances)))
+			} else {
+				c.Ok("no instance(s) to import")
+			}
 		},
 	}
 }

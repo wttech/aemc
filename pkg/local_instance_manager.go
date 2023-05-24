@@ -205,7 +205,10 @@ func (im *InstanceManager) Import(instances []Instance) ([]Instance, error) {
 		log.Info(InstancesMsg(running, " imported but already running - restarting to apply configuration"))
 
 		for _, i := range running {
-			i.local.Restart()
+			err := i.local.Restart()
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		if err := im.AwaitStarted(running); err != nil {

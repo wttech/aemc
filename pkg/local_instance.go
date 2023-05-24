@@ -234,12 +234,8 @@ func (li LocalInstance) Create() error {
 func (li LocalInstance) Import() error {
 	log.Infof("%s > importing", li.instance.ID())
 
-	if !pathx.Exists(li.Dir()) {
-		return fmt.Errorf("%s > %s dir does not exist", li.instance.ID(), li.Dir())
-	}
-
 	if !pathx.Exists(li.QuickstartDir()) {
-		return fmt.Errorf("%s > quickstart dir does not exist at path '%s'", li.instance.ID(), li.Dir())
+		return fmt.Errorf("%s > quickstart dir to be imported does not exist at path '%s'", li.instance.ID(), li.Dir())
 	}
 
 	if err := li.adapt(); err != nil {
@@ -763,12 +759,12 @@ func (li LocalInstance) Status() (LocalStatus, error) {
 }
 
 func (li LocalInstance) IsRunning() bool {
-	isRunning, err := li.IsRunningStrict()
+	running, err := li.IsRunningStrict()
 	if err != nil {
 		return false
 	}
 
-	return isRunning
+	return running
 }
 
 func (li LocalInstance) IsRunningStrict() (bool, error) {

@@ -174,6 +174,51 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 	return created, nil
 }
 
+func (im *InstanceManager) Import(instances []Instance) ([]Instance, error) {
+	imported := []Instance{}
+	log.Info(InstancesMsg(instances, "importing"))
+
+	for _, i := range instances {
+		if !i.local.IsCreated() {
+			err := i.local.Import()
+			if err != nil {
+				return nil, err
+			}
+			imported = append(imported, i)
+		}
+	}
+
+	running := []Instance{}
+	for _, i := range imported {
+		isRunning, err := i.local.IsRunningStrict()
+
+		if err != nil {
+			return nil, fmt.Errorf("%s > cannot check status of imported instance: %w", i.ID(), err)
+		}
+
+		if isRunning {
+			running = append(running, i)
+		}
+	}
+
+	if len(running) > 0 {
+		log.Info(InstancesMsg(running, " imported but already running - restarting to apply configuration"))
+
+		for _, i := range running {
+			err := i.local.Restart()
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if err := im.AwaitStarted(running); err != nil {
+			return imported, err
+		}
+	}
+
+	return imported, nil
+}
+
 func (im *InstanceManager) StartOne(instance Instance) (bool, error) {
 	started, err := im.Start([]Instance{instance})
 	return len(started) > 0, err

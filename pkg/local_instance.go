@@ -763,14 +763,25 @@ func (li LocalInstance) Status() (LocalStatus, error) {
 }
 
 func (li LocalInstance) IsRunning() bool {
-	if !li.IsCreated() {
-		return false
-	}
-	status, err := li.Status()
+	isRunning, err := li.IsRunningStrict()
 	if err != nil {
 		return false
 	}
-	return status == LocalStatusRunning
+
+	return isRunning
+}
+
+func (li LocalInstance) IsRunningStrict() (bool, error) {
+	if !li.IsCreated() {
+		return false, nil
+	}
+
+	status, err := li.Status()
+	if err != nil {
+		return false, err
+	}
+
+	return status == LocalStatusRunning, nil
 }
 
 func (li LocalInstance) Delete() error {

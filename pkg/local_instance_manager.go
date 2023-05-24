@@ -190,13 +190,19 @@ func (im *InstanceManager) Import(instances []Instance) ([]Instance, error) {
 
 	running := []Instance{}
 	for _, i := range imported {
-		if i.local.IsRunning() {
+		isRunning, err := i.local.IsRunningStrict()
+
+		if err != nil {
+			return nil, fmt.Errorf("%s > cannot check status of imported instance: %w", i.ID(), err)
+		}
+
+		if isRunning {
 			running = append(running, i)
 		}
 	}
 
 	if len(running) > 0 {
-		log.Info(InstancesMsg(running, "restarting after import due to instance was running"))
+		log.Info(InstancesMsg(running, " imported but already running - restarting to apply configuration"))
 
 		for _, i := range running {
 			i.local.Restart()

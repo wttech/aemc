@@ -235,7 +235,7 @@ func (li LocalInstance) Import() error {
 	log.Infof("%s > importing", li.instance.ID())
 
 	if !pathx.Exists(li.QuickstartDir()) {
-		return fmt.Errorf("%s > quickstart dir to be imported does not exist at path '%s'", li.instance.ID(), li.Dir())
+		return fmt.Errorf("%s > quickstart dir to be imported does not exist at path '%s'", li.instance.ID(), li.QuickstartDir())
 	}
 
 	if err := li.adapt(); err != nil {

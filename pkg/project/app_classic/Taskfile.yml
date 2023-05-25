@@ -173,7 +173,7 @@ tasks:
       AEM_BUILD_JAVA_HOME:
         sh: sh aemw instance init --output-value javaHome
     cmds:
-      - JAVA_HOME=AEM_BUILD_JAVA_HOME mvn clean package $AEM_BUILD_ARGS
+      - JAVA_HOME=$AEM_BUILD_JAVA_HOME mvn clean package $AEM_BUILD_ARGS
 
   aem:deploy:
     desc: deploy AEM application

@@ -28,7 +28,13 @@ Ensure having installed [Go](https://go.dev/dl/) then:
 Use this method to develop comfortably the tool.
 
 1. Clone repository: `git clone git@github.com:wttech/aemc.git`
-2. Enter cloned directory and run command: `make`
+2. Enter cloned directory and run command: `make`*
+
+*When using Git Bash on Windows, you will first need to add `make` to your Git Bash installation:
+1. Go to [ezwinports](https://sourceforge.net/projects/ezwinports/files/).
+2. Download `make-x.x.x-without-guile-w32-bin.zip` (get the newest version without guile).
+3. Extract zip.
+4. Copy the contents to your `Git\mingw64\` merging the folders, but do NOT overwrite/replace any existing files.
 
 ### Go installation
 

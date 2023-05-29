@@ -25,8 +25,6 @@ type PackageManager struct {
 func NewPackageManager(res *Instance) *PackageManager {
 	cv := res.manager.aem.config.Values()
 
-	cv.SetDefault("instance.package.install_recursive", true)
-
 	return &PackageManager{
 		instance: res,
 

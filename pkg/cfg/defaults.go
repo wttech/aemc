@@ -74,6 +74,7 @@ func (c *Config) setDefaults() {
 
 	v.SetDefault("instance.status.timeout", time.Millisecond*500)
 
+	v.SetDefault("instance.package.install_recursive", true)
 	v.SetDefault("instance.package.snapshot_deploy_skipping", true)
 	v.SetDefault("instance.package.snapshot_patterns", []string{"**/*-SNAPSHOT.zip"})
 	v.SetDefault("instance.package.toggled_workflows", []string{})

@@ -35,6 +35,7 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
   * [Context-specific customization](#context-specific-customization)
     * [Improving performance](#improving-performance)
     * [Increasing verbosity](#increasing-verbosity)
+    * [Installing content packages](#installing-content-packages)
 * [Contributing](#contributing)
 * [License](#license)
 
@@ -270,7 +271,7 @@ instance:
 
   # HTTP client settings
   http:
-    timeout: 5m
+    timeout: 10m
     debug: false
     disable_warn: true
 
@@ -376,7 +377,7 @@ instance:
       lib_root: /libs/settings/workflow/launcher
       config_root: /conf/global/settings/workflow/launcher
       toggle_retry:
-        timeout: 5m
+        timeout: 10m
         delay: 10s
 
 java:
@@ -472,6 +473,19 @@ By default, fail-safe options are in use. However, consider using the configurat
   Setting this environment variable will instruct the tool to request from the AEM instance descriptive information about the recently executed command subject.
   For example, if a recently executed command was `sh aemw package deploy my-package.zip -A` the AEM Compose tool after doing the actual package deployment will request from CRX Package Manager the exact information about just deployed package.
   This feature is beneficial for clarity and debugging purposes.
+
+### Installing content packages
+
+To install larger AEM packages that may include content pages, assets, and more, you can adjust the HTTP timeout setting. 
+By default, the timeout is set to `10m`, but you have the option to increase it (e.g., to `3h`) or disable it completely (by using `0`).
+
+To set the timeout for a single AEMC command, use the following syntax:
+
+```shell
+AEM_INSTANCE_HTTP_TIMEOUT=0 sh aemw package deploy --url my-package.zip
+```
+
+It's important to be aware that AEMaaCS also has its own timeout for requests made to the Package Manager UI. For detailed information, please refer to the [documentation](https://experienceleague.adobe.com/docs/experience-manager-cloud-service/content/implementing/developer-tools/package-manager.html?lang=en#aemaacs-packages).
 
 # Contributing
 

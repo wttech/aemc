@@ -52,7 +52,7 @@ instance:
 
   # HTTP client settings
   http:
-    timeout: 5m
+    timeout: 10m
     debug: false
     disable_warn: true
 

@@ -52,7 +52,7 @@ instance:
 
   # HTTP client settings
   http:
-    timeout: 5m
+    timeout: 10m
     debug: false
     disable_warn: true
 
@@ -159,7 +159,7 @@ instance:
       lib_root: /libs/settings/workflow/launcher
       config_root: /conf/global/settings/workflow/launcher
       toggle_retry:
-        timeout: 5m
+        timeout: 10m
         delay: 10s
 
 java:

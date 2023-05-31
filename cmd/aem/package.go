@@ -137,12 +137,19 @@ func (c *CLI) pkgInstallCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			force, _ := cmd.Flags().GetBool("force")
 			installed, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				p, err := pkgByFlags(cmd, instance)
 				if err != nil {
 					return nil, err
 				}
-				changed, err := p.InstallWithChanged()
+				changed := false
+				if force {
+					err = p.Install()
+					changed = true
+				} else {
+					changed, err = p.InstallWithChanged()
+				}
 				if err != nil {
 					return nil, err
 				}
@@ -169,6 +176,7 @@ func (c *CLI) pkgInstallCmd() *cobra.Command {
 		},
 	}
 	pkgDefineFlags(cmd)
+	cmd.Flags().BoolP("force", "f", false, "Install even when already installed")
 	return cmd
 }
 

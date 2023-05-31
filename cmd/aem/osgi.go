@@ -47,8 +47,15 @@ func (c *CLI) osgiBundleInstall() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			force, _ := cmd.Flags().GetBool("force")
 			installed, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
-				changed, err := instance.OSGI().BundleManager().InstallWithChanged(path)
+				changed := false
+				if force {
+					err = instance.OSGI().BundleManager().Install(path)
+					changed = true
+				} else {
+					changed, err = instance.OSGI().BundleManager().InstallWithChanged(path)
+				}
 				if err != nil {
 					return nil, err
 				}
@@ -80,6 +87,7 @@ func (c *CLI) osgiBundleInstall() *cobra.Command {
 		},
 	}
 	osgiBundleDefineFileFlag(cmd)
+	cmd.Flags().BoolP("force", "f", false, "Install even when already installed")
 	return cmd
 }
 

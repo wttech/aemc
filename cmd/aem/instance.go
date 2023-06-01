@@ -24,6 +24,7 @@ func (c *CLI) instanceCmd() *cobra.Command {
 	cmd.AddCommand(c.instanceAwaitCmd())
 	cmd.AddCommand(c.instanceBackupCmd())
 	cmd.AddCommand(c.instanceInitCmd())
+	cmd.AddCommand(c.instanceImportCmd())
 	return cmd
 }
 
@@ -54,6 +55,31 @@ func (c *CLI) instanceLaunchCmd() *cobra.Command {
 				c.Changed(fmt.Sprintf("launched instance(s) (%d created, %d started)", len(createdInstances), len(startedInstances)))
 			} else {
 				c.Ok("no instance(s) to launch")
+			}
+		},
+	}
+}
+
+func (c *CLI) instanceImportCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:     "import",
+		Short:   "Imports AEM instance(s)",
+		Aliases: []string{},
+		Run: func(cmd *cobra.Command, args []string) {
+			localInstances := c.aem.InstanceManager().Locals()
+
+			importedInstances, err := c.aem.InstanceManager().Import(localInstances)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+
+			c.SetOutput("imported", importedInstances)
+
+			if len(importedInstances) > 0 {
+				c.Changed(fmt.Sprintf("imported instance(s) (%d)", len(importedInstances)))
+			} else {
+				c.Ok("no instance(s) to import")
 			}
 		},
 	}
@@ -226,7 +252,7 @@ func (c *CLI) instanceKillCmd() *cobra.Command {
 }
 
 func (c *CLI) instanceDeleteCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "delete",
 		Aliases: []string{"del", "destroy", "remove"},
 		Short:   "Deletes AEM instance(s)",
@@ -235,6 +261,14 @@ func (c *CLI) instanceDeleteCmd() *cobra.Command {
 			if err != nil {
 				c.Error(err)
 				return
+			}
+			kill, _ := cmd.Flags().GetBool("kill")
+			if kill {
+				_, err := c.aem.InstanceManager().Kill(localInstances)
+				if err != nil {
+					c.Error(err)
+					return
+				}
 			}
 			deletedInstances, err := c.aem.InstanceManager().Delete(localInstances)
 			if err != nil {
@@ -249,6 +283,8 @@ func (c *CLI) instanceDeleteCmd() *cobra.Command {
 			}
 		},
 	}
+	cmd.Flags().BoolP("kill", "k", false, "Kill running")
+	return cmd
 }
 
 func (c *CLI) instanceAwaitCmd() *cobra.Command {
@@ -309,6 +345,21 @@ func (c *CLI) instanceInitCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+
+			javaHome, err := c.aem.JavaOpts().FindHomeDir()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("javaHome", javaHome)
+
+			javaExecutable, err := c.aem.JavaOpts().Executable()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("javaExecutable", javaExecutable)
+
 			c.SetOutput("initialized", true)
 			c.Changed("initialized prerequisites for instance(s)")
 		},

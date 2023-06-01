@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg"
 	"github.com/wttech/aemc/pkg/common/httpx"
@@ -139,12 +140,19 @@ func (c *CLI) pkgInstallCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			force, _ := cmd.Flags().GetBool("force")
 			installed, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				p, err := pkgByFlags(cmd, instance)
 				if err != nil {
 					return nil, err
 				}
-				changed, err := p.InstallWithChanged()
+				changed := false
+				if force {
+					err = p.Install()
+					changed = true
+				} else {
+					changed, err = p.InstallWithChanged()
+				}
 				if err != nil {
 					return nil, err
 				}
@@ -171,6 +179,7 @@ func (c *CLI) pkgInstallCmd() *cobra.Command {
 		},
 	}
 	pkgDefineFlags(cmd)
+	cmd.Flags().BoolP("force", "f", false, "Install even when already installed")
 	return cmd
 }
 
@@ -487,10 +496,14 @@ func (c *CLI) pkgPathByFlags(cmd *cobra.Command) (string, error) {
 		if !strings.HasSuffix(fileName, ".zip") {
 			return "", fmt.Errorf("package URL does not contain file name but it should '%s'", url)
 		}
-		path := c.aem.BaseOpts().TmpDir + "/" + fileName
-		err := httpx.DownloadOnce(url, path)
-		if err != nil {
-			return "", err
+		path := c.aem.BaseOpts().TmpDir + "/package/" + fileName
+		if !pathx.Exists(path) {
+			log.Infof("downloading package from URL '%s' to file '%s'", url, path)
+			err := httpx.DownloadOnce(url, path)
+			if err != nil {
+				return "", err
+			}
+			log.Infof("downloaded package from URL '%s' to file '%s'", url, path)
 		}
 		return path, nil
 	}

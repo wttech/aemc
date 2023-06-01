@@ -44,6 +44,19 @@ func Between(str string, start string, end string) (result string) {
 	return str[s : s+e]
 }
 
+func BetweenOrSame(str string, start string, end string) string {
+	s := strings.Index(str, start)
+	if s == -1 {
+		return str
+	}
+	s += len(start)
+	e := strings.Index(str[s:], end)
+	if e == -1 {
+		return str
+	}
+	return str[s : s+e]
+}
+
 func Before(value string, a string) string {
 	pos := strings.Index(value, a)
 	if pos == -1 {
@@ -86,4 +99,11 @@ func AfterLast(value string, a string) string {
 
 func HumanCase(str string) string {
 	return strings.ReplaceAll(strcase.ToSnake(str), "_", " ")
+}
+
+func AddPrefix(str string, prefix string) string {
+	if strings.HasPrefix(str, prefix) {
+		return str
+	}
+	return prefix + str
 }

@@ -1,5 +1,6 @@
 FROM rockylinux:8
 ENV DISPATCHER_VERSION=4.3.5
+ENV DISP_ID docker
 
 # Install required OS packages
 RUN yum -y install httpd wget mod_ssl
@@ -12,7 +13,7 @@ RUN mkdir -p /tmp/dispatcher && cd /tmp/dispatcher && \
     chmod 0755 /usr/lib64/httpd/modules/mod_dispatcher.so
 
 # Project-specific source code
-COPY src /etc/httpd
+COPY target/src /etc/httpd
 
 # Local environment-specific variables
 COPY docker/src/conf.d/custom.conf /etc/httpd/conf.d/custom.conf
@@ -27,8 +28,8 @@ COPY docker/src/conf.d/proxy/mock.proxy /etc/httpd/conf.d/proxy/mock.proxy
 COPY docker/src/conf.d/rewrites/xforwarded_forcessl_rewrite.rules /etc/httpd/conf.d/rewrites/xforwarded_forcessl_rewrite.rules
 
 # Initialize doc roots
-
-RUN mkdir -p /var/www/localhost/author/cache /var/www/localhost/publish/cache /mnt/var/www/default
+RUN mkdir -p /var/www/cache/author /var/www/cache/publish /mnt/var/www/default && \
+    chown apache:apache -R /var/www /mnt/var/www
 
 # Fix for 'SSLCertificateFile: file '/etc/pki/tls/certs/localhost.crt' does not exist or is empty'
 RUN /usr/libexec/httpd-ssl-gencerts

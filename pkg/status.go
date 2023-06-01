@@ -48,11 +48,10 @@ func (sm Status) SystemProps() (map[string]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s > cannot read system properties", sm.instance.ID())
 	}
-	var results []string
-	if err = fmtx.UnmarshalJSON(response.RawBody(), &results); err != nil {
-		return nil, fmt.Errorf("%s > cannot parse system properties response: %w", sm.instance.ID(), err)
+	props, err := sm.parseProperties(response.RawBody())
+	if err != nil {
+		return nil, fmt.Errorf("%s > cannot parse system properties: %w", sm.instance.ID(), err)
 	}
-	props := parseProperties(results)
 	return props, nil
 }
 
@@ -61,11 +60,10 @@ func (sm Status) SlingProps() (map[string]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s > cannot read Sling properties", sm.instance.ID())
 	}
-	var results []string
-	if err = fmtx.UnmarshalJSON(response.RawBody(), &results); err != nil {
-		return nil, fmt.Errorf("%s > cannot parse Sling properties response: %w", sm.instance.ID(), err)
+	props, err := sm.parseProperties(response.RawBody())
+	if err != nil {
+		return nil, fmt.Errorf("%s > cannot parse Sling properties: %w", sm.instance.ID(), err)
 	}
-	props := parseProperties(results)
 	return props, nil
 }
 
@@ -74,15 +72,23 @@ func (sm Status) SlingSettings() (map[string]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s > cannot read Sling settings", sm.instance.ID())
 	}
-	var results []string
-	if err = fmtx.UnmarshalJSON(response.RawBody(), &results); err != nil {
-		return nil, fmt.Errorf("%s > cannot parse Sling settings response : %w", sm.instance.ID(), err)
+	props, err := sm.parseProperties(response.RawBody())
+	if err != nil {
+		return nil, fmt.Errorf("%s > cannot parse Sling settings: %w", sm.instance.ID(), err)
 	}
-	props := parseProperties(results)
 	return props, nil
 }
 
-func parseProperties(results []string) map[string]string {
+func (sm Status) parseProperties(response io.ReadCloser) (map[string]string, error) {
+	responseBytes, err := io.ReadAll(response)
+	if err != nil {
+		return nil, fmt.Errorf("%s > cannot parse properties: %w", sm.instance.ID(), err)
+	}
+	responseString := strings.ReplaceAll(string(responseBytes), "\\", "\\\\")
+	var results []string
+	if err = fmtx.UnmarshalJSON(io.NopCloser(strings.NewReader(responseString)), &results); err != nil {
+		return nil, fmt.Errorf("%s > cannot parse properties : %w", sm.instance.ID(), err)
+	}
 	results = lo.Filter(results, func(r string, _ int) bool {
 		return strings.Count(strings.TrimSpace(r), " = ") == 1
 	})
@@ -90,7 +96,7 @@ func parseProperties(results []string) map[string]string {
 		parts := strings.Split(strings.TrimSpace(r), " = ")
 		return parts[0], parts[1]
 	})
-	return resultMap
+	return resultMap, nil
 }
 
 func (sm Status) TimeLocation() (*time.Location, error) {

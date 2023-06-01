@@ -37,6 +37,7 @@ type LocalInstance struct {
 	EnvVars    []string
 	SecretVars []string
 	SlingProps []string
+	UnpackDir  string
 }
 
 type LocalInstanceState struct {
@@ -115,6 +116,9 @@ func (li LocalInstance) Name() string {
 }
 
 func (li LocalInstance) Dir() string {
+	if li.UnpackDir != "" {
+		return li.UnpackDir
+	}
 	return pathx.Canonical(fmt.Sprintf("%s/%s", li.LocalOpts().UnpackDir, li.Name()))
 }
 
@@ -171,17 +175,7 @@ var (
 	LocalInstancePasswordRegex = regexp.MustCompile("^[a-zA-Z0-9_]{5,}$")
 )
 
-func (li LocalInstance) Validate() error {
-	if err := li.checkPassword(); err != nil {
-		return err
-	}
-	if err := li.checkRecreationNeeded(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (li LocalInstance) checkRecreationNeeded() error {
+func (li LocalInstance) CheckRecreationNeeded() error {
 	createLock := li.createLock()
 	if createLock.IsLocked() {
 		state, err := createLock.State()
@@ -195,10 +189,24 @@ func (li LocalInstance) checkRecreationNeeded() error {
 	return nil
 }
 
-func (li LocalInstance) checkPassword() error {
+func (li LocalInstance) CheckPassword() error {
 	if !LocalInstancePasswordRegex.MatchString(li.instance.password) {
 		return fmt.Errorf("%s > password does not match regex '%s'", li.instance.ID(), LocalInstancePasswordRegex)
 	}
+	return nil
+}
+
+func (li LocalInstance) adapt() error {
+	if err := li.copyCbpExecutable(); err != nil {
+		return err
+	}
+	if err := li.correctFiles(); err != nil {
+		return err
+	}
+	if err := li.createLock().Lock(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -216,16 +224,26 @@ func (li LocalInstance) Create() error {
 	if err := li.copyLicenseFile(); err != nil {
 		return err
 	}
-	if err := li.copyCbpExecutable(); err != nil {
-		return err
-	}
-	if err := li.correctFiles(); err != nil {
-		return err
-	}
-	if err := li.createLock().Lock(); err != nil {
+	if err := li.adapt(); err != nil {
 		return err
 	}
 	log.Infof("%s > created", li.instance.ID())
+	return nil
+}
+
+func (li LocalInstance) Import() error {
+	log.Infof("%s > importing", li.instance.ID())
+
+	if !pathx.Exists(li.QuickstartDir()) {
+		return fmt.Errorf("%s > quickstart dir to be imported does not exist at path '%s'", li.instance.ID(), li.QuickstartDir())
+	}
+
+	if err := li.adapt(); err != nil {
+		return err
+	}
+
+	log.Infof("%s > imported", li.instance.ID())
+
 	return nil
 }
 
@@ -349,7 +367,7 @@ func (li LocalInstance) Start() error {
 		}
 	}
 	log.Infof("%s > starting", li.instance.ID())
-	if err := li.checkPortsOpen(); err != nil {
+	if err := li.CheckPortsOpen(); err != nil {
 		return err
 	}
 	cmd, err := li.binScriptCommand(LocalInstanceScriptStart, true)
@@ -482,7 +500,7 @@ func (li LocalInstance) recreateSecretsDir() error {
 	return nil
 }
 
-func (li LocalInstance) checkPortsOpen() error {
+func (li LocalInstance) CheckPortsOpen() error {
 	host := li.instance.http.Hostname()
 	ports := []string{li.instance.http.Port()}
 	for _, port := range ports {
@@ -741,14 +759,25 @@ func (li LocalInstance) Status() (LocalStatus, error) {
 }
 
 func (li LocalInstance) IsRunning() bool {
-	if !li.IsCreated() {
-		return false
-	}
-	status, err := li.Status()
+	running, err := li.IsRunningStrict()
 	if err != nil {
 		return false
 	}
-	return status == LocalStatusRunning
+
+	return running
+}
+
+func (li LocalInstance) IsRunningStrict() (bool, error) {
+	if !li.IsCreated() {
+		return false, nil
+	}
+
+	status, err := li.Status()
+	if err != nil {
+		return false, err
+	}
+
+	return status == LocalStatusRunning, nil
 }
 
 func (li LocalInstance) Delete() error {

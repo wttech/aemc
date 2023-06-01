@@ -19,6 +19,7 @@ type PackageManager struct {
 	instance *Instance
 
 	SnapshotDeploySkipping bool
+	InstallRecursive       bool
 	SnapshotPatterns       []string
 	ToggledWorkflows       []string
 }
@@ -30,6 +31,7 @@ func NewPackageManager(res *Instance) *PackageManager {
 		instance: res,
 
 		SnapshotDeploySkipping: cv.GetBool("instance.package.snapshot_deploy_skipping"),
+		InstallRecursive:       cv.GetBool("instance.package.install_recursive"),
 		SnapshotPatterns:       cv.GetStringSlice("instance.package.snapshot_patterns"),
 		ToggledWorkflows:       cv.GetStringSlice("instance.package.toggled_workflows"),
 	}
@@ -279,7 +281,7 @@ func (pm *PackageManager) Upload(localPath string) (string, error) {
 func (pm *PackageManager) Install(remotePath string) error {
 	log.Infof("%s > installing package '%s'", pm.instance.ID(), remotePath)
 	response, err := pm.instance.http.Request().
-		SetFormData(map[string]string{"cmd": "install"}).
+		SetFormData(map[string]string{"cmd": "install", "recursive": fmt.Sprintf("%v", pm.InstallRecursive)}).
 		Post(ServiceJsonPath + remotePath)
 	if err != nil {
 		return fmt.Errorf("%s > cannot install package '%s': %w", pm.instance.ID(), remotePath, err)

@@ -4,7 +4,8 @@ AEM_WRAPPER="aemw"
 TASK_WRAPPER="taskw"
 
 if [ -f "$AEM_WRAPPER" ]; then
-  echo "The project contains already AEM Compose!"
+  echo ""
+  echo "The project already contains AEM Compose!"
   exit 1
 fi
 
@@ -12,13 +13,15 @@ SOURCE_URL="https://raw.githubusercontent.com/wttech/aemc/main/pkg/project/commo
 curl -s "${SOURCE_URL}/${AEM_WRAPPER}" -o "${AEM_WRAPPER}"
 curl -s "${SOURCE_URL}/${TASK_WRAPPER}" -o "${TASK_WRAPPER}"
 
+echo ""
 echo "Downloading & Testing AEM Compose CLI"
 echo ""
 
 chmod +x "${AEM_WRAPPER}" "${TASK_WRAPPER}"
 sh ${AEM_WRAPPER} version
 
-echo "Success! Now initialize it by running the command:"
+echo ""
+echo "Success! Now initialize the project by running command below:"
 echo ""
 
 echo "sh ${AEM_WRAPPER} init"

@@ -7,7 +7,7 @@
 
 **AEM Compose**
 
-Universal tool to manage AEM instances everywhere!
+AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. With a comprehensive set of commands, it simplifies tasks such as working CRX packages, OSGi configurations, JCR repository nodes, and more. Its seamless integration with Ansible enhances automation capabilities.
 
 - Reusable core designed to handle advanced dev-ops operations needed to manage AEM instances
 - Various distributions based on core for context-specific use cases:
@@ -18,15 +18,14 @@ Universal tool to manage AEM instances everywhere!
     - [Packer Example](https://github.com/wttech/aemc-ansible/tree/main/examples/packer) - starting point for baking AWS EC2 image using Ansible
     - [Local Example](https://github.com/wttech/aemc-ansible/tree/main/examples/local) - development & testing sandbox for AEM Compose project
 - Fast & lightweight
-- No dependencies - usable on all operating systems and architectures
+- Usable on all operating systems and architectures without pre-installing any dependencies
 
 # Table of Contents
 
 * [Distributions](#distributions)
   * [CLI - Overview](#cli---overview)
-  * [CLI - Demo](#cli---demo)
+  * [CLI - Screenshots](#cli---screenshots)
   * [CLI - AEM Project Quickstart](#cli---aem-project-quickstart)
-  * [CLI - Building &amp; installing from source](#cli---building--installing-from-source)
   * [Ansible Collection](#ansible-collection)
   * [Go Scripting](#go-scripting)
 * [Dependencies](#dependencies)
@@ -36,6 +35,7 @@ Universal tool to manage AEM instances everywhere!
   * [Context-specific customization](#context-specific-customization)
     * [Improving performance](#improving-performance)
     * [Increasing verbosity](#increasing-verbosity)
+    * [Installing content packages](#installing-content-packages)
 * [Contributing](#contributing)
 * [License](#license)
 
@@ -74,16 +74,54 @@ Worth knowing:
 
 - On Windows use it with [Git Bash](https://gitforwindows.org/) ([CMD](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/cmd) and [PowerShell](https://learn.microsoft.com/en-us/powershell/scripting/overview) are not supported nor tested)
 
-## CLI - Demo
+## CLI - Screenshots
 
-![CLI Screenshot](docs/cli-demo.gif)
+Help command:
+
+<img src="docs/cli-help-home.png" alt="CLI Help Home" width="600"/>
+
+Instance commands:
+
+<img src="docs/cli-help-instance.png" alt="CLI Help Instance" width="320"/>
+
+Package commands:
+
+<img src="docs/cli-help-pkg.png" alt="CLI Help Package" width="320"/>
+
+Setup task:
+
+- AEM instances are provisioned only when the configuration is changed
+- Maven AEM application build executed only when there are code changes
+- AEM dispatcher set up using Docker Compose, redeployed only when there are configuration changes as well
+- Health checks executed to confirm the stability of the environment as a whole
+
+<img src="docs/cli-demo-short.gif" alt="CLI Demo"/>
 
 ## CLI - AEM Project Quickstart
 
-Run command below to initialize the AEM Compose tool in your project (e.g existing one or generated from [Adobe AEM Project Archetype](https://github.com/adobe/aem-project-archetype#usage)):
+Supported project types:
+
+- with structure based on [Adobe AEM Project Archetype](https://github.com/adobe/aem-project-archetype#usage), compatibility:
+
+  | AEM Compose (init) | AEM Project Archetype |
+  |--------------------|-----------------------|
+  | 1.2.0              | 41                    |
+
+- with any type of structure, however afterwards only a little customizations in *Taskfile.yml* need to be done to reflect configuration related to built AEM application artifact path and AEM dispatcher files location
+- empty folder; the project kind will be needed to be specified explicitly during initialization
+
+---
+
+Run command below to initialize the AEM Compose tool in your project:
 
 ```shell
 curl https://raw.githubusercontent.com/wttech/aemc/main/project-init.sh | sh
+```
+
+and then:
+
+```shell
+sh aemw init
 ```
 
 After successful initialization, remember to always use the tool via wrapper script in the following way:
@@ -98,7 +136,7 @@ For example:
 sh aemw version
 ```
 
-Project initialization comes with ready-to-use tasks powered by [Task tool](https://taskfile.dev/) which are aggregating one or many AEM Compose CLI commands into useful procedures.
+Project initialization sets up ready-to-use tasks powered by [Task tool](https://taskfile.dev/) which are aggregating one or many AEM Compose CLI commands into useful procedures.
 
 To list all available tasks, run:
 
@@ -122,27 +160,7 @@ For example, to build AEM application with:
 Simply run command with appending [task variable](https://taskfile.dev/usage/#variables) to the end:
 
 ```shell
-sh taskw setup AEM_BUILD_ARGS="-PfedDev -DskipTests -pl '!ui.tests'"
-```
-
-## CLI - Building & installing from source
-
-Ensure having installed [Go](https://go.dev/dl/) then run command:
-
-- latest released version: `go install github.com/wttech/aemc/cmd/aem@latest`,
-- specific released version: `go install github.com/wttech/aemc/cmd/aem@v1.1.9`,
-- recently committed version: `go install github.com/wttech/aemc/cmd/aem@main`,
-
-Use installed version of the tool instead of the one defined in file *aem/api.sh* by running the following command:
-
-```shell
-export AEM_CLI_VERSION=installed
-```
-
-To start using again version from wrapper file, simply unset the environment variable:
-
-```shell
-unset AEM_CLI_VERSION
+sh taskw aem:build AEM_BUILD_ARGS="-PfedDev -DskipTests -pl '!ui.tests'"
 ```
 
 ## Ansible Collection
@@ -163,15 +181,15 @@ import "os"
 import aemc "github.com/wttech/aemc/pkg"
 
 func main() {
-    aem := aemc.NewAem()
-    instance := aem.InstanceManager().NewLocalAuthor()
+    aem := aemc.DefaultAEM()
+    instance, _ := aem.InstanceManager().NewByURL("http://admin:admin@192.168.1.2:4502")
     changed, err := instance.PackageManager().DeployWithChanged("/tmp/my-package.zip")
     if err != nil {
         fmt.Printf("cannot deploy package: %s\n", err)
         os.Exit(1)
     }
     if changed {
-      aem.InstanceManager().AwaitStartedOne(instance)
+      aem.InstanceManager().AwaitStartedOne(*instance)
     }
     fmt.Printf("package deployed properly\n")
     os.Exit(0)
@@ -192,22 +210,13 @@ Check out [releases page](https://github.com/wttech/aemc/releases) to review ava
 
 # Configuration
 
-## Generating default configuration
+## Defaults
 
-To start working with tool run command:
+The tool tries to make configuration as much explicit as it could be to allow customization in an easy way.
+
+Below are listed all available configuration options ([source](pkg/project/instance/aem/default/etc/aem.yml)):
 
 ```shell
-sh aemw config init
-```
-
-It will produce:
-
-- default/template configuration file: *aem/default/etc* (VCS-tracked)
-- actual configuration file:  *aem/home/etc/aem.yml* (VCS-ignored)
-
-Correct the `dist_file`, `license_file`, `unpack_dir` properties to provide essential files to be able to launch AEM instances.
-
-```yml
 # AEM instances to work with
 instance:
 
@@ -260,16 +269,20 @@ instance:
   # 'serial'   - for working with local instances
   processing_mode: auto
 
+  # HTTP client settings
+  http:
+    timeout: 10m
+    debug: false
+    disable_warn: true
+
   # State checking
   check:
     # Time to wait before first state checking (to avoid false-positives)
     warmup: 1s
     # Time to wait for next state checking
-    interval: 5s
+    interval: 6s
     # Number of successful check attempts that indicates end of checking
-    done_threshold: 3
-    # Wait only for those instances whose state has been changed internally (unaware of external changes)
-    await_strict: true
+    done_threshold: 5
     # Max time to wait for the instance to be healthy after executing the start script or e.g deploying a package
     await_started:
       timeout: 30m
@@ -304,6 +317,9 @@ instance:
 
   # Managed locally (set up automatically)
   local:
+    # Wait only for those instances whose state has been changed internally (unaware of external changes)
+    await_strict: true
+
     # Current runtime dir (Sling launchpad, JCR repository)
     unpack_dir: "aem/home/var/instance"
     # Archived runtime dir (AEM backup files '*.aemb.zst')
@@ -341,12 +357,10 @@ instance:
     # Use checksums to avoid re-deployments when snapshot AEM packages are unchanged
     snapshot_deploy_skipping: true
     # Disable following workflow launchers for a package deployment time only
-    toggled_workflows: [/libs/settings/workflow/launcher/config/asset_processing_on_sdk_*,/libs/settings/workflow/launcher/config/dam_*]
+    toggled_workflows: [/libs/settings/workflow/launcher/config/asset_processing_on_sdk_*,/libs/settings/workflow/launcher/config/update_asset_*,/libs/settings/workflow/launcher/config/dam_*]
 
   # OSGi Framework
   osgi:
-    shutdown_delay: 3s
-
     bundle:
       install:
         start: true
@@ -356,6 +370,15 @@ instance:
   # Crypto Support
   crypto:
     key_bundle_symbolic_name: com.adobe.granite.crypto.file
+
+  # Workflow Manager
+  workflow:
+    launcher:
+      lib_root: /libs/settings/workflow/launcher
+      config_root: /conf/global/settings/workflow/launcher
+      toggle_retry:
+        timeout: 10m
+        delay: 10s
 
 java:
   # Require following versions before e.g running AEM instances
@@ -406,11 +429,18 @@ output:
     mode: console
 ```
 
-After instructing tool where the AEM instances files are located then, finally, instances may be created and launched:
+Note that environment variables may be injected in any part of config file. 
+Environment variables could be defined in one or many [dotenv files](https://github.com/wttech/aemc/blob/main/pkg/common/osx/osx.go#L32).
+
+## Overriding default configuration
+
+By default, the VCS-tracked file is loaded (*aem/default/etc*).
+However, occasionally developers might want to override the default config file and load a VCS-ignored file instead (*aem/home/etc/aem.yml*).
+
+To do so, run the command:
 
 ```shell
-aem instance create
-aem instance start
+sh aemw config init
 ```
 
 ## Configuration precedence
@@ -443,6 +473,19 @@ By default, fail-safe options are in use. However, consider using the configurat
   Setting this environment variable will instruct the tool to request from the AEM instance descriptive information about the recently executed command subject.
   For example, if a recently executed command was `sh aemw package deploy my-package.zip -A` the AEM Compose tool after doing the actual package deployment will request from CRX Package Manager the exact information about just deployed package.
   This feature is beneficial for clarity and debugging purposes.
+
+### Installing content packages
+
+To install larger AEM packages that may include content pages, assets, and more, you can adjust the HTTP timeout setting. 
+By default, the timeout is set to `10m`, but you have the option to increase it (e.g., to `3h`) or disable it completely (by using `0`).
+
+To set the timeout for a single AEMC command, use the following syntax:
+
+```shell
+AEM_INSTANCE_HTTP_TIMEOUT=0 sh aemw package deploy --url my-package.zip
+```
+
+It's important to be aware that AEMaaCS also has its own timeout for requests made to the Package Manager UI. For detailed information, please refer to the [documentation](https://experienceleague.adobe.com/docs/experience-manager-cloud-service/content/implementing/developer-tools/package-manager.html?lang=en#aemaacs-packages).
 
 # Contributing
 

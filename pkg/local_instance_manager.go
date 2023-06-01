@@ -68,7 +68,7 @@ func (o *LocalOpts) Initialize() error {
 		}
 	}
 	for _, instance := range o.manager.Locals() {
-		if err := instance.Local().Validate(); err != nil {
+		if err := instance.Local().CheckPassword(); err != nil {
 			return err
 		}
 	}
@@ -86,6 +86,11 @@ func (o *LocalOpts) Initialize() error {
 	}
 	if err := o.OakRun.Prepare(); err != nil {
 		return err
+	}
+	for _, instance := range o.manager.Locals() {
+		if err := instance.Local().CheckRecreationNeeded(); err != nil { // depends on SDK prepare
+			return err
+		}
 	}
 	return nil
 }
@@ -156,7 +161,7 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 	if err := im.LocalOpts.Initialize(); err != nil {
 		return created, err
 	}
-	log.Infof(InstanceMsg(instances, "creating"))
+	log.Info(InstancesMsg(instances, "creating"))
 	for _, i := range instances {
 		if !i.local.IsCreated() {
 			err := i.local.Create()
@@ -167,6 +172,51 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 		}
 	}
 	return created, nil
+}
+
+func (im *InstanceManager) Import(instances []Instance) ([]Instance, error) {
+	imported := []Instance{}
+	log.Info(InstancesMsg(instances, "importing"))
+
+	for _, i := range instances {
+		if !i.local.IsCreated() {
+			err := i.local.Import()
+			if err != nil {
+				return nil, err
+			}
+			imported = append(imported, i)
+		}
+	}
+
+	running := []Instance{}
+	for _, i := range imported {
+		isRunning, err := i.local.IsRunningStrict()
+
+		if err != nil {
+			return nil, fmt.Errorf("%s > cannot check status of imported instance: %w", i.ID(), err)
+		}
+
+		if isRunning {
+			running = append(running, i)
+		}
+	}
+
+	if len(running) > 0 {
+		log.Info(InstancesMsg(running, " imported but already running - restarting to apply configuration"))
+
+		for _, i := range running {
+			err := i.local.Restart()
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if err := im.AwaitStarted(running); err != nil {
+			return imported, err
+		}
+	}
+
+	return imported, nil
 }
 
 func (im *InstanceManager) StartOne(instance Instance) (bool, error) {
@@ -188,7 +238,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 	}
 
 	if !im.LocalOpts.ServiceMode {
-		log.Infof(InstanceMsg(instances, "checking started & out-of-date"))
+		log.Info(InstancesMsg(instances, "checking started & out-of-date"))
 
 		var outdated []Instance
 		for _, i := range instances {
@@ -208,7 +258,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		}
 	}
 
-	log.Infof(InstanceMsg(instances, "starting"))
+	log.Info(InstancesMsg(instances, "starting"))
 
 	started := []Instance{}
 	for _, i := range instances {
@@ -248,7 +298,7 @@ func (im *InstanceManager) Stop(instances []Instance) ([]Instance, error) {
 		log.Debugf("no instances to stop")
 		return []Instance{}, nil
 	}
-	log.Infof(InstanceMsg(instances, "stopping"))
+	log.Info(InstancesMsg(instances, "stopping"))
 	stopped := []Instance{}
 	for _, i := range instances {
 		if i.local.IsRunning() {
@@ -285,7 +335,7 @@ func (im *InstanceManager) KillAll() ([]Instance, error) {
 }
 
 func (im *InstanceManager) Kill(instances []Instance) ([]Instance, error) {
-	log.Infof(InstanceMsg(instances, "killing"))
+	log.Info(InstancesMsg(instances, "killing"))
 
 	killed := []Instance{}
 	for _, i := range instances {
@@ -316,7 +366,7 @@ func (im *InstanceManager) Delete(instances []Instance) ([]Instance, error) {
 		log.Debugf("no instances to delete")
 		return []Instance{}, nil
 	}
-	log.Infof(InstanceMsg(instances, "deleting"))
+	log.Info(InstancesMsg(instances, "deleting"))
 	deleted := []Instance{}
 	for _, i := range instances {
 		if i.local.IsCreated() {
@@ -335,7 +385,7 @@ func (im *InstanceManager) Clean(instances []Instance) ([]Instance, error) {
 		log.Debugf("no instances to clean")
 		return []Instance{}, nil
 	}
-	log.Infof(InstanceMsg(instances, "cleaning"))
+	log.Info(InstancesMsg(instances, "cleaning"))
 	cleaned := []Instance{}
 	for _, i := range instances {
 		if !i.local.IsRunning() {

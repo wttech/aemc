@@ -55,7 +55,7 @@ func (c *CLI) rootFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().String("output-log-file", cv.GetString("output.log.file"), "Controls output file path")
 	_ = cv.BindPFlag("output.log.file", cmd.PersistentFlags().Lookup("output-log-file"))
 
-	cmd.PersistentFlags().String("output-log-mode", cv.GetString("output.log.mode"), "Controls where outputs and logs should be written to when format is \"text\""+(strings.Join(cfg.OutputLogModes(), "|")+")"))
+	cmd.PersistentFlags().String("output-log-mode", cv.GetString("output.log.mode"), "Controls where outputs and logs should be written to when format is \"text\" ("+(strings.Join(cfg.OutputLogModes(), "|")+")"))
 	_ = cv.BindPFlag("output.log.mode", cmd.PersistentFlags().Lookup("output-log-mode"))
 
 	cmd.PersistentFlags().StringP("instance-url", "U", cv.GetString("instance.adhoc_url"), "Use only AEM instance at ad-hoc specified URL")

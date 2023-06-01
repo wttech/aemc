@@ -9,7 +9,7 @@ VERSION=${TASK_VERSION:-"3.20.0"}
 detect_os() {
   os=$(uname -s | tr '[:upper:]' '[:lower:]')
 
-  # fixed up for https://github.com/client9/shlib/issues/3
+  # fixed up for https://git hub.com/client9/shlib/issues/3
   case "$os" in
     msys*) os="windows" ;;
     mingw*) os="windows" ;;
@@ -113,6 +113,5 @@ fi
 
 # https://taskfile.dev/api/#env
 export TASK_COLOR_GREEN=35
-export TASK_TEMP_DIR="${AEM_DIR}/tmp/task"
 
 "./${BIN_EXEC_FILE}" "$@"

@@ -51,7 +51,7 @@ func (c *CLI) fileDownloadCmd() *cobra.Command {
 			opts := httpx.DownloadOpts{}
 
 			url, _ := cmd.Flags().GetString("url")
-			opts.Url = url
+			opts.URL = url
 
 			file, _ := cmd.Flags().GetString("file")
 			opts.File = file

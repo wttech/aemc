@@ -36,13 +36,13 @@ func (c *Config) setDefaults() {
 
 	v.SetDefault("instance.processing_mode", instance.ProcessingAuto)
 
-	v.SetDefault("instance.http.timeout", time.Minute*5)
+	v.SetDefault("instance.http.timeout", time.Minute*10)
 	v.SetDefault("instance.http.debug", false)
 	v.SetDefault("instance.http.disable_warn", true)
 
 	v.SetDefault("instance.check.warmup", time.Second*1)
-	v.SetDefault("instance.check.interval", time.Second*5)
-	v.SetDefault("instance.check.done_threshold", 3)
+	v.SetDefault("instance.check.interval", time.Second*6)
+	v.SetDefault("instance.check.done_threshold", 5)
 	v.SetDefault("instance.check.installer.state", true)
 	v.SetDefault("instance.check.installer.pause", true)
 
@@ -74,6 +74,7 @@ func (c *Config) setDefaults() {
 
 	v.SetDefault("instance.status.timeout", time.Millisecond*500)
 
+	v.SetDefault("instance.package.install_recursive", true)
 	v.SetDefault("instance.package.snapshot_deploy_skipping", true)
 	v.SetDefault("instance.package.snapshot_patterns", []string{"**/*-SNAPSHOT.zip"})
 	v.SetDefault("instance.package.toggled_workflows", []string{})

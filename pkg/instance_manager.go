@@ -5,6 +5,7 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/lox"
+	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/instance"
 	"golang.org/x/exp/maps"
 	nurl "net/url"
@@ -135,6 +136,7 @@ func (im *InstanceManager) newFromConfig(id string) *Instance {
 		i.local.EnvVars = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.env_vars", id))
 		i.local.SecretVars = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.secret_vars", id))
 		i.local.SlingProps = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.sling_props", id))
+		i.local.UnpackDir = cv.GetString(fmt.Sprintf("instance.config.%s.unpack_dir", id))
 	}
 	return i
 }
@@ -272,13 +274,17 @@ func InstanceIds(instances []Instance) string {
 	return strings.Join(lo.Map(instances, func(i Instance, _ int) string { return i.id }), ",")
 }
 
-func InstanceMsg(instances []Instance, msg string) string {
+func InstanceMsg(instance Instance, msg any) string {
+	return stringsx.AddPrefix(fmt.Sprintf("%v", msg), fmt.Sprintf("%s > ", instance.ID()))
+}
+
+func InstancesMsg(instances []Instance, msg any) string {
 	count := len(instances)
 	switch count {
 	case 0:
-		return fmt.Sprintf("[] > %s", msg)
+		return fmt.Sprintf("[] > %v", msg)
 	default:
-		return fmt.Sprintf("%s > %s", InstanceIds(instances), msg)
+		return fmt.Sprintf("[%s] > %v", InstanceIds(instances), msg)
 	}
 }
 

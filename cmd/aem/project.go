@@ -11,8 +11,8 @@ const projectKindFlag = "project-kind"
 
 func (c *CLI) initCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "initialize",
-		Aliases: []string{"init"},
+		Use:     "init",
+		Aliases: []string{"initialize"},
 		Short:   "Initializes project files and configuration",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := c.aem.Project().EnsureDirs(); err != nil {

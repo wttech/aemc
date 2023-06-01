@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/mapsx"
 	"github.com/wttech/aemc/pkg/osgi"
@@ -13,10 +14,16 @@ import (
 type OSGiConfig struct {
 	manager *OSGiConfigManager
 	pid     string
+	fpid    string
+	aemcId  string
 }
 
 func (c OSGiConfig) Pid() string {
 	return c.pid
+}
+
+func (c OSGiConfig) FPid() string {
+	return c.fpid
 }
 
 type OSGiConfigState struct {
@@ -26,12 +33,16 @@ type OSGiConfigState struct {
 	Exists     bool           `yaml:"exists" json:"exists"`
 	Details    map[string]any `yaml:"details" json:"details"`
 	Properties map[string]any `yaml:"properties" json:"properties"`
+	FactoryPID string         `yaml:"factoryPid" json:"factoryPid"`
 }
 
 func (c OSGiConfig) State() (*OSGiConfigState, error) {
 	data, err := c.manager.Find(c.pid)
-	if err != nil {
-		return nil, err
+	if data == nil {
+		data, err = c.manager.FindByFactory(c.fpid, c.aemcId)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if data == nil {
 		return &OSGiConfigState{
@@ -40,13 +51,14 @@ func (c OSGiConfig) State() (*OSGiConfigState, error) {
 		}, nil
 	}
 	return &OSGiConfigState{
-		data: data,
-
-		PID:    c.pid,
-		Exists: true,
+		data:       data,
+		FactoryPID: data.FactoryPID,
+		PID:        data.PID,
+		Exists:     true,
 		Details: map[string]any{
 			"title":           data.Title,
 			"description":     data.Description,
+			"factoryPid":      data.FactoryPID,
 			"bundleLocation":  data.BundleLocation,
 			"serviceLocation": data.ServiceLocation,
 		},
@@ -66,7 +78,7 @@ func (c OSGiConfig) Save(props map[string]any) error {
 	}
 	maps.Copy(propsCombined, props)
 
-	return c.manager.Save(c.pid, propsCombined)
+	return c.manager.Save(c.pid, c.fpid, propsCombined)
 }
 
 func (c OSGiConfig) SaveWithChanged(props map[string]any) (bool, error) {
@@ -74,8 +86,13 @@ func (c OSGiConfig) SaveWithChanged(props map[string]any) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	props["aemcId~"+c.aemcId] = "AEMC"
 	if !state.Exists {
-		err = c.manager.Save(c.pid, props)
+		if state.PID != (c.fpid + "~" + c.aemcId) {
+			err = c.manager.Save(state.PID, c.fpid, props)
+		} else {
+			err = c.manager.Save("[Temporary PID replaced by real PID upon save]", c.fpid, props)
+		}
 		if err != nil {
 			return false, err
 		}
@@ -85,7 +102,7 @@ func (c OSGiConfig) SaveWithChanged(props map[string]any) (bool, error) {
 	if mapsx.Equal(propsBefore, props) {
 		return false, nil
 	}
-	err = c.manager.Save(c.pid, props)
+	err = c.manager.Save(state.PID, c.fpid, props)
 	if err != nil {
 		return false, err
 	}

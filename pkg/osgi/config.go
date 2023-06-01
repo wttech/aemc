@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/samber/lo"
 	"github.com/wttech/aemc/pkg/common/fmtx"
+	"strings"
 )
 
 type ConfigPIDs struct {
@@ -19,12 +20,14 @@ type ConfigPID struct {
 }
 
 type ConfigListItem struct {
-	PID             string                    `json:"pid"`
-	Title           string                    `json:"title"`
-	Description     string                    `json:"description"`
-	Properties      map[string]map[string]any `json:"properties"`
-	BundleLocation  string                    `json:"bundle_location"`
-	ServiceLocation string                    `json:"service_location"`
+	PID                  string                    `json:"pid"`
+	Title                string                    `json:"title"`
+	Description          string                    `json:"description"`
+	Properties           map[string]map[string]any `json:"properties"`
+	AdditionalProperties string                    `json:"additionalProperties"`
+	FactoryPID           string                    `json:"factoryPid"`
+	BundleLocation       string                    `json:"bundle_location"`
+	ServiceLocation      string                    `json:"service_location"`
 }
 
 func (c ConfigListItem) PropertyValues() map[string]any {
@@ -41,6 +44,15 @@ func (c ConfigListItem) PropertyValues() map[string]any {
 		}
 	}
 	return result
+}
+
+func (c ConfigListItem) AemcId() string {
+	for _, prop := range strings.Split(c.AdditionalProperties, ",") {
+		if strings.HasPrefix(prop, "aemcId~") {
+			return prop[7:]
+		}
+	}
+	return ""
 }
 
 type ConfigList struct {

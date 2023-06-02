@@ -3,7 +3,7 @@ package osgi
 import (
 	"bytes"
 	"github.com/samber/lo"
-	"github.com/wttech/aemc/pkg"
+	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"strings"
 )
@@ -47,10 +47,11 @@ func (c ConfigListItem) PropertyValues() map[string]any {
 	return result
 }
 
-func (c ConfigListItem) ConstantId() string {
+// CID Extracts the constant ID, which is used to find config. See FPIDDummy for explanation.
+func (c ConfigListItem) CID() string {
 	for _, prop := range strings.Split(c.AdditionalProperties, ",") {
-		if strings.HasPrefix(prop, pkg.CidPrefix) {
-			return prop[7:]
+		if strings.HasPrefix(prop, CidPrefix) {
+			return prop[len(CidPrefix):]
 		}
 	}
 	return ""
@@ -67,3 +68,12 @@ func (cl ConfigList) MarshalText() string {
 	})))
 	return bs.String()
 }
+
+const (
+	// FPIDDummy holds a special endpoint name in Apache Felix, which is used to create new factory config.
+	// It is replaced by real PID upon save, so it is not possible to use it to find config later.
+	// That's why we need to use CID instead.
+	FPIDDummy = "[Temporary PID replaced by real PID upon save]"
+	CidPrefix = "aemComposeId~"
+	CidValue  = common.AppId
+)

@@ -682,7 +682,7 @@ func osgiConfigDefineFlags(cmd *cobra.Command) {
 func osgiConfigFromFlag(cmd *cobra.Command, i pkg.Instance) *pkg.OSGiConfig {
 	pid, _ := cmd.Flags().GetString("pid")
 	var config pkg.OSGiConfig
-	if isFactoryPID(pid) {
+	if isOsgiConfigFactoryPID(pid) {
 		config = i.OSGI().ConfigManager().ByFactoryPID(pid)
 	} else {
 		config = i.OSGI().ConfigManager().ByPID(pid)
@@ -690,7 +690,7 @@ func osgiConfigFromFlag(cmd *cobra.Command, i pkg.Instance) *pkg.OSGiConfig {
 	return &config
 }
 
-func isFactoryPID(pid string) bool {
+func isOsgiConfigFactoryPID(pid string) bool {
 	return strings.Contains(pid, "~")
 }
 func (c *CLI) osgiRestartCmd() *cobra.Command {

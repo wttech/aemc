@@ -22,11 +22,11 @@ func (cm *OSGiConfigManager) ByPID(pid string) OSGiConfig {
 }
 
 func (cm *OSGiConfigManager) ByFactoryPID(pid string) OSGiConfig {
-	factoryPid, cid := splitPID(pid)
+	factoryPid, cid := cm.splitPID(pid)
 	return OSGiConfig{manager: cm, pid: pid, fpid: factoryPid, cid: cid}
 }
 
-func splitPID(pid string) (string, string) {
+func (cm *OSGiConfigManager) splitPID(pid string) (string, string) {
 	tokens := strings.SplitN(pid, "~", 2)
 	if len(tokens) > 1 {
 		return tokens[0], tokens[1]
@@ -105,7 +105,8 @@ func (cm *OSGiConfigManager) FindByFactory(fpid string, cid string) (*osgi.Confi
 			if err != nil {
 				return nil, err
 			}
-			if config != nil && config.ConstantId() == cid {
+			log.Infof("%s > found config '%s' with CID '%s'", cm.instance.ID(), pid.ID, config.CID())
+			if config != nil && config.CID() == cid {
 				return config, nil
 			}
 		}

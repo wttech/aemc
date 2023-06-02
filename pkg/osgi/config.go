@@ -3,6 +3,7 @@ package osgi
 import (
 	"bytes"
 	"github.com/samber/lo"
+	"github.com/wttech/aemc/pkg"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"strings"
 )
@@ -46,9 +47,9 @@ func (c ConfigListItem) PropertyValues() map[string]any {
 	return result
 }
 
-func (c ConfigListItem) AemcId() string {
+func (c ConfigListItem) ConstantId() string {
 	for _, prop := range strings.Split(c.AdditionalProperties, ",") {
-		if strings.HasPrefix(prop, "aemcId~") {
+		if strings.HasPrefix(prop, pkg.CidPrefix) {
 			return prop[7:]
 		}
 	}

@@ -22,11 +22,11 @@ func (cm *OSGiConfigManager) ByPID(pid string) OSGiConfig {
 }
 
 func (cm *OSGiConfigManager) ByFactoryPID(pid string) OSGiConfig {
-	factoryPid, suffix := getFactoryPID(pid)
-	return OSGiConfig{manager: cm, pid: pid, fpid: factoryPid, aemcId: suffix}
+	factoryPid, cid := splitPID(pid)
+	return OSGiConfig{manager: cm, pid: pid, fpid: factoryPid, cid: cid}
 }
 
-func getFactoryPID(pid string) (string, string) {
+func splitPID(pid string) (string, string) {
 	tokens := strings.SplitN(pid, "~", 2)
 	if len(tokens) > 1 {
 		return tokens[0], tokens[1]
@@ -94,7 +94,7 @@ func (cm *OSGiConfigManager) Find(pid string) (*osgi.ConfigListItem, error) {
 	return nil, nil
 }
 
-func (cm *OSGiConfigManager) FindByFactory(fpid string, aemcId string) (*osgi.ConfigListItem, error) {
+func (cm *OSGiConfigManager) FindByFactory(fpid string, cid string) (*osgi.ConfigListItem, error) {
 	pidList, err := cm.listPIDs()
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func (cm *OSGiConfigManager) FindByFactory(fpid string, aemcId string) (*osgi.Co
 			if err != nil {
 				return nil, err
 			}
-			if config != nil && config.AemcId() == aemcId {
+			if config != nil && config.ConstantId() == cid {
 				return config, nil
 			}
 		}

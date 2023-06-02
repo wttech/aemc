@@ -15,7 +15,10 @@ type OSGiConfig struct {
 	manager *OSGiConfigManager
 	pid     string
 	fpid    string
-	aemcId  string
+
+	// constant ID used to find config later (as AEM is generating random PID when adding new config which cannot be
+	// used to achieve idempotency)
+	cid string
 }
 
 func (c OSGiConfig) Pid() string {
@@ -39,7 +42,7 @@ type OSGiConfigState struct {
 func (c OSGiConfig) State() (*OSGiConfigState, error) {
 	data, err := c.manager.Find(c.pid)
 	if data == nil {
-		data, err = c.manager.FindByFactory(c.fpid, c.aemcId)
+		data, err = c.manager.FindByFactory(c.fpid, c.cid)
 		if err != nil {
 			return nil, err
 		}
@@ -86,12 +89,12 @@ func (c OSGiConfig) SaveWithChanged(props map[string]any) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	props["aemcId~"+c.aemcId] = "AEMC"
+	props[CidPrefix+c.cid] = CidValue
 	if !state.Exists {
-		if state.PID != (c.fpid + "~" + c.aemcId) {
+		if state.PID != (c.fpid + "~" + c.cid) {
 			err = c.manager.Save(state.PID, c.fpid, props)
 		} else {
-			err = c.manager.Save("[Temporary PID replaced by real PID upon save]", c.fpid, props)
+			err = c.manager.Save(NewFactoryConfigPid, c.fpid, props)
 		}
 		if err != nil {
 			return false, err
@@ -172,3 +175,9 @@ func (c OSGiConfig) detailsWithoutProperties(details map[string]any) map[string]
 	delete(result, "properties")
 	return result
 }
+
+const (
+	NewFactoryConfigPid = "[Temporary PID replaced by real PID upon save]"
+	CidPrefix           = "aemComposeId~"
+	CidValue            = "AEMC"
+)

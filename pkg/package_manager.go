@@ -7,6 +7,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/osx"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/pkg"
 	"path/filepath"
@@ -116,7 +117,7 @@ func (pm *PackageManager) findInternal(pid string) (*pkg.ListItem, error) {
 }
 
 func (pm *PackageManager) IsSnapshot(localPath string) bool {
-	return stringsx.MatchSome(localPath, pm.SnapshotPatterns)
+	return stringsx.MatchSome(pathx.Normalize(localPath), pm.SnapshotPatterns)
 }
 
 func (pm *PackageManager) Build(remotePath string) error {

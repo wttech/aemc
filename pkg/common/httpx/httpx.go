@@ -18,8 +18,8 @@ func FileNameFromURL(url string) string {
 }
 
 type DownloadOpts struct {
-	URL  string
-	File string
+	URL      string
+	File     string
 	Override bool
 
 	AuthToken         string

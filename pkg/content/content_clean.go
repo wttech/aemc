@@ -315,15 +315,12 @@ func (c Cleaner) cleanParents(root string) error {
 }
 
 func eachParentFiles(root string, processFileFunc func(string) error) error {
-	parent := filepath.Dir(root)
-	for parent != "" {
+	parent := root
+	for strings.Contains(parent, JcrRoot) && filepath.Base(parent) != JcrRoot {
+		parent = filepath.Dir(parent)
 		if err := processFileFunc(filepath.ToSlash(parent)); err != nil {
 			return err
 		}
-		if filepath.Base(parent) == JcrRoot {
-			break
-		}
-		parent = filepath.Dir(parent)
 	}
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg/content"
+	"strings"
 )
 
 func (c *CLI) contentCmd() *cobra.Command {
@@ -25,6 +26,9 @@ func (c *CLI) contentCleanCmd() *cobra.Command {
 		Short:   "Clean downloaded content",
 		Run: func(cmd *cobra.Command, args []string) {
 			rootPath, err := cmd.Flags().GetString("root-path")
+			if err == nil && !strings.Contains(rootPath, content.JcrRoot) {
+				err = fmt.Errorf("root path '%s' does not contain '%s'", rootPath, content.JcrRoot)
+			}
 			if err == nil {
 				err = content.NewCleaner(c.aem.ContentOpts()).Clean(rootPath)
 			}
@@ -36,6 +40,7 @@ func (c *CLI) contentCleanCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().String("root-path", "", "Root path")
+	_ = cmd.MarkFlagRequired("root-path")
 	return cmd
 }
 

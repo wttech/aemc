@@ -198,7 +198,7 @@ func (pm *PackageManager) Update(remotePath string, pid string, filter []Filter)
 func (pm *PackageManager) Download(remotePath string, localFile string) error {
 	log.Infof("%s > downloading package '%s'", pm.instance.ID(), remotePath)
 	opts := httpx.DownloadOpts{}
-	opts.Url = pm.instance.HTTP().BaseURL() + remotePath
+	opts.URL = pm.instance.HTTP().BaseURL() + remotePath
 	opts.File = localFile
 	opts.Override = true
 	opts.AuthBasicUser = pm.instance.User()

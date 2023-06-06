@@ -182,9 +182,8 @@ func (c Cleaner) normalizeMixins(path string, line string, propValue string, lin
 	}
 	if len(resultValues) == 0 {
 		return true, lineSuffix
-	} else {
-		return false, strings.ReplaceAll(line, normalizedValue, strings.Join(resultValues, ","))
 	}
+	return false, strings.ReplaceAll(line, normalizedValue, strings.Join(resultValues, ","))
 }
 
 func (c Cleaner) flattenFiles(root string) error {

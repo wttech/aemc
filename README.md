@@ -37,6 +37,7 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
     * [Increasing verbosity](#increasing-verbosity)
     * [Installing content packages](#installing-content-packages)
 * [Contributing](#contributing)
+* [Authors](#authors)
 * [License](#license)
 
 # Distributions
@@ -495,6 +496,12 @@ Issues reported or pull requests created will be very appreciated.
 2. See [development guide](DEVELOPMENT.md)
 3. Do code changes on a feature branch created from *main* branch.
 4. Create a pull request with a base of *main* branch.
+
+# Authors
+
+- Creator, owner, and maintainer: [Krystian Panek](mailto:krystian.panek@wundermanthompson.com)
+- Consultancy: [Tomasz Sobczyk](mailto:tomasz.sobczyk@wundermanthompson.com), [Maciej Majchrzak](mailto:maciej.majchrzak@wundermanthompson.com)
+- Contributors: [&lt;see all&gt;](https://github.com/wttech/aemc/graphs/contributors)
 
 # License
 

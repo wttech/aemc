@@ -105,7 +105,6 @@ func (cm *OSGiConfigManager) FindByFactory(fpid string, cid string) (*osgi.Confi
 			if err != nil {
 				return nil, err
 			}
-			log.Debugf("%s > found config '%s' with CID '%s'", cm.instance.ID(), pid.ID, config.CID())
 			if config != nil && config.CID() == cid {
 				return config, nil
 			}

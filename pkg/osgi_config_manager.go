@@ -3,13 +3,14 @@ package pkg
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"regexp"
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/osgi"
 	"golang.org/x/exp/maps"
-	"io"
-	"regexp"
-	"strings"
 )
 
 type OSGiConfigManager struct {
@@ -18,6 +19,22 @@ type OSGiConfigManager struct {
 
 func (cm *OSGiConfigManager) ByPID(pid string) OSGiConfig {
 	return OSGiConfig{manager: cm, pid: pid}
+}
+
+func (cm *OSGiConfigManager) ByFactoryPID(pid string) OSGiConfig {
+	factoryPid, cid := cm.splitPID(pid)
+	return OSGiConfig{manager: cm, pid: pid, fpid: factoryPid, cid: cid}
+}
+
+func (cm *OSGiConfigManager) splitPID(pid string) (string, string) {
+	tokens := strings.SplitN(pid, "~", 2)
+	if len(tokens) > 1 {
+		return tokens[0], tokens[1]
+	}
+	if len(tokens) == 1 {
+		return tokens[0], ""
+	}
+	return "", ""
 }
 
 func (cm *OSGiConfigManager) listPIDs() (*osgi.ConfigPIDs, error) {
@@ -53,7 +70,7 @@ func (cm *OSGiConfigManager) All() ([]OSGiConfig, error) {
 	}
 	var result []OSGiConfig
 	for _, s := range list.List {
-		config := OSGiConfig{manager: cm, pid: s.PID}
+		config := OSGiConfig{manager: cm, pid: s.PID, fpid: s.FactoryPID}
 		result = append(result, config)
 	}
 	return result, nil
@@ -77,6 +94,25 @@ func (cm *OSGiConfigManager) Find(pid string) (*osgi.ConfigListItem, error) {
 	return nil, nil
 }
 
+func (cm *OSGiConfigManager) FindByFactory(fpid string, cid string) (*osgi.ConfigListItem, error) {
+	pidList, err := cm.listPIDs()
+	if err != nil {
+		return nil, err
+	}
+	for _, pid := range pidList.PIDs {
+		if pid.FPID == fpid {
+			config, err := cm.Find(pid.ID)
+			if err != nil {
+				return nil, err
+			}
+			if config != nil && config.CID() == cid {
+				return config, nil
+			}
+		}
+	}
+	return nil, nil
+}
+
 func (cm *OSGiConfigManager) FindAll() (*osgi.ConfigList, error) {
 	pidList, err := cm.listPIDs()
 	if err != nil {
@@ -95,9 +131,9 @@ func (cm *OSGiConfigManager) FindAll() (*osgi.ConfigList, error) {
 	return &osgi.ConfigList{List: result}, nil
 }
 
-func (cm *OSGiConfigManager) Save(pid string, props map[string]any) error {
+func (cm *OSGiConfigManager) Save(pid string, fpid string, props map[string]any) error {
 	log.Infof("%s > saving config '%s'", cm.instance.ID(), pid)
-	resp, err := cm.instance.http.RequestFormData(saveConfigProps(props)).Post(fmt.Sprintf("%s/%s", ConfigMgrPath, pid))
+	resp, err := cm.instance.http.RequestFormData(saveConfigProps(fpid, props)).Post(fmt.Sprintf("%s/%s", ConfigMgrPath, pid))
 	if err != nil {
 		return fmt.Errorf("%s > cannot save config '%s': %w", cm.instance.ID(), pid, err)
 	} else if resp.IsError() {
@@ -107,7 +143,7 @@ func (cm *OSGiConfigManager) Save(pid string, props map[string]any) error {
 	return nil
 }
 
-func saveConfigProps(props map[string]any) map[string]any {
+func saveConfigProps(fpid string, props map[string]any) map[string]any {
 	result := map[string]any{}
 	maps.Copy(result, props)
 	maps.Copy(result, map[string]any{
@@ -116,6 +152,11 @@ func saveConfigProps(props map[string]any) map[string]any {
 		//"$location": bundleLocation, // TODO what if skipped?
 		"propertylist": strings.Join(maps.Keys(result), ","),
 	})
+	if fpid != "" {
+		maps.Copy(result, map[string]any{
+			"factoryPid": fpid,
+		})
+	}
 	return result
 }
 

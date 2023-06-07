@@ -3,7 +3,9 @@ package osgi
 import (
 	"bytes"
 	"github.com/samber/lo"
+	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/fmtx"
+	"strings"
 )
 
 type ConfigPIDs struct {
@@ -19,12 +21,14 @@ type ConfigPID struct {
 }
 
 type ConfigListItem struct {
-	PID             string                    `json:"pid"`
-	Title           string                    `json:"title"`
-	Description     string                    `json:"description"`
-	Properties      map[string]map[string]any `json:"properties"`
-	BundleLocation  string                    `json:"bundle_location"`
-	ServiceLocation string                    `json:"service_location"`
+	PID                  string                    `json:"pid"`
+	Title                string                    `json:"title"`
+	Description          string                    `json:"description"`
+	Properties           map[string]map[string]any `json:"properties"`
+	AdditionalProperties string                    `json:"additionalProperties"`
+	FactoryPID           string                    `json:"factoryPid"`
+	BundleLocation       string                    `json:"bundle_location"`
+	ServiceLocation      string                    `json:"service_location"`
 }
 
 func (c ConfigListItem) PropertyValues() map[string]any {
@@ -43,6 +47,16 @@ func (c ConfigListItem) PropertyValues() map[string]any {
 	return result
 }
 
+// CID Extracts the constant ID, which is used to find config. See FPIDDummy for explanation.
+func (c ConfigListItem) CID() string {
+	for _, prop := range strings.Split(c.AdditionalProperties, ",") {
+		if strings.HasPrefix(prop, CidPrefix) {
+			return prop[len(CidPrefix):]
+		}
+	}
+	return ""
+}
+
 type ConfigList struct {
 	List []ConfigListItem
 }
@@ -54,3 +68,12 @@ func (cl ConfigList) MarshalText() string {
 	})))
 	return bs.String()
 }
+
+const (
+	// FPIDDummy holds a special endpoint name in Apache Felix, which is used to create new factory config.
+	// It is replaced by real PID upon save, so it is not possible to use it to find config later.
+	// That's why we need to use CID instead.
+	FPIDDummy = "[Temporary PID replaced by real PID upon save]"
+	CidPrefix = "cid~"
+	CidValue  = common.AppId
+)

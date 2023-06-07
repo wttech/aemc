@@ -86,8 +86,8 @@ func (c OSGiConfig) SaveWithChanged(props map[string]any) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	props[osgi.CidPrefix+c.cid] = osgi.CidValue
 	if !state.Exists {
+		props[osgi.CidPrefix+c.cid] = osgi.CidValue
 		if state.PID != (c.fpid + "~" + c.cid) {
 			err = c.manager.Save(state.PID, c.fpid, props)
 		} else {
@@ -102,6 +102,7 @@ func (c OSGiConfig) SaveWithChanged(props map[string]any) (bool, error) {
 	if mapsx.Equal(propsBefore, props) {
 		return false, nil
 	}
+	props[osgi.CidPrefix+c.cid] = osgi.CidValue
 	err = c.manager.Save(state.PID, c.fpid, props)
 	if err != nil {
 		return false, err

@@ -675,7 +675,7 @@ func (c *CLI) osgiConfigDelete() *cobra.Command {
 }
 
 func osgiConfigDefineFlags(cmd *cobra.Command) {
-	cmd.Flags().String("pid", "", "PID")
+	cmd.Flags().String("pid", "", "PID. Use '~' to separate the factory PID and the suffix ID.")
 	_ = cmd.MarkFlagRequired("pid")
 }
 

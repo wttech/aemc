@@ -74,6 +74,6 @@ const (
 	// It is replaced by real PID upon save, so it is not possible to use it to find config later.
 	// That's why we need to use CID instead.
 	FPIDDummy = "[Temporary PID replaced by real PID upon save]"
-	CidPrefix = "aemComposeId~"
+	CidPrefix = "cid~"
 	CidValue  = common.AppId
 )

@@ -18,23 +18,23 @@ type OSGiConfigManager struct {
 }
 
 func (cm *OSGiConfigManager) ByPID(pid string) OSGiConfig {
+	if cm.isFactoryPID(pid) {
+		factoryPID, cid := cm.splitFactoryPID(pid)
+		return OSGiConfig{manager: cm, pid: pid, fpid: factoryPID, cid: cid}
+	}
 	return OSGiConfig{manager: cm, pid: pid}
 }
 
-func (cm *OSGiConfigManager) ByFactoryPID(pid string) OSGiConfig {
-	factoryPid, cid := cm.splitPID(pid)
-	return OSGiConfig{manager: cm, pid: pid, fpid: factoryPid, cid: cid}
+func (cm *OSGiConfigManager) isFactoryPID(pid string) bool {
+	return strings.Contains(pid, "~")
 }
 
-func (cm *OSGiConfigManager) splitPID(pid string) (string, string) {
-	tokens := strings.SplitN(pid, "~", 2)
-	if len(tokens) > 1 {
-		return tokens[0], tokens[1]
+func (cm *OSGiConfigManager) splitFactoryPID(pid string) (string, string) {
+	parts := strings.Split(pid, "~")
+	if len(parts) != 2 {
+		log.Fatalf("cannot split factory PID properly '%s'", pid)
 	}
-	if len(tokens) == 1 {
-		return tokens[0], ""
-	}
-	return "", ""
+	return parts[0], parts[1]
 }
 
 func (cm *OSGiConfigManager) listPIDs() (*osgi.ConfigPIDs, error) {
@@ -94,7 +94,7 @@ func (cm *OSGiConfigManager) Find(pid string) (*osgi.ConfigListItem, error) {
 	return nil, nil
 }
 
-func (cm *OSGiConfigManager) FindByFactory(fpid string, cid string) (*osgi.ConfigListItem, error) {
+func (cm *OSGiConfigManager) FindFactory(fpid string, cid string) (*osgi.ConfigListItem, error) {
 	pidList, err := cm.listPIDs()
 	if err != nil {
 		return nil, err

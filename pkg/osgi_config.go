@@ -26,6 +26,10 @@ func (c OSGiConfig) FPID() string {
 	return c.fpid
 }
 
+func (c OSGiConfig) IsFactory() bool {
+	return c.fpid != "" && c.cid != ""
+}
+
 type OSGiConfigState struct {
 	data *osgi.ConfigListItem
 
@@ -37,12 +41,17 @@ type OSGiConfigState struct {
 }
 
 func (c OSGiConfig) State() (*OSGiConfigState, error) {
-	data, err := c.manager.Find(c.pid)
-	if data == nil {
-		data, err = c.manager.FindByFactory(c.fpid, c.cid)
+	var (
+		data *osgi.ConfigListItem
+		err  error
+	)
+	if c.IsFactory() {
+		data, err = c.manager.FindFactory(c.fpid, c.cid)
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		data, err = c.manager.Find(c.pid)
 	}
 	if data == nil {
 		return &OSGiConfigState{
@@ -71,6 +80,8 @@ func (c OSGiConfig) Save(props map[string]any) error {
 	if err != nil {
 		return err
 	}
+
+	// TODO logic with CID should be also included here as in 'SaveWithChanged'
 
 	propsCombined := map[string]any{}
 	if state.Exists {

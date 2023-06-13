@@ -18,23 +18,24 @@ type OSGiConfigManager struct {
 }
 
 func (cm *OSGiConfigManager) ByPID(pid string) OSGiConfig {
-	return OSGiConfig{manager: cm, pid: pid}
+	if cm.IsFactoryPID(pid) {
+		fpid, alias := cm.SplitFactoryPID(pid)
+		return OSGiConfig{manager: cm, pid: pid, fpid: fpid, alias: alias}
+	} else {
+		return OSGiConfig{manager: cm, pid: pid}
+	}
 }
 
-func (cm *OSGiConfigManager) ByFactoryPID(pid string) OSGiConfig {
-	factoryPid, cid := cm.splitPID(pid)
-	return OSGiConfig{manager: cm, pid: pid, fpid: factoryPid, cid: cid}
+func (cm *OSGiConfigManager) IsFactoryPID(pid string) bool {
+	return strings.Contains(pid, osgi.ConfigAliasSeparator)
 }
 
-func (cm *OSGiConfigManager) splitPID(pid string) (string, string) {
-	tokens := strings.SplitN(pid, "~", 2)
-	if len(tokens) > 1 {
-		return tokens[0], tokens[1]
+func (cm *OSGiConfigManager) SplitFactoryPID(pid string) (string, string) {
+	parts := strings.Split(pid, osgi.ConfigAliasSeparator)
+	if len(parts) != 2 {
+		log.Fatalf("cannot parse OSGi config factory PID '%s'", pid)
 	}
-	if len(tokens) == 1 {
-		return tokens[0], ""
-	}
-	return "", ""
+	return parts[0], parts[1]
 }
 
 func (cm *OSGiConfigManager) listPIDs() (*osgi.ConfigPIDs, error) {
@@ -132,14 +133,23 @@ func (cm *OSGiConfigManager) FindAll() (*osgi.ConfigList, error) {
 }
 
 func (cm *OSGiConfigManager) Save(pid string, fpid string, props map[string]any) error {
-	log.Infof("%s > saving config '%s'", cm.instance.ID(), pid)
+	factoring := pid == osgi.ConfigPIDPlaceholder && fpid != ""
+	if factoring {
+		log.Infof("%s > factoring config '%s'", cm.instance.ID(), fpid)
+	} else {
+		log.Infof("%s > saving config '%s'", cm.instance.ID(), pid)
+	}
 	resp, err := cm.instance.http.RequestFormData(saveConfigProps(fpid, props)).Post(fmt.Sprintf("%s/%s", ConfigMgrPath, pid))
 	if err != nil {
 		return fmt.Errorf("%s > cannot save config '%s': %w", cm.instance.ID(), pid, err)
 	} else if resp.IsError() {
 		return fmt.Errorf("%s > cannot save config '%s': %s", cm.instance.ID(), pid, resp.Status())
 	}
-	log.Infof("%s > saved config '%s'", cm.instance.ID(), pid)
+	if factoring {
+		log.Infof("%s > factored config '%s'", cm.instance.ID(), fpid)
+	} else {
+		log.Infof("%s > saved config '%s'", cm.instance.ID(), pid)
+	}
 	return nil
 }
 

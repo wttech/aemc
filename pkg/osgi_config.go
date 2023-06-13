@@ -15,7 +15,7 @@ type OSGiConfig struct {
 	manager *OSGiConfigManager
 	pid     string
 	fpid    string
-	cid     string
+	alias   string
 }
 
 func (c OSGiConfig) PID() string {
@@ -24,6 +24,10 @@ func (c OSGiConfig) PID() string {
 
 func (c OSGiConfig) FPID() string {
 	return c.fpid
+}
+
+func (c OSGiConfig) Alias() string {
+	return c.alias
 }
 
 type OSGiConfigState struct {
@@ -38,8 +42,11 @@ type OSGiConfigState struct {
 
 func (c OSGiConfig) State() (*OSGiConfigState, error) {
 	data, err := c.manager.Find(c.pid)
+	if err != nil {
+		return nil, err
+	}
 	if data == nil {
-		data, err = c.manager.FindByFactory(c.fpid, c.cid)
+		data, err = c.manager.FindByFactory(c.fpid, c.alias)
 		if err != nil {
 			return nil, err
 		}
@@ -87,11 +94,11 @@ func (c OSGiConfig) SaveWithChanged(props map[string]any) (bool, error) {
 		return false, err
 	}
 	if !state.Exists {
-		props[osgi.CidPrefix+c.cid] = osgi.CidValue
-		if state.PID != (c.fpid + "~" + c.cid) {
+		props[osgi.ConfigAliasPropPrefix+c.alias] = osgi.ConfigAliasPropValue
+		if state.PID != (c.fpid + "~" + c.alias) {
 			err = c.manager.Save(state.PID, c.fpid, props)
 		} else {
-			err = c.manager.Save(osgi.FPIDDummy, c.fpid, props)
+			err = c.manager.Save(osgi.ConfigPIDPlaceholder, c.fpid, props)
 		}
 		if err != nil {
 			return false, err
@@ -102,7 +109,7 @@ func (c OSGiConfig) SaveWithChanged(props map[string]any) (bool, error) {
 	if mapsx.Equal(propsBefore, props) {
 		return false, nil
 	}
-	props[osgi.CidPrefix+c.cid] = osgi.CidValue
+	props[osgi.ConfigAliasPropPrefix+c.alias] = osgi.ConfigAliasPropValue
 	err = c.manager.Save(state.PID, c.fpid, props)
 	if err != nil {
 		return false, err

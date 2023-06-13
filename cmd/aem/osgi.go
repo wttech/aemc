@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg"
 	"github.com/wttech/aemc/pkg/common/mapsx"
@@ -681,18 +679,10 @@ func osgiConfigDefineFlags(cmd *cobra.Command) {
 
 func osgiConfigFromFlag(cmd *cobra.Command, i pkg.Instance) *pkg.OSGiConfig {
 	pid, _ := cmd.Flags().GetString("pid")
-	var config pkg.OSGiConfig
-	if isOsgiConfigFactoryPID(pid) {
-		config = i.OSGI().ConfigManager().ByFactoryPID(pid)
-	} else {
-		config = i.OSGI().ConfigManager().ByPID(pid)
-	}
+	config := i.OSGI().ConfigManager().ByPID(pid)
 	return &config
 }
 
-func isOsgiConfigFactoryPID(pid string) bool {
-	return strings.Contains(pid, "~")
-}
 func (c *CLI) osgiRestartCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "restart",

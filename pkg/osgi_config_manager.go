@@ -21,9 +21,8 @@ func (cm *OSGiConfigManager) ByPID(pid string) OSGiConfig {
 	if cm.IsFactoryPID(pid) {
 		fpid, alias := cm.SplitFactoryPID(pid)
 		return OSGiConfig{manager: cm, pid: pid, fpid: fpid, alias: alias}
-	} else {
-		return OSGiConfig{manager: cm, pid: pid}
 	}
+	return OSGiConfig{manager: cm, pid: pid}
 }
 
 func (cm *OSGiConfigManager) IsFactoryPID(pid string) bool {
@@ -71,13 +70,16 @@ func (cm *OSGiConfigManager) All() ([]OSGiConfig, error) {
 	}
 	var result []OSGiConfig
 	for _, s := range list.List {
-		config := OSGiConfig{manager: cm, pid: s.PID, fpid: s.FactoryPID}
+		config := OSGiConfig{manager: cm, pid: s.PID, fpid: s.FPID}
 		result = append(result, config)
 	}
 	return result, nil
 }
 
 func (cm *OSGiConfigManager) Find(pid string) (*osgi.ConfigListItem, error) {
+	if pid == "" {
+		return nil, nil
+	}
 	resp, err := cm.instance.http.Request().Get(fmt.Sprintf("%s/%s.json", ConfigMgrPath, pid))
 	if err != nil {
 		return nil, fmt.Errorf("%s > cannot find config '%s': %w", cm.instance.ID(), pid, err)
@@ -95,7 +97,10 @@ func (cm *OSGiConfigManager) Find(pid string) (*osgi.ConfigListItem, error) {
 	return nil, nil
 }
 
-func (cm *OSGiConfigManager) FindByFactory(fpid string, cid string) (*osgi.ConfigListItem, error) {
+func (cm *OSGiConfigManager) FindByFactory(fpid string, alias string) (*osgi.ConfigListItem, error) {
+	if fpid == "" || alias == "" {
+		return nil, nil
+	}
 	pidList, err := cm.listPIDs()
 	if err != nil {
 		return nil, err
@@ -106,7 +111,7 @@ func (cm *OSGiConfigManager) FindByFactory(fpid string, cid string) (*osgi.Confi
 			if err != nil {
 				return nil, err
 			}
-			if config != nil && config.CID() == cid {
+			if config != nil && config.Alias() == alias {
 				return config, nil
 			}
 		}

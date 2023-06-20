@@ -30,22 +30,39 @@ func (c OSGiConfig) Alias() string {
 	return c.alias
 }
 
+func (c OSGiConfig) SymbolicPID() string {
+	if c.pid != "" {
+		return c.pid
+	}
+	if c.fpid != "" && c.alias != "" {
+		return c.fpid + osgi.ConfigAliasSeparator + c.alias
+	}
+	return ""
+}
+
 type OSGiConfigState struct {
 	data *osgi.ConfigListItem
 
 	PID        string         `yaml:"pid" json:"pid"`
+	FPID       string         `yaml:"fpid" json:"fpid"`
+	Alias      string         `yaml:"alias" json:"alias"`
 	Exists     bool           `yaml:"exists" json:"exists"`
 	Details    map[string]any `yaml:"details" json:"details"`
 	Properties map[string]any `yaml:"properties" json:"properties"`
-	FactoryPID string         `yaml:"factoryPid" json:"factoryPid"`
 }
 
 func (c OSGiConfig) State() (*OSGiConfigState, error) {
-	data, err := c.manager.Find(c.pid)
-	if err != nil {
-		return nil, err
+	var (
+		data *osgi.ConfigListItem
+		err  error
+	)
+	if c.pid != "" {
+		data, err = c.manager.Find(c.pid)
+		if err != nil {
+			return nil, err
+		}
 	}
-	if data == nil {
+	if c.fpid != "" && c.alias != "" && data == nil {
 		data, err = c.manager.FindByFactory(c.fpid, c.alias)
 		if err != nil {
 			return nil, err
@@ -53,19 +70,20 @@ func (c OSGiConfig) State() (*OSGiConfigState, error) {
 	}
 	if data == nil {
 		return &OSGiConfigState{
-			PID:    c.pid,
+			PID:    c.SymbolicPID(),
 			Exists: false,
 		}, nil
 	}
 	return &OSGiConfigState{
-		data:       data,
-		FactoryPID: data.FactoryPID,
-		PID:        data.PID,
-		Exists:     true,
+		data:   data,
+		FPID:   data.FPID,
+		PID:    data.PID,
+		Alias:  data.Alias(),
+		Exists: true,
 		Details: map[string]any{
 			"title":           data.Title,
 			"description":     data.Description,
-			"factoryPid":      data.FactoryPID,
+			"factoryPid":      data.FPID,
 			"bundleLocation":  data.BundleLocation,
 			"serviceLocation": data.ServiceLocation,
 		},
@@ -162,15 +180,15 @@ func (c OSGiConfig) MarshalYAML() (interface{}, error) {
 func (c OSGiConfig) MarshalText() string {
 	state, err := c.State()
 	if err != nil {
-		return fmt.Sprintf("PID '%s' state cannot be read\n", c.pid)
+		return fmt.Sprintf("PID '%s' state cannot be read\n", c.SymbolicPID())
 	}
 	sb := bytes.NewBufferString("")
 	if state.Exists {
-		sb.WriteString(fmt.Sprintf("PID '%s'\n", c.pid))
+		sb.WriteString(fmt.Sprintf("PID '%s'\n", c.SymbolicPID()))
 		sb.WriteString(fmtx.TblMap("details", "name", "value", c.detailsWithoutProperties(state.Details)))
 		sb.WriteString(fmtx.TblProps(state.Properties))
 	} else {
-		sb.WriteString(fmt.Sprintf("PID '%s' cannot be found\n", c.pid))
+		sb.WriteString(fmt.Sprintf("PID '%s' cannot be found\n", c.SymbolicPID()))
 	}
 	return sb.String()
 }

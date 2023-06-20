@@ -22,11 +22,11 @@ type ConfigPID struct {
 
 type ConfigListItem struct {
 	PID                  string                    `json:"pid"`
+	FPID                 string                    `json:"factoryPid"`
 	Title                string                    `json:"title"`
 	Description          string                    `json:"description"`
 	Properties           map[string]map[string]any `json:"properties"`
 	AdditionalProperties string                    `json:"additionalProperties"`
-	FactoryPID           string                    `json:"factoryPid"`
 	BundleLocation       string                    `json:"bundle_location"`
 	ServiceLocation      string                    `json:"service_location"`
 }
@@ -47,8 +47,7 @@ func (c ConfigListItem) PropertyValues() map[string]any {
 	return result
 }
 
-// CID Extracts the constant ID, which is used to find config. See FPIDDummy for explanation.
-func (c ConfigListItem) CID() string {
+func (c ConfigListItem) Alias() string {
 	for _, prop := range strings.Split(c.AdditionalProperties, ",") {
 		if strings.HasPrefix(prop, ConfigAliasPropPrefix) {
 			return prop[len(ConfigAliasPropPrefix):]

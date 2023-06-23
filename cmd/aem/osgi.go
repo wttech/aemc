@@ -100,8 +100,8 @@ func (c *CLI) osgiBundleInstall() *cobra.Command {
 }
 
 func osgiBundleDefineFileAndUrlFlags(cmd *cobra.Command) {
-	cmd.Flags().String("file", "", "Local ZIP path")
-	cmd.Flags().String("url", "", "URL to ZIP file")
+	cmd.Flags().String("file", "", "Local JAR path")
+	cmd.Flags().String("url", "", "URL to JAR file")
 	cmd.MarkFlagsMutuallyExclusive("file", "url")
 }
 

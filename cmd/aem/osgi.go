@@ -2,9 +2,13 @@ package main
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg"
+	"github.com/wttech/aemc/pkg/common/httpx"
 	"github.com/wttech/aemc/pkg/common/mapsx"
+	"github.com/wttech/aemc/pkg/common/pathx"
+	"strings"
 )
 
 func (c *CLI) osgiCmd() *cobra.Command {
@@ -41,7 +45,11 @@ func (c *CLI) osgiBundleInstall() *cobra.Command {
 		Use:   "install",
 		Short: "Install OSGi bundle(s)",
 		Run: func(cmd *cobra.Command, args []string) {
-			path, _ := cmd.Flags().GetString("file")
+			path, err := c.osgiBundlePathByFlags(cmd)
+			if err != nil {
+				c.Error(err)
+				return
+			}
 			instances, err := c.aem.InstanceManager().Some()
 			if err != nil {
 				c.Error(err)
@@ -86,9 +94,44 @@ func (c *CLI) osgiBundleInstall() *cobra.Command {
 			}
 		},
 	}
-	osgiBundleDefineFileFlag(cmd)
+	osgiBundleDefineFileAndUrlFlags(cmd)
 	cmd.Flags().BoolP("force", "f", false, "Install even when already installed")
 	return cmd
+}
+
+func osgiBundleDefineFileAndUrlFlags(cmd *cobra.Command) {
+	cmd.Flags().String("file", "", "Local JAR path")
+	cmd.Flags().String("url", "", "URL to JAR file")
+	cmd.MarkFlagsMutuallyExclusive("file", "url")
+}
+
+func (c *CLI) osgiBundlePathByFlags(cmd *cobra.Command) (string, error) {
+	url, _ := cmd.Flags().GetString("url")
+	if len(url) > 0 {
+		fileName := httpx.FileNameFromURL(url)
+		if !strings.HasSuffix(fileName, ".jar") {
+			return "", fmt.Errorf("bundle URL does not contain file name but it should '%s'", url)
+		}
+		path := c.aem.BaseOpts().TmpDir + "/package/" + fileName
+		if !pathx.Exists(path) {
+			log.Infof("downloading bundle from URL '%s' to file '%s'", url, path)
+			err := httpx.DownloadOnce(url, path)
+			if err != nil {
+				return "", err
+			}
+			log.Infof("downloaded bundle from URL '%s' to file '%s'", url, path)
+		}
+		return path, nil
+	}
+	file, _ := cmd.Flags().GetString("file")
+	if len(file) > 0 {
+		fileGlobbed, err := pathx.GlobSome(file)
+		if err != nil {
+			return "", err
+		}
+		return fileGlobbed, nil
+	}
+	return "", fmt.Errorf("flag 'file' or 'url' are required")
 }
 
 func (c *CLI) osgiBundleUninstall() *cobra.Command {
@@ -313,6 +356,11 @@ func (c *CLI) osgiBundleRestartCmd() *cobra.Command {
 func osgiBundleDefineFileFlag(cmd *cobra.Command) {
 	cmd.Flags().String("file", "", "Local bundle JAR file")
 	_ = cmd.MarkFlagRequired("file")
+}
+
+func osgiBundleDefineUrlFlag(cmd *cobra.Command) {
+	cmd.Flags().String("url", "", "URL to JAR file")
+	_ = cmd.MarkFlagRequired("url")
 }
 
 func osgiBundleDefineFlags(cmd *cobra.Command) {

@@ -166,7 +166,7 @@ func (b OSGiBundle) AwaitStarted() error {
 			log.Warn(err)
 			return false
 		}
-		return state.Started()
+		return state.Exists && state.Started()
 	}, time.Minute*3)
 }
 
@@ -177,7 +177,7 @@ func (b OSGiBundle) AwaitStopped() error {
 			log.Warn(err)
 			return false
 		}
-		return state.Stopped()
+		return state.Exists && state.Stopped()
 	}, time.Minute*1)
 }
 

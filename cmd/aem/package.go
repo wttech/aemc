@@ -455,7 +455,7 @@ func pkgByFlags(cmd *cobra.Command, instance pkg.Instance) (*pkg.Package, error)
 
 func pkgDefineFileAndUrlFlags(cmd *cobra.Command) {
 	cmd.Flags().String("file", "", "Local ZIP path")
-	cmd.Flags().String("url", "", "URL to ZIP")
+	cmd.Flags().String("url", "", "URL to ZIP file")
 	cmd.MarkFlagsMutuallyExclusive("file", "url")
 }
 

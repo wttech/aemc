@@ -33,28 +33,27 @@ tasks:
     desc: start AEM instances and dispatcher
     aliases: [ up ]
     cmds:
-      - task: aem:up
-      - task: dispatcher:up
+      - task: aem:start
+      - task: dispatcher:start
 
   stop:
     desc: stop AEM instances and dispatcher
     aliases: [ down ]
     cmds:
-      - task: dispatcher:down
-      - task: aem:down
+      - task: dispatcher:stop
+      - task: aem:stop
 
   restart:
     desc: restart AEM instances and dispatcher
     cmds:
-      - task: aem:down
-      - task: aem:up
-      - task: dispatcher:down
-      - task: dispatcher:up
+      - task: aem:stop
+      - task: aem:start
+      - task: dispatcher:stop
+      - task: dispatcher:start
 
   destroy:
     desc: destroy AEM instances and dispatcher
     cmds:
-      - task: stop
       - task: aem:destroy
       - task: dispatcher:destroy
 
@@ -236,6 +235,7 @@ tasks:
   dispatcher:destroy:
     desc: destroy AEM dispatcher
     dir: dispatcher
+    deps: [ dispatcher:stop ]
     cmds:
       - docker compose rm -fsv
       - rm -fr target/sdk

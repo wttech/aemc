@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/mapsx"
 	"github.com/wttech/aemc/pkg/osgi"
@@ -13,40 +14,76 @@ import (
 type OSGiConfig struct {
 	manager *OSGiConfigManager
 	pid     string
+	fpid    string
+	alias   string
 }
 
-func (c OSGiConfig) Pid() string {
+func (c OSGiConfig) PID() string {
 	return c.pid
+}
+
+func (c OSGiConfig) FPID() string {
+	return c.fpid
+}
+
+func (c OSGiConfig) Alias() string {
+	return c.alias
+}
+
+func (c OSGiConfig) SymbolicPID() string {
+	if c.pid != "" {
+		return c.pid
+	}
+	if c.fpid != "" && c.alias != "" {
+		return c.fpid + osgi.ConfigAliasSeparator + c.alias
+	}
+	return ""
 }
 
 type OSGiConfigState struct {
 	data *osgi.ConfigListItem
 
 	PID        string         `yaml:"pid" json:"pid"`
+	FPID       string         `yaml:"fpid" json:"fpid"`
+	Alias      string         `yaml:"alias" json:"alias"`
 	Exists     bool           `yaml:"exists" json:"exists"`
 	Details    map[string]any `yaml:"details" json:"details"`
 	Properties map[string]any `yaml:"properties" json:"properties"`
 }
 
 func (c OSGiConfig) State() (*OSGiConfigState, error) {
-	data, err := c.manager.Find(c.pid)
-	if err != nil {
-		return nil, err
+	var (
+		data *osgi.ConfigListItem
+		err  error
+	)
+	if c.pid != "" {
+		data, err = c.manager.Find(c.pid)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if c.fpid != "" && c.alias != "" && data == nil {
+		data, err = c.manager.FindByFactory(c.fpid, c.alias)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if data == nil {
 		return &OSGiConfigState{
-			PID:    c.pid,
+			PID:    c.SymbolicPID(),
 			Exists: false,
 		}, nil
 	}
 	return &OSGiConfigState{
-		data: data,
-
-		PID:    c.pid,
+		data:   data,
+		FPID:   data.FPID,
+		PID:    data.PID,
+		Alias:  data.Alias(),
 		Exists: true,
 		Details: map[string]any{
 			"title":           data.Title,
 			"description":     data.Description,
+			"factoryPid":      data.FPID,
 			"bundleLocation":  data.BundleLocation,
 			"serviceLocation": data.ServiceLocation,
 		},
@@ -66,7 +103,7 @@ func (c OSGiConfig) Save(props map[string]any) error {
 	}
 	maps.Copy(propsCombined, props)
 
-	return c.manager.Save(c.pid, propsCombined)
+	return c.manager.Save(c.pid, c.fpid, propsCombined)
 }
 
 func (c OSGiConfig) SaveWithChanged(props map[string]any) (bool, error) {
@@ -75,7 +112,12 @@ func (c OSGiConfig) SaveWithChanged(props map[string]any) (bool, error) {
 		return false, err
 	}
 	if !state.Exists {
-		err = c.manager.Save(c.pid, props)
+		props[osgi.ConfigAliasPropPrefix+c.alias] = osgi.ConfigAliasPropValue
+		if state.PID != (c.fpid + "~" + c.alias) {
+			err = c.manager.Save(state.PID, c.fpid, props)
+		} else {
+			err = c.manager.Save(osgi.ConfigPIDPlaceholder, c.fpid, props)
+		}
 		if err != nil {
 			return false, err
 		}
@@ -85,7 +127,8 @@ func (c OSGiConfig) SaveWithChanged(props map[string]any) (bool, error) {
 	if mapsx.Equal(propsBefore, props) {
 		return false, nil
 	}
-	err = c.manager.Save(c.pid, props)
+	props[osgi.ConfigAliasPropPrefix+c.alias] = osgi.ConfigAliasPropValue
+	err = c.manager.Save(state.PID, c.fpid, props)
 	if err != nil {
 		return false, err
 	}
@@ -137,15 +180,15 @@ func (c OSGiConfig) MarshalYAML() (interface{}, error) {
 func (c OSGiConfig) MarshalText() string {
 	state, err := c.State()
 	if err != nil {
-		return fmt.Sprintf("PID '%s' state cannot be read\n", c.pid)
+		return fmt.Sprintf("PID '%s' state cannot be read\n", c.SymbolicPID())
 	}
 	sb := bytes.NewBufferString("")
 	if state.Exists {
-		sb.WriteString(fmt.Sprintf("PID '%s'\n", c.pid))
+		sb.WriteString(fmt.Sprintf("PID '%s'\n", c.SymbolicPID()))
 		sb.WriteString(fmtx.TblMap("details", "name", "value", c.detailsWithoutProperties(state.Details)))
 		sb.WriteString(fmtx.TblProps(state.Properties))
 	} else {
-		sb.WriteString(fmt.Sprintf("PID '%s' cannot be found\n", c.pid))
+		sb.WriteString(fmt.Sprintf("PID '%s' cannot be found\n", c.SymbolicPID()))
 	}
 	return sb.String()
 }

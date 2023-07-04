@@ -31,14 +31,14 @@ tasks:
 
   start:
     desc: start AEM instances and dispatcher
-    aliases: [up]
+    aliases: [ up ]
     cmds:
       - task: aem:up
       - task: dispatcher:up
 
   stop:
     desc: stop AEM instances and dispatcher
-    aliases: [down]
+    aliases: [ down ]
     cmds:
       - task: dispatcher:down
       - task: aem:down
@@ -67,20 +67,18 @@ tasks:
 
   aem:start:
     desc: start AEM instances
-    aliases: [aem:up]
-    cmds:
-      - sh aemw instance launch
+    aliases: [ aem:up ]
+    cmd: sh aemw instance launch
 
   aem:status:
     desc: check status of AEM instances
     env:
       AEM_OUTPUT_VALUE: ALL
-    cmds:
-      - sh aemw instance status
+    cmd: sh aemw instance status
 
   aem:provision:
     desc: provision AEM instances by installing packages and applying configurations
-    aliases: [aem:configure]
+    aliases: [ aem:configure ]
     cmds:
       - task: aem:provision:repl-agent-publish
       - task: aem:provision:repl-agent-flush
@@ -90,56 +88,53 @@ tasks:
   aem:provision:repl-agent-publish:
     desc: configure replication agent on AEM author instance
     internal: true
-    cmds:
-      - |
-        PROPS="
-        enabled: true
-        transportUri: {{.AEM_PUBLISH_HTTP_URL}}/bin/receive?sling:authRequestLogin=1
-        transportUser: {{.AEM_PUBLISH_USER}}  
-        transportPassword: {{.AEM_PUBLISH_PASSWORD}}  
-        userId: admin
-        "
-        echo "$PROPS" | sh aemw repl agent setup -A --location "author" --name "publish"
+    cmd: |
+      PROPS="
+      enabled: true
+      transportUri: {{.AEM_PUBLISH_HTTP_URL}}/bin/receive?sling:authRequestLogin=1
+      transportUser: {{.AEM_PUBLISH_USER}}  
+      transportPassword: {{.AEM_PUBLISH_PASSWORD}}  
+      userId: admin
+      "
+      echo "$PROPS" | sh aemw repl agent setup -A --location "author" --name "publish"
 
   aem:provision:repl-agent-flush:
     desc: configure replication agent on AEM publish instance
     internal: true
-    cmds:
-      - |
-        PROPS="
-        enabled: true
-        transportUri: {{.AEM_DISPATCHER_HTTP_URL }}/dispatcher/invalidate.cache
-        protocolHTTPHeaders:
-          - 'CQ-Action: {action}'
-          - 'CQ-Handle: {path}'
-          - 'CQ-Path: {path}'
-          - 'Host: publish'
-          "
-        echo "$PROPS" | sh aemw repl agent setup -P --location "publish" --name "flush"
+    cmd: |
+      PROPS="
+      enabled: true
+      transportUri: {{.AEM_DISPATCHER_HTTP_URL }}/dispatcher/invalidate.cache
+      protocolHTTPHeaders:
+        - 'CQ-Action: {action}'
+        - 'CQ-Handle: {path}'
+        - 'CQ-Path: {path}'
+        - 'Host: publish'
+        "
+      echo "$PROPS" | sh aemw repl agent setup -P --location "publish" --name "flush"
 
   aem:provision:crx:
     desc: enable CRX/DE on AEM instances
     internal: true
-    cmds:
-      - 'sh aemw osgi config save --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet" --input-string "alias: /crx/server"'
+    cmd: 'sh aemw osgi config save --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet" --input-string "alias: /crx/server"'
 
   aem:provision:apm:
     desc: deploy APM tool
     internal: true
     vars:
       APM_VERSION: 5.6.19
-    cmds:
-      - sh aemw package deploy --url "https://github.com/wttech/APM/releases/download/apm-{{.APM_VERSION}}/apm-all.cloud-{{.APM_VERSION}}.zip"
+    cmd: sh aemw package deploy --url "https://github.com/wttech/APM/releases/download/apm-{{.APM_VERSION}}/apm-all.cloud-{{.APM_VERSION}}.zip"
 
   aem:destroy:
     desc: destroy AEM instances
-    deps: [aem:stop]
-    cmds: [sh aemw instance destroy]
+    prompt: This will permanently delete all configured AEM instances and their data. Continue?
+    deps: [ aem:stop ]
+    cmd: sh aemw instance destroy
 
   aem:stop:
     desc: stop AEM instances
-    aliases: [aem:down]
-    cmds: [sh aemw instance stop]
+    aliases: [ aem:down ]
+    cmd: sh aemw instance stop
 
   aem:build:
     desc: build AEM application using Maven
@@ -165,17 +160,15 @@ tasks:
       AEM_BUILD_ARGS: -PfedDev
       AEM_BUILD_JAVA_HOME:
         sh: sh aemw instance init --output-value javaHome
-    cmds:
-      - JAVA_HOME=$AEM_BUILD_JAVA_HOME mvn clean package $AEM_BUILD_ARGS
+    cmd: JAVA_HOME=$AEM_BUILD_JAVA_HOME mvn clean package $AEM_BUILD_ARGS
 
   aem:deploy:
     desc: deploy AEM application
-    deps: [aem:build]
-    cmds:
-      - sh aemw package deploy --file "all/target/*.all-*.zip"
+    deps: [ aem:build ]
+    cmd: sh aemw package deploy --file "all/target/*.all-*.zip"
 
   aem:check:
-    deps: [aem:author:check, aem:publish:check]
+    deps: [ aem:author:check, aem:publish:check ]
 
   aem:author:check:
     desc: check health of AEM author instance
@@ -205,7 +198,7 @@ tasks:
 
   dispatcher:start:
     desc: start AEM dispatcher using SDK image
-    aliases: [dispatcher:up]
+    aliases: [ dispatcher:up ]
     dir: dispatcher
     cmds:
       - 'command -v docker || { echo "Docker is not installed! Visit: https://www.docker.com/products/docker-desktop"; exit 1; }'
@@ -218,9 +211,9 @@ tasks:
 
   dispatcher:stop:
     desc: stop AEM dispatcher
-    aliases: [dispatcher:down]
+    aliases: [ dispatcher:down ]
     dir: dispatcher
-    cmds: [docker compose down]
+    cmd: docker compose down
 
   dispatcher:restart:
     desc: restart AEM dispatcher
@@ -237,7 +230,7 @@ tasks:
 
   dispatcher:login:
     desc: login to AEM dispatcher shell
-    cmds: [docker exec -it dispatcher bash]
+    cmd: docker exec -it dispatcher bash
     ignore_error: true
 
   dispatcher:destroy:
@@ -255,29 +248,26 @@ tasks:
       - task: dispatcher:hosts:linux
 
   dispatcher:hosts:windows:
-    platforms: [windows]
+    platforms: [ windows ]
     status:
       - cat C:/Windows/System32/drivers/etc/hosts | grep -qxF '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}  '
-    cmds:
-      - powershell -command "Start-Process cmd -ArgumentList \"/C echo "{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}" >> C:\Windows\System32\drivers\etc\hosts\" -Verb runas"
+    cmd: powershell -command "Start-Process cmd -ArgumentList \"/C echo "{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}" >> C:\Windows\System32\drivers\etc\hosts\" -Verb runas"
 
   dispatcher:hosts:darwin:
-    platforms: [darwin]
+    platforms: [ darwin ]
     status:
       - cat /etc/hosts | grep -qxF '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}'
-    cmds:
-      - osascript -e "do shell script \"echo '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}' >> /etc/hosts\" with prompt \"AEM - Add domains to host file\" with administrator privileges"
+    cmd: osascript -e "do shell script \"echo '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}' >> /etc/hosts\" with prompt \"AEM - Add domains to host file\" with administrator privileges"
 
   dispatcher:hosts:linux:
-    platforms: [linux]
+    platforms: [ linux ]
     status:
       - cat /etc/hosts | grep -qxF '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}'
-    cmds:
-      - sudo echo '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}' >> /etc/hosts
+    cmd: sudo echo '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}' >> /etc/hosts
 
   dispatcher:check:
     desc: check health of AEM dispatcher
-    deps: [dispatcher:hosts]
+    deps: [ dispatcher:hosts ]
     cmds:
       - curl "http://{{.AEM_DISPATCHER_DOMAIN}}" -s -o /dev/null || true # warmup
       - sleep 3

@@ -20,6 +20,10 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
 - Fast & lightweight
 - Usable on all operating systems and architectures without pre-installing any dependencies
 
+# References
+
+* Intro Guide Blog Post - [Get your AEM together with AEM Compose!](https://wttech.blog/blog/2023/get-your-aem-together-with-aem-compose/) by [Krystian Panek](mailto:krystian.panek@wundermanthompson.com)
+
 # Table of Contents
 
 * [Distributions](#distributions)
@@ -37,6 +41,7 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
     * [Increasing verbosity](#increasing-verbosity)
     * [Installing content packages](#installing-content-packages)
 * [Contributing](#contributing)
+* [Authors](#authors)
 * [License](#license)
 
 # Distributions
@@ -495,6 +500,12 @@ Issues reported or pull requests created will be very appreciated.
 2. See [development guide](DEVELOPMENT.md)
 3. Do code changes on a feature branch created from *main* branch.
 4. Create a pull request with a base of *main* branch.
+
+# Authors
+
+- Creator, owner, and maintainer: [Krystian Panek](mailto:krystian.panek@wundermanthompson.com)
+- Consultancy: [Tomasz Sobczyk](mailto:tomasz.sobczyk@wundermanthompson.com), [Maciej Majchrzak](mailto:maciej.majchrzak@wundermanthompson.com)
+- Contributors: [&lt;see all&gt;](https://github.com/wttech/aemc/graphs/contributors)
 
 # License
 

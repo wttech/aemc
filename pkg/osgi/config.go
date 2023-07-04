@@ -3,7 +3,9 @@ package osgi
 import (
 	"bytes"
 	"github.com/samber/lo"
+	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/fmtx"
+	"strings"
 )
 
 type ConfigPIDs struct {
@@ -19,12 +21,14 @@ type ConfigPID struct {
 }
 
 type ConfigListItem struct {
-	PID             string                    `json:"pid"`
-	Title           string                    `json:"title"`
-	Description     string                    `json:"description"`
-	Properties      map[string]map[string]any `json:"properties"`
-	BundleLocation  string                    `json:"bundle_location"`
-	ServiceLocation string                    `json:"service_location"`
+	PID                  string                    `json:"pid"`
+	FPID                 string                    `json:"factoryPid"`
+	Title                string                    `json:"title"`
+	Description          string                    `json:"description"`
+	Properties           map[string]map[string]any `json:"properties"`
+	AdditionalProperties string                    `json:"additionalProperties"`
+	BundleLocation       string                    `json:"bundle_location"`
+	ServiceLocation      string                    `json:"service_location"`
 }
 
 func (c ConfigListItem) PropertyValues() map[string]any {
@@ -43,6 +47,15 @@ func (c ConfigListItem) PropertyValues() map[string]any {
 	return result
 }
 
+func (c ConfigListItem) Alias() string {
+	for _, prop := range strings.Split(c.AdditionalProperties, ",") {
+		if strings.HasPrefix(prop, ConfigAliasPropPrefix) {
+			return prop[len(ConfigAliasPropPrefix):]
+		}
+	}
+	return ""
+}
+
 type ConfigList struct {
 	List []ConfigListItem
 }
@@ -54,3 +67,10 @@ func (cl ConfigList) MarshalText() string {
 	})))
 	return bs.String()
 }
+
+const (
+	ConfigPIDPlaceholder  = "[Temporary PID replaced by real PID upon save]" // https://github.com/apache/felix-dev/blob/master/webconsole/src/main/java/org/apache/felix/webconsole/internal/configuration/ConfigurationUtil.java#L36
+	ConfigAliasSeparator  = "~"
+	ConfigAliasPropPrefix = "alias" + ConfigAliasSeparator
+	ConfigAliasPropValue  = common.AppId
+)

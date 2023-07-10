@@ -38,6 +38,7 @@ func DownloadWithOpts(opts DownloadOpts) error {
 		return fmt.Errorf("destination for downloaded file already exist")
 	}
 	client := resty.New()
+	client.SetDoNotParseResponse(true)
 	if len(opts.AuthBasicUser) > 0 && len(opts.AuthBasicPassword) > 0 {
 		client.SetBasicAuth(opts.AuthBasicUser, opts.AuthBasicPassword)
 	}
@@ -52,12 +53,12 @@ func DownloadWithOpts(opts DownloadOpts) error {
 	if err := pathx.Ensure(filepath.Dir(fileTmp)); err != nil {
 		return err
 	}
-	res, err := http.Get(opts.URL)
+	res, err := client.R().Get(opts.URL)
 	if err != nil {
 		return fmt.Errorf("cannot download from URL '%s' to file '%s': %w", opts.URL, opts.File, err)
 	}
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
+	defer res.RawBody().Close()
+	if res.StatusCode() != http.StatusOK {
 		return fmt.Errorf("cannot download from URL '%s' to file '%s': %s", opts.URL, opts.File, res.Status)
 	}
 	fhTmp, err := os.Create(fileTmp)
@@ -65,12 +66,12 @@ func DownloadWithOpts(opts DownloadOpts) error {
 		return fmt.Errorf("cannot download from URL '%s' as file '%s' cannot be written", opts.URL, opts.File)
 	}
 	if color.NoColor {
-		if _, err := io.Copy(fhTmp, res.Body); err != nil {
+		if _, err := io.Copy(fhTmp, res.RawBody()); err != nil {
 			return fmt.Errorf("cannot download from URL '%s' to file '%s': %w", opts.URL, opts.File, err)
 		}
 	} else {
-		bar := pb.Full.Start64(res.ContentLength)
-		if _, err := io.Copy(bar.NewProxyWriter(fhTmp), res.Body); err != nil {
+		bar := pb.Full.Start64(res.RawResponse.ContentLength)
+		if _, err := io.Copy(bar.NewProxyWriter(fhTmp), res.RawBody()); err != nil {
 			return fmt.Errorf("cannot download from URL '%s' to file '%s': %w", opts.URL, opts.File, err)
 		}
 		bar.Finish()

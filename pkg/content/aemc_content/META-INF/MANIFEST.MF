@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Content-Package-Id: my_packages:aemc_content
+Content-Package-Type: mixed
+

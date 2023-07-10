@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+    <entry key="packageType">mixed</entry>
+    <entry key="packageFormatVersion">2</entry>
+    <entry key="group">my_packages</entry>
+    <entry key="name">aemc_content</entry>
+</properties>

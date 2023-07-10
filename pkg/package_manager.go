@@ -208,7 +208,7 @@ func (pm *PackageManager) Download(remotePath string, localFile string) error {
 	if err != nil {
 		return fmt.Errorf("%s > cannot download package '%s': %w", pm.instance.ID(), remotePath, err)
 	}
-	log.Infof("%s > download package '%s'", pm.instance.ID(), remotePath)
+	log.Infof("%s > downloaded package '%s'", pm.instance.ID(), remotePath)
 	return nil
 }
 

@@ -56,8 +56,8 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 				err = fmt.Errorf("root path '%s' does not contain '%s'", rootPath, content.JcrRoot)
 			}
 			filterPath, err := cmd.Flags().GetString("filter-path")
-			if err == nil && !strings.Contains(filterPath, pkg.FilterXml) {
-				err = fmt.Errorf("filer path '%s' does not end '%s'", rootPath, pkg.FilterXml)
+			if err == nil && !strings.HasSuffix(filterPath, pkg.FilterXml) {
+				err = fmt.Errorf("filter path '%s' does not end '%s'", rootPath, pkg.FilterXml)
 			}
 			clean, _ := cmd.Flags().GetBool("clean")
 			instance, err := c.aem.InstanceManager().One()
@@ -90,16 +90,17 @@ func (c *CLI) contentMoveCmd() *cobra.Command {
 		Short:   "Move content from one instance to another",
 		Run: func(cmd *cobra.Command, args []string) {
 			filterPath, err := cmd.Flags().GetString("filter-path")
-			if err == nil && !strings.Contains(filterPath, pkg.FilterXml) {
+			if err == nil && !strings.HasSuffix(filterPath, pkg.FilterXml) {
 				err = fmt.Errorf("filter path '%s' does not end '%s'", filterPath, pkg.FilterXml)
 			}
+			clean, _ := cmd.Flags().GetBool("clean")
 			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
 				c.Error(err)
 				return
 			}
 			if err == nil {
-				err = pkg.NewMover(c.aem.ContentOpts()).Move(instance.PackageManager(), nil, filterPath)
+				err = pkg.NewMover(c.aem.ContentOpts()).Move(instance.PackageManager(), nil, filterPath, clean)
 			}
 			if err != nil {
 				c.Error(fmt.Errorf("content move failed: %w", err))
@@ -116,5 +117,6 @@ func (c *CLI) contentMoveCmd() *cobra.Command {
 	cmd.MarkFlagsMutuallyExclusive("desc-instance-url", "desc-instance-id")
 	cmd.Flags().String("filter-path", "", "Filter path")
 	_ = cmd.MarkFlagRequired("filter-path")
+	cmd.Flags().Bool("clean", true, "Clean content before move")
 	return cmd
 }

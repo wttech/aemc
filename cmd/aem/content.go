@@ -66,7 +66,7 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 				return
 			}
 			if err == nil {
-				err = pkg.NewDownloader(c.aem.ContentOpts()).Download(instance.PackageManager(), rootPath, filterPath, true, clean)
+				err = pkg.NewDownloader(c.aem.ContentOpts()).Download(instance.PackageManager(), rootPath, filterPath, clean)
 			}
 			if err != nil {
 				c.Error(fmt.Errorf("content download failed: %w", err))

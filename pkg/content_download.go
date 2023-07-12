@@ -29,7 +29,7 @@ func NewDownloader(config *content.Opts) *Downloader {
 var aemcContent embed.FS
 
 func copyEmbedFiles(efs *embed.FS, targetTmpDir string, dirPrefix string) error {
-	if err := pathx.DeleteIfExists(targetTmpDir); err != nil {
+	if err := pathx.DeleteIfExists(targetTmpDir); err == nil {
 		return fmt.Errorf("cannot delete temporary dir '%s': %w", targetTmpDir, err)
 	}
 	return fs.WalkDir(efs, ".", func(path string, dirEntry fs.DirEntry, err error) error {
@@ -37,56 +37,38 @@ func copyEmbedFiles(efs *embed.FS, targetTmpDir string, dirPrefix string) error 
 			return nil
 		}
 		bytes, err := efs.ReadFile(path)
-		if err != nil {
-			return err
+		if err == nil {
+			err = filex.Write(targetTmpDir+strings.TrimPrefix(path, dirPrefix), bytes)
 		}
-		if err := filex.Write(targetTmpDir+strings.TrimPrefix(path, dirPrefix), bytes); err != nil {
-			return err
-		}
-		return nil
+		return err
 	})
 }
 
-func (c Downloader) Download(packageManager *PackageManager, root string, filter string, unpack bool, clean bool) error {
+func (c Downloader) Download(packageManager *PackageManager, root string, filter string, clean bool) error {
 	err := copyEmbedFiles(&aemcContent, "/tmp/aemc_content", "content/aemc_content")
-	if err != nil {
-		return err
+	if err == nil {
+		err = filex.Copy(filter, "/tmp/aemc_content/META-INF/vault/filter.xml", true)
 	}
-	err = filex.Copy(filter, "/tmp/aemc_content/META-INF/vault/filter.xml", true)
-	if err != nil {
-		return err
+	if err == nil {
+		_, err = filex.ArchiveWithChanged("/tmp/aemc_content", "/tmp/aemc_content.zip")
 	}
-	_, err = filex.ArchiveWithChanged("/tmp/aemc_content", "/tmp/aemc_content.zip")
-	if err != nil {
-		return err
+	if err == nil {
+		_, err = packageManager.Upload("/tmp/aemc_content.zip")
 	}
-	_, err = packageManager.Upload("/tmp/aemc_content.zip")
-	if err != nil {
-		return err
+	if err == nil {
+		err = packageManager.Build("/etc/packages/my_packages/aemc_content.zip")
 	}
-	err = packageManager.Build("/etc/packages/my_packages/aemc_content.zip")
-	if err != nil {
-		return err
+	if err == nil {
+		err = packageManager.Download("/etc/packages/my_packages/aemc_content.zip", "/tmp/aemc_content.zip")
 	}
-	err = packageManager.Download("/etc/packages/my_packages/aemc_content.zip", "/tmp/aemc_content.zip")
-	if err != nil {
-		return err
-	}
-	if unpack {
+	if err == nil && clean {
 		_, err = filex.UnarchiveWithChanged("/tmp/aemc_content.zip", "/tmp/aemc_content")
-		if err != nil {
-			return err
+		if err == nil {
+			err = filex.Copy("/tmp/aemc_content/jcr_root", root, true)
 		}
-		err = filex.Copy("/tmp/aemc_content/jcr_root", root, true)
-		if err != nil {
-			return err
-		}
-	}
-	if unpack && clean {
-		err = content.NewCleaner(c.config).Clean(root)
-		if err != nil {
-			return err
+		if err == nil {
+			err = content.NewCleaner(c.config).Clean(root)
 		}
 	}
-	return nil
+	return err
 }

@@ -82,5 +82,11 @@ func (c Downloader) Download(packageManager *PackageManager, root string, filter
 			return err
 		}
 	}
+	if unpack && clean {
+		err = content.NewCleaner(c.config).Clean(root)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

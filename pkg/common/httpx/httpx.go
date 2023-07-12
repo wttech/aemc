@@ -59,7 +59,7 @@ func DownloadWithOpts(opts DownloadOpts) error {
 	}
 	defer res.RawBody().Close()
 	if res.StatusCode() != http.StatusOK {
-		return fmt.Errorf("cannot download from URL '%s' to file '%s': %s", opts.URL, opts.File, res.Status)
+		return fmt.Errorf("cannot download from URL '%s' to file '%s': %s", opts.URL, opts.File, res.Status())
 	}
 	fhTmp, err := os.Create(fileTmp)
 	if err != nil {

@@ -79,11 +79,11 @@ func eachFilesInDir(root string, processFileFunc func(path string) error) error 
 }
 
 func eachFiles(root string, processFileFunc func(string) error) error {
-	return filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
-		if err == nil && !info.IsDir() {
-			err = processFileFunc(filepath.ToSlash(path))
+	return filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+		if entry.IsDir() {
+			return nil
 		}
-		return err
+		return processFileFunc(filepath.ToSlash(path))
 	})
 }
 

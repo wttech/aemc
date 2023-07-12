@@ -32,8 +32,8 @@ func copyEmbedFiles(efs *embed.FS, targetTmpDir string, dirPrefix string) error 
 	if err := pathx.DeleteIfExists(targetTmpDir); err == nil {
 		return fmt.Errorf("cannot delete temporary dir '%s': %w", targetTmpDir, err)
 	}
-	return fs.WalkDir(efs, ".", func(path string, dirEntry fs.DirEntry, err error) error {
-		if dirEntry.IsDir() {
+	return fs.WalkDir(efs, ".", func(path string, entry fs.DirEntry, err error) error {
+		if entry.IsDir() {
 			return nil
 		}
 		bytes, err := efs.ReadFile(path)

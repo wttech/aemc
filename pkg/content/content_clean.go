@@ -2,6 +2,7 @@ package content
 
 import (
 	"bufio"
+	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"io"
@@ -328,11 +329,9 @@ func eachParentFiles(root string, processFileFunc func(string) error) error {
 }
 
 func matchAnyRule(value string, path string, rules []PathRule) bool {
-	result := false
-	for i := 0; i < len(rules) && !result; i++ {
-		result = matchRule(value, path, rules[i])
-	}
-	return result
+	return lo.SomeBy(rules, func(rule PathRule) bool {
+		return matchRule(value, path, rule)
+	})
 }
 
 func matchRule(value string, path string, rule PathRule) bool {
@@ -340,8 +339,7 @@ func matchRule(value string, path string, rule PathRule) bool {
 }
 
 func matchString(value string, patterns []string) bool {
-	result := stringsx.MatchSome(value, patterns)
-	return result
+	return stringsx.MatchSome(value, patterns)
 }
 
 func readLines(path string) ([]string, error) {
@@ -366,10 +364,9 @@ func writeLines(path string, lines []string) error {
 	}
 	defer file.Close()
 
-	for i := 0; i < len(lines) && err == nil; i++ {
-		_, err = file.WriteString(lines[i] + "\n")
-	}
-	return nil
+	content := strings.Join(lines, "\n")
+	_, err = file.WriteString(content)
+	return err
 }
 
 func (c Cleaner) backupFile(path string, format string) error {

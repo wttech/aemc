@@ -19,7 +19,6 @@ const (
 	PropPattern         = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
 	NamespacePattern    = "^\\w+:(\\w+)=\"[^\"]+\"$"
 	JcrRoot             = "jcr_root"
-	FileDotContent      = ".content.xml"
 	ParentsBackupSuffix = ".bak"
 )
 
@@ -72,10 +71,10 @@ func (c Cleaner) Clean(root string) error {
 }
 
 func eachFilesInDir(root string, processFileFunc func(path string) error) error {
-	infos, err := os.ReadDir(root)
-	for i := 0; i < len(infos) && err == nil; i++ {
-		if !infos[i].IsDir() {
-			err = processFileFunc(filepath.ToSlash(filepath.Join(root, infos[i].Name())))
+	entries, err := os.ReadDir(root)
+	for i := 0; i < len(entries) && err == nil; i++ {
+		if !entries[i].IsDir() {
+			err = processFileFunc(filepath.Join(root, entries[i].Name()))
 		}
 	}
 	return err
@@ -86,7 +85,7 @@ func eachFiles(root string, processFileFunc func(string) error) error {
 		if entry.IsDir() {
 			return nil
 		}
-		return processFileFunc(filepath.ToSlash(path))
+		return processFileFunc(path)
 	})
 }
 
@@ -97,7 +96,7 @@ func (c Cleaner) cleanDotContents(root string) error {
 }
 
 func (c Cleaner) cleanDotContentFile(path string) error {
-	if !strings.HasSuffix(path, FileDotContent) {
+	if !strings.HasSuffix(path, JcrContentFile) {
 		return nil
 	}
 
@@ -145,10 +144,9 @@ func (c Cleaner) cleanNamespaces(lines []string) []string {
 				if groups == nil {
 					rootResult = append(rootResult, part)
 				} else {
-					flag := false
-					for i := 0; i < len(lines) && !flag; i++ {
-						flag = strings.Contains(lines[i], groups[1]+":")
-					}
+					flag := lo.SomeBy(lines, func(line string) bool {
+						return strings.Contains(line, groups[1]+":")
+					})
 					if flag {
 						rootResult = append(rootResult, part)
 					}
@@ -245,15 +243,15 @@ func deleteFile(path string, allowedFunc func() bool) error {
 }
 
 func deleteEmptyDirs(root string) error {
-	infos, err := os.ReadDir(root)
-	for i := 0; i < len(infos) && err == nil; i++ {
-		if infos[i].IsDir() {
-			err = deleteEmptyDirs(filepath.ToSlash(filepath.Join(root, infos[i].Name())))
+	entries, err := os.ReadDir(root)
+	for i := 0; i < len(entries) && err == nil; i++ {
+		if entries[i].IsDir() {
+			err = deleteEmptyDirs(filepath.Join(root, entries[i].Name()))
 		}
 	}
 	if err == nil {
-		infos, err = os.ReadDir(root)
-		if err == nil && len(infos) == 0 {
+		entries, err = os.ReadDir(root)
+		if err == nil && len(entries) == 0 {
 			log.Printf("Deleting empty directory %s", root)
 			err = os.Remove(root)
 		}
@@ -275,11 +273,11 @@ func (c Cleaner) doParentsBackup(root string) error {
 }
 
 func (c Cleaner) doRootBackup(root string) error {
-	info, err := os.Stat(root)
+	entry, err := os.Stat(root)
 	if err != nil {
 		return err
 	}
-	if !info.IsDir() {
+	if !entry.IsDir() {
 		if err = c.backupFile(root, "Doing backup of root file: %s"); err != nil {
 			return err
 		}
@@ -321,7 +319,7 @@ func eachParentFiles(root string, processFileFunc func(string) error) error {
 	parent := root
 	for strings.Contains(parent, JcrRoot) && filepath.Base(parent) != JcrRoot {
 		parent = filepath.Dir(parent)
-		if err := processFileFunc(filepath.ToSlash(parent)); err != nil {
+		if err := processFileFunc(parent); err != nil {
 			return err
 		}
 	}

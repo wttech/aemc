@@ -214,6 +214,10 @@ func (im *InstanceManager) NewLocalPair() []Instance {
 	return []Instance{im.NewLocalAuthor(), im.NewLocalPublish()}
 }
 
+func (im *InstanceManager) NewByID(id string) *Instance {
+	return im.newFromConfig(id)
+}
+
 func (im *InstanceManager) NewByURL(url string) (*Instance, error) {
 	urlConfig, err := nurl.Parse(url)
 	if err != nil {

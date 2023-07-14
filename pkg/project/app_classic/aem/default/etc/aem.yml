@@ -211,8 +211,6 @@ output:
     mode: console
 
 content:
-  files_dot_content:
-    - "**/.content.xml"
   files_deleted:
     - patterns: "**/_jcr_content/folderThumbnail*"
       included_paths: [ "**/content/dam/*" ]
@@ -258,4 +256,3 @@ content:
         - "mix:versionable"
   namespaces_skipped: true
   parents_backup_enabled: true
-  parents_backup_suffix: ".bak"

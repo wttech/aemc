@@ -8,14 +8,12 @@ import (
 type Opts struct {
 	baseOpts *base.Opts
 
-	FilesDotContent      []string
 	FilesDeleted         []PathRule
 	FilesFlattened       []string
 	PropertiesSkipped    []PathRule
 	MixinTypesSkipped    []PathRule
 	NamespacesSkipped    bool
 	ParentsBackupEnabled bool
-	ParentsBackupSuffix  string
 }
 
 type PathRule struct {
@@ -30,14 +28,12 @@ func NewOpts(baseOpts *base.Opts) *Opts {
 	return &Opts{
 		baseOpts: baseOpts,
 
-		FilesDotContent:      cv.GetStringSlice("content.files_dot_content"),
 		FilesDeleted:         determinePathRules(cv.Get("content.files_deleted")),
 		FilesFlattened:       cv.GetStringSlice("content.files_flattened"),
 		PropertiesSkipped:    determinePathRules(cv.Get("content.properties_skipped")),
 		MixinTypesSkipped:    determinePathRules(cv.Get("content.mixin_types_skipped")),
 		NamespacesSkipped:    cv.GetBool("content.namespaces_skipped"),
 		ParentsBackupEnabled: cv.GetBool("content.parents_backup_enabled"),
-		ParentsBackupSuffix:  cv.GetString("content.parents_backup_suffix"),
 	}
 }
 

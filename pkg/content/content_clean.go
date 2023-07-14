@@ -12,12 +12,14 @@ import (
 )
 
 const (
-	JcrContentFile    = ".content.xml"
-	JcrMixinTypesProp = "jcr:mixinTypes"
-	JcrRootPrefix     = "<jcr:root"
-	PropPattern       = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
-	NamespacePattern  = "^\\w+:(\\w+)=\"[^\"]+\"$"
-	JcrRoot           = "jcr_root"
+	JcrContentFile      = ".content.xml"
+	JcrMixinTypesProp   = "jcr:mixinTypes"
+	JcrRootPrefix       = "<jcr:root"
+	PropPattern         = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
+	NamespacePattern    = "^\\w+:(\\w+)=\"[^\"]+\"$"
+	JcrRoot             = "jcr_root"
+	FileDotContent      = ".content.xml"
+	ParentsBackupSuffix = ".bak"
 )
 
 type Cleaner struct {
@@ -94,7 +96,7 @@ func (c Cleaner) cleanDotContents(root string) error {
 }
 
 func (c Cleaner) cleanDotContentFile(path string) error {
-	if !matchString(path, c.config.FilesDotContent) {
+	if !strings.HasSuffix(path, FileDotContent) {
 		return nil
 	}
 
@@ -224,7 +226,7 @@ func (c Cleaner) deleteFiles(root string) error {
 }
 
 func (c Cleaner) deleteBackupFiles(root string) error {
-	patterns := []string{".*" + c.config.ParentsBackupSuffix}
+	patterns := []string{".*" + ParentsBackupSuffix}
 	return eachFiles(root, func(path string) error {
 		return deleteFile(path, func() bool {
 			return matchString(path, patterns)
@@ -261,7 +263,7 @@ func deleteEmptyDirs(root string) error {
 func (c Cleaner) doParentsBackup(root string) error {
 	return eachParentFiles(root, func(parent string) error {
 		return eachFilesInDir(parent, func(path string) error {
-			if !strings.HasSuffix(path, c.config.ParentsBackupSuffix) {
+			if !strings.HasSuffix(path, ParentsBackupSuffix) {
 				if err := c.backupFile(path, "Doing backup of parent file: %s"); err != nil {
 					return err
 				}
@@ -293,8 +295,8 @@ func (c Cleaner) doRootBackup(root string) error {
 
 func (c Cleaner) undoParentsBackup(root string) error {
 	return eachFilesInDir(root, func(path string) error {
-		if strings.HasSuffix(path, c.config.ParentsBackupSuffix) {
-			origin := strings.TrimSuffix(path, c.config.ParentsBackupSuffix)
+		if strings.HasSuffix(path, ParentsBackupSuffix) {
+			origin := strings.TrimSuffix(path, ParentsBackupSuffix)
 			log.Printf("Undoing backup of parent file: %s", path)
 			return os.Rename(path, origin)
 		}
@@ -380,7 +382,7 @@ func (c Cleaner) backupFile(path string, format string) error {
 	}
 	defer source.Close()
 
-	destination, err := os.Create(path + c.config.ParentsBackupSuffix)
+	destination, err := os.Create(path + ParentsBackupSuffix)
 	if err != nil {
 		return err
 	}

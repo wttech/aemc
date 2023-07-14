@@ -3,11 +3,11 @@ package content
 import (
 	"bufio"
 	log "github.com/sirupsen/logrus"
+	"github.com/wttech/aemc/pkg/common/stringsx"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 )
 
@@ -140,7 +140,7 @@ func (c Cleaner) cleanNamespaces(lines []string) []string {
 		if strings.HasPrefix(line, JcrRootPrefix) {
 			var rootResult []string
 			for _, part := range strings.Split(line, " ") {
-				groups := regexp.MustCompile(NamespacePattern).FindStringSubmatch(part)
+				groups := stringsx.MatchGroups(part, NamespacePattern)
 				if groups == nil {
 					rootResult = append(rootResult, part)
 				} else {
@@ -162,7 +162,7 @@ func (c Cleaner) cleanNamespaces(lines []string) []string {
 }
 
 func (c Cleaner) lineProcess(path string, line string) (bool, string) {
-	groups := regexp.MustCompile(PropPattern).FindStringSubmatch(line)
+	groups := stringsx.MatchGroups(line, PropPattern)
 	if groups == nil {
 		return false, line
 	} else if groups[1] == JcrMixinTypesProp {
@@ -340,10 +340,7 @@ func matchRule(value string, path string, rule PathRule) bool {
 }
 
 func matchString(value string, patterns []string) bool {
-	result := false
-	for i := 0; i < len(patterns) && !result; i++ {
-		result, _ = regexp.MatchString(patterns[i], value)
-	}
+	result := stringsx.MatchSome(value, patterns)
 	return result
 }
 

@@ -72,9 +72,9 @@ func (c Cleaner) Clean(root string) error {
 
 func eachFilesInDir(root string, processFileFunc func(path string) error) error {
 	entries, err := os.ReadDir(root)
-	for i := 0; i < len(entries) && err == nil; i++ {
-		if !entries[i].IsDir() {
-			err = processFileFunc(filepath.Join(root, entries[i].Name()))
+	for _, entry := range entries {
+		if err == nil && !entry.IsDir() {
+			err = processFileFunc(filepath.Join(root, entry.Name()))
 		}
 	}
 	return err
@@ -244,9 +244,9 @@ func deleteFile(path string, allowedFunc func() bool) error {
 
 func deleteEmptyDirs(root string) error {
 	entries, err := os.ReadDir(root)
-	for i := 0; i < len(entries) && err == nil; i++ {
-		if entries[i].IsDir() {
-			err = deleteEmptyDirs(filepath.Join(root, entries[i].Name()))
+	for _, entry := range entries {
+		if err == nil && entry.IsDir() {
+			err = deleteEmptyDirs(filepath.Join(root, entry.Name()))
 		}
 	}
 	if err == nil {

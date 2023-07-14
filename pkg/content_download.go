@@ -12,7 +12,6 @@ import (
 
 const (
 	FilterXml = "filter.xml"
-	PID       = "my_packages:aemc_content"
 )
 
 type Downloader struct {

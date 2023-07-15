@@ -26,10 +26,7 @@ func (c *CLI) contentCleanCmd() *cobra.Command {
 		Aliases: []string{"cln"},
 		Short:   "Clean downloaded content",
 		Run: func(cmd *cobra.Command, args []string) {
-			rootPath, err := cmd.Flags().GetString("root-path")
-			if err == nil && !strings.Contains(rootPath, content.JcrRoot) {
-				err = fmt.Errorf("root path '%s' does not contain '%s'", rootPath, content.JcrRoot)
-			}
+			rootPath, err := c.determineRootPath(cmd)
 			if err == nil {
 				err = content.NewCleaner(c.aem.ContentOpts()).Clean(rootPath)
 			}
@@ -51,20 +48,16 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 		Aliases: []string{"dl"},
 		Short:   "Download content from running instance",
 		Run: func(cmd *cobra.Command, args []string) {
-			rootPath, err := cmd.Flags().GetString("root-path")
-			if err == nil && !strings.Contains(rootPath, content.JcrRoot) {
-				err = fmt.Errorf("root path '%s' does not contain '%s'", rootPath, content.JcrRoot)
+			instance, err := c.aem.InstanceManager().One()
+			var rootPath string
+			if err == nil {
+				rootPath, err = c.determineRootPath(cmd)
 			}
-			filterPath, err := cmd.Flags().GetString("filter-path")
-			if err == nil && !strings.HasSuffix(filterPath, pkg.FilterXml) {
-				err = fmt.Errorf("filter path '%s' does not end '%s'", rootPath, pkg.FilterXml)
+			var filterPath string
+			if err == nil {
+				filterPath, err = c.determineFilterPath(cmd)
 			}
 			clean, _ := cmd.Flags().GetBool("clean")
-			instance, err := c.aem.InstanceManager().One()
-			if err != nil {
-				c.Error(err)
-				return
-			}
 			if err == nil {
 				err = pkg.NewDownloader(c.aem.ContentOpts()).Download(instance.PackageManager(), rootPath, filterPath, clean)
 			}
@@ -89,18 +82,14 @@ func (c *CLI) contentMoveCmd() *cobra.Command {
 		Aliases: []string{"mv"},
 		Short:   "Move content from one instance to another",
 		Run: func(cmd *cobra.Command, args []string) {
-			var err error
-			scrInstance := c.determineInstance(cmd, "src-instance-url", "src-instance-id")
-			if scrInstance == nil {
-				err = fmt.Errorf("unable to determine source instance")
+			scrInstance, err := c.determineInstance(cmd, "src-instance-url", "src-instance-id", "unable to determine source instance")
+			var descInstance *pkg.Instance
+			if err == nil {
+				descInstance, err = c.determineInstance(cmd, "desc-instance-url", "desc-instance-id", "unable to determine destination instance")
 			}
-			descInstance := c.determineInstance(cmd, "desc-instance-url", "desc-instance-id")
-			if descInstance == nil {
-				err = fmt.Errorf("unable to determine destination instance")
-			}
-			filterPath, err := cmd.Flags().GetString("filter-path")
-			if err == nil && !strings.HasSuffix(filterPath, pkg.FilterXml) {
-				err = fmt.Errorf("filter path '%s' does not end '%s'", filterPath, pkg.FilterXml)
+			var filterPath string
+			if err == nil {
+				filterPath, err = c.determineFilterPath(cmd)
 			}
 			clean, _ := cmd.Flags().GetBool("clean")
 			if err == nil {
@@ -125,14 +114,14 @@ func (c *CLI) contentMoveCmd() *cobra.Command {
 	return cmd
 }
 
-func (c *CLI) determineInstance(cmd *cobra.Command, urlParamName string, idParamName string) *pkg.Instance {
+func (c *CLI) determineInstance(cmd *cobra.Command, urlParamName string, idParamName string, errorMsg string) (*pkg.Instance, error) {
 	var instance *pkg.Instance
 	if cmd.Flags().Lookup(urlParamName) != nil {
 		url, err := cmd.Flags().GetString(urlParamName)
 		if err == nil {
 			instance, err = c.aem.InstanceManager().NewByURL(url)
 		}
-		return instance
+		return instance, nil
 	}
 	if cmd.Flags().Lookup(idParamName) != nil {
 		id, err := cmd.Flags().GetString(idParamName)
@@ -140,5 +129,24 @@ func (c *CLI) determineInstance(cmd *cobra.Command, urlParamName string, idParam
 			instance = c.aem.InstanceManager().NewByID(id)
 		}
 	}
-	return instance
+	if instance == nil {
+		return nil, fmt.Errorf(errorMsg)
+	}
+	return instance, nil
+}
+
+func (c *CLI) determineRootPath(cmd *cobra.Command) (string, error) {
+	rootPath, err := cmd.Flags().GetString("root-path")
+	if err == nil && !strings.Contains(rootPath, content.JcrRoot) {
+		err = fmt.Errorf("root path '%s' does not contain '%s'", rootPath, content.JcrRoot)
+	}
+	return rootPath, err
+}
+
+func (c *CLI) determineFilterPath(cmd *cobra.Command) (string, error) {
+	filterPath, err := cmd.Flags().GetString("filter-path")
+	if err == nil && !strings.HasSuffix(filterPath, pkg.FilterXml) {
+		err = fmt.Errorf("filter path '%s' does not end '%s'", filterPath, pkg.FilterXml)
+	}
+	return filterPath, err
 }

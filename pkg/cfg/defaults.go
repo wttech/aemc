@@ -92,4 +92,76 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.workflow.config_root", "/conf/global/settings/workflow/launcher")
 	v.SetDefault("instance.workflow.toggle_retry_delay", time.Second*10)
 	v.SetDefault("instance.workflow.toggle_retry_timeout", time.Minute*5)
+
+	v.SetDefault("content.files_deleted", []interface{}{
+		map[string]interface{}{
+			"patterns":       []string{"**/_jcr_content/folderThumbnail*"},
+			"included_paths": []string{"**/content/dam/*"},
+		},
+		map[string]interface{}{
+			"patterns":       []string{"**/_jcr_content/renditions/*"},
+			"excluded_paths": []string{"**/_jcr_content/renditions/original*"},
+			"included_paths": []string{"**/content/dam/*"},
+		},
+		map[string]interface{}{
+			"patterns": []string{
+				"**/.vlt",
+				"**/.vlt*.tmp",
+				"**/install/*.jar",
+			},
+		},
+	})
+	v.SetDefault("content.files_flattened", []string{
+		"**/_cq_design_dialog/.content.xml",
+		"**/_cq_dialog/.content.xml",
+		"**/_cq_htmlTag/.content.xml",
+		"**/_cq_template/.content.xml",
+	})
+	v.SetDefault("content.properties_skipped", []interface{}{
+		map[string]interface{}{
+			"patterns":       []string{"jcr:uuid"},
+			"excluded_paths": []string{"**/home/users/*", "**/home/groups/*"},
+		},
+		map[string]interface{}{
+			"patterns":       []string{"cq:lastModified*"},
+			"excluded_paths": []string{"**/content/experience-fragments/*"},
+		},
+		map[string]interface{}{
+			"patterns":       []string{"dam:sha1", "dam:size"},
+			"included_paths": []string{"**/content/dam/*.svg/*"},
+		},
+		map[string]interface{}{
+			"patterns": []string{
+				"jcr:lastModified*",
+				"jcr:created*",
+				"jcr:isCheckedOut",
+				"cq:lastReplicat*",
+				"cq:lastRolledout*",
+				"dam:extracted",
+				"dam:assetState",
+				"dc:modified",
+				"*_x0040_*",
+				"cq:name",
+				"cq:parentPath",
+				"dam:copiedAt",
+				"dam:parentAssetID",
+				"dam:relativePath",
+			},
+		},
+	})
+
+	v.SetDefault("content.mixin_types_skipped", []interface{}{
+		map[string]interface{}{
+			"patterns":       []string{"dam:Thumbnails"},
+			"included_paths": []string{"**/content/dam/*"},
+		},
+		map[string]interface{}{
+			"patterns": []string{
+				"cq:ReplicationStatus",
+				"mix:versionable",
+			},
+		},
+	})
+	v.SetDefault("content.namespaces_skipped", true)
+	v.SetDefault("content.parents_backup_enabled", true)
 }

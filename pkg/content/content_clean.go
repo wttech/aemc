@@ -362,7 +362,7 @@ func writeLines(path string, lines []string) error {
 	}
 	defer file.Close()
 
-	content := strings.Join(lines, "\n")
+	content := strings.Join(lines, "\n") + "\n"
 	_, err = file.WriteString(content)
 	return err
 }

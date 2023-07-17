@@ -141,19 +141,19 @@ tasks:
     sources:
       - pom.xml
       - all/pom.xml
-      - all/src/**
+      - all/src/**/*
       - core/pom.xml
-      - core/src/**
+      - core/src/**/*
       - ui.apps/pom.xml
-      - ui.apps/src/**
+      - ui.apps/src/**/*
       - ui.apps.structure/pom.xml
-      - ui.apps.structure/src/**
+      - ui.apps.structure/src/**/*
       - ui.config/pom.xml
-      - ui.config/src/**
+      - ui.config/src/**/*
       - ui.content/pom.xml
-      - ui.content/src/**
+      - ui.content/src/**/*
       - ui.frontend/*
-      - ui.frontend/src/**
+      - ui.frontend/src/**/*
     generates:
       - all/target/*.all-*.zip
     env:

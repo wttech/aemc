@@ -137,7 +137,7 @@ instance:
     # Use checksums to avoid re-deployments when snapshot AEM packages are unchanged
     snapshot_deploy_skipping: true
     # Disable following workflow launchers for a package deployment time only
-    toggled_workflows: [ /libs/settings/workflow/launcher/config/update_asset_*,/libs/settings/workflow/launcher/config/dam_* ]
+    toggled_workflows: [/libs/settings/workflow/launcher/config/update_asset_*,/libs/settings/workflow/launcher/config/dam_*]
 
   # OSGi Framework
   osgi:

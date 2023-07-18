@@ -57,9 +57,9 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 			if err == nil {
 				filterPath, err = c.determineFilterPath(cmd)
 			}
-			clean, _ := cmd.Flags().GetBool("clean")
+			onlyDownload, _ := cmd.Flags().GetBool("only-download")
 			if err == nil {
-				err = pkg.NewDownloader(c.aem.ContentOpts()).Download(instance.PackageManager(), rootPath, filterPath, clean)
+				err = pkg.NewDownloader(c.aem.ContentOpts()).Download(instance.PackageManager(), rootPath, filterPath, !onlyDownload)
 			}
 			if err != nil {
 				c.Error(fmt.Errorf("content download failed: %w", err))
@@ -72,7 +72,7 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 	_ = cmd.MarkFlagRequired("root-path")
 	cmd.Flags().String("filter-path", "", "Filter path")
 	_ = cmd.MarkFlagRequired("filter-path")
-	cmd.Flags().Bool("clean", true, "Clean content after download")
+	cmd.Flags().Bool("only-download", false, "Only download content")
 	return cmd
 }
 
@@ -91,9 +91,9 @@ func (c *CLI) contentMoveCmd() *cobra.Command {
 			if err == nil {
 				filterPath, err = c.determineFilterPath(cmd)
 			}
-			clean, _ := cmd.Flags().GetBool("clean")
+			onlyMove, _ := cmd.Flags().GetBool("only-move")
 			if err == nil {
-				err = pkg.NewMover(c.aem.ContentOpts()).Move(scrInstance.PackageManager(), descInstance.PackageManager(), filterPath, clean)
+				err = pkg.NewMover(c.aem.ContentOpts()).Move(scrInstance.PackageManager(), descInstance.PackageManager(), filterPath, !onlyMove)
 			}
 			if err != nil {
 				c.Error(fmt.Errorf("content move failed: %w", err))
@@ -110,24 +110,19 @@ func (c *CLI) contentMoveCmd() *cobra.Command {
 	cmd.MarkFlagsMutuallyExclusive("desc-instance-url", "desc-instance-id")
 	cmd.Flags().String("filter-path", "", "Filter path")
 	_ = cmd.MarkFlagRequired("filter-path")
-	cmd.Flags().Bool("clean", true, "Clean content before move")
+	cmd.Flags().Bool("only-move", false, "Only move content")
 	return cmd
 }
 
 func (c *CLI) determineInstance(cmd *cobra.Command, urlParamName string, idParamName string, errorMsg string) (*pkg.Instance, error) {
 	var instance *pkg.Instance
-	if cmd.Flags().Lookup(urlParamName) != nil {
-		url, err := cmd.Flags().GetString(urlParamName)
-		if err == nil {
-			instance, err = c.aem.InstanceManager().NewByURL(url)
-		}
-		return instance, nil
+	url, err := cmd.Flags().GetString(urlParamName)
+	if err == nil && url != "" {
+		instance, err = c.aem.InstanceManager().NewByURL(url)
 	}
-	if cmd.Flags().Lookup(idParamName) != nil {
-		id, err := cmd.Flags().GetString(idParamName)
-		if err == nil {
-			instance = c.aem.InstanceManager().NewByID(id)
-		}
+	id, err := cmd.Flags().GetString(idParamName)
+	if err == nil && id != "" {
+		instance = c.aem.InstanceManager().NewByID(id)
 	}
 	if instance == nil {
 		return nil, fmt.Errorf(errorMsg)

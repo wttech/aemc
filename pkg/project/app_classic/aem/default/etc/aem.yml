@@ -214,9 +214,6 @@ content:
   files_deleted:
     - patterns: "**/_jcr_content/folderThumbnail*"
       included_paths: [ "**/content/dam/*" ]
-    - patterns: "**/_jcr_content/renditions/*"
-      excluded_paths: [ "**/_jcr_content/renditions/original*" ]
-      included_paths: [ "**/content/dam/*" ]
     - patterns:
         - "**/.vlt"
         - "**/.vlt*.tmp"

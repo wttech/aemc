@@ -99,11 +99,6 @@ func (c *Config) setDefaults() {
 			"included_paths": []string{"**/content/dam/*"},
 		},
 		map[string]interface{}{
-			"patterns":       []string{"**/_jcr_content/renditions/*"},
-			"excluded_paths": []string{"**/_jcr_content/renditions/original*"},
-			"included_paths": []string{"**/content/dam/*"},
-		},
-		map[string]interface{}{
 			"patterns": []string{
 				"**/.vlt",
 				"**/.vlt*.tmp",

@@ -443,7 +443,7 @@ func pkgDefineDownloadFlags(cmd *cobra.Command) {
 func pkgDefineUpdateFlags(cmd *cobra.Command) {
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
 	cmd.Flags().String("path", "", "Remote path on AEM repository")
-	cmd.Flags().StringSlice("filter_root", nil, "Filter root path(s) on AEM repository")
+	cmd.Flags().StringSlice("filter-root", nil, "Filter root path(s) on AEM repository")
 	cmd.MarkFlagsMutuallyExclusive("pid", "path")
 }
 
@@ -548,8 +548,8 @@ func (c *CLI) pkgCreateCmd() *cobra.Command {
 
 func (c *CLI) pkgUpdateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "update",
-		Short: "Update package(s)",
+		Use:   "update-filters",
+		Short: "Update package filters",
 		Run: func(cmd *cobra.Command, args []string) {
 			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
@@ -561,18 +561,18 @@ func (c *CLI) pkgUpdateCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			roots, _ := cmd.Flags().GetStringSlice("filter_root")
-			var filter []pkg.Filter
+			roots, _ := cmd.Flags().GetStringSlice("filter-root")
+			var filters []pkg.Filter
 			for _, root := range roots {
-				filter = append(filter, pkg.Filter{Root: root, Rules: []pkg.Rule{}})
+				filters = append(filters, pkg.Filter{Root: root, Rules: []pkg.Rule{}})
 			}
-			err = p.Update(filter)
+			err = p.UpdateFilters(filters)
 			if err != nil {
 				c.Error(err)
 				return
 			}
 			c.SetOutput("package", p)
-			c.Changed("package update")
+			c.Changed("package filters update")
 		},
 	}
 	pkgDefineUpdateFlags(cmd)

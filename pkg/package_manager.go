@@ -161,13 +161,13 @@ type Rule struct {
 	Pattern  string `json:"pattern"`
 }
 
-func (pm *PackageManager) Update(remotePath string, pid string, filter []Filter) error {
+func (pm *PackageManager) UpdateFilters(remotePath string, pid string, filters []Filter) error {
 	log.Infof("%s > updating package '%s'", pm.instance.ID(), pid)
 	pidConfig, err := pkg.ParsePID(pid)
 	if err != nil {
 		return err
 	}
-	filterJson, err := json.Marshal(filter)
+	filtersJson, err := json.Marshal(filters)
 	if err != nil {
 		return err
 	}
@@ -177,22 +177,22 @@ func (pm *PackageManager) Update(remotePath string, pid string, filter []Filter)
 			"packageName": pidConfig.Name,
 			"groupName":   pidConfig.Group,
 			"version":     pidConfig.Version,
-			"filter":      string(filterJson),
+			"filter":      string(filtersJson),
 		}).
 		Post(UpdatePath)
 	if err != nil {
-		return fmt.Errorf("%s > cannot update package '%s': %w", pm.instance.ID(), pid, err)
+		return fmt.Errorf("%s > cannot update filters for package '%s': %w", pm.instance.ID(), pid, err)
 	} else if response.IsError() {
-		return fmt.Errorf("%s > cannot update package '%s': %s", pm.instance.ID(), pid, response.Status())
+		return fmt.Errorf("%s > cannot update filters for package '%s': %s", pm.instance.ID(), pid, response.Status())
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return fmt.Errorf("%s > cannot update package '%s'; cannot parse response: %w", pm.instance.ID(), pid, err)
+		return fmt.Errorf("%s > cannot update filters for package '%s'; cannot parse response: %w", pm.instance.ID(), pid, err)
 	}
 	if !status.Success {
-		return fmt.Errorf("%s > cannot update package '%s'; unexpected status: %s", pm.instance.ID(), pid, status.Message)
+		return fmt.Errorf("%s > cannot update filters for package '%s'; unexpected status: %s", pm.instance.ID(), pid, status.Message)
 	}
-	log.Infof("%s > update package '%s'", pm.instance.ID(), pid)
+	log.Infof("%s > update filters for package '%s'", pm.instance.ID(), pid)
 	return nil
 }
 

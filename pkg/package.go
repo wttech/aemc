@@ -168,20 +168,20 @@ func (p Package) Create() error {
 		return err
 	}
 	if state.Exists {
-		return fmt.Errorf("%s > package '%s' cannot be create as it exists", p.manager.instance.ID(), p.PID.String())
+		return fmt.Errorf("%s > package '%s' cannot be created as it exists", p.manager.instance.ID(), p.PID.String())
 	}
 	return p.manager.Create(state.PID)
 }
 
-func (p Package) Update(filter []Filter) error {
+func (p Package) UpdateFilters(filters []Filter) error {
 	state, err := p.State()
 	if err != nil {
 		return err
 	}
 	if !state.Exists {
-		return fmt.Errorf("%s > package '%s' cannot be update as it does not exist", p.manager.instance.ID(), p.PID.String())
+		return fmt.Errorf("%s > filters for package '%s' cannot be updated as it does not exist", p.manager.instance.ID(), p.PID.String())
 	}
-	return p.manager.Update(state.Data.Path, state.PID, filter)
+	return p.manager.UpdateFilters(state.Data.Path, state.PID, filters)
 }
 
 func (p Package) Download(localFile string) error {
@@ -190,7 +190,7 @@ func (p Package) Download(localFile string) error {
 		return err
 	}
 	if !state.Exists {
-		return fmt.Errorf("%s > package '%s' cannot be download as it does not exist", p.manager.instance.ID(), p.PID.String())
+		return fmt.Errorf("%s > package '%s' cannot be downloaded as it does not exist", p.manager.instance.ID(), p.PID.String())
 	}
 	return p.manager.Download(state.Data.Path, localFile)
 }

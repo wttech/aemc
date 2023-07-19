@@ -47,37 +47,46 @@ func (c Cleaner) BeforeClean(root string) error {
 }
 
 func (c Cleaner) Clean(root string) error {
-	err := c.flattenFiles(root)
-	if err == nil {
-		if c.config.ParentsBackupEnabled {
-			err = c.undoParentsBackup(root)
-		} else {
-			err = c.cleanParents(root)
+	if err := c.flattenFiles(root); err != nil {
+		return err
+	}
+	if c.config.ParentsBackupEnabled {
+		if err := c.undoParentsBackup(root); err != nil {
+			return err
+		}
+	} else {
+		if err := c.cleanParents(root); err != nil {
+			return err
 		}
 	}
-	if err == nil {
-		err = c.cleanDotContents(root)
+	if err := c.cleanDotContents(root); err != nil {
+		return err
 	}
-	if err == nil {
-		err = c.deleteFiles(root)
+	if err := c.deleteFiles(root); err != nil {
+		return err
 	}
-	if err == nil {
-		err = c.deleteBackupFiles(root)
+	if err := c.deleteBackupFiles(root); err != nil {
+		return err
 	}
-	if err == nil {
-		err = deleteEmptyDirs(root)
+	if err := deleteEmptyDirs(root); err != nil {
+		return err
 	}
-	return err
+	return nil
 }
 
 func eachFilesInDir(root string, processFileFunc func(path string) error) error {
 	entries, err := os.ReadDir(root)
+	if err != nil {
+		return err
+	}
 	for _, entry := range entries {
-		if err == nil && !entry.IsDir() {
-			err = processFileFunc(filepath.Join(root, entry.Name()))
+		if !entry.IsDir() {
+			if err = processFileFunc(filepath.Join(root, entry.Name())); err != nil {
+				return err
+			}
 		}
 	}
-	return err
+	return nil
 }
 
 func eachFiles(root string, processFileFunc func(string) error) error {
@@ -102,11 +111,11 @@ func (c Cleaner) cleanDotContentFile(path string) error {
 
 	log.Printf("Cleaning file %s", path)
 	inputLines, err := readLines(path)
-	if err == nil {
-		outputLines := c.filterLines(path, inputLines)
-		err = writeLines(path, outputLines)
+	if err != nil {
+		return err
 	}
-	return err
+	outputLines := c.filterLines(path, inputLines)
+	return writeLines(path, outputLines)
 }
 
 func (c Cleaner) filterLines(path string, lines []string) []string {
@@ -209,19 +218,21 @@ func (c Cleaner) flattenFile(path string) error {
 }
 
 func (c Cleaner) deleteFiles(root string) error {
-	err := eachParentFiles(root, func(parent string) error {
+	if err := eachParentFiles(root, func(parent string) error {
 		return deleteFile(parent, func() bool {
 			return matchAnyRule(parent, parent, c.config.FilesDeleted)
 		})
-	})
-	if err == nil {
-		err = eachFiles(root, func(path string) error {
-			return deleteFile(path, func() bool {
-				return matchAnyRule(path, path, c.config.FilesDeleted)
-			})
-		})
+	}); err != nil {
+		return err
 	}
-	return err
+	if err := eachFiles(root, func(path string) error {
+		return deleteFile(path, func() bool {
+			return matchAnyRule(path, path, c.config.FilesDeleted)
+		})
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c Cleaner) deleteBackupFiles(root string) error {
@@ -244,19 +255,28 @@ func deleteFile(path string, allowedFunc func() bool) error {
 
 func deleteEmptyDirs(root string) error {
 	entries, err := os.ReadDir(root)
+	if err != nil {
+		return err
+	}
 	for _, entry := range entries {
-		if err == nil && entry.IsDir() {
-			err = deleteEmptyDirs(filepath.Join(root, entry.Name()))
+		if entry.IsDir() {
+			if err = deleteEmptyDirs(filepath.Join(root, entry.Name())); err != nil {
+				return err
+			}
 		}
 	}
-	if err == nil {
-		entries, err = os.ReadDir(root)
-		if err == nil && len(entries) == 0 {
-			log.Printf("Deleting empty directory %s", root)
-			err = os.Remove(root)
-		}
+	entries, err = os.ReadDir(root)
+	if err != nil {
+		return err
 	}
-	return err
+	if len(entries) == 0 {
+		if err = os.Remove(root); err != nil {
+			return err
+		}
+		log.Printf("Deleting empty directory %s", root)
+
+	}
+	return nil
 }
 
 func (c Cleaner) doParentsBackup(root string) error {
@@ -306,11 +326,13 @@ func (c Cleaner) undoParentsBackup(root string) error {
 func (c Cleaner) cleanParents(root string) error {
 	return eachParentFiles(root, func(parent string) error {
 		return eachFilesInDir(parent, func(path string) error {
-			err := deleteFile(path, nil)
-			if err == nil {
-				err = c.cleanDotContentFile(path)
+			if err := deleteFile(path, nil); err != nil {
+				return err
 			}
-			return err
+			if err := c.cleanDotContentFile(path); err != nil {
+				return err
+			}
+			return nil
 		})
 	})
 }
@@ -345,7 +367,7 @@ func readLines(path string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var lines []string
 	scanner := bufio.NewScanner(file)
@@ -360,7 +382,7 @@ func writeLines(path string, lines []string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	content := strings.Join(lines, "\n") + "\n"
 	_, err = file.WriteString(content)
@@ -372,17 +394,18 @@ func (c Cleaner) backupFile(path string, format string) error {
 	if err != nil {
 		return err
 	}
-	defer source.Close()
+	defer func() { _ = source.Close() }()
 
 	destination, err := os.Create(path + ParentsBackupSuffix)
 	if err != nil {
 		return err
 	}
-	defer destination.Close()
+	defer func() { _ = destination.Close() }()
 
 	_, err = io.Copy(destination, source)
-	if err == nil {
-		log.Printf(format, path)
+	if err != nil {
+		return err
 	}
-	return err
+	log.Printf(format, path)
+	return nil
 }

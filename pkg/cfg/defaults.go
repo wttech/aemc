@@ -147,10 +147,6 @@ func (c *Config) setDefaults() {
 
 	v.SetDefault("content.mixin_types_skipped", []interface{}{
 		map[string]interface{}{
-			"patterns":       []string{"dam:Thumbnails"},
-			"included_paths": []string{"**/content/dam/*"},
-		},
-		map[string]interface{}{
 			"patterns": []string{
 				"cq:ReplicationStatus",
 				"mix:versionable",

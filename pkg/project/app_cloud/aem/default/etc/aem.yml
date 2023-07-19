@@ -237,8 +237,6 @@ content:
         - "dam:parentAssetID"
         - "dam:relativePath"
   mixin_types_skipped:
-    - patterns: "dam:Thumbnails"
-      included_paths: [ "**/content/dam/*" ]
     - patterns:
         - "cq:ReplicationStatus"
         - "mix:versionable"

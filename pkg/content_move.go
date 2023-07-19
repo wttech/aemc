@@ -16,15 +16,20 @@ func NewMover(config *content.Opts) *Mover {
 }
 
 func (c Mover) Move(scrPackageManager *PackageManager, descPackageManager *PackageManager, filter string, clean bool) error {
-	err := NewDownloader(c.config).Download(scrPackageManager, "/tmp/aemc_content", filter, clean)
-	if err == nil && clean {
-		_, err = filex.ArchiveWithChanged("/tmp/aemc_content", "/tmp/aemc_content.zip")
+	if err := NewDownloader(c.config).Download(scrPackageManager, "/tmp/aemc_content", filter, clean); err != nil {
+		return err
 	}
-	if err == nil {
-		_, err = descPackageManager.Upload("/tmp/aemc_content.zip")
+	if clean {
+		if err := filex.Archive("/tmp/aemc_content", "/tmp/aemc_content.zip"); err != nil {
+			return err
+		}
 	}
-	if err == nil {
-		err = descPackageManager.Install("/etc/packages/my_packages/aemc_content.zip")
+	_, err := descPackageManager.Upload("/tmp/aemc_content.zip")
+	if err != nil {
+		return err
 	}
-	return err
+	if err = descPackageManager.Install("/etc/packages/my_packages/aemc_content.zip"); err != nil {
+		return err
+	}
+	return nil
 }

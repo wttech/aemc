@@ -37,10 +37,10 @@ func copyEmbedFiles(efs *embed.FS, targetTmpDir string, dirPrefix string) error 
 			return nil
 		}
 		bytes, err := efs.ReadFile(path)
-		if err == nil {
-			err = filex.Write(targetTmpDir+strings.TrimPrefix(path, dirPrefix), bytes)
+		if err != nil {
+			return err
 		}
-		return err
+		return filex.Write(targetTmpDir+strings.TrimPrefix(path, dirPrefix), bytes)
 	})
 }
 
@@ -48,33 +48,38 @@ func (c Downloader) Download(packageManager *PackageManager, root string, filter
 	pathx.DeleteIfExists("/tmp/aemc_content")
 	pathx.DeleteIfExists("/tmp/aemc_content.zip")
 	pathx.DeleteIfExists("/tmp/aemc_content_result")
-	err := copyEmbedFiles(&aemcContent, "/tmp/aemc_content", "content/aemc_content")
-	if err == nil {
-		err = filex.Copy(filter, "/tmp/aemc_content/META-INF/vault/filter.xml", true)
+	if err := copyEmbedFiles(&aemcContent, "/tmp/aemc_content", "content/aemc_content"); err != nil {
+		return err
 	}
-	if err == nil {
-		err = filex.Archive("/tmp/aemc_content", "/tmp/aemc_content.zip")
+	if err := filex.Copy(filter, "/tmp/aemc_content/META-INF/vault/filter.xml", true); err != nil {
+		return err
 	}
-	if err == nil {
-		_, err = packageManager.Upload("/tmp/aemc_content.zip")
+	if err := filex.Archive("/tmp/aemc_content", "/tmp/aemc_content.zip"); err != nil {
+		return err
 	}
-	if err == nil {
-		err = packageManager.Build("/etc/packages/my_packages/aemc_content.zip")
+	_, err := packageManager.Upload("/tmp/aemc_content.zip")
+	if err != nil {
+		return err
 	}
-	if err == nil {
-		err = packageManager.Download("/etc/packages/my_packages/aemc_content.zip", "/tmp/aemc_content.zip")
+	if err = packageManager.Build("/etc/packages/my_packages/aemc_content.zip"); err != nil {
+		return err
 	}
-	if err == nil && clean {
-		err = filex.Unarchive("/tmp/aemc_content.zip", "/tmp/aemc_content_result")
-		if err == nil {
-			err = os.MkdirAll(root, os.ModePerm)
+	if err = packageManager.Download("/etc/packages/my_packages/aemc_content.zip", "/tmp/aemc_content.zip"); err != nil {
+		return err
+	}
+	if clean {
+		if err = filex.Unarchive("/tmp/aemc_content.zip", "/tmp/aemc_content_result"); err != nil {
+			return err
 		}
-		if err == nil {
-			err = filex.Copy("/tmp/aemc_content_result/jcr_root", root, true)
+		if err = os.MkdirAll(root, os.ModePerm); err != nil {
+			return err
 		}
-		if err == nil {
-			err = content.NewCleaner(c.config).Clean(root)
+		if err = filex.Copy("/tmp/aemc_content_result/jcr_root", root, true); err != nil {
+			return err
+		}
+		if err = content.NewCleaner(c.config).Clean(root); err != nil {
+			return err
 		}
 	}
-	return err
+	return nil
 }

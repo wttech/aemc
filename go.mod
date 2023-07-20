@@ -3,10 +3,12 @@ module github.com/wttech/aemc
 go 1.19
 
 require (
+	github.com/Masterminds/goutils v1.1.1
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/antchfx/xmlquery v1.3.12
 	github.com/cheggaaa/pb/v3 v3.1.2
 	github.com/codingsince1985/checksum v1.2.6
+	github.com/dominik-przybyl-wttech/archiver/v3 v3.5.3
 	github.com/dustin/go-humanize v1.0.1
 	github.com/essentialkaos/go-jar v1.0.6
 	github.com/fatih/color v1.14.1
@@ -17,7 +19,6 @@ require (
 	github.com/iancoleman/strcase v0.2.0
 	github.com/joho/godotenv v1.5.1
 	github.com/magiconair/properties v1.8.7
-	github.com/mholt/archiver/v3 v3.5.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/otiai10/copy v1.9.0
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
@@ -34,7 +35,6 @@ require (
 )
 
 require (
-	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect

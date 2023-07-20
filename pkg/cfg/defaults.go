@@ -95,10 +95,6 @@ func (c *Config) setDefaults() {
 
 	v.SetDefault("content.files_deleted", []interface{}{
 		map[string]interface{}{
-			"patterns":       []string{"**/_jcr_content/folderThumbnail*"},
-			"included_paths": []string{"**/content/dam/*"},
-		},
-		map[string]interface{}{
 			"patterns": []string{
 				"**/.vlt",
 				"**/.vlt*.tmp",

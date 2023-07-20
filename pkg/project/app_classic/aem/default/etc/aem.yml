@@ -212,8 +212,6 @@ output:
 
 content:
   files_deleted:
-    - patterns: "**/_jcr_content/folderThumbnail*"
-      included_paths: [ "**/content/dam/*" ]
     - patterns:
         - "**/.vlt"
         - "**/.vlt*.tmp"

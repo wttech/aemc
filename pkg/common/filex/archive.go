@@ -1,8 +1,9 @@
 package filex
 
 import (
+	"compress/flate"
 	"fmt"
-	"github.com/mholt/archiver/v3"
+	"github.com/dominik-przybyl-wttech/archiver/v3"
 	"github.com/samber/lo"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"os"
@@ -57,10 +58,17 @@ func Unarchive(sourceFile string, targetDir string) error {
 	if !pathx.Exists(sourceFile) {
 		return fmt.Errorf("cannot unarchive file '%s' to dir '%s' as source file does not exist", sourceFile, targetDir)
 	}
-	if err := pathx.Ensure(targetDir); err != nil {
-		return err
+	//if err := pathx.Ensure(targetDir); err != nil {
+	//	return err
+	//}
+	zip := &archiver.Zip{
+		CompressionLevel:     flate.DefaultCompression,
+		MkdirAll:             true,
+		SelectiveCompression: true,
+		FileMethod:           archiver.Deflate,
+		OverwriteExisting:    true,
 	}
-	if err := archiver.Unarchive(sourceFile, targetDir); err != nil {
+	if err := zip.Unarchive(sourceFile, targetDir); err != nil {
 		return fmt.Errorf("cannot unarchive file '%s' to dir '%s': %w", sourceFile, targetDir, err)
 	}
 	return nil

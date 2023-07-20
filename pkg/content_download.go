@@ -7,7 +7,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/content"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"strings"
 )
@@ -79,10 +78,8 @@ func (c Downloader) Download(packageManager *PackageManager, root string, filter
 		if err = filex.Unarchive(tmpResultFile, tmpResultDir); err != nil {
 			return err
 		}
-		if err = os.MkdirAll(root, os.ModePerm); err != nil {
-			return err
-		}
-		if err = filex.Copy(filepath.Join(tmpResultDir, "jcr_root"), root, true); err != nil {
+		before, _, _ := strings.Cut(root, "jcr_root")
+		if err = filex.CopyDir(filepath.Join(tmpResultDir, "jcr_root"), before+"jcr_root"); err != nil {
 			return err
 		}
 		if err = content.NewCleaner(c.config).Clean(root); err != nil {

@@ -6,7 +6,7 @@ import (
 )
 
 type Opts struct {
-	baseOpts *base.Opts
+	BaseOpts *base.Opts
 
 	FilesDeleted         []PathRule
 	FilesFlattened       []string
@@ -26,7 +26,7 @@ func NewOpts(baseOpts *base.Opts) *Opts {
 	cv := baseOpts.Config().Values()
 
 	return &Opts{
-		baseOpts: baseOpts,
+		BaseOpts: baseOpts,
 
 		FilesDeleted:         determinePathRules(cv.Get("content.files_deleted")),
 		FilesFlattened:       cv.GetStringSlice("content.files_flattened"),

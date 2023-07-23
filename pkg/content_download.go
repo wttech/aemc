@@ -78,8 +78,8 @@ func (c Downloader) Download(packageManager *PackageManager, root string, filter
 		if err = filex.Unarchive(tmpResultFile, tmpResultDir); err != nil {
 			return err
 		}
-		before, _, _ := strings.Cut(root, "jcr_root")
-		if err = filex.CopyDir(filepath.Join(tmpResultDir, "jcr_root"), before+"jcr_root"); err != nil {
+		before, _, _ := strings.Cut(root, content.JcrRoot)
+		if err = filex.CopyDir(filepath.Join(tmpResultDir, content.JcrRoot), before+content.JcrRoot); err != nil {
 			return err
 		}
 		if err = content.NewCleaner(c.config).Clean(root); err != nil {

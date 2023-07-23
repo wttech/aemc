@@ -16,7 +16,7 @@ func (c *CLI) contentCmd() *cobra.Command {
 	}
 	cmd.AddCommand(c.contentCleanCmd())
 	cmd.AddCommand(c.contentDownloadCmd())
-	cmd.AddCommand(c.contentMoveCmd())
+	cmd.AddCommand(c.contentCopyCmd())
 	return cmd
 }
 
@@ -76,11 +76,11 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 	return cmd
 }
 
-func (c *CLI) contentMoveCmd() *cobra.Command {
+func (c *CLI) contentCopyCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "move",
-		Aliases: []string{"mv"},
-		Short:   "Move content from one instance to another",
+		Use:     "copy",
+		Aliases: []string{"cp"},
+		Short:   "Copy content from one instance to another",
 		Run: func(cmd *cobra.Command, args []string) {
 			scrInstance, err := c.determineInstance(cmd, "src-instance-url", "src-instance-id", "unable to determine source instance")
 			var descInstance *pkg.Instance
@@ -91,15 +91,15 @@ func (c *CLI) contentMoveCmd() *cobra.Command {
 			if err == nil {
 				filterPath, err = c.determineFilterPath(cmd)
 			}
-			onlyMove, _ := cmd.Flags().GetBool("only-move")
+			onlyCopy, _ := cmd.Flags().GetBool("only-copy")
 			if err == nil {
-				err = pkg.NewMover(c.aem.ContentOpts()).Move(scrInstance.PackageManager(), descInstance.PackageManager(), filterPath, !onlyMove)
+				err = pkg.NewCopier(c.aem.ContentOpts()).Copy(scrInstance.PackageManager(), descInstance.PackageManager(), filterPath, !onlyCopy)
 			}
 			if err != nil {
-				c.Error(fmt.Errorf("content move failed: %w", err))
+				c.Error(fmt.Errorf("content copy failed: %w", err))
 				return
 			}
-			c.Ok("content moved")
+			c.Ok("content copied")
 		},
 	}
 	cmd.Flags().String("src-instance-url", "", "Source instance URL")
@@ -110,7 +110,7 @@ func (c *CLI) contentMoveCmd() *cobra.Command {
 	cmd.MarkFlagsMutuallyExclusive("desc-instance-url", "desc-instance-id")
 	cmd.Flags().String("filter-path", "", "Filter path")
 	_ = cmd.MarkFlagRequired("filter-path")
-	cmd.Flags().Bool("only-move", false, "Only move content")
+	cmd.Flags().Bool("only-copy", false, "Only copy content")
 	return cmd
 }
 

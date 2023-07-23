@@ -5,17 +5,17 @@ import (
 	"github.com/wttech/aemc/pkg/content"
 )
 
-type Mover struct {
+type Copier struct {
 	config *content.Opts
 }
 
-func NewMover(config *content.Opts) *Mover {
-	return &Mover{
+func NewCopier(config *content.Opts) *Copier {
+	return &Copier{
 		config: config,
 	}
 }
 
-func (c Mover) Move(scrPackageManager *PackageManager, descPackageManager *PackageManager, filter string, clean bool) error {
+func (c Copier) Copy(scrPackageManager *PackageManager, descPackageManager *PackageManager, filter string, clean bool) error {
 	if err := NewDownloader(c.config).Download(scrPackageManager, "/tmp/aemc_content", filter, clean); err != nil {
 		return err
 	}

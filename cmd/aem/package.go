@@ -443,7 +443,7 @@ func pkgDefineDownloadFlags(cmd *cobra.Command) {
 func pkgDefineUpdateFlags(cmd *cobra.Command) {
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
 	cmd.Flags().String("path", "", "Remote path on AEM repository")
-	cmd.Flags().StringSlice("filter-root", nil, "Filter root path(s) on AEM repository")
+	cmd.Flags().StringSlice("filter-root", []string{}, "Filter root path(s) on AEM repository")
 	cmd.MarkFlagsMutuallyExclusive("pid", "path")
 }
 

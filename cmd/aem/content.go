@@ -26,7 +26,7 @@ func (c *CLI) contentCleanCmd() *cobra.Command {
 		Aliases: []string{"cln"},
 		Short:   "Clean downloaded content",
 		Run: func(cmd *cobra.Command, args []string) {
-			rootPath, err := c.determineRootPath(cmd)
+			rootPath, err := determineRootPath(cmd)
 			if err != nil {
 				c.Error(fmt.Errorf("content clean failed: %w", err))
 				return
@@ -54,12 +54,12 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 				c.Error(fmt.Errorf("content download failed: %w", err))
 				return
 			}
-			rootPath, err := c.determineRootPath(cmd)
+			rootPath, err := determineRootPath(cmd)
 			if err != nil {
 				c.Error(fmt.Errorf("content download failed: %w", err))
 				return
 			}
-			filterPath, err := c.determineFilterPath(cmd)
+			filterPath, err := determineFilterPath(cmd)
 			if err != nil {
 				c.Error(fmt.Errorf("content download failed: %w", err))
 				return
@@ -86,17 +86,17 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 		Aliases: []string{"cp"},
 		Short:   "Copy content from one instance to another",
 		Run: func(cmd *cobra.Command, args []string) {
-			scrInstance, err := c.determineInstance(cmd, "src-instance-url", "src-instance-id", "unable to determine source instance")
+			scrInstance, err := determineInstance(cmd, c.aem.InstanceManager(), "src-instance-url", "src-instance-id", "unable to determine source instance")
 			if err != nil {
 				c.Error(fmt.Errorf("content copy failed: %w", err))
 				return
 			}
-			destInstance, err := c.determineInstance(cmd, "dest-instance-url", "dest-instance-id", "unable to determine destination instance")
+			destInstance, err := determineInstance(cmd, c.aem.InstanceManager(), "dest-instance-url", "dest-instance-id", "unable to determine destination instance")
 			if err != nil {
 				c.Error(fmt.Errorf("content copy failed: %w", err))
 				return
 			}
-			filterPath, err := c.determineFilterPath(cmd)
+			filterPath, err := determineFilterPath(cmd)
 			if err != nil {
 				c.Error(fmt.Errorf("content copy failed: %w", err))
 				return
@@ -121,15 +121,15 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 	return cmd
 }
 
-func (c *CLI) determineInstance(cmd *cobra.Command, urlParamName string, idParamName string, errorMsg string) (*pkg.Instance, error) {
+func determineInstance(cmd *cobra.Command, instanceManager *pkg.InstanceManager, urlParamName string, idParamName string, errorMsg string) (*pkg.Instance, error) {
 	var instance *pkg.Instance
 	url, _ := cmd.Flags().GetString(urlParamName)
 	if url != "" {
-		instance, _ = c.aem.InstanceManager().NewByURL(url)
+		instance, _ = instanceManager.NewByURL(url)
 	}
 	id, _ := cmd.Flags().GetString(idParamName)
 	if id != "" {
-		instance = c.aem.InstanceManager().NewByID(id)
+		instance = instanceManager.NewByID(id)
 	}
 	if instance == nil {
 		return nil, fmt.Errorf(errorMsg)
@@ -137,7 +137,7 @@ func (c *CLI) determineInstance(cmd *cobra.Command, urlParamName string, idParam
 	return instance, nil
 }
 
-func (c *CLI) determineRootPath(cmd *cobra.Command) (string, error) {
+func determineRootPath(cmd *cobra.Command) (string, error) {
 	rootPath, _ := cmd.Flags().GetString("root-path")
 	if !strings.Contains(rootPath, content.JcrRoot) {
 		return "", fmt.Errorf("root path '%s' does not contain '%s'", rootPath, content.JcrRoot)
@@ -145,7 +145,7 @@ func (c *CLI) determineRootPath(cmd *cobra.Command) (string, error) {
 	return rootPath, nil
 }
 
-func (c *CLI) determineFilterPath(cmd *cobra.Command) (string, error) {
+func determineFilterPath(cmd *cobra.Command) (string, error) {
 	filterPath, _ := cmd.Flags().GetString("filter-path")
 	if !strings.HasSuffix(filterPath, pkg.FilterXml) {
 		return "", fmt.Errorf("filter path '%s' does not end '%s'", filterPath, pkg.FilterXml)

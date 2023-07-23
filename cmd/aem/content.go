@@ -59,7 +59,7 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 			}
 			onlyDownload, _ := cmd.Flags().GetBool("only-download")
 			if err == nil {
-				err = pkg.NewDownloader(c.aem.ContentOpts()).Download(instance.PackageManager(), rootPath, filterPath, !onlyDownload)
+				err = pkg.NewDownloader(c.aem.ContentOpts()).DownloadContent(instance.PackageManager(), rootPath, filterPath, !onlyDownload)
 			}
 			if err != nil {
 				c.Error(fmt.Errorf("content download failed: %w", err))

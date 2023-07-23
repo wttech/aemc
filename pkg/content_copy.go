@@ -2,7 +2,9 @@ package pkg
 
 import (
 	"github.com/wttech/aemc/pkg/common/filex"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/content"
+	"path/filepath"
 )
 
 type Copier struct {
@@ -16,15 +18,29 @@ func NewCopier(config *content.Opts) *Copier {
 }
 
 func (c Copier) Copy(scrPackageManager *PackageManager, destPackageManager *PackageManager, filter string, clean bool) error {
-	if err := NewDownloader(c.config).Download(scrPackageManager, "/tmp/aemc_content", filter, clean); err != nil {
-		return err
-	}
+	var tmpResultFile string
 	if clean {
-		if err := filex.Archive("/tmp/aemc_content", "/tmp/aemc_content.zip"); err != nil {
+		tmpResultFile = pathx.RandomTemporaryFileName(c.config.BaseOpts.TmpDir, "vault_result", ".zip")
+		tmpResultDir := pathx.RandomTemporaryPathName(c.config.BaseOpts.TmpDir, "vault_result")
+		defer func() {
+			_ = pathx.DeleteIfExists(tmpResultDir)
+			_ = pathx.DeleteIfExists(tmpResultFile)
+		}()
+		if err := NewDownloader(c.config).DownloadContent(scrPackageManager, filepath.Join(tmpResultDir, content.JcrRoot), filter, true); err != nil {
+			return err
+		}
+		if err := filex.Archive(tmpResultDir, tmpResultFile); err != nil {
+			return err
+		}
+	} else {
+		var err error
+		tmpResultFile, err = NewDownloader(c.config).DownloadPackage(scrPackageManager, filter)
+		if err != nil {
 			return err
 		}
 	}
-	_, err := destPackageManager.Upload("/tmp/aemc_content.zip")
+	defer func() { _ = pathx.DeleteIfExists(tmpResultFile) }()
+	_, err := destPackageManager.Upload(tmpResultFile)
 	if err != nil {
 		return err
 	}

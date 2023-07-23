@@ -83,9 +83,9 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 		Short:   "Copy content from one instance to another",
 		Run: func(cmd *cobra.Command, args []string) {
 			scrInstance, err := c.determineInstance(cmd, "src-instance-url", "src-instance-id", "unable to determine source instance")
-			var descInstance *pkg.Instance
+			var destInstance *pkg.Instance
 			if err == nil {
-				descInstance, err = c.determineInstance(cmd, "desc-instance-url", "desc-instance-id", "unable to determine destination instance")
+				destInstance, err = c.determineInstance(cmd, "dest-instance-url", "dest-instance-id", "unable to determine destination instance")
 			}
 			var filterPath string
 			if err == nil {
@@ -93,7 +93,7 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 			}
 			onlyCopy, _ := cmd.Flags().GetBool("only-copy")
 			if err == nil {
-				err = pkg.NewCopier(c.aem.ContentOpts()).Copy(scrInstance.PackageManager(), descInstance.PackageManager(), filterPath, !onlyCopy)
+				err = pkg.NewCopier(c.aem.ContentOpts()).Copy(scrInstance.PackageManager(), destInstance.PackageManager(), filterPath, !onlyCopy)
 			}
 			if err != nil {
 				c.Error(fmt.Errorf("content copy failed: %w", err))
@@ -105,9 +105,9 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 	cmd.Flags().String("src-instance-url", "", "Source instance URL")
 	cmd.Flags().String("src-instance-id", "", "Source instance ID")
 	cmd.MarkFlagsMutuallyExclusive("src-instance-url", "src-instance-id")
-	cmd.Flags().String("desc-instance-url", "", "Destination instance URL")
-	cmd.Flags().String("desc-instance-id", "", "Destination instance ID")
-	cmd.MarkFlagsMutuallyExclusive("desc-instance-url", "desc-instance-id")
+	cmd.Flags().String("dest-instance-url", "", "Destination instance URL")
+	cmd.Flags().String("dest-instance-id", "", "Destination instance ID")
+	cmd.MarkFlagsMutuallyExclusive("dest-instance-url", "dest-instance-id")
 	cmd.Flags().String("filter-path", "", "Filter path")
 	_ = cmd.MarkFlagRequired("filter-path")
 	cmd.Flags().Bool("only-copy", false, "Only copy content")

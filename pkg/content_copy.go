@@ -15,7 +15,7 @@ func NewCopier(config *content.Opts) *Copier {
 	}
 }
 
-func (c Copier) Copy(scrPackageManager *PackageManager, descPackageManager *PackageManager, filter string, clean bool) error {
+func (c Copier) Copy(scrPackageManager *PackageManager, destPackageManager *PackageManager, filter string, clean bool) error {
 	if err := NewDownloader(c.config).Download(scrPackageManager, "/tmp/aemc_content", filter, clean); err != nil {
 		return err
 	}
@@ -24,11 +24,11 @@ func (c Copier) Copy(scrPackageManager *PackageManager, descPackageManager *Pack
 			return err
 		}
 	}
-	_, err := descPackageManager.Upload("/tmp/aemc_content.zip")
+	_, err := destPackageManager.Upload("/tmp/aemc_content.zip")
 	if err != nil {
 		return err
 	}
-	if err = descPackageManager.Install("/etc/packages/my_packages/aemc_content.zip"); err != nil {
+	if err = destPackageManager.Install("/etc/packages/my_packages/aemc_content.zip"); err != nil {
 		return err
 	}
 	return nil

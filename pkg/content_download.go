@@ -88,6 +88,11 @@ func (c Downloader) DownloadContent(packageManager *PackageManager, root string,
 		return err
 	}
 	before, _, _ := strings.Cut(root, content.JcrRoot)
+	if clean {
+		if err = content.NewCleaner(c.config).BeforeClean(root); err != nil {
+			return err
+		}
+	}
 	if err = filex.CopyDir(filepath.Join(tmpResultDir, content.JcrRoot), before+content.JcrRoot); err != nil {
 		return err
 	}

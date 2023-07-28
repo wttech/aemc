@@ -28,6 +28,7 @@ type Instance struct {
 	osgi            *OSGi
 	sling           *Sling
 	crypto          *Crypto
+	ssl             *SSL
 	packageManager  *PackageManager
 	workflowManager *WorkflowManager
 }
@@ -102,6 +103,10 @@ func (i Instance) WorkflowManager() *WorkflowManager {
 
 func (i Instance) Crypto() *Crypto {
 	return i.crypto
+}
+
+func (i Instance) SSL() *SSL {
+	return i.ssl
 }
 
 func (i Instance) IDInfo() IDInfo {

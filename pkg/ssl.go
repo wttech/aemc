@@ -1,14 +1,12 @@
 package pkg
 
 import (
-	"bufio"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/cryptox"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
-	"os"
 )
 
 const (
@@ -20,12 +18,12 @@ type SSL struct {
 }
 
 type sslLock struct {
-	KeystorePassword   string `yaml:"keystore_password"`
-	TrustStorePassword string `yaml:"trust_store_password"`
-	Certificate        string `yaml:"certificate"`
-	PrivateKey         string `yaml:"private_key"`
-	HttpsHostname      string `yaml:"https_hostname"`
-	HttpsPort          string `yaml:"https_port"`
+	KeystorePassword   string `json:"keystore_password"`
+	TrustStorePassword string `json:"trust_store_password"`
+	Certificate        string `json:"certificate"`
+	PrivateKey         string `json:"private_key"`
+	HttpsHostname      string `json:"https_hostname"`
+	HttpsPort          string `json:"https_port"`
 }
 
 func NewSSL(instance *Instance) *SSL {
@@ -55,30 +53,18 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 	params := map[string]any{
 		"keystorePassword":          keyStorePassword,
 		"keystorePasswordConfirm":   keyStorePassword,
-		"trustStorePassword":        trustStorePassword,
-		"trustStorePasswordConfirm": trustStorePassword,
+		"truststorePassword":        trustStorePassword,
+		"truststorePasswordConfirm": trustStorePassword,
 		"httpsHostname":             httpsHostname,
 		"httpsPort":                 httpsPort,
 	}
 
-	certificate, err := os.Open(certificateFile)
-	if err != nil {
-		return false, fmt.Errorf("%s > failed to open certificate file: %w", s.instance.ID(), err)
-	}
-	defer certificate.Close()
-	certificateFileReader := bufio.NewReader(certificate)
-
-	privateKey, err := os.Open(privateKeyFile)
-	if err != nil {
-		return false, fmt.Errorf("%s > failed to open private key file: %w", s.instance.ID(), err)
-	}
-	defer privateKey.Close()
-	privateKeyFileReader := bufio.NewReader(privateKey)
-
 	response, err := s.instance.http.
 		RequestFormData(params).
-		SetMultipartField("certificateFile", certificateFile, "application/octet-stream", certificateFileReader).
-		SetMultipartField("privateKeyFile", privateKeyFile, "application/octet-stream", privateKeyFileReader).
+		SetFiles(map[string]string{
+			"certificateFile": certificateFile,
+			"privatekeyFile":  privateKeyFile,
+		}).
 		Post(SslSetupPath)
 
 	if err != nil {
@@ -95,7 +81,7 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 }
 
 func (s SSL) lock(keyStorePassword, trustStorePassword, certificateFile, privateKeyFile, httpsHostname, httpsPort string) osx.Lock[sslLock] {
-	return osx.NewLock(fmt.Sprintf("%s/ssl.yaml", s.instance.local.LockDir()), func() (sslLock, error) {
+	return osx.NewLock(fmt.Sprintf("%s/ssl.json", s.instance.local.LockDir()), func() (sslLock, error) {
 		certificateChecksum, err := filex.ChecksumFile(certificateFile)
 		if err != nil {
 			return sslLock{}, fmt.Errorf("%s > failed to calculate checksum for certificate file: %w", s.instance.ID(), err)

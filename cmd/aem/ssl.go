@@ -58,10 +58,6 @@ func (c *CLI) sslSetupCmd() *cobra.Command {
 			c.SetOutput("configured", configured)
 
 			if mapsx.SomeHas(configured, OutputChanged, true) {
-				if err := c.aem.InstanceManager().AwaitStarted(InstancesChanged(configured)); err != nil {
-					c.Error(err)
-					return
-				}
 				c.Changed("SSL set up")
 			} else {
 				c.Ok("SSL already set up (up-to-date)")

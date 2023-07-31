@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	SslSetupPath = "/libs/granite/security/post/sslSetup.html"
+	SSLSetupPath = "/libs/granite/security/post/sslSetup.html"
 )
 
 type SSL struct {
@@ -18,12 +18,12 @@ type SSL struct {
 }
 
 type sslLock struct {
-	KeystorePassword   string `json:"keystore_password"`
-	TrustStorePassword string `json:"trust_store_password"`
-	Certificate        string `json:"certificate"`
-	PrivateKey         string `json:"private_key"`
-	HttpsHostname      string `json:"https_hostname"`
-	HttpsPort          string `json:"https_port"`
+	KeystorePassword   string `yaml:"keystore_password"`
+	TrustStorePassword string `yaml:"trust_store_password"`
+	Certificate        string `yaml:"certificate"`
+	PrivateKey         string `yaml:"private_key"`
+	HttpsHostname      string `yaml:"https_hostname"`
+	HttpsPort          string `yaml:"https_port"`
 }
 
 func NewSSL(instance *Instance) *SSL {
@@ -65,7 +65,7 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 			"certificateFile": certificateFile,
 			"privatekeyFile":  privateKeyFile,
 		}).
-		Post(SslSetupPath)
+		Post(SSLSetupPath)
 
 	if err != nil {
 		return false, fmt.Errorf("%s > failed to setup SSL: %w", s.instance.ID(), err)
@@ -81,7 +81,7 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 }
 
 func (s SSL) lock(keyStorePassword, trustStorePassword, certificateFile, privateKeyFile, httpsHostname, httpsPort string) osx.Lock[sslLock] {
-	return osx.NewLock(fmt.Sprintf("%s/ssl.json", s.instance.local.LockDir()), func() (sslLock, error) {
+	return osx.NewLock(fmt.Sprintf("%s/ssl.yml", s.instance.local.LockDir()), func() (sslLock, error) {
 		certificateChecksum, err := filex.ChecksumFile(certificateFile)
 		if err != nil {
 			return sslLock{}, fmt.Errorf("%s > failed to calculate checksum for certificate file: %w", s.instance.ID(), err)

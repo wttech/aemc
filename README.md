@@ -40,6 +40,8 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
     * [Improving performance](#improving-performance)
     * [Increasing verbosity](#increasing-verbosity)
     * [Installing content packages](#installing-content-packages)
+* [Examples](#examples)
+  * ['SSL by Default' support](#ssl-by-default-support)
 * [Contributing](#contributing)
 * [Authors](#authors)
 * [License](#license)
@@ -167,36 +169,6 @@ Simply run command with appending [task variable](https://taskfile.dev/usage/#va
 ```shell
 sh taskw aem:build AEM_BUILD_ARGS="-PfedDev -DskipTests -pl '!ui.tests'"
 ```
-
-## SSL by Default support
-
-AEM Compose supports SSL by Default feature of AEM.
-
-This feature requires:
- - certificate file in PEM format
- - private key file in DER format
- - password for keystore (has to be the same for each invocation of the tool)
- - password for truststore (can be different for each invocation of the tool)
- - hostname for HTTPS connector (used by AEM to check if the setup was successful; has to be reachable by AEM)
- - port for HTTPS connector
-
-To set up SSL by Default, run:
-
-```shell
-sh aemw ssl setup \
-   --keystore-password password \
-   --truststore-password password1 \
-   --certificate-file localhost.crt \
-   --private-key-file localhostprivate.key \
-   --https-hostname localhost \
-   --https-port 8443
-```
-
-Above example uses the self-signed certificate created as per the AEM docs.
-
-Ref: [AEM 6.5 > Administering Guide > SSL by Default](https://experienceleague.adobe.com/docs/experience-manager-65/administering/security/ssl-by-default.html?lang=en)
-
-For local environment remember to set different port numbers for author and publish instances.
 
 ## Ansible Collection
 
@@ -521,6 +493,47 @@ AEM_INSTANCE_HTTP_TIMEOUT=0 sh aemw package deploy --url my-package.zip
 ```
 
 It's important to be aware that AEMaaCS also has its own timeout for requests made to the Package Manager UI. For detailed information, please refer to the [documentation](https://experienceleague.adobe.com/docs/experience-manager-cloud-service/content/implementing/developer-tools/package-manager.html?lang=en#aemaacs-packages).
+# Examples
+
+## 'SSL by Default' support
+
+AEM Compose supports 'SSL by Default' feature of AEM.
+
+This feature requires:
+- certificate file in PEM format
+- private key file in DER or PEM format
+- password for keystore (has to be the same for each invocation of the tool)
+- password for truststore (can be different for each invocation of the tool)
+- hostname for HTTPS connector (used by AEM to check if the setup was successful; has to be reachable by AEM)
+- port for HTTPS connector
+
+To set up 'SSL by Default', run:
+
+```shell
+sh aemw ssl setup \
+   --instance-author
+   --keystore-password password \
+   --truststore-password password1 \
+   --certificate-file localhost.crt \
+   --private-key-file localhostprivate.key \
+   --https-hostname localhost \
+   --https-port 8443
+
+sh aemw ssl setup \
+   --instance-publish
+   --keystore-password password \
+   --truststore-password password1 \
+   --certificate-file localhost.crt \
+   --private-key-file localhostprivate.key \
+   --https-hostname localhost \
+   --https-port 9443
+```
+
+Above example uses the self-signed certificate created as per the AEM docs.
+
+See the reference documentation: [AEM 6.5 > Administering Guide > SSL by Default](https://experienceleague.adobe.com/docs/experience-manager-65/administering/security/ssl-by-default.html?lang=en)
+
+For local environment remember to set different port numbers for author and publish instances.
 
 # Contributing
 

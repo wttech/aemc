@@ -8,7 +8,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
-	"golang.org/x/net/html"
 	"io"
 	"os"
 	"strings"
@@ -32,33 +31,31 @@ type sslLock struct {
 }
 
 func NewSSL(instance *Instance) *SSL {
-	return &SSL{
-		instance: instance,
-	}
+	return &SSL{instance: instance}
 }
 
 func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privateKeyFile, httpsHostname, httpsPort string) (bool, error) {
 	if !pathx.Exists(certificateFile) {
-		return false, fmt.Errorf("%s > certificate file does not exist: %s", s.instance.ID(), certificateFile)
+		return false, fmt.Errorf("%s > SSL certificate file does not exist: %s", s.instance.ID(), certificateFile)
 	}
 	if !pathx.Exists(privateKeyFile) {
-		return false, fmt.Errorf("%s > private key file does not exist: %s", s.instance.ID(), privateKeyFile)
+		return false, fmt.Errorf("%s > SSL private key file does not exist: %s", s.instance.ID(), privateKeyFile)
 	}
 
 	privateKeyData, err := os.ReadFile(privateKeyFile)
 	if err != nil {
-		return false, fmt.Errorf("%s > failed to read private key file: %w", s.instance.ID(), err)
+		return false, fmt.Errorf("%s > failed to read SSL private key file: %w", s.instance.ID(), err)
 	}
 	pemBlock, _ := pem.Decode(privateKeyData)
 	if pemBlock != nil {
 		tempDerFile, err := os.CreateTemp("", "aemc-private-key-*.der")
 		if err != nil {
-			return false, fmt.Errorf("%s > failed to create temp file for storing DER certificate: %w", s.instance.ID(), err)
+			return false, fmt.Errorf("%s > failed to create temp file for storing DER SSL certificate: %w", s.instance.ID(), err)
 		}
 		defer os.Remove(tempDerFile.Name())
-		err = writeDER(tempDerFile, pemBlock)
+		err = s.writeDER(tempDerFile, pemBlock)
 		if err != nil {
-			return false, fmt.Errorf("%s > failed to write DER certificate: %w", s.instance.ID(), err)
+			return false, fmt.Errorf("%s > failed to write DER SSL certificate: %w", s.instance.ID(), err)
 		}
 		privateKeyFile = tempDerFile.Name()
 	}
@@ -66,7 +63,7 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 	lock := s.lock(keyStorePassword, trustStorePassword, certificateFile, privateKeyFile, httpsHostname, httpsPort)
 	check, err := lock.State()
 	if err != nil {
-		return false, fmt.Errorf("%s > failed to check SSL setup: %w", s.instance.ID(), err)
+		return false, err
 	}
 	if check.UpToDate {
 		log.Debugf("%s > SSL already set up (up-to-date)", s.instance.ID())
@@ -88,18 +85,22 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 			"certificateFile": certificateFile,
 			"privatekeyFile":  privateKeyFile,
 		}).
+		SetDoNotParseResponse(true).
 		Post(SSLSetupPath)
 
 	if err != nil {
 		return false, fmt.Errorf("%s > failed to setup SSL: %w", s.instance.ID(), err)
 	} else if response.IsError() {
-		// If the response is an error, we try to read the error message from the response body.
-		// The resty library does not provide a way to read the response body if the response is an error.
-		body, err := io.ReadAll(response.RawBody())
+		rawBody := response.RawBody()
+		if rawBody == nil {
+			return false, fmt.Errorf("%s > failed to setup SSL: %s", s.instance.ID(), response.Status())
+		}
+		defer rawBody.Close()
+		body, err := io.ReadAll(rawBody)
 		if err != nil {
 			return false, fmt.Errorf("%s > failed to setup SSL: %s, %w", s.instance.ID(), response.Status(), err)
 		}
-		errorMessage, err := findErrorMessage(string(body[:]))
+		errorMessage, err := s.getErrorMessage(string(body[:]))
 		if err != nil {
 			return false, fmt.Errorf("%s > failed to setup SSL: %s, %w", s.instance.ID(), response.Status(), err)
 		}
@@ -113,7 +114,7 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 	return true, nil
 }
 
-func writeDER(tempDerFile *os.File, pemBlock *pem.Block) error {
+func (s SSL) writeDER(tempDerFile *os.File, pemBlock *pem.Block) error {
 	if _, err := tempDerFile.Write(pemBlock.Bytes); err != nil {
 		return err
 	}
@@ -143,53 +144,36 @@ func writeDER(tempDerFile *os.File, pemBlock *pem.Block) error {
 // </body>
 // </html>
 // returns "Invalid password for existing key store"
-func findErrorMessage(body string) (errorMessage string, err error) {
-	doc, err := html.Parse(strings.NewReader(body))
-	if err != nil {
-		return "", err
-	}
-
-	var traverse func(*html.Node)
-	traverse = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "dt" && hasClass(n, "foundation-form-response-status-message") {
-			// If the <dt> node with class 'foundation-form-response-status-message' is found,
-			// we search for the corresponding <dd> node containing the error message.
-			ddNode := n.NextSibling
-			for ddNode != nil {
-				if ddNode.Type == html.ElementNode && ddNode.Data == "dd" {
-					errorMessage = ddNode.FirstChild.Data
-					return
-				}
-				ddNode = ddNode.NextSibling
-			}
+func (s SSL) getErrorMessage(body string) (errorMessage string, err error) {
+	lines := strings.Split(string(body), "\n")
+	errorMessageAhead := false
+	for _, line := range lines {
+		if strings.Contains(line, "foundation-form-response-status-message") {
+			errorMessageAhead = true
+			continue
 		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			traverse(c)
+		if errorMessageAhead {
+			line = strings.Split(line, ">")[1]
+			line = strings.Split(line, "<")[0]
+			errorMessage = strings.TrimSpace(line)
+			break
 		}
 	}
-
-	traverse(doc)
+	if errorMessage == "" {
+		return "", fmt.Errorf("error message not found")
+	}
 	return errorMessage, nil
-}
-
-func hasClass(n *html.Node, class string) bool {
-	for _, attr := range n.Attr {
-		if attr.Key == "class" {
-			return strings.Contains(attr.Val, class)
-		}
-	}
-	return false
 }
 
 func (s SSL) lock(keyStorePassword, trustStorePassword, certificateFile, privateKeyFile, httpsHostname, httpsPort string) osx.Lock[sslLock] {
 	return osx.NewLock(fmt.Sprintf("%s/ssl.yml", s.instance.local.LockDir()), func() (sslLock, error) {
 		certificateChecksum, err := filex.ChecksumFile(certificateFile)
 		if err != nil {
-			return sslLock{}, fmt.Errorf("%s > failed to calculate checksum for certificate file: %w", s.instance.ID(), err)
+			return sslLock{}, fmt.Errorf("%s > failed to calculate checksum for SSL certificate file: %w", s.instance.ID(), err)
 		}
 		privateKeyChecksum, err := filex.ChecksumFile(privateKeyFile)
 		if err != nil {
-			return sslLock{}, fmt.Errorf("%s > failed to calculate checksum for private key file: %w", s.instance.ID(), err)
+			return sslLock{}, fmt.Errorf("%s > failed to calculate checksum for SSL private key file: %w", s.instance.ID(), err)
 		}
 
 		return sslLock{

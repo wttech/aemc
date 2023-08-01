@@ -60,7 +60,7 @@ func (c *CLI) sslSetupCmd() *cobra.Command {
 	cmd.Flags().String("keystore-password", "", "Keystore password")
 	cmd.Flags().String("truststore-password", "", "Truststore password")
 	cmd.Flags().String("certificate-file", "", "Certificate file (PEM format)")
-	cmd.Flags().String("private-key-file", "", "Private key file (DER format)")
+	cmd.Flags().String("private-key-file", "", "Private key file (DER or PEM format)")
 	cmd.Flags().String("https-hostname", "", "HTTPS hostname")
 	cmd.Flags().String("https-port", "", "HTTPS port")
 	_ = cmd.MarkFlagRequired("keystore-password")

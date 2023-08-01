@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"encoding/pem"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/cryptox"
@@ -9,6 +10,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"golang.org/x/net/html"
 	"io"
+	"os"
 	"strings"
 )
 
@@ -41,6 +43,24 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 	}
 	if !pathx.Exists(privateKeyFile) {
 		return false, fmt.Errorf("%s > private key file does not exist: %s", s.instance.ID(), privateKeyFile)
+	}
+
+	privateKeyData, err := os.ReadFile(privateKeyFile)
+	if err != nil {
+		return false, fmt.Errorf("%s > failed to read private key file: %w", s.instance.ID(), err)
+	}
+	pemBlock, _ := pem.Decode(privateKeyData)
+	if pemBlock != nil {
+		tempDerFile, err := os.CreateTemp("", "aemc-private-key-*.der")
+		if err != nil {
+			return false, fmt.Errorf("%s > failed to create temp file for storing DER certificate: %w", s.instance.ID(), err)
+		}
+		defer os.Remove(tempDerFile.Name())
+		err = writeDER(tempDerFile, pemBlock)
+		if err != nil {
+			return false, fmt.Errorf("%s > failed to write DER certificate: %w", s.instance.ID(), err)
+		}
+		privateKeyFile = tempDerFile.Name()
 	}
 
 	lock := s.lock(keyStorePassword, trustStorePassword, certificateFile, privateKeyFile, httpsHostname, httpsPort)
@@ -91,6 +111,17 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 	}
 
 	return true, nil
+}
+
+func writeDER(tempDerFile *os.File, pemBlock *pem.Block) error {
+	if _, err := tempDerFile.Write(pemBlock.Bytes); err != nil {
+		return err
+	}
+	err := tempDerFile.Close()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // From HTML response body, e.g.:

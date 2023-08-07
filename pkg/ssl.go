@@ -100,7 +100,7 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 		if err != nil {
 			return false, fmt.Errorf("%s > failed to setup SSL: %s, %w", s.instance.ID(), response.Status(), err)
 		}
-		errorMessage, err := s.getErrorMessage(string(body[:]))
+		errorMessage, err := s.extractErrorMessage(string(body[:]))
 		if err != nil {
 			return false, fmt.Errorf("%s > failed to setup SSL: %s, %w", s.instance.ID(), response.Status(), err)
 		}
@@ -144,7 +144,7 @@ func (s SSL) writeDER(tempDerFile *os.File, pemBlock *pem.Block) error {
 // </body>
 // </html>
 // returns "Invalid password for existing key store"
-func (s SSL) getErrorMessage(body string) (errorMessage string, err error) {
+func (s SSL) extractErrorMessage(body string) (errorMessage string, err error) {
 	lines := strings.Split(string(body), "\n")
 	errorMessageAhead := false
 	for _, line := range lines {
@@ -153,8 +153,12 @@ func (s SSL) getErrorMessage(body string) (errorMessage string, err error) {
 			continue
 		}
 		if errorMessageAhead {
+			// Extract error message from within <dd> tag:
+			// <dd>Error message example</dd>
 			line = strings.Split(line, ">")[1]
+			// Error message example</dd
 			line = strings.Split(line, "<")[0]
+			// Error message example
 			errorMessage = strings.TrimSpace(line)
 			break
 		}

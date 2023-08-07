@@ -250,6 +250,7 @@ func (im *InstanceManager) New(id, url, user, password string) *Instance {
 	res.osgi = NewOSGi(res)
 	res.sling = NewSling(res)
 	res.crypto = NewCrypto(res)
+	res.ssl = NewSSL(res)
 
 	if res.IsLocal() {
 		res.local = NewLocal(res)

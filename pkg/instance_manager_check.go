@@ -15,6 +15,7 @@ type CheckOpts struct {
 	DoneThreshold int
 	DoneNever     bool
 	AwaitStrict   bool
+	Skip          bool
 
 	Reachable     ReachableHTTPChecker
 	BundleStable  BundleStableChecker
@@ -36,6 +37,7 @@ func NewCheckOpts(manager *InstanceManager) *CheckOpts {
 	result.Interval = cv.GetDuration("instance.check.interval")
 	result.DoneThreshold = cv.GetInt("instance.check.done_threshold")
 	result.AwaitStrict = cv.GetBool("instance.local.await_strict")
+	result.Skip = cv.GetBool("instance.check.skip")
 
 	result.Reachable = NewReachableChecker(result, true)
 	result.BundleStable = NewBundleStableChecker(result)
@@ -124,7 +126,7 @@ func (im *InstanceManager) AwaitStartedAll() error {
 }
 
 func (im *InstanceManager) AwaitStarted(instances []Instance) error {
-	if len(instances) == 0 {
+	if len(instances) == 0 || im.CheckOpts.Skip {
 		return nil
 	}
 	log.Info(InstancesMsg(instances, "awaiting started"))
@@ -157,7 +159,7 @@ func (im *InstanceManager) AwaitStoppedAll() error {
 }
 
 func (im *InstanceManager) AwaitStopped(instances []Instance) error {
-	if len(instances) == 0 {
+	if len(instances) == 0 || im.CheckOpts.Skip {
 		return nil
 	}
 	log.Info(InstancesMsg(instances, "awaiting stopped"))

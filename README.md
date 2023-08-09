@@ -493,6 +493,15 @@ AEM_INSTANCE_HTTP_TIMEOUT=0 sh aemw package deploy --url my-package.zip
 ```
 
 It's important to be aware that AEMaaCS also has its own timeout for requests made to the Package Manager UI. For detailed information, please refer to the [documentation](https://experienceleague.adobe.com/docs/experience-manager-cloud-service/content/implementing/developer-tools/package-manager.html?lang=en#aemaacs-packages).
+
+To skip the instance health check after running a command that would normally trigger it, `AEM_INSTANCE_CHECK_SKIP` environment variable can be used. This can save a lot of time when deploying a lot of packages sequentially.
+
+To skip the instance health check for a single AEMC command, use the following syntax:
+
+```shell
+AEM_INSTANCE_CHECK_SKIP=true sh aemw package deploy --url my-package.zip
+```
+
 # Examples
 
 ## 'SSL by Default' support

@@ -15,6 +15,13 @@ const (
 	RoleAuthorPortSuffix = "02"
 	ClassifierDefault    = ""
 	AemVersionUnknown    = "<unknown>"
+
+	AttributeLocal     = "local"
+	AttributeRemote    = "remote"
+	AttributeCreated   = "created"
+	AttributeUncreated = "uncreated"
+	AttributeUpToDate  = "up-to-date"
+	AttributeOutOfDate = "out-of-date"
 )
 
 const (

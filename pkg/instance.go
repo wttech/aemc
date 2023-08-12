@@ -225,18 +225,23 @@ func (i Instance) Time(unixMilli int64) time.Time {
 func (i Instance) Attributes() []string {
 	var result []string
 	if i.IsLocal() {
-		result = append(result, "local")
+		result = append(result, instance.AttributeLocal)
 		if i.Local().IsCreated() {
-			result = append(result, "created")
+			result = append(result, instance.AttributeCreated)
 			status, err := i.Local().Status()
 			if err == nil {
 				result = append(result, status.String())
 			}
+			if i.Local().UpToDate() {
+				result = append(result, instance.AttributeUpToDate)
+			} else {
+				result = append(result, instance.AttributeOutOfDate)
+			}
 		} else {
-			result = append(result, "uncreated")
+			result = append(result, instance.AttributeUncreated)
 		}
 	} else {
-		result = append(result, "remote")
+		result = append(result, instance.AttributeRemote)
 	}
 	return result
 }

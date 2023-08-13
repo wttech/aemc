@@ -15,6 +15,12 @@ dotenv:
   - '.env'              # VCS-ignored, user-specific
 
 tasks:
+  init:
+    desc: initialize project
+    cmds:
+      - sh aemw init
+      - sh aemw instance init
+
   setup:
     desc: setup AEM instances and dispatcher
     cmds:
@@ -83,7 +89,6 @@ tasks:
       - task: aem:provision:repl-agent-publish
       - task: aem:provision:repl-agent-flush
       - task: aem:provision:crx
-      - task: aem:provision:apm
       - task: aem:provision:service-pack
 
   aem:provision:repl-agent-publish:
@@ -118,13 +123,6 @@ tasks:
     desc: enable CRX/DE on AEM instances
     internal: true
     cmd: 'sh aemw osgi config save --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet" --input-string "alias: /crx/server"'
-
-  aem:provision:apm:
-    desc: deploy APM tool
-    internal: true
-    vars:
-      APM_VERSION: 5.6.19
-    cmd: sh aemw package deploy --url "https://github.com/wttech/APM/releases/download/apm-{{.APM_VERSION}}/apm-all-{{.APM_VERSION}}.zip"
 
   aem:provision:service-pack:
     desc: deploy AEM Service Pack

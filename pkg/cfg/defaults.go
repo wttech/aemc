@@ -60,6 +60,10 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.check.installer.state", true)
 	v.SetDefault("instance.check.installer.pause", true)
 
+	v.SetDefault("instance.check.login_page.path", "/libs/granite/core/content/login.html")
+	v.SetDefault("instance.check.login_page.status_code", 200)
+	v.SetDefault("instance.check.login_page.contained_text", "QUICKSTART_HOMEPAGE")
+
 	v.SetDefault("instance.local.tool_dir", common.ToolDir)
 	v.SetDefault("instance.local.unpack_dir", common.VarDir+"/instance")
 	v.SetDefault("instance.local.override_dir", common.DefaultDir+"/"+common.VarDirName+"/instance")

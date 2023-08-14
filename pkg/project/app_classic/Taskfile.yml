@@ -21,6 +21,12 @@ tasks:
       - sh aemw init
       - sh aemw instance init
 
+  status:
+    desc: check status of AEM instances and dispatcher
+    cmds:
+      - task: aem:status
+      - task: dispatcher:status
+
   setup:
     desc: setup AEM instances and dispatcher
     cmds:

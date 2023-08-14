@@ -320,6 +320,15 @@ func (c ReachableHTTPChecker) Check(instance Instance) CheckResult {
 	}
 }
 
+func NewLoginPageChecker(opts *CheckOpts) PathHTTPChecker {
+	cv := opts.manager.aem.config.Values()
+	return NewPathReadyChecker(opts, "login page",
+		cv.GetString("instance.check.login_page.path"),
+		cv.GetInt("instance.check.login_page.status_code"),
+		cv.GetString("instance.check.login_page.contained_text"),
+	)
+}
+
 func NewPathReadyChecker(opts *CheckOpts, name string, path string, statusCode int, containedText string) PathHTTPChecker {
 	cv := opts.manager.aem.config.Values()
 

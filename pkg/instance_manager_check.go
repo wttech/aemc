@@ -47,7 +47,7 @@ func NewCheckOpts(manager *InstanceManager) *CheckOpts {
 	result.StatusStopped = NewStatusStoppedChecker()
 	result.AwaitStopped = NewAwaitChecker(result, "stopped")
 	result.Unreachable = NewReachableChecker(result, false)
-	result.LoginPage = NewPathReadyChecker(result, "login page", "/libs/granite/core/content/login.html", 200, "QUICKSTART_HOMEPAGE")
+	result.LoginPage = NewLoginPageChecker(result)
 
 	return result
 }

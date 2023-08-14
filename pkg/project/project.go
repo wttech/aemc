@@ -228,19 +228,18 @@ func (p Project) KindInfer() (Kind, error) {
 
 func (p Project) GettingStarted() (string, error) {
 	text := fmt.Sprintf(strings.Join([]string{
-		"The next step is providing AEM files (JAR or SDK ZIP, license, service packs) to directory '" + common.LibDir + "'.",
+		"As a next step provide AEM files (JAR or SDK ZIP, license, service packs) to directory '" + common.LibDir + "'.",
 		"Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '" + cfg.FileDefault + "'.",
-		"Make sure to exclude the directory '" + common.HomeDir + "' from VCS versioning and IDE indexing.",
-		"Finally, use tasks to manage AEM instances:",
 		"",
-
+		"Make sure to exclude the directory '" + common.HomeDir + "' from VCS versioning and IDE indexing.",
+		"",
+		"Finally, use tasks to manage AEM instances and more:",
+		"",
 		"sh taskw --list",
-
 		"",
 		"It is also possible to run individual AEM Compose CLI commands separately.",
 		"Discover available commands by running:",
 		"",
-
 		"sh aemw --help",
 	}, "\n"))
 	return text, nil

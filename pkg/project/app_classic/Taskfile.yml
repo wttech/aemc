@@ -160,11 +160,11 @@ tasks:
       - ui.frontend/src/**/*
     generates:
       - all/target/*.all-*.zip
-    env:
-      AEM_BUILD_ARGS: -PfedDev
-      AEM_BUILD_JAVA_HOME:
+    vars:
+      ARGS: -PfedDev {{.AEM_BUILD_ARGS}}
+      JAVA_HOME:
         sh: sh aemw instance init --output-value javaHome
-    cmd: JAVA_HOME=$AEM_BUILD_JAVA_HOME mvn clean package $AEM_BUILD_ARGS
+    cmd: JAVA_HOME={{.JAVA_HOME}} mvn clean package {{.ARGS}}
 
   aem:deploy:
     desc: deploy AEM application

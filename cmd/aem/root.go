@@ -28,6 +28,7 @@ func (c *CLI) rootCmd() *cobra.Command {
 	cmd.AddCommand(c.replCmd())
 	cmd.AddCommand(c.cryptoCmd())
 	cmd.AddCommand(c.sslCmd())
+	cmd.AddCommand(c.gtsCmd())
 	cmd.AddCommand(c.fileCmd())
 	c.rootFlags(cmd)
 	return cmd

@@ -21,16 +21,17 @@ type Instance struct {
 	user     string
 	password string
 
-	local           *LocalInstance
-	http            *HTTP
-	status          *Status
-	repo            *Repo
-	osgi            *OSGi
-	sling           *Sling
-	crypto          *Crypto
-	ssl             *SSL
-	packageManager  *PackageManager
-	workflowManager *WorkflowManager
+	local            *LocalInstance
+	http             *HTTP
+	status           *Status
+	repo             *Repo
+	osgi             *OSGi
+	sling            *Sling
+	crypto           *Crypto
+	ssl              *SSL
+	globalTrustStore *GTSManager
+	packageManager   *PackageManager
+	workflowManager  *WorkflowManager
 }
 
 type InstanceState struct {
@@ -107,6 +108,10 @@ func (i Instance) Crypto() *Crypto {
 
 func (i Instance) SSL() *SSL {
 	return i.ssl
+}
+
+func (i Instance) GlobalTrustStore() *GTSManager {
+	return i.globalTrustStore
 }
 
 func (i Instance) IDInfo() IDInfo {

@@ -209,7 +209,7 @@ func (pm *PackageManager) Install(remotePath string) error {
 }
 
 func (pm *PackageManager) DeployWithChanged(localPath string) (bool, error) {
-	if pm.IsSnapshot(localPath) {
+	if pm.instance.IsLocal() && pm.IsSnapshot(localPath) {
 		return pm.deploySnapshot(localPath)
 	}
 	return pm.deployRegular(localPath)

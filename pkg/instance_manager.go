@@ -20,7 +20,7 @@ type InstanceManager struct {
 	LocalOpts *LocalOpts
 	CheckOpts *CheckOpts
 
-	AdHocURL        string
+	AdHocURL        []string
 	FilterID        string
 	FilterAuthors   bool
 	FilterPublishes bool
@@ -33,7 +33,7 @@ func NewInstanceManager(aem *AEM) *InstanceManager {
 
 	cv := aem.config.Values()
 
-	result.AdHocURL = cv.GetString("instance.adhoc_url")
+	result.AdHocURL = cv.GetStringSlice("instance.adhoc_url")
 	result.FilterID = cv.GetString("instance.filter.id")
 	result.FilterAuthors = cv.GetBool("instance.filter.authors")
 	result.FilterPublishes = cv.GetBool("instance.filter.publishes")
@@ -83,12 +83,16 @@ func (im *InstanceManager) All() []Instance {
 }
 
 func (im *InstanceManager) newAdHocOrFromConfig() []Instance {
-	if im.AdHocURL != "" {
-		iURL, err := im.NewByURL(im.AdHocURL)
-		if err != nil {
-			log.Fatalf("cannot create instance from ad hoc URL '%s': %s", im.AdHocURL, err)
+	if len(im.AdHocURL) > 0 {
+		var result []Instance
+		for _, adHocURL := range im.AdHocURL {
+			iURL, err := im.NewByURL(adHocURL)
+			if err != nil {
+				log.Fatalf("cannot create instance from ad hoc URL '%s': %s", im.AdHocURL, err)
+			}
+			result = append(result, *iURL)
 		}
-		return []Instance{*iURL}
+		return result
 	}
 	cv := im.aem.config.Values()
 	configIDs := maps.Keys(cv.GetStringMap("instance.config"))

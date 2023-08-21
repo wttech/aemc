@@ -22,11 +22,11 @@ type Certificate struct {
 	SerialNumber json.Number `json:"serialNumber"`
 }
 
-func (c *Certificate) GetNotBefore() (time.Time, error) {
+func (c *Certificate) NotBeforeDate() (time.Time, error) {
 	return time.Parse(AemTimeLayout, c.NotBefore)
 }
 
-func (c *Certificate) GetNotAfter() (time.Time, error) {
+func (c *Certificate) NotAfterDate() (time.Time, error) {
 	return time.Parse(AemTimeLayout, c.NotAfter)
 }
 
@@ -35,13 +35,13 @@ func standardizeSpaces(a string) string {
 }
 
 func (c *Certificate) IsEqual(certifiacte x509.Certificate) (bool, error) {
-	notBefore, err := c.GetNotBefore()
+	notBefore, err := c.NotBeforeDate()
 
 	if err != nil {
 		return false, err
 	}
 
-	notAfter, err := c.GetNotAfter()
+	notAfter, err := c.NotAfterDate()
 
 	if err != nil {
 		return false, err

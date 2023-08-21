@@ -4,7 +4,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"github.com/wttech/aemc/pkg/common/cert"
+	"github.com/wttech/aemc/pkg/common/certx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/gts"
 	"os"
@@ -52,11 +52,17 @@ func (gtsManager *GTSManager) Create(trustStorePassword string) (bool, error) {
 		return false, statusError
 	}
 
-	if statusResponse.Created == nil {
+	if statusResponse.Created == true {
 		return false, nil
 	}
 
-	postResponse, postError := gtsManager.instance.http.Request().Post(GTSPath + "?newPassword=" + trustStorePassword + "&rePassword=" + trustStorePassword + "&:operation=createStore")
+	pathParams := map[string]string{
+		"newPassword": trustStorePassword,
+		"rePassword":  trustStorePassword,
+		":operation":  "createStore",
+	}
+
+	postResponse, postError := gtsManager.instance.http.Request().SetQueryParams(pathParams).Post(GTSPath)
 
 	if postError != nil {
 		return false, fmt.Errorf("%s > cannot create global trust store: %w", gtsManager.instance.ID(), postError)
@@ -83,7 +89,7 @@ func (gtsManager *GTSManager) AddCertificate(certificateFilePath string) (*gts.C
 
 	pemBlock, _ := pem.Decode(cretificateData)
 	if pemBlock != nil {
-		tmpDerFileNameBasedOnPemPath, functionToDefer, err := cert.CreateTmpDerFileBasedOnPem(pemBlock)
+		tmpDerFileNameBasedOnPemPath, functionToDefer, err := certx.CreateTmpDerFileBasedOnPem(pemBlock)
 
 		defer functionToDefer()
 
@@ -115,9 +121,11 @@ func (gtsManager *GTSManager) AddCertificate(certificateFilePath string) (*gts.C
 		return certificateInTrustStore, false, nil
 	}
 
-	response, err := gtsManager.instance.http.Request().SetFiles(map[string]string{
+	requestFiles := map[string]string{
 		"certificate": certificateFilePath,
-	}).Post(GTSPath)
+	}
+
+	response, err := gtsManager.instance.http.Request().SetFiles(requestFiles).Post(GTSPath)
 
 	if err != nil {
 		return nil, false, fmt.Errorf("%s > failed to add certificate to trust store: %w", gtsManager.instance.ID(), err)
@@ -155,7 +163,11 @@ func (gtsManager *GTSManager) RemoveCertificate(certifiacteAlias string) (bool, 
 		return false, nil
 	}
 
-	postResponse, postError := gtsManager.instance.http.Request().Post(GTSPath + "?removeAlias=" + certifiacteAlias)
+	pathParams := map[string]string{
+		"removeAlias": certifiacteAlias,
+	}
+
+	postResponse, postError := gtsManager.instance.http.Request().SetQueryParams(pathParams).Post(GTSPath)
 
 	if postError != nil {
 		return false, fmt.Errorf("%s > cannot remove certificate from trust store: %w", gtsManager.instance.ID(), postError)

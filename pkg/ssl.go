@@ -4,7 +4,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/wttech/aemc/pkg/common/cert"
+	"github.com/wttech/aemc/pkg/common/certx"
 	"github.com/wttech/aemc/pkg/common/cryptox"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/osx"
@@ -49,7 +49,7 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 	}
 	pemBlock, _ := pem.Decode(privateKeyData)
 	if pemBlock != nil {
-		tmpDerFileNameBasedOnPemPath, functionToDefer, err := cert.CreateTmpDerFileBasedOnPem(pemBlock)
+		tmpDerFileNameBasedOnPemPath, functionToDefer, err := certx.CreateTmpDerFileBasedOnPem(pemBlock)
 
 		defer functionToDefer()
 

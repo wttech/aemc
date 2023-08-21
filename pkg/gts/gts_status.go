@@ -10,8 +10,7 @@ import (
 )
 
 type Status struct {
-	// if trust store exist, it doesn't contain property exists
-	Created      *bool         `json:"exists"`
+	Created      bool          `json:"exists"`
 	Certificates []Certificate `json:"aliases"`
 }
 
@@ -42,7 +41,8 @@ func (s *Status) FindCertificateByAlias(alias string) *Certificate {
 }
 
 func UnmarshalStatus(readCloser io.ReadCloser) (*Status, error) {
-	var status Status
+	// if trust store exist, it doesn't contain property exists
+	var status = Status{Created: true, Certificates: []Certificate{}}
 
 	if err := fmtx.UnmarshalJSON(readCloser, &status); err != nil {
 		return nil, err
@@ -53,8 +53,8 @@ func UnmarshalStatus(readCloser io.ReadCloser) (*Status, error) {
 
 func (s *Status) MarshalText() string {
 	bs := bytes.NewBufferString("")
-	bs.WriteString(fmt.Sprintf("Created: %t\n", s.Created == nil || *s.Created))
-	bs.WriteString(fmtx.TblRows("List of Certificates", true, []string{"alias"}, lo.Map(s.Certificates, func(c Certificate, _ int) map[string]any {
+	bs.WriteString(fmt.Sprintf("Created: %t\n", s.Created))
+	bs.WriteString(fmtx.TblRows("List of certificates", true, []string{"alias"}, lo.Map(s.Certificates, func(c Certificate, _ int) map[string]any {
 		return map[string]any{"alias": c.Alias}
 	})))
 	return bs.String()

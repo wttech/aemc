@@ -1,4 +1,4 @@
-package cert
+package certx
 
 import (
 	"encoding/pem"
@@ -7,7 +7,7 @@ import (
 )
 
 func CreateTmpDerFileBasedOnPem(block *pem.Block) (*string, func(), error) {
-	tempDerFile, err := os.CreateTemp("", "tmp-cert-*.der")
+	tempDerFile, err := os.CreateTemp("", "tmp-certx-*.der")
 
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create temp file for storing DER certificate: %w", err)

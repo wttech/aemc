@@ -110,7 +110,7 @@ func (i Instance) SSL() *SSL {
 	return i.ssl
 }
 
-func (i Instance) GlobalTrustStore() *GTSManager {
+func (i Instance) GTS() *GTSManager {
 	return i.gtsManager
 }
 

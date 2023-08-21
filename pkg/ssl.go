@@ -49,9 +49,9 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 	}
 	pemBlock, _ := pem.Decode(privateKeyData)
 	if pemBlock != nil {
-		tmpDerFileNameBasedOnPemPath, functionToDefer, err := certx.CreateTmpDerFileBasedOnPem(pemBlock)
+		tmpDerFileNameBasedOnPemPath, cleanCallback, err := certx.CreateTmpDerFileBasedOnPem(pemBlock)
 
-		defer functionToDefer()
+		defer cleanCallback()
 
 		if err != nil {
 			return false, fmt.Errorf("%s > failed to create temp file for storing DER SSL certificate: %w", s.instance.ID(), err)

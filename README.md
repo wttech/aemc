@@ -552,28 +552,28 @@ AEM Compose supports managing the trust store of AEM instances.
 This feature supports:
 - creation of the general trust store if it does not exist
 ```shell
-sh aemw gts create --password PASSWORD_HERE --instance-author
+sh aemw gts create --password PASSWORD_HERE -A
 ```
 - getting the general trust store status
 ```shell
-sh aemw gts status --instance-author
+sh aemw gts status -A
 ```
 
 - adding a certificate to the general trust store
 ```shell
-sh aemw gts certificate add --path PATH_TO_CERTIFICATE --instance-author
+sh aemw gts certificate add --path <path> -A
 ```
 This command will add a certificate to the general trust store only if not exists in trust store and will return the alias of the certificate.
 Command `certificate add` supports certificates in PEM and DER formats.
 
 - reading a certificate from the general trust store (by alias)
 ```shell
-sh aemw gts certificate read --alias CERT_ALIAS --instance-author
+sh aemw gts certificate read --alias <alias> -A
 ```
 
 - removing a certificate from the general trust store (by alias)
 ```shell
-sh aemw gts certificate remove --alias CERT_ALIAS --instance-author
+sh aemw gts certificate remove --alias <alias> -A
 ```
 
 # Contributing

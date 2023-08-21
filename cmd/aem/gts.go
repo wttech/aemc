@@ -27,7 +27,7 @@ func (c *CLI) gtsStatusCmd() *cobra.Command {
 				return
 			}
 
-			result, err := instance.GlobalTrustStore().Status()
+			result, err := instance.GTS().Status()
 
 			if err != nil {
 				c.Error(err)
@@ -35,7 +35,7 @@ func (c *CLI) gtsStatusCmd() *cobra.Command {
 			}
 
 			c.Ok("Global Trust Store status")
-			c.SetOutput("Global Trust Store", result)
+			c.SetOutput("status", result)
 		},
 	}
 
@@ -56,7 +56,7 @@ func (c *CLI) gtsCreateCmd() *cobra.Command {
 
 			trustStorePassword, _ := cmd.Flags().GetString("password")
 
-			changed, err := instance.GlobalTrustStore().Create(trustStorePassword)
+			changed, err := instance.GTS().Create(trustStorePassword)
 
 			if err != nil {
 				c.Error(err)
@@ -71,7 +71,7 @@ func (c *CLI) gtsCreateCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String("password", "", "Password to Global Trust Store")
+	cmd.Flags().String("password", "", "password to Global Trust Store")
 	_ = cmd.MarkFlagRequired("password")
 
 	return cmd
@@ -80,7 +80,7 @@ func (c *CLI) gtsCreateCmd() *cobra.Command {
 func (c *CLI) gtsCertCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "certificate",
-		Aliases: []string{"certx", "crt"},
+		Aliases: []string{"cert", "crt"},
 		Short:   "Manage Global Trust Store certificates",
 	}
 	cmd.AddCommand(c.gtsCertAddCmd())
@@ -94,7 +94,7 @@ func (c *CLI) gtsCertAddCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "add",
 		Aliases: []string{"push", "install"},
-		Short:   "Add Certificate to Global Trust Store",
+		Short:   "Add cert to Global Trust Store",
 		Run: func(cmd *cobra.Command, args []string) {
 			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
@@ -104,14 +104,14 @@ func (c *CLI) gtsCertAddCmd() *cobra.Command {
 
 			certificateFilePath, _ := cmd.Flags().GetString("path")
 
-			certificate, changed, err := instance.GlobalTrustStore().AddCertificate(certificateFilePath)
+			certificate, changed, err := instance.GTS().AddCertificate(certificateFilePath)
 
 			if err != nil {
 				c.Error(err)
 				return
 			}
 
-			c.SetOutput("certificate_alias", certificate.Alias)
+			c.SetOutput("added", certificate.Alias)
 
 			if changed {
 				c.Changed("certificate added")
@@ -121,7 +121,7 @@ func (c *CLI) gtsCertAddCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String("path", "", "Certificate file path (PEM|DER format)")
+	cmd.Flags().String("path", "", "file path (PEM|DER format)")
 	_ = cmd.MarkFlagRequired("path")
 
 	return cmd
@@ -131,7 +131,7 @@ func (c *CLI) gtsCertRemoveCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "remove",
 		Aliases: []string{"del", "destroy", "rm"},
-		Short:   "Remove Certificate from Global Trust Store",
+		Short:   "Remove certificate from Global Trust Store",
 		Run: func(cmd *cobra.Command, args []string) {
 			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
@@ -140,7 +140,7 @@ func (c *CLI) gtsCertRemoveCmd() *cobra.Command {
 			}
 
 			alias, _ := cmd.Flags().GetString("alias")
-			changed, err := instance.GlobalTrustStore().RemoveCertificate(alias)
+			changed, err := instance.GTS().RemoveCertificate(alias)
 
 			if err != nil {
 				c.Error(err)
@@ -149,13 +149,14 @@ func (c *CLI) gtsCertRemoveCmd() *cobra.Command {
 
 			if changed {
 				c.Changed("certificate removed")
+				c.SetOutput("removed", alias)
 			} else {
 				c.Ok("certificate not found")
 			}
 		},
 	}
 
-	cmd.Flags().String("alias", "", "certificate alias")
+	cmd.Flags().String("alias", "", "alias")
 	_ = cmd.MarkFlagRequired("alias")
 
 	return cmd
@@ -165,7 +166,7 @@ func (c *CLI) gtsCertReadCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "read",
 		Aliases: []string{"cat", "show", "get", "describe", "find"},
-		Short:   "read certificate from global trust store",
+		Short:   "Read certificate from Global Trust Store",
 		Run: func(cmd *cobra.Command, args []string) {
 			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
@@ -174,7 +175,7 @@ func (c *CLI) gtsCertReadCmd() *cobra.Command {
 			}
 
 			alias, _ := cmd.Flags().GetString("alias")
-			certificate, err := instance.GlobalTrustStore().ReadCertificate(alias)
+			certificate, err := instance.GTS().ReadCertificate(alias)
 
 			if err != nil {
 				c.Error(err)
@@ -183,7 +184,7 @@ func (c *CLI) gtsCertReadCmd() *cobra.Command {
 
 			if certificate != nil {
 				c.Ok("certificate found")
-				c.SetOutput("read", certificate)
+				c.SetOutput("certificate", certificate)
 				return
 			}
 
@@ -191,7 +192,7 @@ func (c *CLI) gtsCertReadCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String("alias", "", "certificate alias")
+	cmd.Flags().String("alias", "", "alias")
 	_ = cmd.MarkFlagRequired("alias")
 
 	return cmd

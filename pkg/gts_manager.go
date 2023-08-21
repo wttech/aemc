@@ -15,9 +15,7 @@ type GTSManager struct {
 }
 
 func NewGTSMananger(instance *Instance) *GTSManager {
-	return &GTSManager{
-		instance: instance,
-	}
+	return &GTSManager{instance: instance}
 }
 
 const (
@@ -29,17 +27,17 @@ func (gtsManager *GTSManager) Status() (*gts.Status, error) {
 	response, err := gtsManager.instance.http.Request().Get(GTSPathJson)
 
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot read global trust store: %w", gtsManager.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot read GTS: %w", gtsManager.instance.ID(), err)
 	}
 
 	if response.IsError() {
-		return nil, fmt.Errorf("%s > cannot read global trust store: %s", gtsManager.instance.ID(), response.Status())
+		return nil, fmt.Errorf("%s > cannot read GTS: %s", gtsManager.instance.ID(), response.Status())
 	}
 
 	result, err := gts.UnmarshalStatus(response.RawBody())
 
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot parse global trust store status response: %w", gtsManager.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot parse GTS status response: %w", gtsManager.instance.ID(), err)
 	}
 
 	return result, nil
@@ -65,11 +63,11 @@ func (gtsManager *GTSManager) Create(trustStorePassword string) (bool, error) {
 	postResponse, postError := gtsManager.instance.http.Request().SetQueryParams(pathParams).Post(GTSPath)
 
 	if postError != nil {
-		return false, fmt.Errorf("%s > cannot create global trust store: %w", gtsManager.instance.ID(), postError)
+		return false, fmt.Errorf("%s > cannot create GTS: %w", gtsManager.instance.ID(), postError)
 	}
 
 	if postResponse.IsError() {
-		return false, fmt.Errorf("%s > cannot create global trust store: %s", gtsManager.instance.ID(), postResponse.Status())
+		return false, fmt.Errorf("%s > cannot create GTS: %s", gtsManager.instance.ID(), postResponse.Status())
 	}
 
 	return true, nil
@@ -89,9 +87,9 @@ func (gtsManager *GTSManager) AddCertificate(certificateFilePath string) (*gts.C
 
 	pemBlock, _ := pem.Decode(cretificateData)
 	if pemBlock != nil {
-		tmpDerFileNameBasedOnPemPath, functionToDefer, err := certx.CreateTmpDerFileBasedOnPem(pemBlock)
+		tmpDerFileNameBasedOnPemPath, cleanCallback, err := certx.CreateTmpDerFileBasedOnPem(pemBlock)
 
-		defer functionToDefer()
+		defer cleanCallback()
 
 		if err != nil {
 			return nil, false, fmt.Errorf("%s > %w", gtsManager.instance.ID(), err)
@@ -114,7 +112,7 @@ func (gtsManager *GTSManager) AddCertificate(certificateFilePath string) (*gts.C
 	certificateInTrustStore, err := statusResponse.FindCertificate(*certificate)
 
 	if err != nil {
-		return nil, false, fmt.Errorf("%s > failed to compare certificate with certificates in trust store: %w", gtsManager.instance.ID(), err)
+		return nil, false, fmt.Errorf("%s > failed to compare certificate with certificates in GTS: %w", gtsManager.instance.ID(), err)
 	}
 
 	if certificateInTrustStore != nil {
@@ -128,11 +126,11 @@ func (gtsManager *GTSManager) AddCertificate(certificateFilePath string) (*gts.C
 	response, err := gtsManager.instance.http.Request().SetFiles(requestFiles).Post(GTSPath)
 
 	if err != nil {
-		return nil, false, fmt.Errorf("%s > failed to add certificate to trust store: %w", gtsManager.instance.ID(), err)
+		return nil, false, fmt.Errorf("%s > failed to add certificate to GTS: %w", gtsManager.instance.ID(), err)
 	}
 
 	if response.IsError() {
-		return nil, false, fmt.Errorf("%s > failed to add certificate to trust store: %s", gtsManager.instance.ID(), response.Status())
+		return nil, false, fmt.Errorf("%s > failed to add certificate to GTS: %s", gtsManager.instance.ID(), response.Status())
 	}
 
 	statusResponse, statusError = gtsManager.Status()
@@ -144,7 +142,7 @@ func (gtsManager *GTSManager) AddCertificate(certificateFilePath string) (*gts.C
 	certificateInTrustStore, err = statusResponse.FindCertificate(*certificate)
 
 	if err != nil {
-		return nil, false, fmt.Errorf("%s > failed to find added certificate in trust store: %w", gtsManager.instance.ID(), err)
+		return nil, false, fmt.Errorf("%s > failed to find added certificate in GTS: %w", gtsManager.instance.ID(), err)
 	}
 
 	return certificateInTrustStore, true, nil
@@ -170,11 +168,11 @@ func (gtsManager *GTSManager) RemoveCertificate(certifiacteAlias string) (bool, 
 	postResponse, postError := gtsManager.instance.http.Request().SetQueryParams(pathParams).Post(GTSPath)
 
 	if postError != nil {
-		return false, fmt.Errorf("%s > cannot remove certificate from trust store: %w", gtsManager.instance.ID(), postError)
+		return false, fmt.Errorf("%s > cannot remove certificate from GTS: %w", gtsManager.instance.ID(), postError)
 	}
 
 	if postResponse.IsError() {
-		return false, fmt.Errorf("%s > cannot remove certificate from trust store: %s", gtsManager.instance.ID(), postResponse.Status())
+		return false, fmt.Errorf("%s > cannot remove certificate from GTS: %s", gtsManager.instance.ID(), postResponse.Status())
 	}
 
 	return true, nil

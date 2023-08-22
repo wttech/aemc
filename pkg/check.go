@@ -210,10 +210,10 @@ func (c InstallerChecker) Check(instance Instance) CheckResult {
 				err:     err,
 			}
 		}
-		if state.IsBusy() {
+		if state.IsActive() {
 			return CheckResult{
 				ok:      false,
-				message: fmt.Sprintf("installer busy (%d)", state.ActiveResources()),
+				message: fmt.Sprintf("installer active (%d)", state.ActiveResources()),
 				err:     err,
 			}
 		}

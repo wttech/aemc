@@ -40,8 +40,8 @@ type SlingInstallerJMXBean struct {
 	InstalledResourceCount any  `json:"InstalledResourceCount"` // AEM type bug: sometimes 'int' or 'string'
 }
 
-func (b SlingInstallerJMXBean) IsBusy() bool {
-	return b.Active || b.ActiveResources() > 0
+func (b SlingInstallerJMXBean) IsActive() bool {
+	return b.Active /* || b.ActiveResources() > 0 */ // sometimes ActiveResourceCount > 0 but Active == false
 }
 
 func (b SlingInstallerJMXBean) ActiveResources() int {

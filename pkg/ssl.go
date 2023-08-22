@@ -159,7 +159,7 @@ func (s SSL) extractErrorMessage(body string) (errorMessage string, err error) {
 }
 
 func (s SSL) lock(keyStorePassword, trustStorePassword, certificateFile, privateKeyFile, httpsHostname, httpsPort string) osx.Lock[sslLock] {
-	return osx.NewLock(fmt.Sprintf("%s/ssl.yml", s.instance.local.LockDir()), func() (sslLock, error) {
+	return osx.NewLock(fmt.Sprintf("%s/ssl.yml", s.instance.LockDir()), func() (sslLock, error) {
 		certificateChecksum, err := filex.ChecksumFile(certificateFile)
 		if err != nil {
 			return sslLock{}, fmt.Errorf("%s > failed to calculate checksum for SSL certificate file: %w", s.instance.ID(), err)

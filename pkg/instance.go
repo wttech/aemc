@@ -151,6 +151,10 @@ func (i Instance) IsPublish() bool {
 	return i.IDInfo().Role == instance.RolePublish
 }
 
+func (i Instance) IsAdHoc() bool {
+	return i.IDInfo().Role == instance.RoleAdHoc
+}
+
 func locationByURL(config *nurl.URL) string {
 	if lo.Contains(localHosts(), config.Hostname()) {
 		return instance.LocationLocal
@@ -163,11 +167,6 @@ func roleByURL(config *nurl.URL) instance.Role {
 		return instance.RoleAuthor
 	}
 	return instance.RolePublish
-}
-
-// TODO local-publish-preview etc
-func classifierByURL(_ *nurl.URL) string {
-	return instance.ClassifierDefault
 }
 
 func credentialsByURL(config *nurl.URL) (string, string) {

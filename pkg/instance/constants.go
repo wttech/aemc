@@ -49,4 +49,5 @@ const (
 
 	RoleAuthor  Role = "author"
 	RolePublish Role = "publish"
+	RoleAdHoc   Role = "adhoc"
 )

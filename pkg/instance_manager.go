@@ -86,7 +86,7 @@ func (im *InstanceManager) newAdHocOrFromConfig() []Instance {
 	if len(im.AdHocURL) > 0 {
 		var result []Instance
 		for adHocIndex, adHocURL := range im.AdHocURL {
-			iURL, err := im.newByURL(adHocURL, adHocIndex+1)
+			iURL, err := im.newByURL(adHocURL, adHocIndex)
 			if err != nil {
 				log.Fatalf("cannot create instance from ad hoc URL '%s': %s", im.AdHocURL, err)
 			}
@@ -222,23 +222,25 @@ func (im *InstanceManager) NewByURL(url string) (*Instance, error) {
 	return im.newByURL(url, -1)
 }
 
-func (im *InstanceManager) newByURL(url string, classifierIndex int) (*Instance, error) {
+func (im *InstanceManager) newByURL(url string, adHocIndex int) (*Instance, error) {
 	urlConfig, err := nurl.Parse(url)
 	if err != nil {
 		return nil, fmt.Errorf("invalid instance URL '%s': %w", url, err)
 	}
-
-	env := locationByURL(urlConfig)
-	typeName := roleByURL(urlConfig)
+	var location string
+	var role instance.Role
 	var classifier string
-	if classifierIndex > 0 {
-		classifier = fmt.Sprintf("%d", classifierIndex)
+	if adHocIndex >= 0 {
+		location = instance.LocationRemote
+		role = instance.RoleAdHoc
+		classifier = fmt.Sprintf("%d", adHocIndex+1)
 	} else {
-		classifierByURL(urlConfig)
+		location = locationByURL(urlConfig)
+		role = roleByURL(urlConfig)
 	}
 	user, password := credentialsByURL(urlConfig)
 
-	parts := []string{env, string(typeName)}
+	parts := []string{location, string(role)}
 	if len(classifier) > 0 {
 		parts = append(parts, classifier)
 	}

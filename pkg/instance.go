@@ -29,6 +29,7 @@ type Instance struct {
 	sling           *Sling
 	crypto          *Crypto
 	ssl             *SSL
+	gtsManager      *GTSManager
 	packageManager  *PackageManager
 	workflowManager *WorkflowManager
 }
@@ -107,6 +108,10 @@ func (i Instance) Crypto() *Crypto {
 
 func (i Instance) SSL() *SSL {
 	return i.ssl
+}
+
+func (i Instance) GTS() *GTSManager {
+	return i.gtsManager
 }
 
 func (i Instance) IDInfo() IDInfo {

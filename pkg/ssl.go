@@ -4,6 +4,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"github.com/wttech/aemc/pkg/common/certx"
 	"github.com/wttech/aemc/pkg/common/cryptox"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/osx"
@@ -48,16 +49,15 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 	}
 	pemBlock, _ := pem.Decode(privateKeyData)
 	if pemBlock != nil {
-		tempDerFile, err := os.CreateTemp("", "aemc-private-key-*.der")
+		tmpDerFileNameBasedOnPemPath, cleanCallback, err := certx.CreateTmpDerFileBasedOnPem(pemBlock)
+
+		defer cleanCallback()
+
 		if err != nil {
 			return false, fmt.Errorf("%s > failed to create temp file for storing DER SSL certificate: %w", s.instance.ID(), err)
 		}
-		defer os.Remove(tempDerFile.Name())
-		err = s.writeDER(tempDerFile, pemBlock)
-		if err != nil {
-			return false, fmt.Errorf("%s > failed to write DER SSL certificate: %w", s.instance.ID(), err)
-		}
-		privateKeyFile = tempDerFile.Name()
+
+		privateKeyFile = *tmpDerFileNameBasedOnPemPath
 	}
 
 	lock := s.lock(keyStorePassword, trustStorePassword, certificateFile, privateKeyFile, httpsHostname, httpsPort)
@@ -112,17 +112,6 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 	}
 
 	return true, nil
-}
-
-func (s SSL) writeDER(tempDerFile *os.File, pemBlock *pem.Block) error {
-	if _, err := tempDerFile.Write(pemBlock.Bytes); err != nil {
-		return err
-	}
-	err := tempDerFile.Close()
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // From HTML response body, e.g.:

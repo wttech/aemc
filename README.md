@@ -42,6 +42,7 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
     * [Installing content packages](#installing-content-packages)
 * [Examples](#examples)
   * ['SSL by Default' support](#ssl-by-default-support)
+  * [Global Trust Store management support](#global-trust-store-management-support)
 * [Contributing](#contributing)
 * [Authors](#authors)
 * [License](#license)
@@ -543,6 +544,37 @@ Above example uses the self-signed certificate created as per the AEM docs.
 See the reference documentation: [AEM 6.5 > Administering Guide > SSL by Default](https://experienceleague.adobe.com/docs/experience-manager-65/administering/security/ssl-by-default.html?lang=en)
 
 For local environment remember to set different port numbers for author and publish instances.
+
+## Global Trust Store management support
+
+AEM Compose supports managing the trust store of AEM instances.
+
+This feature supports:
+- creation of the general trust store if it does not exist
+```shell
+sh aemw gts create --password PASSWORD_HERE -A
+```
+- getting the general trust store status
+```shell
+sh aemw gts status -A
+```
+
+- adding a certificate to the general trust store
+```shell
+sh aemw gts certificate add --path <path> -A
+```
+This command will add a certificate to the general trust store only if not exists in trust store and will return the alias of the certificate.
+Command `certificate add` supports certificates in PEM and DER formats.
+
+- reading a certificate from the general trust store (by alias)
+```shell
+sh aemw gts certificate read --alias <alias> -A
+```
+
+- removing a certificate from the general trust store (by alias)
+```shell
+sh aemw gts certificate remove --alias <alias> -A
+```
 
 # Contributing
 

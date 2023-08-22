@@ -251,6 +251,7 @@ func (im *InstanceManager) New(id, url, user, password string) *Instance {
 	res.sling = NewSling(res)
 	res.crypto = NewCrypto(res)
 	res.ssl = NewSSL(res)
+	res.gtsManager = NewGTSMananger(res)
 
 	if res.IsLocal() {
 		res.local = NewLocal(res)

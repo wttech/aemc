@@ -196,6 +196,10 @@ func (c *CLI) pkgDeployCmd() *cobra.Command {
 				return
 			}
 			force, _ := cmd.Flags().GetBool("force")
+			if err := c.aem.InstanceManager().CheckOpts.ForPackage(path); err != nil {
+				c.Error(err)
+				return
+			}
 			deployed, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				changed := false
 				if force {

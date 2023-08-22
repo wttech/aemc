@@ -52,6 +52,10 @@ func NewCheckOpts(manager *InstanceManager) *CheckOpts {
 	return result
 }
 
+func (o *CheckOpts) ForPackage(path string) error {
+	return nil
+}
+
 func (im *InstanceManager) CheckUntilDone(instances []Instance, opts *CheckOpts, checks []Checker) error {
 	if len(instances) == 0 {
 		log.Debug("no instances to check")

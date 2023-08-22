@@ -39,6 +39,7 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.http.timeout", time.Minute*10)
 	v.SetDefault("instance.http.debug", false)
 	v.SetDefault("instance.http.disable_warn", true)
+	v.SetDefault("instance.http.ignore_ssl_errors", true)
 
 	v.SetDefault("instance.check.skip", false)
 	v.SetDefault("instance.check.warmup", time.Second*1)

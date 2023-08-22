@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"github.com/go-resty/resty/v2"
@@ -28,6 +29,9 @@ func (h *HTTP) Client() *resty.Client {
 	client.SetTimeout(cv.GetDuration("instance.http.timeout"))
 	client.SetDebug(cv.GetBool("instance.http.debug"))
 	client.SetDisableWarn(cv.GetBool("instance.http.disable_warn"))
+	if cv.GetBool("instance.http.ignore_ssl_errors") {
+		client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+	}
 	return client
 }
 

@@ -307,11 +307,10 @@ func (i Instance) MarshalText() string {
 }
 
 func (i Instance) LockDir() string {
-	return i.local.LockDir()
-	/*
-		if i.IsLocal() {
-			return i.local.LockDir()
-		}
-		return "" // TODO dir should reflect url or name? or configurable? for remote instances and features that are locked via local files like: pkg deploy skipping, SSL, ...
-	*/
+	if i.IsLocal() {
+		return i.local.LockDir()
+	}
+	log.Panic("%s > lock files for remote instances are not yet supported", i.ID())
+	return "" // TODO dir should reflect url or name? or configurable? for remote instances and features that are locked via local files like: pkg deploy skipping, SSL, ...
+
 }

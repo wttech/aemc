@@ -146,7 +146,7 @@ func (p Package) MarshalYAML() (interface{}, error) {
 func (p Package) MarshalText() string {
 	state, err := p.State()
 	if err != nil {
-		return fmt.Sprintf("PID '%s' state cannot be read: %s", state.PID, err)
+		return fmt.Sprintf("PID '%s' state cannot be read: %s", p.PID.String(), err)
 	}
 	sb := bytes.NewBufferString("")
 	if state.Exists {

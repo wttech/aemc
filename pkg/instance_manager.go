@@ -5,6 +5,7 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/lox"
+	"github.com/wttech/aemc/pkg/common/mapsx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/instance"
 	"golang.org/x/exp/maps"
@@ -20,7 +21,9 @@ type InstanceManager struct {
 	LocalOpts *LocalOpts
 	CheckOpts *CheckOpts
 
-	AdHocURL        []string
+	AdHocURLList []string
+	AdHocURLMap  map[string]string
+
 	FilterID        string
 	FilterAuthors   bool
 	FilterPublishes bool
@@ -33,7 +36,9 @@ func NewInstanceManager(aem *AEM) *InstanceManager {
 
 	cv := aem.config.Values()
 
-	result.AdHocURL = cv.GetStringSlice("instance.adhoc_url")
+	result.AdHocURLList = cv.GetStringSlice("instance.adhoc_url")
+	result.AdHocURLMap = mapsx.FromString(cv.GetString("instance.adhoc_url_map"))
+
 	result.FilterID = cv.GetString("instance.filter.id")
 	result.FilterAuthors = cv.GetBool("instance.filter.authors")
 	result.FilterPublishes = cv.GetBool("instance.filter.publishes")
@@ -83,12 +88,27 @@ func (im *InstanceManager) All() []Instance {
 }
 
 func (im *InstanceManager) newAdHocOrFromConfig() []Instance {
-	if len(im.AdHocURL) > 0 {
+	if len(im.AdHocURLMap) > 0 {
 		var result []Instance
-		for adHocIndex, adHocURL := range im.AdHocURL {
-			iURL, err := im.newByURL(adHocURL, adHocIndex)
+		for adHocID, adHocURL := range im.AdHocURLMap {
+			iURL, err := im.NewByIDAndURL(adHocID, adHocURL)
 			if err != nil {
-				log.Fatalf("cannot create instance from ad hoc URL '%s': %s", im.AdHocURL, err)
+				log.Fatalf("cannot create instance '%s' from ad hoc URL '%s': %s", adHocID, adHocURL, err)
+			}
+			result = append(result, *iURL)
+		}
+		return result
+	}
+	if len(im.AdHocURLList) > 0 {
+		var result []Instance
+		for adHocIndex, adHocURL := range im.AdHocURLList {
+			iClassifier := fmt.Sprintf("%d", adHocIndex+1)
+			if len(im.AdHocURLList) == 1 {
+				iClassifier = ""
+			}
+			iURL, err := im.NewAdhocByURL(adHocURL, iClassifier)
+			if err != nil {
+				log.Fatalf("cannot create instance from ad hoc URL '%s': %s", adHocURL, err)
 			}
 			result = append(result, *iURL)
 		}
@@ -219,34 +239,37 @@ func (im *InstanceManager) NewLocalPair() []Instance {
 }
 
 func (im *InstanceManager) NewByURL(url string) (*Instance, error) {
-	return im.newByURL(url, -1)
-}
-
-func (im *InstanceManager) newByURL(url string, adHocIndex int) (*Instance, error) {
 	urlConfig, err := nurl.Parse(url)
 	if err != nil {
 		return nil, fmt.Errorf("invalid instance URL '%s': %w", url, err)
 	}
-	var location string
-	var role instance.Role
-	var classifier string
-	if adHocIndex >= 0 {
-		location = instance.LocationRemote
-		role = instance.RoleAdHoc
-		classifier = fmt.Sprintf("%d", adHocIndex+1)
-	} else {
-		location = locationByURL(urlConfig)
-		role = roleByURL(urlConfig)
-	}
-	user, password := credentialsByURL(urlConfig)
+	location := locationByURL(urlConfig)
+	role := roleByURL(urlConfig)
+	parts := []string{location, string(role)}
+	id := strings.Join(parts, instance.IDDelimiter)
+	return im.NewByIDAndURL(id, url)
+}
 
+func (im *InstanceManager) NewAdhocByURL(url string, classifier string) (*Instance, error) {
+	location := instance.LocationRemote
+	role := instance.RoleAdHoc
 	parts := []string{location, string(role)}
 	if len(classifier) > 0 {
 		parts = append(parts, classifier)
 	}
 	id := strings.Join(parts, instance.IDDelimiter)
+	return im.NewByIDAndURL(id, url)
+}
 
-	return im.New(id, url, user, password), nil
+func (im *InstanceManager) NewByIDAndURL(id string, url string) (*Instance, error) {
+	urlConfig, err := nurl.Parse(url)
+	if err != nil {
+		return nil, fmt.Errorf("invalid instance URL '%s': %w", url, err)
+	}
+	user, password := credentialsByURL(urlConfig)
+	urlConfig.User = nil
+	urlRedacted := urlConfig.String()
+	return im.New(id, urlRedacted, user, password), nil
 }
 
 func (im *InstanceManager) New(id, url, user, password string) *Instance {

@@ -6,6 +6,7 @@ import (
 
 const (
 	IDDelimiter          = "_"
+	AdHocDelimiter       = "="
 	URLLocalAuthor       = "http://127.0.0.1:4502"
 	URLLocalPublish      = "http://127.0.0.1:4503"
 	PasswordDefault      = "admin"
@@ -13,7 +14,6 @@ const (
 	LocationLocal        = "local"
 	LocationRemote       = "remote"
 	RoleAuthorPortSuffix = "02"
-	ClassifierDefault    = ""
 	AemVersionUnknown    = "<unknown>"
 
 	AttributeLocal     = "local"

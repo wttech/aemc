@@ -85,8 +85,8 @@ func (im *InstanceManager) All() []Instance {
 func (im *InstanceManager) newAdHocOrFromConfig() []Instance {
 	if len(im.AdHocURL) > 0 {
 		var result []Instance
-		for _, adHocURL := range im.AdHocURL {
-			iURL, err := im.NewByURL(adHocURL)
+		for adHocIndex, adHocURL := range im.AdHocURL {
+			iURL, err := im.newByURL(adHocURL, adHocIndex+1)
 			if err != nil {
 				log.Fatalf("cannot create instance from ad hoc URL '%s': %s", im.AdHocURL, err)
 			}
@@ -219,6 +219,10 @@ func (im *InstanceManager) NewLocalPair() []Instance {
 }
 
 func (im *InstanceManager) NewByURL(url string) (*Instance, error) {
+	return im.newByURL(url, -1)
+}
+
+func (im *InstanceManager) newByURL(url string, classifierIndex int) (*Instance, error) {
 	urlConfig, err := nurl.Parse(url)
 	if err != nil {
 		return nil, fmt.Errorf("invalid instance URL '%s': %w", url, err)
@@ -226,7 +230,12 @@ func (im *InstanceManager) NewByURL(url string) (*Instance, error) {
 
 	env := locationByURL(urlConfig)
 	typeName := roleByURL(urlConfig)
-	classifier := classifierByURL(urlConfig)
+	var classifier string
+	if classifierIndex > 0 {
+		classifier = fmt.Sprintf("%d", classifierIndex)
+	} else {
+		classifierByURL(urlConfig)
+	}
 	user, password := credentialsByURL(urlConfig)
 
 	parts := []string{env, string(typeName)}

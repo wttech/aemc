@@ -305,3 +305,10 @@ func (i Instance) MarshalText() string {
 	sb.WriteString(fmtx.TblProps(props))
 	return sb.String()
 }
+
+func (i Instance) LockDir() string {
+	if i.IsLocal() {
+		return i.local.LockDir()
+	}
+	return "" // TODO dir should reflect url or name? or configurable? for remote instances and features that are locked via local files like: pkg deploy skipping, SSL, ...
+}

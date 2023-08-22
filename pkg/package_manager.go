@@ -209,7 +209,7 @@ func (pm *PackageManager) Install(remotePath string) error {
 }
 
 func (pm *PackageManager) DeployWithChanged(localPath string) (bool, error) {
-	if pm.instance.IsLocal() && pm.IsSnapshot(localPath) {
+	if pm.IsSnapshot(localPath) {
 		return pm.deploySnapshot(localPath)
 	}
 	return pm.deployRegular(localPath)
@@ -279,7 +279,7 @@ func (pm *PackageManager) Deploy(localPath string) error {
 
 func (pm *PackageManager) deployLock(file string, checksum string) osx.Lock[packageDeployLock] {
 	name := filepath.Base(file)
-	return osx.NewLock(fmt.Sprintf("%s/package/deploy/%s.yml", pm.instance.local.LockDir(), name), func() (packageDeployLock, error) {
+	return osx.NewLock(fmt.Sprintf("%s/package/deploy/%s.yml", pm.instance.LockDir(), name), func() (packageDeployLock, error) {
 		return packageDeployLock{Deployed: time.Now(), Checksum: checksum}, nil
 	})
 }

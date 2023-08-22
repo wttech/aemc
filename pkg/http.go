@@ -68,7 +68,15 @@ func (h *HTTP) BasicAuthCredentials() string {
 
 func (h *HTTP) Port() string {
 	urlConfig, _ := nurl.Parse(h.baseURL)
-	return urlConfig.Port()
+	port := urlConfig.Port()
+	if port == "" {
+		if urlConfig.Scheme == "https" {
+			port = "443"
+		} else {
+			port = "80"
+		}
+	}
+	return port
 }
 
 func (h *HTTP) Hostname() string {

@@ -233,7 +233,7 @@ func (pm *PackageManager) installLogged(remotePath string) error {
 		line := scanner.Text()
 		// TODO parse HTML; process output line by line (do not buffer whole output)
 		// TODO log file per package; append for each deployment; separators with timestamps for each deployment
-		// TODO use logger?
+		// TODO use logger? aem/home/var/instance/author/aem-compose/var/log/package/install/filename.log
 	}
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("%s > cannot install package '%s': cannot parse HTML response: %w", pm.instance.ID(), remotePath, err)

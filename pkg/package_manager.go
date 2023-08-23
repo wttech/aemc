@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
@@ -207,7 +208,7 @@ func (pm *PackageManager) installRegular(remotePath string) error {
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return fmt.Errorf("%s > cannot install package '%s'; cannot parse response: %w", pm.instance.ID(), remotePath, err)
+		return fmt.Errorf("%s > cannot install package '%s'; cannot parse JSON response: %w", pm.instance.ID(), remotePath, err)
 	}
 	if !status.Success {
 		return fmt.Errorf("%s > cannot install package '%s'; unexpected status: %s", pm.instance.ID(), remotePath, status.Message)
@@ -218,14 +219,25 @@ func (pm *PackageManager) installRegular(remotePath string) error {
 
 func (pm *PackageManager) installLogged(remotePath string) error {
 	log.Infof("%s > installing package '%s'", pm.instance.ID(), remotePath)
-	response, err := pm.instance.http.Request(). // TODO cmd as query param or not?
-							SetFormData(map[string]string{"cmd": "install", "recursive": fmt.Sprintf("%v", pm.InstallRecursive)}).
-							Post(ServiceHtmlPath + remotePath)
-
-	// TODO parse HTML; process output line by line (do not buffer whole output)
-	// TODO log file per package; append for each deployment; separators with timestamps for each deployment
-	// TODO use logger?
-
+	// TODO cmd as query param or not?
+	response, err := pm.instance.http.Request().
+		SetFormData(map[string]string{"cmd": "install", "recursive": fmt.Sprintf("%v", pm.InstallRecursive)}).
+		Post(ServiceHtmlPath + remotePath)
+	if err != nil {
+		return fmt.Errorf("%s > cannot install package '%s': %w", pm.instance.ID(), remotePath, err)
+	} else if response.IsError() {
+		return fmt.Errorf("%s > cannot install package '%s': '%s'", pm.instance.ID(), remotePath, response.Status())
+	}
+	scanner := bufio.NewScanner(response.RawBody())
+	for scanner.Scan() {
+		line := scanner.Text()
+		// TODO parse HTML; process output line by line (do not buffer whole output)
+		// TODO log file per package; append for each deployment; separators with timestamps for each deployment
+		// TODO use logger?
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("%s > cannot install package '%s': cannot parse HTML response: %w", pm.instance.ID(), remotePath, err)
+	}
 	log.Infof("%s > installed package '%s'", pm.instance.ID(), remotePath)
 	return nil
 }

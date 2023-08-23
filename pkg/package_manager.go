@@ -18,6 +18,7 @@ type PackageManager struct {
 	instance *Instance
 
 	SnapshotDeploySkipping bool
+	InstallLogged          bool
 	InstallRecursive       bool
 	SnapshotPatterns       []string
 	ToggledWorkflows       []string
@@ -188,6 +189,13 @@ func (pm *PackageManager) Upload(localPath string) (string, error) {
 }
 
 func (pm *PackageManager) Install(remotePath string) error {
+	if pm.InstallLogged {
+		return pm.installLogged(remotePath)
+	}
+	return pm.installRegular(remotePath)
+}
+
+func (pm *PackageManager) installRegular(remotePath string) error {
 	log.Infof("%s > installing package '%s'", pm.instance.ID(), remotePath)
 	response, err := pm.instance.http.Request().
 		SetFormData(map[string]string{"cmd": "install", "recursive": fmt.Sprintf("%v", pm.InstallRecursive)}).
@@ -204,6 +212,20 @@ func (pm *PackageManager) Install(remotePath string) error {
 	if !status.Success {
 		return fmt.Errorf("%s > cannot install package '%s'; unexpected status: %s", pm.instance.ID(), remotePath, status.Message)
 	}
+	log.Infof("%s > installed package '%s'", pm.instance.ID(), remotePath)
+	return nil
+}
+
+func (pm *PackageManager) installLogged(remotePath string) error {
+	log.Infof("%s > installing package '%s'", pm.instance.ID(), remotePath)
+	response, err := pm.instance.http.Request(). // TODO cmd as query param or not?
+							SetFormData(map[string]string{"cmd": "install", "recursive": fmt.Sprintf("%v", pm.InstallRecursive)}).
+							Post(ServiceHtmlPath + remotePath)
+
+	// TODO parse HTML; process output line by line (do not buffer whole output)
+	// TODO log file per package; append for each deployment; separators with timestamps for each deployment
+	// TODO use logger?
+
 	log.Infof("%s > installed package '%s'", pm.instance.ID(), remotePath)
 	return nil
 }

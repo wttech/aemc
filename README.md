@@ -377,8 +377,6 @@ instance:
       console: false
       # Fail on case 'installed with errors'
       strict: true
-      # Directory to place HTML report files
-      dir: aem/home/var/log/package/install
 
   # OSGi Framework
   osgi:

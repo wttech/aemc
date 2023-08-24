@@ -8,8 +8,9 @@ import (
 type Opts struct {
 	config *cfg.Config
 
-	TmpDir  string
-	ToolDir string
+	TmpDir   string
+	ToolDir  string
+	CacheDir string
 }
 
 func NewOpts(config *cfg.Config) *Opts {
@@ -18,8 +19,9 @@ func NewOpts(config *cfg.Config) *Opts {
 	return &Opts{
 		config: config,
 
-		TmpDir:  cv.GetString("base.tmp_dir"),
-		ToolDir: cv.GetString("base.tool_dir"),
+		TmpDir:   cv.GetString("base.tmp_dir"),
+		ToolDir:  cv.GetString("base.tool_dir"),
+		CacheDir: cv.GetString("base.cache_dir"),
 	}
 }
 

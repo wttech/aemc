@@ -19,6 +19,7 @@ func (c *Config) setDefaults() {
 
 	v.SetDefault("base.tmp_dir", common.TmpDir)
 	v.SetDefault("base.tool_dir", common.ToolDir)
+	v.SetDefault("base.cache_dir", common.CacheDir)
 
 	v.SetDefault("input.format", fmtx.YML)
 	v.SetDefault("input.file", common.STDIn)
@@ -85,7 +86,6 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.package.install_html.enabled", false)
 	v.SetDefault("instance.package.install_html.strict", true)
 	v.SetDefault("instance.package.install_html.console", false)
-	v.SetDefault("instance.package.install_html.dir", common.LogDir+"/package/install")
 
 	v.SetDefault("instance.package.snapshot_deploy_skipping", true)
 	v.SetDefault("instance.package.snapshot_patterns", []string{"**/*-SNAPSHOT.zip"})

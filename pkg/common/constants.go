@@ -5,8 +5,6 @@ const (
 	AppName        = "AEM Compose"
 	MainDir        = "aem"
 	HomeDirName    = "home"
-	ScriptDirName  = "script"
-	ScriptDir      = MainDir + "/" + ScriptDirName
 	HomeDir        = MainDir + "/" + HomeDirName
 	VarDirName     = "var"
 	VarDir         = HomeDir + "/" + VarDirName
@@ -15,6 +13,8 @@ const (
 	LogDirName     = "log"
 	LogDir         = VarDir + "/" + LogDirName
 	LogFile        = LogDir + "/aem.log"
+	CacheDirName   = "cache"
+	CacheDir       = VarDir + "/" + CacheDirName
 	ToolDirName    = "opt"
 	ToolDir        = HomeDir + "/" + ToolDirName
 	LibDirName     = "lib"

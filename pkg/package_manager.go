@@ -24,7 +24,6 @@ type PackageManager struct {
 	SnapshotDeploySkipping bool
 	InstallRecursive       bool
 	InstallHTMLEnabled     bool
-	InstallHTMLDir         string
 	InstallHTMLConsole     bool
 	InstallHTMLStrict      bool
 	SnapshotPatterns       []string
@@ -39,7 +38,6 @@ func NewPackageManager(res *Instance) *PackageManager {
 
 		SnapshotDeploySkipping: cv.GetBool("instance.package.snapshot_deploy_skipping"),
 		InstallHTMLEnabled:     cv.GetBool("instance.package.install_html.enabled"),
-		InstallHTMLDir:         cv.GetString("instance.package.install_html.dir"),
 		InstallHTMLConsole:     cv.GetBool("instance.package.install_html.console"),
 		InstallHTMLStrict:      cv.GetBool("instance.package.install_html.strict"),
 		InstallRecursive:       cv.GetBool("instance.package.install_recursive"),
@@ -242,7 +240,7 @@ func (pm *PackageManager) installHTML(remotePath string) error {
 	success := false
 	successWithErrors := false
 
-	htmlFilePath := fmt.Sprintf("%s/%s/%s-%s.html", pm.InstallHTMLDir, pm.instance.ID(), filepath.Base(remotePath), timex.FileTimestampForNow())
+	htmlFilePath := fmt.Sprintf("%s/package/install/%s-%s.html", pm.instance.CacheDir(), filepath.Base(remotePath), timex.FileTimestampForNow())
 	var htmlWriter *bufio.Writer
 
 	if !pm.InstallHTMLConsole {
@@ -296,7 +294,7 @@ func (pm *PackageManager) installHTML(remotePath string) error {
 }
 
 func (pm *PackageManager) DeployWithChanged(localPath string) (bool, error) {
-	if pm.instance.IsLocal() && pm.IsSnapshot(localPath) { // TODO remove local check; support remote as well
+	if pm.IsSnapshot(localPath) {
 		return pm.deploySnapshot(localPath)
 	}
 	return pm.deployRegular(localPath)

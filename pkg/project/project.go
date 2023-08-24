@@ -52,9 +52,8 @@ func KindOf(name string) (Kind, error) {
 		return KindAppCloud, nil
 	} else if name == KindAppClassic {
 		return KindAppClassic, nil
-	} else {
-		return "", fmt.Errorf("project kind '%s' is not supported", name)
 	}
+	return "", fmt.Errorf("project kind '%s' is not supported", name)
 }
 
 //go:embed common

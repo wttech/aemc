@@ -502,7 +502,7 @@ By default, the timeout is set to `10m`, but you have the option to increase it 
 To set the timeout for a single AEMC command, use the following syntax:
 
 ```shell
-AEM_INSTANCE_HTTP_TIMEOUT=0 sh aemw package deploy --url my-package.zip
+AEM_INSTANCE_HTTP_TIMEOUT=0 sh aemw package deploy --file my-package.zip
 ```
 
 It's important to be aware that AEMaaCS also has its own timeout for requests made to the Package Manager UI. For detailed information, please refer to the [documentation](https://experienceleague.adobe.com/docs/experience-manager-cloud-service/content/implementing/developer-tools/package-manager.html?lang=en#aemaacs-packages).
@@ -512,7 +512,7 @@ To skip the instance health check after running a command that would normally tr
 To skip the instance health check for a single AEMC command, use the following syntax:
 
 ```shell
-AEM_INSTANCE_CHECK_SKIP=true sh aemw package deploy --url my-package.zip
+AEM_INSTANCE_CHECK_SKIP=true sh aemw package deploy --file my-package.zip
 ```
 
 ### Installing packages with troubleshooting
@@ -526,7 +526,7 @@ This new feature offers two distinct modes for leveraging its benefits:
    To enable this mode and save the HTML report to a designated file, use the following shell command:
 
    ```shell
-   AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true sh aemw package deploy --url my-package.zip
+   AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true sh aemw package deploy --file my-package.zip
    ```
 
 2. **Direct Console Output of HTML Report:**
@@ -534,7 +534,7 @@ This new feature offers two distinct modes for leveraging its benefits:
    To directly print the HTML report to the console, execute this shell command:
 
    ```shell
-   AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true AEM_INSTANCE_PACKAGE_INSTALL_HTML_CONSOLE=true sh aemw package deploy --url my-package.zip
+   AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true AEM_INSTANCE_PACKAGE_INSTALL_HTML_CONSOLE=true sh aemw package deploy --file my-package.zip
    ```
 
 # Examples

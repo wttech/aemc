@@ -11,7 +11,9 @@ import (
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/pkg"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -19,8 +21,11 @@ type PackageManager struct {
 	instance *Instance
 
 	SnapshotDeploySkipping bool
-	InstallLogged          bool
 	InstallRecursive       bool
+	InstallLogEnabled      bool
+	InstallLogDir          string
+	InstallLogConsole      bool
+	InstallLogStrict       bool
 	SnapshotPatterns       []string
 	ToggledWorkflows       []string
 }
@@ -32,6 +37,10 @@ func NewPackageManager(res *Instance) *PackageManager {
 		instance: res,
 
 		SnapshotDeploySkipping: cv.GetBool("instance.package.snapshot_deploy_skipping"),
+		InstallLogEnabled:      cv.GetBool("instance.package.install.log.enabled"),
+		InstallLogDir:          cv.GetString("instance.package.install.log.dir"),
+		InstallLogConsole:      cv.GetBool("instance.package.install.log.console"),
+		InstallLogStrict:       cv.GetBool("instance.package.install.log.strict"),
 		InstallRecursive:       cv.GetBool("instance.package.install_recursive"),
 		SnapshotPatterns:       cv.GetStringSlice("instance.package.snapshot_patterns"),
 		ToggledWorkflows:       cv.GetStringSlice("instance.package.toggled_workflows"),
@@ -190,7 +199,7 @@ func (pm *PackageManager) Upload(localPath string) (string, error) {
 }
 
 func (pm *PackageManager) Install(remotePath string) error {
-	if pm.InstallLogged {
+	if pm.InstallLogEnabled {
 		return pm.installLogged(remotePath)
 	}
 	return pm.installRegular(remotePath)
@@ -219,7 +228,7 @@ func (pm *PackageManager) installRegular(remotePath string) error {
 
 func (pm *PackageManager) installLogged(remotePath string) error {
 	log.Infof("%s > installing package '%s'", pm.instance.ID(), remotePath)
-	// TODO cmd as query param or not?
+
 	response, err := pm.instance.http.Request().
 		SetFormData(map[string]string{"cmd": "install", "recursive": fmt.Sprintf("%v", pm.InstallRecursive)}).
 		Post(ServiceHtmlPath + remotePath)
@@ -228,16 +237,55 @@ func (pm *PackageManager) installLogged(remotePath string) error {
 	} else if response.IsError() {
 		return fmt.Errorf("%s > cannot install package '%s': '%s'", pm.instance.ID(), remotePath, response.Status())
 	}
+
+	success := false
+	successWithErrors := false
+
+	var installLog *log.Logger
+	if !pm.InstallLogConsole {
+		installLog = log.New()
+		installLogFilePath := fmt.Sprintf("%s/%s/%s.log", pm.InstallLogDir, pm.instance.ID(), filepath.Base(remotePath))
+		if err := pathx.Ensure(filepath.Dir(installLogFilePath)); err != nil {
+			return err
+		}
+		installLogFile, err := os.OpenFile(installLogFilePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			return fmt.Errorf("%s > cannot install package '%s': cannot open log file '%s'", pm.instance.ID(), remotePath, installLogFilePath)
+		}
+		defer installLogFile.Close()
+		installLog.SetOutput(installLogFile)
+	}
+
 	scanner := bufio.NewScanner(response.RawBody())
 	for scanner.Scan() {
-		line := scanner.Text()
-		// TODO parse HTML; process output line by line (do not buffer whole output)
-		// TODO log file per package; append for each deployment; separators with timestamps for each deployment
-		// TODO use logger? aem/home/var/instance/author/aem-compose/var/log/package/install/filename.log
+		htmlLine := scanner.Text()
+		if !success && strings.Contains(htmlLine, pkg.InstallSuccess) {
+			success = true
+		}
+		if !successWithErrors && strings.Contains(htmlLine, pkg.InstallSuccessWithErrors) {
+			successWithErrors = true
+		}
+		if !pm.InstallLogConsole {
+			installLog.Infof(htmlLine)
+		} else {
+			fmt.Println(htmlLine)
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("%s > cannot install package '%s': cannot parse HTML response: %w", pm.instance.ID(), remotePath, err)
 	}
+
+	failure := !success && !successWithErrors
+	if failure {
+		return fmt.Errorf("%s > cannot install package '%s': HTML response contains errors: %w", pm.instance.ID(), remotePath, err)
+	} else if successWithErrors {
+		if pm.InstallLogStrict {
+			return fmt.Errorf("%s > cannot install package '%s': HTML response contains errors: %w", pm.instance.ID(), remotePath, err)
+		}
+		log.Warnf("%s > installed package '%s': HTML response contains errors: %s", pm.instance.ID(), remotePath, err)
+		return nil
+	}
+
 	log.Infof("%s > installed package '%s'", pm.instance.ID(), remotePath)
 	return nil
 }

@@ -521,17 +521,13 @@ Starting from version 1.4.0 (see [#177](https://github.com/wttech/aemc/pull/177)
 
 This new feature offers two distinct modes for leveraging its benefits:
 
-1. **Saving HTML Report to File:**
-
-   To enable this mode and save the HTML report to a designated file, use the following shell command:
+1. Saving HTML report to file:
 
    ```shell
    AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true sh aemw package deploy --file my-package.zip
    ```
 
-2. **Direct Console Output of HTML Report:**
-
-   To directly print the HTML report to the console, execute this shell command:
+2. Direct console output of HTML report:
 
    ```shell
    AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true AEM_INSTANCE_PACKAGE_INSTALL_HTML_CONSOLE=true sh aemw package deploy --file my-package.zip

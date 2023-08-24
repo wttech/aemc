@@ -282,7 +282,10 @@ func (pm *PackageManager) installLogged(remotePath string) error {
 
 	failure := !success && !successWithErrors
 	if failure || (successWithErrors && pm.InstallLogStrict) {
-		return fmt.Errorf("%s > cannot install package '%s': HTML response contains errors: %w", pm.instance.ID(), remotePath, err)
+		if pm.InstallLogConsole {
+			return fmt.Errorf("%s > cannot install package '%s': HTML output contains errors", pm.instance.ID(), remotePath)
+		}
+		return fmt.Errorf("%s > cannot install package '%s': HTML report contains errors '%s'", pm.instance.ID(), remotePath, htmlFilePath)
 	}
 	if successWithErrors {
 		log.Warnf("%s > installed package '%s': HTML response contains errors: %s", pm.instance.ID(), remotePath, err)

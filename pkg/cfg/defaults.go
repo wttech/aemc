@@ -81,6 +81,12 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.status.timeout", time.Millisecond*500)
 
 	v.SetDefault("instance.package.install_recursive", true)
+
+	v.SetDefault("instance.package.install_html.enabled", false)
+	v.SetDefault("instance.package.install_html.strict", true)
+	v.SetDefault("instance.package.install_html.console", false)
+	v.SetDefault("instance.package.install_html.dir", common.LogDir+"/package/install")
+
 	v.SetDefault("instance.package.snapshot_deploy_skipping", true)
 	v.SetDefault("instance.package.snapshot_patterns", []string{"**/*-SNAPSHOT.zip"})
 	v.SetDefault("instance.package.toggled_workflows", []string{})

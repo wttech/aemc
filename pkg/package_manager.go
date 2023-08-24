@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
@@ -9,8 +10,11 @@ import (
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
+	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/pkg"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -19,6 +23,10 @@ type PackageManager struct {
 
 	SnapshotDeploySkipping bool
 	InstallRecursive       bool
+	InstallHTMLEnabled     bool
+	InstallHTMLDir         string
+	InstallHTMLConsole     bool
+	InstallHTMLStrict      bool
 	SnapshotPatterns       []string
 	ToggledWorkflows       []string
 }
@@ -30,6 +38,10 @@ func NewPackageManager(res *Instance) *PackageManager {
 		instance: res,
 
 		SnapshotDeploySkipping: cv.GetBool("instance.package.snapshot_deploy_skipping"),
+		InstallHTMLEnabled:     cv.GetBool("instance.package.install_html.enabled"),
+		InstallHTMLDir:         cv.GetString("instance.package.install_html.dir"),
+		InstallHTMLConsole:     cv.GetBool("instance.package.install_html.console"),
+		InstallHTMLStrict:      cv.GetBool("instance.package.install_html.strict"),
 		InstallRecursive:       cv.GetBool("instance.package.install_recursive"),
 		SnapshotPatterns:       cv.GetStringSlice("instance.package.snapshot_patterns"),
 		ToggledWorkflows:       cv.GetStringSlice("instance.package.toggled_workflows"),
@@ -188,6 +200,13 @@ func (pm *PackageManager) Upload(localPath string) (string, error) {
 }
 
 func (pm *PackageManager) Install(remotePath string) error {
+	if pm.InstallHTMLEnabled {
+		return pm.installHTML(remotePath)
+	}
+	return pm.installJSON(remotePath)
+}
+
+func (pm *PackageManager) installJSON(remotePath string) error {
 	log.Infof("%s > installing package '%s'", pm.instance.ID(), remotePath)
 	response, err := pm.instance.http.Request().
 		SetFormData(map[string]string{"cmd": "install", "recursive": fmt.Sprintf("%v", pm.InstallRecursive)}).
@@ -199,10 +218,78 @@ func (pm *PackageManager) Install(remotePath string) error {
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return fmt.Errorf("%s > cannot install package '%s'; cannot parse response: %w", pm.instance.ID(), remotePath, err)
+		return fmt.Errorf("%s > cannot install package '%s'; cannot parse JSON response: %w", pm.instance.ID(), remotePath, err)
 	}
 	if !status.Success {
 		return fmt.Errorf("%s > cannot install package '%s'; unexpected status: %s", pm.instance.ID(), remotePath, status.Message)
+	}
+	log.Infof("%s > installed package '%s'", pm.instance.ID(), remotePath)
+	return nil
+}
+
+func (pm *PackageManager) installHTML(remotePath string) error {
+	log.Infof("%s > installing package '%s'", pm.instance.ID(), remotePath)
+
+	response, err := pm.instance.http.Request().
+		SetFormData(map[string]string{"cmd": "install", "recursive": fmt.Sprintf("%v", pm.InstallRecursive)}).
+		Post(ServiceHtmlPath + remotePath)
+	if err != nil {
+		return fmt.Errorf("%s > cannot install package '%s': %w", pm.instance.ID(), remotePath, err)
+	} else if response.IsError() {
+		return fmt.Errorf("%s > cannot install package '%s': '%s'", pm.instance.ID(), remotePath, response.Status())
+	}
+
+	success := false
+	successWithErrors := false
+
+	htmlFilePath := fmt.Sprintf("%s/%s/%s-%s.html", pm.InstallHTMLDir, pm.instance.ID(), filepath.Base(remotePath), timex.FileTimestampForNow())
+	var htmlWriter *bufio.Writer
+
+	if !pm.InstallHTMLConsole {
+		if err := pathx.Ensure(filepath.Dir(htmlFilePath)); err != nil {
+			return err
+		}
+		htmlFile, err := os.OpenFile(htmlFilePath, os.O_RDWR|os.O_CREATE, 0666)
+		if err != nil {
+			return fmt.Errorf("%s > cannot install package '%s': cannot open HTML report file '%s'", pm.instance.ID(), remotePath, htmlFilePath)
+		}
+		defer htmlFile.Close()
+		htmlWriter = bufio.NewWriter(htmlFile)
+		defer htmlWriter.Flush()
+	}
+
+	scanner := bufio.NewScanner(response.RawBody())
+	for scanner.Scan() {
+		htmlLine := scanner.Text()
+		if !success && strings.Contains(htmlLine, pkg.InstallSuccess) {
+			success = true
+		}
+		if !successWithErrors && strings.Contains(htmlLine, pkg.InstallSuccessWithErrors) {
+			successWithErrors = true
+		}
+		if !pm.InstallHTMLConsole {
+			_, err := htmlWriter.WriteString(htmlLine + osx.LineSep())
+			if err != nil {
+				return fmt.Errorf("%s > cannot install package '%s': cannot write to HTML report file '%s'", pm.instance.ID(), remotePath, htmlFilePath)
+			}
+		} else {
+			fmt.Println(htmlLine)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("%s > cannot install package '%s': cannot parse HTML response: %w", pm.instance.ID(), remotePath, err)
+	}
+
+	failure := !success && !successWithErrors
+	if failure || (successWithErrors && pm.InstallHTMLStrict) {
+		if pm.InstallHTMLConsole {
+			return fmt.Errorf("%s > cannot install package '%s': HTML output contains errors", pm.instance.ID(), remotePath)
+		}
+		return fmt.Errorf("%s > cannot install package '%s': HTML report contains errors '%s'", pm.instance.ID(), remotePath, htmlFilePath)
+	}
+	if successWithErrors {
+		log.Warnf("%s > installed package '%s': HTML response contains errors: %s", pm.instance.ID(), remotePath, err)
+		return nil
 	}
 	log.Infof("%s > installed package '%s'", pm.instance.ID(), remotePath)
 	return nil

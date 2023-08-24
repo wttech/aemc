@@ -40,9 +40,11 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
     * [Improving performance](#improving-performance)
     * [Increasing verbosity](#increasing-verbosity)
     * [Installing content packages](#installing-content-packages)
+    * [Installing packages with troubleshooting](#installing-packages-with-troubleshooting)
 * [Examples](#examples)
-  * ['SSL by Default' support](#ssl-by-default-support)
-  * [Global Trust Store management support](#global-trust-store-management-support)
+  * [Replication agents](#replication-agents)
+  * [SSL by Default](#ssl-by-default)
+  * [Global Trust Store](#global-trust-store)
 * [Contributing](#contributing)
 * [Authors](#authors)
 * [License](#license)
@@ -366,6 +368,17 @@ instance:
     snapshot_deploy_skipping: true
     # Disable following workflow launchers for a package deployment time only
     toggled_workflows: [/libs/settings/workflow/launcher/config/asset_processing_on_sdk_*,/libs/settings/workflow/launcher/config/update_asset_*,/libs/settings/workflow/launcher/config/dam_*]
+    # Also sub-packages
+    install_recursive: true
+    # Use slower HTML endpoint for deployments but with better troubleshooting
+    install_html:
+      enabled: false
+      # Print HTML directly to console instead of writing to file
+      console: false
+      # Fail on case 'installed with errors'
+      strict: true
+      # Directory to place HTML report files
+      dir: aem/home/var/log/package/install
 
   # OSGi Framework
   osgi:
@@ -490,7 +503,7 @@ By default, the timeout is set to `10m`, but you have the option to increase it 
 To set the timeout for a single AEMC command, use the following syntax:
 
 ```shell
-AEM_INSTANCE_HTTP_TIMEOUT=0 sh aemw package deploy --url my-package.zip
+AEM_INSTANCE_HTTP_TIMEOUT=0 sh aemw package deploy --file my-package.zip
 ```
 
 It's important to be aware that AEMaaCS also has its own timeout for requests made to the Package Manager UI. For detailed information, please refer to the [documentation](https://experienceleague.adobe.com/docs/experience-manager-cloud-service/content/implementing/developer-tools/package-manager.html?lang=en#aemaacs-packages).
@@ -500,14 +513,63 @@ To skip the instance health check after running a command that would normally tr
 To skip the instance health check for a single AEMC command, use the following syntax:
 
 ```shell
-AEM_INSTANCE_CHECK_SKIP=true sh aemw package deploy --url my-package.zip
+AEM_INSTANCE_CHECK_SKIP=true sh aemw package deploy --file my-package.zip
 ```
+
+### Installing packages with troubleshooting
+
+Starting from version 1.4.0 (see [#177](https://github.com/wttech/aemc/pull/177)), AEMC now supports AEM package installations using an HTML report serving endpoint, similar to CRX Package Manager's. While this method may result in slightly extended installation times, it provides a comprehensive HTML report detailing the package installation process.
+
+This new feature offers two distinct modes for leveraging its benefits:
+
+1. Saving HTML report to file:
+
+   ```shell
+   AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true sh aemw package deploy --file my-package.zip
+   ```
+
+2. Direct console output of HTML report:
+
+   ```shell
+   AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true AEM_INSTANCE_PACKAGE_INSTALL_HTML_CONSOLE=true sh aemw package deploy --file my-package.zip
+   ```
 
 # Examples
 
-## 'SSL by Default' support
+## Replication agents
 
-AEM Compose supports 'SSL by Default' feature of AEM.
+1. Configuring publish agent on AEM author:
+
+    ```shell
+    PROPS="
+    enabled: true
+    transportUri: http://localhost:4503/bin/receive?sling:authRequestLogin=1
+    transportUser: admin
+    transportPassword: admin
+    userId: admin
+    "
+    echo "$PROPS" | sh aemw repl agent setup -A --location "author" --name "publish"
+    ```
+
+2. Configuring flush agent on AEM publish:
+
+    ```shell
+    PROPS="
+    enabled: true
+    transportUri: http://localhost/dispatcher/invalidate.cache
+    protocolHTTPHeaders:
+    - 'CQ-Action: {action}'
+    - 'CQ-Handle: {path}'
+    - 'CQ-Path: {path}'
+    - 'Host: flush'
+    "
+    echo "$PROPS" | sh aemw repl agent setup -P --location "publish" --name "flush"
+    ```
+   If needed, update `localhost` to the value on which AEM dispatcher is available, e.g.`localhost:8080`.
+
+## SSL by Default
+
+AEM Compose supports *SSL by Default* feature of AEM.
 
 This feature requires:
 - certificate file in PEM format
@@ -517,7 +579,7 @@ This feature requires:
 - hostname for HTTPS connector (used by AEM to check if the setup was successful; has to be reachable by AEM)
 - port for HTTPS connector
 
-To set up 'SSL by Default', run:
+To set up *SSL by Default*, run:
 
 ```shell
 sh aemw ssl setup \
@@ -545,36 +607,39 @@ See the reference documentation: [AEM 6.5 > Administering Guide > SSL by Default
 
 For local environment remember to set different port numbers for author and publish instances.
 
-## Global Trust Store management support
+## Global Trust Store
 
 AEM Compose supports managing the trust store of AEM instances.
 
 This feature supports:
+
 - creation of the general trust store if it does not exist
-```shell
-sh aemw gts create --password PASSWORD_HERE -A
-```
+    ```shell
+    sh aemw gts create --password PASSWORD_HERE -A
+    ```
+
 - getting the general trust store status
-```shell
-sh aemw gts status -A
-```
+    ```shell
+    sh aemw gts status -A
+    ```
 
 - adding a certificate to the general trust store
-```shell
-sh aemw gts certificate add --path <path> -A
-```
+    ```shell
+    sh aemw gts certificate add --path <path> -A
+    ```
+  
 This command will add a certificate to the general trust store only if not exists in trust store and will return the alias of the certificate.
 Command `certificate add` supports certificates in PEM and DER formats.
 
 - reading a certificate from the general trust store (by alias)
-```shell
-sh aemw gts certificate read --alias <alias> -A
-```
+    ```shell
+    sh aemw gts certificate read --alias <alias> -A
+    ```
 
 - removing a certificate from the general trust store (by alias)
-```shell
-sh aemw gts certificate remove --alias <alias> -A
-```
+    ```shell
+    sh aemw gts certificate remove --alias <alias> -A
+    ```
 
 # Contributing
 

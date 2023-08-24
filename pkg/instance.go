@@ -310,10 +310,13 @@ func (i Instance) MarshalText() string {
 	return sb.String()
 }
 
+func (i Instance) CacheDir() string {
+	return fmt.Sprintf("%s/%s", i.manager.aem.baseOpts.CacheDir, i.ID())
+}
+
 func (i Instance) LockDir() string {
 	if i.IsLocal() {
 		return i.local.LockDir()
 	}
-	log.Panicf("%s > lock files for remote instances are not yet supported", i.ID())
-	return "" // TODO dir should reflect url or name? or configurable? for remote instances and features that are locked via local files like: pkg deploy skipping, SSL, ...
+	return i.CacheDir()
 }

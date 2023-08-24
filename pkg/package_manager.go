@@ -201,12 +201,12 @@ func (pm *PackageManager) Upload(localPath string) (string, error) {
 
 func (pm *PackageManager) Install(remotePath string) error {
 	if pm.InstallHTMLEnabled {
-		return pm.installLogged(remotePath)
+		return pm.installHTML(remotePath)
 	}
-	return pm.installRegular(remotePath)
+	return pm.installJSON(remotePath)
 }
 
-func (pm *PackageManager) installRegular(remotePath string) error {
+func (pm *PackageManager) installJSON(remotePath string) error {
 	log.Infof("%s > installing package '%s'", pm.instance.ID(), remotePath)
 	response, err := pm.instance.http.Request().
 		SetFormData(map[string]string{"cmd": "install", "recursive": fmt.Sprintf("%v", pm.InstallRecursive)}).
@@ -227,7 +227,7 @@ func (pm *PackageManager) installRegular(remotePath string) error {
 	return nil
 }
 
-func (pm *PackageManager) installLogged(remotePath string) error {
+func (pm *PackageManager) installHTML(remotePath string) error {
 	log.Infof("%s > installing package '%s'", pm.instance.ID(), remotePath)
 
 	response, err := pm.instance.http.Request().

@@ -82,10 +82,10 @@ func (c *Config) setDefaults() {
 
 	v.SetDefault("instance.package.install_recursive", true)
 
-	v.SetDefault("instance.package.install.log.enabled", false)
-	v.SetDefault("instance.package.install.log.strict", true)
-	v.SetDefault("instance.package.install.log.console", false)
-	v.SetDefault("instance.package.install.log.dir", common.LogDir+"/package/install")
+	v.SetDefault("instance.package.install_log.enabled", false)
+	v.SetDefault("instance.package.install_log.strict", true)
+	v.SetDefault("instance.package.install_log.console", false)
+	v.SetDefault("instance.package.install_log.dir", common.LogDir+"/package/install")
 
 	v.SetDefault("instance.package.snapshot_deploy_skipping", true)
 	v.SetDefault("instance.package.snapshot_patterns", []string{"**/*-SNAPSHOT.zip"})

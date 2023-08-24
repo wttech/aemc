@@ -251,7 +251,7 @@ func (pm *PackageManager) installHTML(remotePath string) error {
 		}
 		htmlFile, err := os.OpenFile(htmlFilePath, os.O_RDWR|os.O_CREATE, 0666)
 		if err != nil {
-			return fmt.Errorf("%s > cannot install package '%s': cannot open HTML log file '%s'", pm.instance.ID(), remotePath, htmlFilePath)
+			return fmt.Errorf("%s > cannot install package '%s': cannot open HTML report file '%s'", pm.instance.ID(), remotePath, htmlFilePath)
 		}
 		defer htmlFile.Close()
 		htmlWriter = bufio.NewWriter(htmlFile)
@@ -270,7 +270,7 @@ func (pm *PackageManager) installHTML(remotePath string) error {
 		if !pm.InstallHTMLConsole {
 			_, err := htmlWriter.WriteString(htmlLine + osx.LineSep())
 			if err != nil {
-				return fmt.Errorf("%s > cannot install package '%s': cannot write to HTML log file '%s'", pm.instance.ID(), remotePath, htmlFilePath)
+				return fmt.Errorf("%s > cannot install package '%s': cannot write to HTML report file '%s'", pm.instance.ID(), remotePath, htmlFilePath)
 			}
 		} else {
 			fmt.Println(htmlLine)

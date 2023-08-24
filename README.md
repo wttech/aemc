@@ -42,6 +42,7 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
     * [Installing content packages](#installing-content-packages)
     * [Installing packages with troubleshooting](#installing-packages-with-troubleshooting)
 * [Examples](#examples)
+  * [Replication agents](#replication-agents)
   * [SSL by Default](#ssl-by-default)
   * [Global Trust Store](#global-trust-store)
 * [Contributing](#contributing)
@@ -534,6 +535,37 @@ This new feature offers two distinct modes for leveraging its benefits:
    ```
 
 # Examples
+
+## Replication agents
+
+1. Configuring publish agent on AEM author:
+
+    ```shell
+    PROPS="
+    enabled: true
+    transportUri: http://localhost:4503/bin/receive?sling:authRequestLogin=1
+    transportUser: admin
+    transportPassword: admin
+    userId: admin
+    "
+    echo "$PROPS" | sh aemw repl agent setup -A --location "author" --name "publish"
+    ```
+
+2. Configuring flush agent on AEM publish:
+
+    ```shell
+    PROPS="
+    enabled: true
+    transportUri: http://localhost/dispatcher/invalidate.cache
+    protocolHTTPHeaders:
+    - 'CQ-Action: {action}'
+    - 'CQ-Handle: {path}'
+    - 'CQ-Path: {path}'
+    - 'Host: flush'
+    "
+    echo "$PROPS" | sh aemw repl agent setup -P --location "publish" --name "flush"
+    ```
+   If needed, update `localhost` to the value on which AEM dispatcher is available, e.g.`localhost:8080`.
 
 ## SSL by Default
 

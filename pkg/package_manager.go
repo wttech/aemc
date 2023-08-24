@@ -10,6 +10,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
+	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/pkg"
 	"os"
 	"path/filepath"
@@ -241,19 +242,20 @@ func (pm *PackageManager) installLogged(remotePath string) error {
 	success := false
 	successWithErrors := false
 
-	var installLog *log.Logger
+	htmlFilePath := fmt.Sprintf("%s/%s/%s-%s.html", pm.InstallLogDir, pm.instance.ID(), filepath.Base(remotePath), timex.FileTimestampForNow())
+	var htmlWriter *bufio.Writer
+
 	if !pm.InstallLogConsole {
-		installLog = log.New()
-		installLogFilePath := fmt.Sprintf("%s/%s/%s.log", pm.InstallLogDir, pm.instance.ID(), filepath.Base(remotePath))
-		if err := pathx.Ensure(filepath.Dir(installLogFilePath)); err != nil {
+		if err := pathx.Ensure(filepath.Dir(htmlFilePath)); err != nil {
 			return err
 		}
-		installLogFile, err := os.OpenFile(installLogFilePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		htmlFile, err := os.OpenFile(htmlFilePath, os.O_RDWR|os.O_CREATE, 0666)
 		if err != nil {
-			return fmt.Errorf("%s > cannot install package '%s': cannot open log file '%s'", pm.instance.ID(), remotePath, installLogFilePath)
+			return fmt.Errorf("%s > cannot install package '%s': cannot open HTML log file '%s'", pm.instance.ID(), remotePath, htmlFilePath)
 		}
-		defer installLogFile.Close()
-		installLog.SetOutput(installLogFile)
+		defer htmlFile.Close()
+		htmlWriter = bufio.NewWriter(htmlFile)
+		defer htmlWriter.Flush()
 	}
 
 	scanner := bufio.NewScanner(response.RawBody())
@@ -266,7 +268,10 @@ func (pm *PackageManager) installLogged(remotePath string) error {
 			successWithErrors = true
 		}
 		if !pm.InstallLogConsole {
-			installLog.Infof(htmlLine)
+			_, err := htmlWriter.WriteString(htmlLine + osx.LineSep())
+			if err != nil {
+				return fmt.Errorf("%s > cannot install package '%s': cannot write to HTML log file '%s'", pm.instance.ID(), remotePath, htmlFilePath)
+			}
 		} else {
 			fmt.Println(htmlLine)
 		}
@@ -276,16 +281,13 @@ func (pm *PackageManager) installLogged(remotePath string) error {
 	}
 
 	failure := !success && !successWithErrors
-	if failure {
+	if failure || (successWithErrors && pm.InstallLogStrict) {
 		return fmt.Errorf("%s > cannot install package '%s': HTML response contains errors: %w", pm.instance.ID(), remotePath, err)
-	} else if successWithErrors {
-		if pm.InstallLogStrict {
-			return fmt.Errorf("%s > cannot install package '%s': HTML response contains errors: %w", pm.instance.ID(), remotePath, err)
-		}
+	}
+	if successWithErrors {
 		log.Warnf("%s > installed package '%s': HTML response contains errors: %s", pm.instance.ID(), remotePath, err)
 		return nil
 	}
-
 	log.Infof("%s > installed package '%s'", pm.instance.ID(), remotePath)
 	return nil
 }

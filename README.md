@@ -40,9 +40,10 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
     * [Improving performance](#improving-performance)
     * [Increasing verbosity](#increasing-verbosity)
     * [Installing content packages](#installing-content-packages)
+    * [Installing packages with troubleshooting](#installing-packages-with-troubleshooting)
 * [Examples](#examples)
-  * ['SSL by Default' support](#ssl-by-default-support)
-  * [Global Trust Store management support](#global-trust-store-management-support)
+  * [SSL by Default](#ssl-by-default)
+  * [Global Trust Store](#global-trust-store)
 * [Contributing](#contributing)
 * [Authors](#authors)
 * [License](#license)
@@ -366,6 +367,17 @@ instance:
     snapshot_deploy_skipping: true
     # Disable following workflow launchers for a package deployment time only
     toggled_workflows: [/libs/settings/workflow/launcher/config/asset_processing_on_sdk_*,/libs/settings/workflow/launcher/config/update_asset_*,/libs/settings/workflow/launcher/config/dam_*]
+    # Also sub-packages
+    install_recursive: true
+    # Use slower HTML endpoint for deployments but with better troubleshooting
+    install_log:
+      enabled: false
+      # Print HTML directly to console instead of writing to file
+      console: false
+      # Fail on case 'installed with errors'
+      strict: true
+      # Directory to place HTML report files
+      dir: aem/home/var/log/package/install
 
   # OSGi Framework
   osgi:
@@ -503,11 +515,33 @@ To skip the instance health check for a single AEMC command, use the following s
 AEM_INSTANCE_CHECK_SKIP=true sh aemw package deploy --url my-package.zip
 ```
 
+### Installing packages with troubleshooting
+
+Starting from version 1.4.0 (see [#177](https://github.com/wttech/aemc/pull/177)), AEMC now supports AEM package installations using an HTML report serving endpoint, similar to CRX Package Manager's. While this method may result in slightly extended installation times, it provides a comprehensive HTML report detailing the package installation process.
+
+This new feature offers two distinct modes for leveraging its benefits:
+
+1. **Saving HTML Report to File:**
+
+   To enable this mode and save the HTML report to a designated file, use the following shell command:
+
+   ```shell
+   AEM_INSTANCE_PACKAGE_INSTALL_LOG_ENABLED=true sh aemw package deploy --url my-package.zip
+   ```
+
+2. **Direct Console Output of HTML Report:**
+
+   To directly print the HTML report to the console, execute this shell command:
+
+   ```shell
+   AEM_INSTANCE_PACKAGE_INSTALL_LOG_ENABLED=true AEM_INSTANCE_PACKAGE_INSTALL_LOG_CONSOLE=true sh aemw package deploy --url my-package.zip
+   ```
+
 # Examples
 
-## 'SSL by Default' support
+## SSL by Default
 
-AEM Compose supports 'SSL by Default' feature of AEM.
+AEM Compose supports *SSL by Default* feature of AEM.
 
 This feature requires:
 - certificate file in PEM format
@@ -517,7 +551,7 @@ This feature requires:
 - hostname for HTTPS connector (used by AEM to check if the setup was successful; has to be reachable by AEM)
 - port for HTTPS connector
 
-To set up 'SSL by Default', run:
+To set up *SSL by Default*, run:
 
 ```shell
 sh aemw ssl setup \
@@ -545,36 +579,39 @@ See the reference documentation: [AEM 6.5 > Administering Guide > SSL by Default
 
 For local environment remember to set different port numbers for author and publish instances.
 
-## Global Trust Store management support
+## Global Trust Store
 
 AEM Compose supports managing the trust store of AEM instances.
 
 This feature supports:
+
 - creation of the general trust store if it does not exist
-```shell
-sh aemw gts create --password PASSWORD_HERE -A
-```
+    ```shell
+    sh aemw gts create --password PASSWORD_HERE -A
+    ```
+
 - getting the general trust store status
-```shell
-sh aemw gts status -A
-```
+    ```shell
+    sh aemw gts status -A
+    ```
 
 - adding a certificate to the general trust store
-```shell
-sh aemw gts certificate add --path <path> -A
-```
+    ```shell
+    sh aemw gts certificate add --path <path> -A
+    ```
+  
 This command will add a certificate to the general trust store only if not exists in trust store and will return the alias of the certificate.
 Command `certificate add` supports certificates in PEM and DER formats.
 
 - reading a certificate from the general trust store (by alias)
-```shell
-sh aemw gts certificate read --alias <alias> -A
-```
+    ```shell
+    sh aemw gts certificate read --alias <alias> -A
+    ```
 
 - removing a certificate from the general trust store (by alias)
-```shell
-sh aemw gts certificate remove --alias <alias> -A
-```
+    ```shell
+    sh aemw gts certificate remove --alias <alias> -A
+    ```
 
 # Contributing
 

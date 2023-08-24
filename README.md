@@ -370,7 +370,7 @@ instance:
     # Also sub-packages
     install_recursive: true
     # Use slower HTML endpoint for deployments but with better troubleshooting
-    install_log:
+    install_html:
       enabled: false
       # Print HTML directly to console instead of writing to file
       console: false
@@ -526,7 +526,7 @@ This new feature offers two distinct modes for leveraging its benefits:
    To enable this mode and save the HTML report to a designated file, use the following shell command:
 
    ```shell
-   AEM_INSTANCE_PACKAGE_INSTALL_LOG_ENABLED=true sh aemw package deploy --url my-package.zip
+   AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true sh aemw package deploy --url my-package.zip
    ```
 
 2. **Direct Console Output of HTML Report:**
@@ -534,7 +534,7 @@ This new feature offers two distinct modes for leveraging its benefits:
    To directly print the HTML report to the console, execute this shell command:
 
    ```shell
-   AEM_INSTANCE_PACKAGE_INSTALL_LOG_ENABLED=true AEM_INSTANCE_PACKAGE_INSTALL_LOG_CONSOLE=true sh aemw package deploy --url my-package.zip
+   AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true AEM_INSTANCE_PACKAGE_INSTALL_HTML_CONSOLE=true sh aemw package deploy --url my-package.zip
    ```
 
 # Examples

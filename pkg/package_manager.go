@@ -23,10 +23,10 @@ type PackageManager struct {
 
 	SnapshotDeploySkipping bool
 	InstallRecursive       bool
-	InstallLogEnabled      bool
-	InstallLogDir          string
-	InstallLogConsole      bool
-	InstallLogStrict       bool
+	InstallHTMLEnabled     bool
+	InstallHTMLDir         string
+	InstallHTMLConsole     bool
+	InstallHTMLStrict      bool
 	SnapshotPatterns       []string
 	ToggledWorkflows       []string
 }
@@ -38,10 +38,10 @@ func NewPackageManager(res *Instance) *PackageManager {
 		instance: res,
 
 		SnapshotDeploySkipping: cv.GetBool("instance.package.snapshot_deploy_skipping"),
-		InstallLogEnabled:      cv.GetBool("instance.package.install_log.enabled"),
-		InstallLogDir:          cv.GetString("instance.package.install_log.dir"),
-		InstallLogConsole:      cv.GetBool("instance.package.install_log.console"),
-		InstallLogStrict:       cv.GetBool("instance.package.install_log.strict"),
+		InstallHTMLEnabled:     cv.GetBool("instance.package.install_html.enabled"),
+		InstallHTMLDir:         cv.GetString("instance.package.install_html.dir"),
+		InstallHTMLConsole:     cv.GetBool("instance.package.install_html.console"),
+		InstallHTMLStrict:      cv.GetBool("instance.package.install_html.strict"),
 		InstallRecursive:       cv.GetBool("instance.package.install_recursive"),
 		SnapshotPatterns:       cv.GetStringSlice("instance.package.snapshot_patterns"),
 		ToggledWorkflows:       cv.GetStringSlice("instance.package.toggled_workflows"),
@@ -200,7 +200,7 @@ func (pm *PackageManager) Upload(localPath string) (string, error) {
 }
 
 func (pm *PackageManager) Install(remotePath string) error {
-	if pm.InstallLogEnabled {
+	if pm.InstallHTMLEnabled {
 		return pm.installLogged(remotePath)
 	}
 	return pm.installRegular(remotePath)
@@ -242,10 +242,10 @@ func (pm *PackageManager) installLogged(remotePath string) error {
 	success := false
 	successWithErrors := false
 
-	htmlFilePath := fmt.Sprintf("%s/%s/%s-%s.html", pm.InstallLogDir, pm.instance.ID(), filepath.Base(remotePath), timex.FileTimestampForNow())
+	htmlFilePath := fmt.Sprintf("%s/%s/%s-%s.html", pm.InstallHTMLDir, pm.instance.ID(), filepath.Base(remotePath), timex.FileTimestampForNow())
 	var htmlWriter *bufio.Writer
 
-	if !pm.InstallLogConsole {
+	if !pm.InstallHTMLConsole {
 		if err := pathx.Ensure(filepath.Dir(htmlFilePath)); err != nil {
 			return err
 		}
@@ -267,7 +267,7 @@ func (pm *PackageManager) installLogged(remotePath string) error {
 		if !successWithErrors && strings.Contains(htmlLine, pkg.InstallSuccessWithErrors) {
 			successWithErrors = true
 		}
-		if !pm.InstallLogConsole {
+		if !pm.InstallHTMLConsole {
 			_, err := htmlWriter.WriteString(htmlLine + osx.LineSep())
 			if err != nil {
 				return fmt.Errorf("%s > cannot install package '%s': cannot write to HTML log file '%s'", pm.instance.ID(), remotePath, htmlFilePath)
@@ -281,8 +281,8 @@ func (pm *PackageManager) installLogged(remotePath string) error {
 	}
 
 	failure := !success && !successWithErrors
-	if failure || (successWithErrors && pm.InstallLogStrict) {
-		if pm.InstallLogConsole {
+	if failure || (successWithErrors && pm.InstallHTMLStrict) {
+		if pm.InstallHTMLConsole {
 			return fmt.Errorf("%s > cannot install package '%s': HTML output contains errors", pm.instance.ID(), remotePath)
 		}
 		return fmt.Errorf("%s > cannot install package '%s': HTML report contains errors '%s'", pm.instance.ID(), remotePath, htmlFilePath)

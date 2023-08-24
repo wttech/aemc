@@ -141,7 +141,7 @@ instance:
     # Also sub-packages
     install_recursive: true
     # Use slower HTML endpoint for deployments but with better troubleshooting
-    install_log:
+    install_html:
       enabled: false
       # Print HTML directly to console instead of writing to file
       console: false

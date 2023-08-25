@@ -97,6 +97,10 @@ instance:
       state: true
       # Pause Installation nodes checking
       pause: true
+    # Specific endpoints / paths (like login page)
+    path_ready:
+      timeout: 10s
+
 
   # Managed locally (set up automatically)
   local:

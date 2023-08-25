@@ -62,6 +62,8 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.check.installer.state", true)
 	v.SetDefault("instance.check.installer.pause", true)
 
+	v.SetDefault("instance.check.path_ready.timeout", time.Second*10)
+
 	v.SetDefault("instance.check.login_page.path", "/libs/granite/core/content/login.html")
 	v.SetDefault("instance.check.login_page.status_code", 200)
 	v.SetDefault("instance.check.login_page.contained_text", "QUICKSTART_HOMEPAGE")

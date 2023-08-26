@@ -1,4 +1,3 @@
 Manifest-Version: 1.0
-Content-Package-Id: my_packages:aemc_content
+Content-Package-Id: [[.Pid]]
 Content-Package-Type: mixed
-

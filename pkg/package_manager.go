@@ -1,23 +1,30 @@
 package pkg
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
+	"github.com/go-resty/resty/v2"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
+	"github.com/wttech/aemc/pkg/base"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/httpx"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
+	"github.com/wttech/aemc/pkg/common/tplx"
 	"github.com/wttech/aemc/pkg/pkg"
+	"io/fs"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 type PackageManager struct {
 	instance *Instance
+	config   *base.Opts
 
 	SnapshotDeploySkipping bool
 	InstallRecursive       bool
@@ -30,6 +37,7 @@ func NewPackageManager(res *Instance) *PackageManager {
 
 	return &PackageManager{
 		instance: res,
+		config:   res.manager.aem.baseOpts,
 
 		SnapshotDeploySkipping: cv.GetBool("instance.package.snapshot_deploy_skipping"),
 		InstallRecursive:       cv.GetBool("instance.package.install_recursive"),
@@ -122,19 +130,70 @@ func (pm *PackageManager) IsSnapshot(localPath string) bool {
 	return stringsx.MatchSome(pathx.Normalize(localPath), pm.SnapshotPatterns)
 }
 
-func (pm *PackageManager) Create(pid string) error {
+//go:embed package/default
+var defaultPackage embed.FS
+
+func copyEmbedFiles(efs *embed.FS, targetTmpDir string, dirPrefix string, data map[string]any) error {
+	if err := pathx.DeleteIfExists(targetTmpDir); err != nil {
+		return fmt.Errorf("cannot delete temporary dir '%s': %w", targetTmpDir, err)
+	}
+	return fs.WalkDir(efs, ".", func(path string, entry fs.DirEntry, err error) error {
+		if entry.IsDir() {
+			return nil
+		}
+		bytes, err := efs.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return tplx.RenderFile(targetTmpDir+strings.ReplaceAll(strings.TrimPrefix(path, dirPrefix), "$", ""), string(bytes), data)
+	})
+}
+
+func (pm *PackageManager) Create(pid string, rootPaths []string, filterFile string) error {
 	log.Infof("%s > creating package '%s'", pm.instance.ID(), pid)
 	pidConfig, err := pkg.ParsePID(pid)
 	if err != nil {
 		return err
 	}
-	response, err := pm.instance.http.Request().
-		SetFormData(map[string]string{
-			"packageName":    pidConfig.Name,
-			"packageVersion": pidConfig.Version,
-			"groupName":      pidConfig.Group,
-		}).
-		Post(ExecPath + "?cmd=create")
+	var response *resty.Response
+	if len(rootPaths) == 0 && filterFile == "" {
+		response, err = pm.instance.http.Request().
+			SetFormData(map[string]string{
+				"packageName":    pidConfig.Name,
+				"packageVersion": pidConfig.Version,
+				"groupName":      pidConfig.Group,
+			}).
+			Post(ExecPath + "?cmd=create")
+	} else {
+		tmpDir := pathx.RandomTemporaryPathName(pm.config.TmpDir, "tmppck")
+		tmpFile := pathx.RandomTemporaryFileName(pm.config.TmpDir, "tmppck", ".zip")
+		defer func() {
+			_ = pathx.DeleteIfExists(tmpDir)
+			_ = pathx.DeleteIfExists(tmpFile)
+		}()
+		data := map[string]any{
+			"Pid":     pid,
+			"Group":   pidConfig.Group,
+			"Name":    pidConfig.Name,
+			"Version": pidConfig.Version,
+			"Roots":   rootPaths,
+		}
+		if err = copyEmbedFiles(&defaultPackage, tmpDir, "package/default", data); err != nil {
+			return err
+		}
+		if filterFile != "" {
+			if err = filex.Copy(filterFile, filepath.Join(tmpDir, "META-INF", "vault", "filter.xml"), true); err != nil {
+				return err
+			}
+		}
+		if err = filex.Archive(tmpDir, tmpFile); err != nil {
+			return err
+		}
+		response, err = pm.instance.http.Request().
+			SetFile("package", tmpFile).
+			SetMultipartFormData(map[string]string{"force": "true"}).
+			Post(ServiceJsonPath + "/?cmd=upload")
+	}
 	if err != nil {
 		return fmt.Errorf("%s > cannot create package '%s': %w", pm.instance.ID(), pid, err)
 	} else if response.IsError() {
@@ -147,7 +206,7 @@ func (pm *PackageManager) Create(pid string) error {
 	if !status.Success {
 		return fmt.Errorf("%s > cannot create package '%s'; unexpected status: %s", pm.instance.ID(), pid, status.Message)
 	}
-	log.Infof("%s > create package '%s'", pm.instance.ID(), pid)
+	log.Infof("%s > created package '%s'", pm.instance.ID(), pid)
 	return nil
 }
 

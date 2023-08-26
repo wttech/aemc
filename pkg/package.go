@@ -162,7 +162,7 @@ func (p Package) String() string {
 	return fmt.Sprintf("package '%s'", p.PID.String())
 }
 
-func (p Package) Create() error {
+func (p Package) Create(rootPaths []string, filterFile string) error {
 	state, err := p.State()
 	if err != nil {
 		return err
@@ -170,7 +170,7 @@ func (p Package) Create() error {
 	if state.Exists {
 		return fmt.Errorf("%s > package '%s' cannot be created as it already exists", p.manager.instance.ID(), p.PID.String())
 	}
-	return p.manager.Create(state.PID)
+	return p.manager.Create(state.PID, rootPaths, filterFile)
 }
 
 func (p Package) UpdateFilters(filters []Filter) error {

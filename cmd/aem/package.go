@@ -447,6 +447,13 @@ func pkgDefineUpdateFlags(cmd *cobra.Command) {
 	cmd.MarkFlagsMutuallyExclusive("pid", "path")
 }
 
+func pkgDefineCreateFlags(cmd *cobra.Command) {
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().StringSlice("root-path", []string{}, "Filter root path(s) on AEM repository")
+	cmd.Flags().String("filter-file", "", "Local filter file on file system")
+	cmd.MarkFlagsMutuallyExclusive("root-path", "filter-file")
+}
+
 func pkgDefineBuildFlags(cmd *cobra.Command) {
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
 }
@@ -533,7 +540,9 @@ func (c *CLI) pkgCreateCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			err = p.Create()
+			rootPaths, _ := cmd.Flags().GetStringSlice("root-path")
+			filterFile, _ := cmd.Flags().GetString("filter-file")
+			err = p.Create(rootPaths, filterFile)
 			if err != nil {
 				c.Error(err)
 				return
@@ -542,7 +551,7 @@ func (c *CLI) pkgCreateCmd() *cobra.Command {
 			c.Ok("package create")
 		},
 	}
-	pkgDefineBuildFlags(cmd)
+	pkgDefineCreateFlags(cmd)
 	return cmd
 }
 

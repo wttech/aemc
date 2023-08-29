@@ -6,6 +6,7 @@ import (
 	"github.com/wttech/aemc/pkg/content"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 const (
@@ -24,10 +25,14 @@ func NewDownloader(config *content.Opts) *Downloader {
 
 func (c Downloader) DownloadPackage(packageManager *PackageManager, roots []string, filter string) (string, error) {
 	tmpResultFile := pathx.RandomTemporaryFileName(c.config.BaseOpts.TmpDir, "vault_result", ".zip")
-	remotePath, err := packageManager.Create("my_packages:aemc_content", roots, filter)
+	ver := ":" + time.Now().Format("2006.102.1504") + "-SNAPSHOT"
+	remotePath, err := packageManager.Create("my_packages:aemc_content"+ver, roots, filter)
 	if err != nil {
 		return "", err
 	}
+	defer func() {
+		_ = packageManager.Delete(remotePath)
+	}()
 	if err := packageManager.Build(remotePath); err != nil {
 		return "", err
 	}
@@ -48,6 +53,9 @@ func (c Downloader) DownloadContent(packageManager *PackageManager, root string,
 		_ = pathx.DeleteIfExists(tmpResultFile)
 	}()
 	if err = filex.Unarchive(tmpResultFile, tmpResultDir); err != nil {
+		return err
+	}
+	if err := pathx.Ensure(root); err != nil {
 		return err
 	}
 	before, _, _ := strings.Cut(root, content.JcrRoot)

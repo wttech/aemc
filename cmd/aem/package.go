@@ -449,8 +449,8 @@ func pkgDefineUpdateFlags(cmd *cobra.Command) {
 
 func pkgDefineCreateFlags(cmd *cobra.Command) {
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
-	cmd.Flags().StringSlice("root-path", []string{}, "Filter root path(s) on AEM repository")
-	cmd.Flags().String("filter-file", "", "Local filter file on file system")
+	cmd.Flags().StringSliceP("root-path", "r", []string{}, "Filter root path(s) on AEM repository")
+	cmd.Flags().StringP("filter-file", "f", "", "Local filter file on file system")
 	cmd.MarkFlagsMutuallyExclusive("root-path", "filter-file")
 }
 
@@ -542,7 +542,7 @@ func (c *CLI) pkgCreateCmd() *cobra.Command {
 			}
 			rootPaths, _ := cmd.Flags().GetStringSlice("root-path")
 			filterFile, _ := cmd.Flags().GetString("filter-file")
-			err = p.Create(rootPaths, filterFile)
+			_, err = p.Create(rootPaths, filterFile)
 			if err != nil {
 				c.Error(err)
 				return

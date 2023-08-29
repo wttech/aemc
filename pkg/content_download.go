@@ -22,22 +22,23 @@ func NewDownloader(config *content.Opts) *Downloader {
 	}
 }
 
-func (c Downloader) DownloadPackage(packageManager *PackageManager, filter string) (string, error) {
+func (c Downloader) DownloadPackage(packageManager *PackageManager, roots []string, filter string) (string, error) {
 	tmpResultFile := pathx.RandomTemporaryFileName(c.config.BaseOpts.TmpDir, "vault_result", ".zip")
-	if err := packageManager.Create("my_packages:aemc_content", nil, filter); err != nil {
+	remotePath, err := packageManager.Create("my_packages:aemc_content", roots, filter)
+	if err != nil {
 		return "", err
 	}
-	if err := packageManager.Build("/etc/packages/my_packages/aemc_content.zip"); err != nil {
+	if err := packageManager.Build(remotePath); err != nil {
 		return "", err
 	}
-	if err := packageManager.Download("/etc/packages/my_packages/aemc_content.zip", tmpResultFile); err != nil {
+	if err := packageManager.Download(remotePath, tmpResultFile); err != nil {
 		return "", err
 	}
 	return tmpResultFile, nil
 }
 
-func (c Downloader) DownloadContent(packageManager *PackageManager, root string, filter string, clean bool) error {
-	tmpResultFile, err := c.DownloadPackage(packageManager, filter)
+func (c Downloader) DownloadContent(packageManager *PackageManager, root string, roots []string, filter string, clean bool) error {
+	tmpResultFile, err := c.DownloadPackage(packageManager, roots, filter)
 	if err != nil {
 		return err
 	}

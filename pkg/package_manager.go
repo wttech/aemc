@@ -149,11 +149,11 @@ func copyEmbedFiles(efs *embed.FS, targetTmpDir string, dirPrefix string, data m
 	})
 }
 
-func (pm *PackageManager) Create(pid string, rootPaths []string, filterFile string) error {
+func (pm *PackageManager) Create(pid string, rootPaths []string, filterFile string) (string, error) {
 	log.Infof("%s > creating package '%s'", pm.instance.ID(), pid)
 	pidConfig, err := pkg.ParsePID(pid)
 	if err != nil {
-		return err
+		return "", err
 	}
 	var response *resty.Response
 	if len(rootPaths) == 0 && filterFile == "" {
@@ -179,15 +179,15 @@ func (pm *PackageManager) Create(pid string, rootPaths []string, filterFile stri
 			"Roots":   rootPaths,
 		}
 		if err = copyEmbedFiles(&defaultPackage, tmpDir, "package/default", data); err != nil {
-			return err
+			return "", err
 		}
 		if filterFile != "" {
 			if err = filex.Copy(filterFile, filepath.Join(tmpDir, "META-INF", "vault", "filter.xml"), true); err != nil {
-				return err
+				return "", err
 			}
 		}
 		if err = filex.Archive(tmpDir, tmpFile); err != nil {
-			return err
+			return "", err
 		}
 		response, err = pm.instance.http.Request().
 			SetFile("package", tmpFile).
@@ -195,19 +195,19 @@ func (pm *PackageManager) Create(pid string, rootPaths []string, filterFile stri
 			Post(ServiceJsonPath + "/?cmd=upload")
 	}
 	if err != nil {
-		return fmt.Errorf("%s > cannot create package '%s': %w", pm.instance.ID(), pid, err)
+		return "", fmt.Errorf("%s > cannot create package '%s': %w", pm.instance.ID(), pid, err)
 	} else if response.IsError() {
-		return fmt.Errorf("%s > cannot create package '%s': %s", pm.instance.ID(), pid, response.Status())
+		return "", fmt.Errorf("%s > cannot create package '%s': %s", pm.instance.ID(), pid, response.Status())
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return fmt.Errorf("%s > cannot create package '%s'; cannot parse response: %w", pm.instance.ID(), pid, err)
+		return "", fmt.Errorf("%s > cannot create package '%s'; cannot parse response: %w", pm.instance.ID(), pid, err)
 	}
 	if !status.Success {
-		return fmt.Errorf("%s > cannot create package '%s'; unexpected status: %s", pm.instance.ID(), pid, status.Message)
+		return "", fmt.Errorf("%s > cannot create package '%s'; unexpected status: %s", pm.instance.ID(), pid, status.Message)
 	}
 	log.Infof("%s > created package '%s'", pm.instance.ID(), pid)
-	return nil
+	return status.Path, nil
 }
 
 type Filter struct {

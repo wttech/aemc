@@ -17,7 +17,7 @@ func NewCopier(config *content.Opts) *Copier {
 	}
 }
 
-func (c Copier) Copy(scrPackageManager *PackageManager, destPackageManager *PackageManager, filter string, clean bool) error {
+func (c Copier) Copy(scrPackageManager *PackageManager, destPackageManager *PackageManager, roots []string, filter string, clean bool) error {
 	var tmpResultFile string
 	if clean {
 		tmpResultFile = pathx.RandomTemporaryFileName(c.config.BaseOpts.TmpDir, "vault_result", ".zip")
@@ -26,7 +26,7 @@ func (c Copier) Copy(scrPackageManager *PackageManager, destPackageManager *Pack
 			_ = pathx.DeleteIfExists(tmpResultDir)
 			_ = pathx.DeleteIfExists(tmpResultFile)
 		}()
-		if err := NewDownloader(c.config).DownloadContent(scrPackageManager, filepath.Join(tmpResultDir, content.JcrRoot), filter, true); err != nil {
+		if err := NewDownloader(c.config).DownloadContent(scrPackageManager, filepath.Join(tmpResultDir, content.JcrRoot), roots, filter, true); err != nil {
 			return err
 		}
 		if err := filex.Archive(tmpResultDir, tmpResultFile); err != nil {
@@ -34,7 +34,7 @@ func (c Copier) Copy(scrPackageManager *PackageManager, destPackageManager *Pack
 		}
 	} else {
 		var err error
-		tmpResultFile, err = NewDownloader(c.config).DownloadPackage(scrPackageManager, filter)
+		tmpResultFile, err = NewDownloader(c.config).DownloadPackage(scrPackageManager, roots, filter)
 		if err != nil {
 			return err
 		}

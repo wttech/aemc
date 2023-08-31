@@ -23,7 +23,7 @@ type PackageState struct {
 	Details map[string]any `yaml:"details" json:"details"`
 }
 
-func (p *Package) State() (*PackageState, error) {
+func (p Package) State() (*PackageState, error) {
 	item, err := p.manager.Find(p.PID.String())
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (p *Package) State() (*PackageState, error) {
 	}, nil
 }
 
-func (p *Package) Build() error {
+func (p Package) Build() error {
 	state, err := p.State()
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func (p *Package) Build() error {
 	return p.manager.Build(state.Data.Path)
 }
 
-func (p *Package) Install() error {
+func (p Package) Install() error {
 	state, err := p.State()
 	if err != nil {
 		return err
@@ -70,7 +70,7 @@ func (p *Package) Install() error {
 	return p.manager.Install(state.Data.Path)
 }
 
-func (p *Package) InstallWithChanged() (bool, error) {
+func (p Package) InstallWithChanged() (bool, error) {
 	state, err := p.State()
 	if err != nil {
 		return false, err
@@ -84,7 +84,7 @@ func (p *Package) InstallWithChanged() (bool, error) {
 	return false, nil
 }
 
-func (p *Package) Uninstall() error {
+func (p Package) Uninstall() error {
 	state, err := p.State()
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func (p *Package) Uninstall() error {
 	return p.manager.Uninstall(state.Data.Path)
 }
 
-func (p *Package) UninstallWithChanged() (bool, error) {
+func (p Package) UninstallWithChanged() (bool, error) {
 	state, err := p.State()
 	if err != nil {
 		return false, err
@@ -109,7 +109,7 @@ func (p *Package) UninstallWithChanged() (bool, error) {
 	return false, nil
 }
 
-func (p *Package) Delete() error {
+func (p Package) Delete() error {
 	state, err := p.State()
 	if err != nil {
 		return err
@@ -120,7 +120,7 @@ func (p *Package) Delete() error {
 	return p.manager.Delete(state.Data.Path)
 }
 
-func (p *Package) DeleteWithChanged() (bool, error) {
+func (p Package) DeleteWithChanged() (bool, error) {
 	state, err := p.State()
 	if err != nil {
 		return false, err
@@ -131,7 +131,7 @@ func (p *Package) DeleteWithChanged() (bool, error) {
 	return true, p.manager.Delete(state.Data.Path)
 }
 
-func (p *Package) MarshalJSON() ([]byte, error) {
+func (p Package) MarshalJSON() ([]byte, error) {
 	state, err := p.State()
 	if err != nil {
 		return nil, err
@@ -139,11 +139,11 @@ func (p *Package) MarshalJSON() ([]byte, error) {
 	return json.Marshal(state)
 }
 
-func (p *Package) MarshalYAML() (interface{}, error) {
+func (p Package) MarshalYAML() (interface{}, error) {
 	return p.State()
 }
 
-func (p *Package) MarshalText() string {
+func (p Package) MarshalText() string {
 	state, err := p.State()
 	if err != nil {
 		return fmt.Sprintf("PID '%s' state cannot be read: %s", p.PID.String(), err)
@@ -158,11 +158,11 @@ func (p *Package) MarshalText() string {
 	return sb.String()
 }
 
-func (p *Package) String() string {
+func (p Package) String() string {
 	return fmt.Sprintf("package '%s'", p.PID.String())
 }
 
-func (p *Package) Create(rootPaths []string, filterFile string) (string, error) {
+func (p Package) Create(rootPaths []string, filterFile string) (string, error) {
 	state, err := p.State()
 	if err != nil {
 		return "", err
@@ -173,7 +173,7 @@ func (p *Package) Create(rootPaths []string, filterFile string) (string, error) 
 	return p.manager.Create(state.PID, rootPaths, filterFile)
 }
 
-func (p *Package) UpdateFilters(filters []Filter) error {
+func (p Package) UpdateFilters(filters []Filter) error {
 	state, err := p.State()
 	if err != nil {
 		return err
@@ -184,7 +184,7 @@ func (p *Package) UpdateFilters(filters []Filter) error {
 	return p.manager.UpdateFilters(state.Data.Path, state.PID, filters)
 }
 
-func (p *Package) Download(localFile string) error {
+func (p Package) Download(localFile string) error {
 	state, err := p.State()
 	if err != nil {
 		return err

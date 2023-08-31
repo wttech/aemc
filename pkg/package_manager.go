@@ -1,9 +1,9 @@
 package pkg
 
 import (
+	"bufio"
 	"embed"
 	"encoding/json"
-	"bufio"
 	"fmt"
 	"github.com/go-resty/resty/v2"
 	"github.com/samber/lo"
@@ -15,8 +15,8 @@ import (
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
-	"github.com/wttech/aemc/pkg/common/tplx"
 	"github.com/wttech/aemc/pkg/common/timex"
+	"github.com/wttech/aemc/pkg/common/tplx"
 	"github.com/wttech/aemc/pkg/pkg"
 	"io/fs"
 	"os"
@@ -573,4 +573,6 @@ const (
 	ServiceHtmlPath = ServicePath + "/.html"
 	ListJson        = MgrPath + "/list.jsp"
 	IndexPath       = MgrPath + "/index.jsp"
+	ExecPath        = ServicePath + "/exec.json"
+	UpdatePath      = MgrPath + "/update.jsp"
 )

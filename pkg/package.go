@@ -59,7 +59,7 @@ func (p Package) Build() error {
 	return p.manager.Build(state.Data.Path)
 }
 
-func (p Package) Install() error {
+func (p *Package) Install() error {
 	state, err := p.State()
 	if err != nil {
 		return err
@@ -70,7 +70,7 @@ func (p Package) Install() error {
 	return p.manager.Install(state.Data.Path)
 }
 
-func (p Package) InstallWithChanged() (bool, error) {
+func (p *Package) InstallWithChanged() (bool, error) {
 	state, err := p.State()
 	if err != nil {
 		return false, err
@@ -84,7 +84,7 @@ func (p Package) InstallWithChanged() (bool, error) {
 	return false, nil
 }
 
-func (p Package) Uninstall() error {
+func (p *Package) Uninstall() error {
 	state, err := p.State()
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func (p Package) Uninstall() error {
 	return p.manager.Uninstall(state.Data.Path)
 }
 
-func (p Package) UninstallWithChanged() (bool, error) {
+func (p *Package) UninstallWithChanged() (bool, error) {
 	state, err := p.State()
 	if err != nil {
 		return false, err

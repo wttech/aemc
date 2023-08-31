@@ -54,6 +54,7 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 				c.Error(fmt.Errorf("content download failed: %w", err))
 				return
 			}
+			pid, _ := cmd.Flags().GetString("pid")
 			contentRootPath, err := determineContentRootPath(cmd)
 			if err != nil {
 				c.Error(fmt.Errorf("content download failed: %w", err))
@@ -66,19 +67,22 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 				return
 			}
 			onlyDownload, _ := cmd.Flags().GetBool("only-download")
-			if err = pkg.NewDownloader(c.aem.ContentOpts()).DownloadContent(instance.PackageManager(), contentRootPath, rootPaths, filterFile, !onlyDownload); err != nil {
+			onlyPackage, _ := cmd.Flags().GetBool("only-package")
+			if err = pkg.NewDownloader(c.aem.ContentOpts()).DownloadContent(instance.PackageManager(), pid, contentRootPath, rootPaths, filterFile, !onlyDownload, !onlyPackage); err != nil {
 				c.Error(fmt.Errorf("content download failed: %w", err))
 				return
 			}
 			c.Ok("content downloaded")
 		},
 	}
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
 	cmd.Flags().StringP("content-root-path", "R", "", "Content root path on file system")
 	_ = cmd.MarkFlagRequired("content-root-path")
 	cmd.Flags().StringSliceP("root-path", "r", []string{}, "Filter root path(s) on AEM repository")
 	cmd.Flags().StringP("filter-file", "f", "", "Local filter file on file system")
 	cmd.MarkFlagsMutuallyExclusive("root-path", "filter-file")
 	cmd.Flags().Bool("only-download", false, "Only download content")
+	cmd.Flags().Bool("only-package", false, "Only download package")
 	return cmd
 }
 
@@ -105,7 +109,7 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 				return
 			}
 			onlyCopy, _ := cmd.Flags().GetBool("only-copy")
-			if err = pkg.NewCopier(c.aem.ContentOpts()).Copy(scrInstance.PackageManager(), destInstance.PackageManager(), rootPaths, filterFile, !onlyCopy); err != nil {
+			if err = pkg.NewCopier(c.aem.ContentOpts()).Copy(scrInstance.PackageManager(), destInstance.PackageManager(), "", rootPaths, filterFile, !onlyCopy); err != nil {
 				c.Error(fmt.Errorf("content copy failed: %w", err))
 				return
 			}
@@ -143,7 +147,8 @@ func determineInstance(cmd *cobra.Command, instanceManager *pkg.InstanceManager,
 
 func determineContentRootPath(cmd *cobra.Command) (string, error) {
 	rootPath, _ := cmd.Flags().GetString("content-root-path")
-	if !strings.Contains(rootPath, content.JcrRoot) {
+	onlyPackage, _ := cmd.Flags().GetBool("only-package")
+	if !onlyPackage && !strings.Contains(rootPath, content.JcrRoot) {
 		return "", fmt.Errorf("root path '%s' does not contain '%s'", rootPath, content.JcrRoot)
 	}
 	return rootPath, nil

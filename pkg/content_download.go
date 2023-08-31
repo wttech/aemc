@@ -23,10 +23,11 @@ func NewDownloader(config *content.Opts) *Downloader {
 	}
 }
 
-func (c Downloader) DownloadPackage(packageManager *PackageManager, roots []string, filter string) (string, error) {
-	tmpResultFile := pathx.RandomTemporaryFileName(c.config.BaseOpts.TmpDir, "vault_result", ".zip")
-	ver := ":" + time.Now().Format("2006.102.1504") + "-SNAPSHOT"
-	remotePath, err := packageManager.Create("my_packages:aemc_content"+ver, roots, filter)
+func (c Downloader) DownloadPackage(packageManager *PackageManager, pid string, roots []string, filter string) (string, error) {
+	if pid == "" {
+		pid = "my_packages:aemc_content:" + time.Now().Format("2006.102.304") + "-SNAPSHOT"
+	}
+	remotePath, err := packageManager.Create(pid, roots, filter)
 	if err != nil {
 		return "", err
 	}
@@ -36,14 +37,15 @@ func (c Downloader) DownloadPackage(packageManager *PackageManager, roots []stri
 	if err := packageManager.Build(remotePath); err != nil {
 		return "", err
 	}
+	tmpResultFile := filepath.Join(c.config.BaseOpts.TmpDir, filepath.Base(remotePath))
 	if err := packageManager.Download(remotePath, tmpResultFile); err != nil {
 		return "", err
 	}
 	return tmpResultFile, nil
 }
 
-func (c Downloader) DownloadContent(packageManager *PackageManager, root string, roots []string, filter string, clean bool) error {
-	tmpResultFile, err := c.DownloadPackage(packageManager, roots, filter)
+func (c Downloader) DownloadContent(packageManager *PackageManager, pid string, root string, roots []string, filter string, clean bool, unpack bool) error {
+	tmpResultFile, err := c.DownloadPackage(packageManager, pid, roots, filter)
 	if err != nil {
 		return err
 	}
@@ -52,23 +54,29 @@ func (c Downloader) DownloadContent(packageManager *PackageManager, root string,
 		_ = pathx.DeleteIfExists(tmpResultDir)
 		_ = pathx.DeleteIfExists(tmpResultFile)
 	}()
-	if err = filex.Unarchive(tmpResultFile, tmpResultDir); err != nil {
-		return err
-	}
-	if err := pathx.Ensure(root); err != nil {
-		return err
-	}
-	before, _, _ := strings.Cut(root, content.JcrRoot)
-	if clean {
-		if err = content.NewCleaner(c.config).BeforeClean(root); err != nil {
+	if unpack {
+		if err = filex.Unarchive(tmpResultFile, tmpResultDir); err != nil {
 			return err
 		}
-	}
-	if err = filex.CopyDir(filepath.Join(tmpResultDir, content.JcrRoot), before+content.JcrRoot); err != nil {
-		return err
-	}
-	if clean {
-		if err = content.NewCleaner(c.config).Clean(root); err != nil {
+		if err := pathx.Ensure(root); err != nil {
+			return err
+		}
+		before, _, _ := strings.Cut(root, content.JcrRoot)
+		if clean {
+			if err = content.NewCleaner(c.config).BeforeClean(root); err != nil {
+				return err
+			}
+		}
+		if err = filex.CopyDir(filepath.Join(tmpResultDir, content.JcrRoot), before+content.JcrRoot); err != nil {
+			return err
+		}
+		if clean {
+			if err = content.NewCleaner(c.config).Clean(root); err != nil {
+				return err
+			}
+		}
+	} else {
+		if err = filex.Copy(tmpResultFile, filepath.Join(root, filepath.Base(tmpResultFile)), true); err != nil {
 			return err
 		}
 	}

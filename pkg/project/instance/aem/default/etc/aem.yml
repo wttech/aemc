@@ -95,6 +95,9 @@ instance:
       state: true
       # Pause Installation nodes checking
       pause: true
+    # Specific endpoints / paths (like login page)
+    path_ready:
+      timeout: 10s
 
   # Managed locally (set up automatically)
   local:
@@ -139,9 +142,20 @@ instance:
     snapshot_deploy_skipping: true
     # Disable following workflow launchers for a package deployment time only
     toggled_workflows: [/libs/settings/workflow/launcher/config/asset_processing_on_sdk_*,/libs/settings/workflow/launcher/config/update_asset_*,/libs/settings/workflow/launcher/config/dam_*]
+    # Also sub-packages
+    install_recursive: true
+    # Use slower HTML endpoint for deployments but with better troubleshooting
+    install_html:
+      enabled: false
+      # Print HTML directly to console instead of writing to file
+      console: false
+      # Fail on case 'installed with errors'
+      strict: true
 
   # OSGi Framework
   osgi:
+    shutdown_delay: 3s
+
     bundle:
       install:
         start: true

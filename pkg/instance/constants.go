@@ -6,6 +6,7 @@ import (
 
 const (
 	IDDelimiter          = "_"
+	AdHocDelimiter       = "="
 	URLLocalAuthor       = "http://127.0.0.1:4502"
 	URLLocalPublish      = "http://127.0.0.1:4503"
 	PasswordDefault      = "admin"
@@ -13,8 +14,14 @@ const (
 	LocationLocal        = "local"
 	LocationRemote       = "remote"
 	RoleAuthorPortSuffix = "02"
-	ClassifierDefault    = ""
 	AemVersionUnknown    = "<unknown>"
+
+	AttributeLocal     = "local"
+	AttributeRemote    = "remote"
+	AttributeCreated   = "created"
+	AttributeUncreated = "uncreated"
+	AttributeUpToDate  = "up-to-date"
+	AttributeOutOfDate = "out-of-date"
 )
 
 const (
@@ -42,4 +49,5 @@ const (
 
 	RoleAuthor  Role = "author"
 	RolePublish Role = "publish"
+	RoleAdHoc   Role = "adhoc"
 )

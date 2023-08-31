@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"github.com/go-resty/resty/v2"
@@ -28,6 +29,9 @@ func (h *HTTP) Client() *resty.Client {
 	client.SetTimeout(cv.GetDuration("instance.http.timeout"))
 	client.SetDebug(cv.GetBool("instance.http.debug"))
 	client.SetDisableWarn(cv.GetBool("instance.http.disable_warn"))
+	if cv.GetBool("instance.http.ignore_ssl_errors") {
+		client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+	}
 	return client
 }
 
@@ -64,7 +68,15 @@ func (h *HTTP) BasicAuthCredentials() string {
 
 func (h *HTTP) Port() string {
 	urlConfig, _ := nurl.Parse(h.baseURL)
-	return urlConfig.Port()
+	port := urlConfig.Port()
+	if port == "" {
+		if urlConfig.Scheme == "https" {
+			port = "443"
+		} else {
+			port = "80"
+		}
+	}
+	return port
 }
 
 func (h *HTTP) Hostname() string {

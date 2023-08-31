@@ -210,10 +210,10 @@ func (c InstallerChecker) Check(instance Instance) CheckResult {
 				err:     err,
 			}
 		}
-		if state.IsBusy() {
+		if state.IsActive() {
 			return CheckResult{
 				ok:      false,
-				message: fmt.Sprintf("installer busy (%d)", state.ActiveResources()),
+				message: fmt.Sprintf("installer active (%d)", state.ActiveResources()),
 				err:     err,
 			}
 		}
@@ -318,6 +318,15 @@ func (c ReachableHTTPChecker) Check(instance Instance) CheckResult {
 		ok:      false,
 		message: fmt.Sprintf("not reachable (%s)", address),
 	}
+}
+
+func NewLoginPageChecker(opts *CheckOpts) PathHTTPChecker {
+	cv := opts.manager.aem.config.Values()
+	return NewPathReadyChecker(opts, "login page",
+		cv.GetString("instance.check.login_page.path"),
+		cv.GetInt("instance.check.login_page.status_code"),
+		cv.GetString("instance.check.login_page.contained_text"),
+	)
 }
 
 func NewPathReadyChecker(opts *CheckOpts, name string, path string, statusCode int, containedText string) PathHTTPChecker {

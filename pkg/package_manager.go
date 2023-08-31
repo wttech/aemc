@@ -3,6 +3,7 @@ package pkg
 import (
 	"embed"
 	"encoding/json"
+	"bufio"
 	"fmt"
 	"github.com/go-resty/resty/v2"
 	"github.com/samber/lo"
@@ -15,8 +16,10 @@ import (
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/common/tplx"
+	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/pkg"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -28,6 +31,9 @@ type PackageManager struct {
 
 	SnapshotDeploySkipping bool
 	InstallRecursive       bool
+	InstallHTMLEnabled     bool
+	InstallHTMLConsole     bool
+	InstallHTMLStrict      bool
 	SnapshotPatterns       []string
 	ToggledWorkflows       []string
 }
@@ -40,6 +46,9 @@ func NewPackageManager(res *Instance) *PackageManager {
 		config:   res.manager.aem.baseOpts,
 
 		SnapshotDeploySkipping: cv.GetBool("instance.package.snapshot_deploy_skipping"),
+		InstallHTMLEnabled:     cv.GetBool("instance.package.install_html.enabled"),
+		InstallHTMLConsole:     cv.GetBool("instance.package.install_html.console"),
+		InstallHTMLStrict:      cv.GetBool("instance.package.install_html.strict"),
 		InstallRecursive:       cv.GetBool("instance.package.install_recursive"),
 		SnapshotPatterns:       cv.GetStringSlice("instance.package.snapshot_patterns"),
 		ToggledWorkflows:       cv.GetStringSlice("instance.package.toggled_workflows"),
@@ -339,6 +348,13 @@ func (pm *PackageManager) Upload(localPath string) (string, error) {
 }
 
 func (pm *PackageManager) Install(remotePath string) error {
+	if pm.InstallHTMLEnabled {
+		return pm.installHTML(remotePath)
+	}
+	return pm.installJSON(remotePath)
+}
+
+func (pm *PackageManager) installJSON(remotePath string) error {
 	log.Infof("%s > installing package '%s'", pm.instance.ID(), remotePath)
 	response, err := pm.instance.http.Request().
 		SetFormData(map[string]string{"cmd": "install", "recursive": fmt.Sprintf("%v", pm.InstallRecursive)}).
@@ -350,10 +366,78 @@ func (pm *PackageManager) Install(remotePath string) error {
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return fmt.Errorf("%s > cannot install package '%s'; cannot parse response: %w", pm.instance.ID(), remotePath, err)
+		return fmt.Errorf("%s > cannot install package '%s'; cannot parse JSON response: %w", pm.instance.ID(), remotePath, err)
 	}
 	if !status.Success {
 		return fmt.Errorf("%s > cannot install package '%s'; unexpected status: %s", pm.instance.ID(), remotePath, status.Message)
+	}
+	log.Infof("%s > installed package '%s'", pm.instance.ID(), remotePath)
+	return nil
+}
+
+func (pm *PackageManager) installHTML(remotePath string) error {
+	log.Infof("%s > installing package '%s'", pm.instance.ID(), remotePath)
+
+	response, err := pm.instance.http.Request().
+		SetFormData(map[string]string{"cmd": "install", "recursive": fmt.Sprintf("%v", pm.InstallRecursive)}).
+		Post(ServiceHtmlPath + remotePath)
+	if err != nil {
+		return fmt.Errorf("%s > cannot install package '%s': %w", pm.instance.ID(), remotePath, err)
+	} else if response.IsError() {
+		return fmt.Errorf("%s > cannot install package '%s': '%s'", pm.instance.ID(), remotePath, response.Status())
+	}
+
+	success := false
+	successWithErrors := false
+
+	htmlFilePath := fmt.Sprintf("%s/package/install/%s-%s.html", pm.instance.CacheDir(), filepath.Base(remotePath), timex.FileTimestampForNow())
+	var htmlWriter *bufio.Writer
+
+	if !pm.InstallHTMLConsole {
+		if err := pathx.Ensure(filepath.Dir(htmlFilePath)); err != nil {
+			return err
+		}
+		htmlFile, err := os.OpenFile(htmlFilePath, os.O_RDWR|os.O_CREATE, 0666)
+		if err != nil {
+			return fmt.Errorf("%s > cannot install package '%s': cannot open HTML report file '%s'", pm.instance.ID(), remotePath, htmlFilePath)
+		}
+		defer htmlFile.Close()
+		htmlWriter = bufio.NewWriter(htmlFile)
+		defer htmlWriter.Flush()
+	}
+
+	scanner := bufio.NewScanner(response.RawBody())
+	for scanner.Scan() {
+		htmlLine := scanner.Text()
+		if !success && strings.Contains(htmlLine, pkg.InstallSuccess) {
+			success = true
+		}
+		if !successWithErrors && strings.Contains(htmlLine, pkg.InstallSuccessWithErrors) {
+			successWithErrors = true
+		}
+		if !pm.InstallHTMLConsole {
+			_, err := htmlWriter.WriteString(htmlLine + osx.LineSep())
+			if err != nil {
+				return fmt.Errorf("%s > cannot install package '%s': cannot write to HTML report file '%s'", pm.instance.ID(), remotePath, htmlFilePath)
+			}
+		} else {
+			fmt.Println(htmlLine)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("%s > cannot install package '%s': cannot parse HTML response: %w", pm.instance.ID(), remotePath, err)
+	}
+
+	failure := !success && !successWithErrors
+	if failure || (successWithErrors && pm.InstallHTMLStrict) {
+		if pm.InstallHTMLConsole {
+			return fmt.Errorf("%s > cannot install package '%s': HTML output contains errors", pm.instance.ID(), remotePath)
+		}
+		return fmt.Errorf("%s > cannot install package '%s': HTML report contains errors '%s'", pm.instance.ID(), remotePath, htmlFilePath)
+	}
+	if successWithErrors {
+		log.Warnf("%s > installed package '%s': HTML response contains errors: %s", pm.instance.ID(), remotePath, err)
+		return nil
 	}
 	log.Infof("%s > installed package '%s'", pm.instance.ID(), remotePath)
 	return nil
@@ -430,7 +514,7 @@ func (pm *PackageManager) Deploy(localPath string) error {
 
 func (pm *PackageManager) deployLock(file string, checksum string) osx.Lock[packageDeployLock] {
 	name := filepath.Base(file)
-	return osx.NewLock(fmt.Sprintf("%s/package/deploy/%s.yml", pm.instance.local.LockDir(), name), func() (packageDeployLock, error) {
+	return osx.NewLock(fmt.Sprintf("%s/package/deploy/%s.yml", pm.instance.LockDir(), name), func() (packageDeployLock, error) {
 		return packageDeployLock{Deployed: time.Now(), Checksum: checksum}, nil
 	})
 }
@@ -489,6 +573,4 @@ const (
 	ServiceHtmlPath = ServicePath + "/.html"
 	ListJson        = MgrPath + "/list.jsp"
 	IndexPath       = MgrPath + "/index.jsp"
-	ExecPath        = ServicePath + "/exec.json"
-	UpdatePath      = MgrPath + "/update.jsp"
 )

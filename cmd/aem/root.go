@@ -27,6 +27,8 @@ func (c *CLI) rootCmd() *cobra.Command {
 	cmd.AddCommand(c.repoCmd())
 	cmd.AddCommand(c.replCmd())
 	cmd.AddCommand(c.cryptoCmd())
+	cmd.AddCommand(c.sslCmd())
+	cmd.AddCommand(c.gtsCmd())
 	cmd.AddCommand(c.fileCmd())
 	cmd.AddCommand(c.contentCmd())
 	c.rootFlags(cmd)
@@ -58,7 +60,7 @@ func (c *CLI) rootFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().String("output-log-mode", cv.GetString("output.log.mode"), "Controls where outputs and logs should be written to when format is \"text\" ("+(strings.Join(cfg.OutputLogModes(), "|")+")"))
 	_ = cv.BindPFlag("output.log.mode", cmd.PersistentFlags().Lookup("output-log-mode"))
 
-	cmd.PersistentFlags().StringP("instance-url", "U", cv.GetString("instance.adhoc_url"), "Use only AEM instance at ad-hoc specified URL")
+	cmd.PersistentFlags().StringSliceP("instance-url", "U", cv.GetStringSlice("instance.adhoc_url"), "Use only AEM instance(s) at ad-hoc specified URL(s)")
 	_ = cv.BindPFlag("instance.adhoc_url", cmd.PersistentFlags().Lookup("instance-url"))
 
 	cmd.PersistentFlags().StringP("instance-id", "I", cv.GetString("instance.filter.id"), "Use only AEM instance configured with the exact ID")

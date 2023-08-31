@@ -15,6 +15,18 @@ dotenv:
   - '.env'              # VCS-ignored, user-specific
 
 tasks:
+  init:
+    desc: initialize project
+    cmds:
+      - sh aemw init
+      - sh aemw instance init
+
+  status:
+    desc: check status of AEM instances and dispatcher
+    cmds:
+      - task: aem:status
+      - task: dispatcher:status
+
   setup:
     desc: setup AEM instances and dispatcher
     cmds:
@@ -83,7 +95,6 @@ tasks:
       - task: aem:provision:repl-agent-publish
       - task: aem:provision:repl-agent-flush
       - task: aem:provision:crx
-      - task: aem:provision:apm
 
   aem:provision:repl-agent-publish:
     desc: configure replication agent on AEM author instance
@@ -118,13 +129,6 @@ tasks:
     internal: true
     cmd: 'sh aemw osgi config save --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet" --input-string "alias: /crx/server"'
 
-  aem:provision:apm:
-    desc: deploy APM tool
-    internal: true
-    vars:
-      APM_VERSION: 5.6.19
-    cmd: sh aemw package deploy --url "https://github.com/wttech/APM/releases/download/apm-{{.APM_VERSION}}/apm-all.cloud-{{.APM_VERSION}}.zip"
-
   aem:destroy:
     desc: destroy AEM instances
     prompt: This will permanently delete all configured AEM instances and their data. Continue?
@@ -156,11 +160,11 @@ tasks:
       - ui.frontend/src/**/*
     generates:
       - all/target/*.all-*.zip
-    env:
-      AEM_BUILD_ARGS: -PfedDev
-      AEM_BUILD_JAVA_HOME:
+    vars:
+      ARGS: -PfedDev {{.AEM_BUILD_ARGS}}
+      JAVA_HOME:
         sh: sh aemw instance init --output-value javaHome
-    cmd: JAVA_HOME=$AEM_BUILD_JAVA_HOME mvn clean package $AEM_BUILD_ARGS
+    cmd: JAVA_HOME={{.JAVA_HOME}} mvn clean package {{.ARGS}}
 
   aem:deploy:
     desc: deploy AEM application

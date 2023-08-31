@@ -28,6 +28,8 @@ type Instance struct {
 	osgi            *OSGi
 	sling           *Sling
 	crypto          *Crypto
+	ssl             *SSL
+	gtsManager      *GTSManager
 	packageManager  *PackageManager
 	workflowManager *WorkflowManager
 }
@@ -104,6 +106,14 @@ func (i Instance) Crypto() *Crypto {
 	return i.crypto
 }
 
+func (i Instance) SSL() *SSL {
+	return i.ssl
+}
+
+func (i Instance) GTS() *GTSManager {
+	return i.gtsManager
+}
+
 func (i Instance) IDInfo() IDInfo {
 	parts := strings.Split(i.id, instance.IDDelimiter)
 	if len(parts) == 2 {
@@ -141,6 +151,10 @@ func (i Instance) IsPublish() bool {
 	return i.IDInfo().Role == instance.RolePublish
 }
 
+func (i Instance) IsAdHoc() bool {
+	return i.IDInfo().Role == instance.RoleAdHoc
+}
+
 func locationByURL(config *nurl.URL) string {
 	if lo.Contains(localHosts(), config.Hostname()) {
 		return instance.LocationLocal
@@ -153,11 +167,6 @@ func roleByURL(config *nurl.URL) instance.Role {
 		return instance.RoleAuthor
 	}
 	return instance.RolePublish
-}
-
-// TODO local-publish-preview etc
-func classifierByURL(_ *nurl.URL) string {
-	return instance.ClassifierDefault
 }
 
 func credentialsByURL(config *nurl.URL) (string, string) {
@@ -220,18 +229,23 @@ func (i Instance) Time(unixMilli int64) time.Time {
 func (i Instance) Attributes() []string {
 	var result []string
 	if i.IsLocal() {
-		result = append(result, "local")
+		result = append(result, instance.AttributeLocal)
 		if i.Local().IsCreated() {
-			result = append(result, "created")
+			result = append(result, instance.AttributeCreated)
 			status, err := i.Local().Status()
 			if err == nil {
 				result = append(result, status.String())
 			}
+			if i.Local().UpToDate() {
+				result = append(result, instance.AttributeUpToDate)
+			} else {
+				result = append(result, instance.AttributeOutOfDate)
+			}
 		} else {
-			result = append(result, "uncreated")
+			result = append(result, instance.AttributeUncreated)
 		}
 	} else {
-		result = append(result, "remote")
+		result = append(result, instance.AttributeRemote)
 	}
 	return result
 }
@@ -294,4 +308,15 @@ func (i Instance) MarshalText() string {
 	}
 	sb.WriteString(fmtx.TblProps(props))
 	return sb.String()
+}
+
+func (i Instance) CacheDir() string {
+	return fmt.Sprintf("%s/%s", i.manager.aem.baseOpts.CacheDir, i.ID())
+}
+
+func (i Instance) LockDir() string {
+	if i.IsLocal() {
+		return i.local.LockDir()
+	}
+	return i.CacheDir()
 }

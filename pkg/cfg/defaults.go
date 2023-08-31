@@ -19,6 +19,7 @@ func (c *Config) setDefaults() {
 
 	v.SetDefault("base.tmp_dir", common.TmpDir)
 	v.SetDefault("base.tool_dir", common.ToolDir)
+	v.SetDefault("base.cache_dir", common.CacheDir)
 
 	v.SetDefault("input.format", fmtx.YML)
 	v.SetDefault("input.file", common.STDIn)
@@ -39,7 +40,9 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.http.timeout", time.Minute*10)
 	v.SetDefault("instance.http.debug", false)
 	v.SetDefault("instance.http.disable_warn", true)
+	v.SetDefault("instance.http.ignore_ssl_errors", true)
 
+	v.SetDefault("instance.check.skip", false)
 	v.SetDefault("instance.check.warmup", time.Second*1)
 	v.SetDefault("instance.check.interval", time.Second*6)
 	v.SetDefault("instance.check.done_threshold", 5)
@@ -59,6 +62,12 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.check.installer.state", true)
 	v.SetDefault("instance.check.installer.pause", true)
 
+	v.SetDefault("instance.check.path_ready.timeout", time.Second*10)
+
+	v.SetDefault("instance.check.login_page.path", "/libs/granite/core/content/login.html")
+	v.SetDefault("instance.check.login_page.status_code", 200)
+	v.SetDefault("instance.check.login_page.contained_text", "QUICKSTART_HOMEPAGE")
+
 	v.SetDefault("instance.local.tool_dir", common.ToolDir)
 	v.SetDefault("instance.local.unpack_dir", common.VarDir+"/instance")
 	v.SetDefault("instance.local.override_dir", common.DefaultDir+"/"+common.VarDirName+"/instance")
@@ -75,6 +84,11 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.status.timeout", time.Millisecond*500)
 
 	v.SetDefault("instance.package.install_recursive", true)
+
+	v.SetDefault("instance.package.install_html.enabled", false)
+	v.SetDefault("instance.package.install_html.strict", true)
+	v.SetDefault("instance.package.install_html.console", false)
+
 	v.SetDefault("instance.package.snapshot_deploy_skipping", true)
 	v.SetDefault("instance.package.snapshot_patterns", []string{"**/*-SNAPSHOT.zip"})
 	v.SetDefault("instance.package.toggled_workflows", []string{})

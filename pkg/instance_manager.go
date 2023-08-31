@@ -20,7 +20,8 @@ type InstanceManager struct {
 	LocalOpts *LocalOpts
 	CheckOpts *CheckOpts
 
-	AdHocURL        string
+	AdHocURLs []string
+
 	FilterID        string
 	FilterAuthors   bool
 	FilterPublishes bool
@@ -33,7 +34,8 @@ func NewInstanceManager(aem *AEM) *InstanceManager {
 
 	cv := aem.config.Values()
 
-	result.AdHocURL = cv.GetString("instance.adhoc_url")
+	result.AdHocURLs = cv.GetStringSlice("instance.adhoc_url")
+
 	result.FilterID = cv.GetString("instance.filter.id")
 	result.FilterAuthors = cv.GetBool("instance.filter.authors")
 	result.FilterPublishes = cv.GetBool("instance.filter.publishes")
@@ -83,12 +85,16 @@ func (im *InstanceManager) All() []Instance {
 }
 
 func (im *InstanceManager) newAdHocOrFromConfig() []Instance {
-	if im.AdHocURL != "" {
-		iURL, err := im.NewByURL(im.AdHocURL)
-		if err != nil {
-			log.Fatalf("cannot create instance from ad hoc URL '%s': %s", im.AdHocURL, err)
+	if len(im.AdHocURLs) > 0 {
+		var result []Instance
+		for adHocIndex, adHocValue := range im.AdHocURLs {
+			iURL, err := im.newAdhoc(adHocValue, adHocIndex, len(im.AdHocURLs))
+			if err != nil {
+				log.Fatalf("cannot create instance from ad hoc value '%s': %s", adHocValue, err)
+			}
+			result = append(result, *iURL)
 		}
-		return []Instance{*iURL}
+		return result
 	}
 	cv := im.aem.config.Values()
 	configIDs := maps.Keys(cv.GetStringMap("instance.config"))
@@ -106,6 +112,18 @@ func (im *InstanceManager) newAdHocOrFromConfig() []Instance {
 		return result
 	}
 	return im.NewLocalPair()
+}
+
+func (im *InstanceManager) newAdhoc(value string, current int, total int) (*Instance, error) {
+	idAndURL := strings.Split(value, instance.AdHocDelimiter)
+	if len(idAndURL) == 2 {
+		return im.NewByIDAndURL(idAndURL[0], idAndURL[1])
+	}
+	idParts := []string{instance.LocationRemote, string(instance.RoleAdHoc)}
+	if total > 1 {
+		idParts = append(idParts, fmt.Sprintf("%d", current+1))
+	}
+	return im.NewByIDAndURL(strings.Join(idParts, instance.IDDelimiter), value)
 }
 
 func (im *InstanceManager) newFromConfig(id string) *Instance {
@@ -223,19 +241,22 @@ func (im *InstanceManager) NewByURL(url string) (*Instance, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid instance URL '%s': %w", url, err)
 	}
-
-	env := locationByURL(urlConfig)
-	typeName := roleByURL(urlConfig)
-	classifier := classifierByURL(urlConfig)
-	user, password := credentialsByURL(urlConfig)
-
-	parts := []string{env, string(typeName)}
-	if len(classifier) > 0 {
-		parts = append(parts, classifier)
-	}
+	location := locationByURL(urlConfig)
+	role := roleByURL(urlConfig)
+	parts := []string{location, string(role)}
 	id := strings.Join(parts, instance.IDDelimiter)
+	return im.NewByIDAndURL(id, url)
+}
 
-	return im.New(id, url, user, password), nil
+func (im *InstanceManager) NewByIDAndURL(id string, url string) (*Instance, error) {
+	urlConfig, err := nurl.Parse(url)
+	if err != nil {
+		return nil, fmt.Errorf("invalid instance URL '%s': %w", url, err)
+	}
+	user, password := credentialsByURL(urlConfig)
+	urlConfig.User = nil
+	urlRedacted := urlConfig.String()
+	return im.New(id, urlRedacted, user, password), nil
 }
 
 func (im *InstanceManager) New(id, url, user, password string) *Instance {
@@ -254,6 +275,8 @@ func (im *InstanceManager) New(id, url, user, password string) *Instance {
 	res.osgi = NewOSGi(res)
 	res.sling = NewSling(res)
 	res.crypto = NewCrypto(res)
+	res.ssl = NewSSL(res)
+	res.gtsManager = NewGTSMananger(res)
 
 	if res.IsLocal() {
 		res.local = NewLocal(res)

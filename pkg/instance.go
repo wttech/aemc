@@ -30,6 +30,7 @@ type Instance struct {
 	crypto          *Crypto
 	ssl             *SSL
 	gtsManager      *GTSManager
+	auth            *Auth
 	packageManager  *PackageManager
 	workflowManager *WorkflowManager
 }
@@ -112,6 +113,10 @@ func (i Instance) SSL() *SSL {
 
 func (i Instance) GTS() *GTSManager {
 	return i.gtsManager
+}
+
+func (i Instance) Auth() *Auth {
+	return i.auth
 }
 
 func (i Instance) IDInfo() IDInfo {

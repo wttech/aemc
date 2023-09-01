@@ -56,11 +56,12 @@ func (c *Certificate) IsEqual(certifiacte x509.Certificate) (bool, error) {
 func (c *Certificate) MarshalText() string {
 	bs := bytes.NewBufferString("")
 	bs.WriteString(fmtx.TblMap("details", "name", "value", map[string]any{
-		"alias":     c.Alias,
-		"subject":   c.Subject,
-		"issuer":    c.Issuer,
-		"notBefore": c.NotBefore,
-		"notAfter":  c.NotAfter,
+		"alias":        c.Alias,
+		"subject":      c.Subject,
+		"issuer":       c.Issuer,
+		"notBefore":    c.NotBefore,
+		"notAfter":     c.NotAfter,
+		"serialNumber": c.SerialNumber,
 	}))
 	return bs.String()
 }

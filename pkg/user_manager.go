@@ -26,6 +26,10 @@ func (userManager *UserManager) KeystoreStatus(scope, id string) (*keystore.Stat
 		return nil, fmt.Errorf("%s > cannot read user Keystore: %w", userManager.instance.ID(), err)
 	}
 
+	if response.IsError() {
+		return nil, fmt.Errorf("%s > cannot read user keystore: %s", userManager.instance.ID(), response.Status())
+	}
+
 	result, err := keystore.UnmarshalStatus(response.RawBody())
 
 	if err != nil {

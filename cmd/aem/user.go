@@ -71,7 +71,7 @@ func (c *CLI) KeystoreCreate() *cobra.Command {
 
 			id, _ := cmd.Flags().GetString("id")
 			scope, _ := cmd.Flags().GetString("scope")
-			password, _ := cmd.Flags().GetString("keystorePassword")
+			password, _ := cmd.Flags().GetString("keystore-password")
 			changed, err := instance.Auth().UserManager().KeystoreCreate(scope, id, password)
 
 			if err != nil {
@@ -91,7 +91,7 @@ func (c *CLI) KeystoreCreate() *cobra.Command {
 	_ = cmd.MarkFlagRequired("id")
 	cmd.Flags().String("scope", "", "user scope")
 	_ = cmd.MarkFlagRequired("scope")
-	cmd.Flags().String("keystorePassword", "", "keystore password")
-	_ = cmd.MarkFlagRequired("keystorePassword")
+	cmd.Flags().String("keystore-password", "", "keystore password")
+	_ = cmd.MarkFlagRequired("keystore-password")
 	return cmd
 }

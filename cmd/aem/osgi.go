@@ -681,7 +681,7 @@ func (c *CLI) osgiConfigDelete() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "delete",
 		Short:   "Delete OSGi configuration",
-		Aliases: []string{"del", "remove", "unset"},
+		Aliases: []string{"del", "remove", "rm", "unset"},
 		Run: func(cmd *cobra.Command, args []string) {
 			instances, err := c.aem.InstanceManager().Some()
 			if err != nil {

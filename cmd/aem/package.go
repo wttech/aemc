@@ -285,8 +285,9 @@ func (c *CLI) pkgUninstallCmd() *cobra.Command {
 
 func (c *CLI) pkgDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "delete",
-		Short: "Delete package",
+		Use:     "delete",
+		Aliases: []string{"del", "remove", "rm"},
+		Short:   "Delete package",
 		Run: func(cmd *cobra.Command, args []string) {
 			instances, err := c.aem.InstanceManager().Some()
 			if err != nil {

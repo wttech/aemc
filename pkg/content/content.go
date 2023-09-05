@@ -37,7 +37,7 @@ func NewOpts(baseOpts *base.Opts) *Opts {
 	}
 }
 
-func determinePathRules(values interface{}) []PathRule {
+func determinePathRules(values any) []PathRule {
 	var result []PathRule
 	for _, value := range cast.ToSlice(values) {
 		result = append(result, PathRule{
@@ -49,7 +49,7 @@ func determinePathRules(values interface{}) []PathRule {
 	return result
 }
 
-func determineStringSlice(values interface{}, key string) []string {
+func determineStringSlice(values any, key string) []string {
 	var result []string
 	value := cast.ToStringMap(values)[key]
 	if value != nil {

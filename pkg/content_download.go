@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	FilterXml = "filter.xml"
+	FilterXML = "filter.xml"
 )
 
 type Downloader struct {
@@ -18,9 +18,7 @@ type Downloader struct {
 }
 
 func NewDownloader(config *content.Opts) *Downloader {
-	return &Downloader{
-		config: config,
-	}
+	return &Downloader{config}
 }
 
 func (c Downloader) DownloadPackage(packageManager *PackageManager, pid string, roots []string, filter string) (string, error) {
@@ -49,7 +47,7 @@ func (c Downloader) DownloadContent(packageManager *PackageManager, pid string, 
 	if err != nil {
 		return err
 	}
-	tmpResultDir := pathx.RandomTemporaryPathName(c.config.BaseOpts.TmpDir, "vault_result")
+	tmpResultDir := pathx.RandomTemporaryPathName(c.config.BaseOpts.TmpDir, "download_content")
 	defer func() {
 		_ = pathx.DeleteIfExists(tmpResultDir)
 		_ = pathx.DeleteIfExists(tmpResultFile)
@@ -61,13 +59,13 @@ func (c Downloader) DownloadContent(packageManager *PackageManager, pid string, 
 		if err := pathx.Ensure(root); err != nil {
 			return err
 		}
-		before, _, _ := strings.Cut(root, content.JcrRoot)
+		before, _, _ := strings.Cut(root, content.JCRRoot)
 		if clean {
 			if err = content.NewCleaner(c.config).BeforeClean(root); err != nil {
 				return err
 			}
 		}
-		if err = filex.CopyDir(filepath.Join(tmpResultDir, content.JcrRoot), before+content.JcrRoot); err != nil {
+		if err = filex.CopyDir(filepath.Join(tmpResultDir, content.JCRRoot), before+content.JCRRoot); err != nil {
 			return err
 		}
 		if clean {

@@ -148,16 +148,16 @@ func determineInstance(cmd *cobra.Command, instanceManager *pkg.InstanceManager,
 func determineContentRootPath(cmd *cobra.Command) (string, error) {
 	rootPath, _ := cmd.Flags().GetString("content-root-path")
 	onlyPackage, _ := cmd.Flags().GetBool("only-package")
-	if !onlyPackage && !strings.Contains(rootPath, content.JcrRoot) {
-		return "", fmt.Errorf("root path '%s' does not contain '%s'", rootPath, content.JcrRoot)
+	if !onlyPackage && !strings.Contains(rootPath, content.JCRRoot) {
+		return "", fmt.Errorf("root path '%s' does not contain '%s'", rootPath, content.JCRRoot)
 	}
 	return rootPath, nil
 }
 
 func determineFilterFile(cmd *cobra.Command) (string, error) {
 	filterPath, _ := cmd.Flags().GetString("filter-file")
-	if filterPath != "" && !strings.HasSuffix(filterPath, pkg.FilterXml) {
-		return "", fmt.Errorf("filter path '%s' does not end '%s'", filterPath, pkg.FilterXml)
+	if filterPath != "" && !strings.HasSuffix(filterPath, pkg.FilterXML) {
+		return "", fmt.Errorf("filter path '%s' does not end '%s'", filterPath, pkg.FilterXML)
 	}
 	return filterPath, nil
 }

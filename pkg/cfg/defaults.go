@@ -107,8 +107,8 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.workflow.toggle_retry_delay", time.Second*10)
 	v.SetDefault("instance.workflow.toggle_retry_timeout", time.Minute*5)
 
-	v.SetDefault("content.files_deleted", []interface{}{
-		map[string]interface{}{
+	v.SetDefault("content.files_deleted", []any{
+		map[string]any{
 			"patterns": []string{
 				"**/.vlt",
 				"**/.vlt*.tmp",
@@ -122,20 +122,20 @@ func (c *Config) setDefaults() {
 		"**/_cq_htmlTag/.content.xml",
 		"**/_cq_template/.content.xml",
 	})
-	v.SetDefault("content.properties_skipped", []interface{}{
-		map[string]interface{}{
+	v.SetDefault("content.properties_skipped", []any{
+		map[string]any{
 			"patterns":       []string{"jcr:uuid"},
 			"excluded_paths": []string{"**/home/users/*", "**/home/groups/*"},
 		},
-		map[string]interface{}{
+		map[string]any{
 			"patterns":       []string{"cq:lastModified*"},
 			"excluded_paths": []string{"**/content/experience-fragments/*"},
 		},
-		map[string]interface{}{
+		map[string]any{
 			"patterns":       []string{"dam:sha1", "dam:size"},
 			"included_paths": []string{"**/content/dam/*.svg/*"},
 		},
-		map[string]interface{}{
+		map[string]any{
 			"patterns": []string{
 				"jcr:lastModified*",
 				"jcr:created*",
@@ -155,8 +155,8 @@ func (c *Config) setDefaults() {
 		},
 	})
 
-	v.SetDefault("content.mixin_types_skipped", []interface{}{
-		map[string]interface{}{
+	v.SetDefault("content.mixin_types_skipped", []any{
+		map[string]any{
 			"patterns": []string{
 				"cq:ReplicationStatus",
 				"mix:versionable",

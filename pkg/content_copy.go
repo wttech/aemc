@@ -26,7 +26,7 @@ func (c Copier) Copy(scrPackageManager *PackageManager, destPackageManager *Pack
 			_ = pathx.DeleteIfExists(tmpResultDir)
 			_ = pathx.DeleteIfExists(tmpResultFile)
 		}()
-		if err := NewDownloader(c.config).DownloadContent(scrPackageManager, filepath.Join(tmpResultDir, content.JcrRoot), "", roots, filter, true, true); err != nil {
+		if err := NewDownloader(c.config).DownloadContent(scrPackageManager, filepath.Join(tmpResultDir, content.JCRRoot), "", roots, filter, true, true); err != nil {
 			return err
 		}
 		if err := filex.Archive(tmpResultDir, tmpResultFile); err != nil {

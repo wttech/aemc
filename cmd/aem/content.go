@@ -31,7 +31,7 @@ func (c *CLI) contentCleanCmd() *cobra.Command {
 				c.Error(fmt.Errorf("content clean failed: %w", err))
 				return
 			}
-			if err = content.NewCleaner(c.aem.ContentOpts()).Clean(contentRootPath); err != nil {
+			if err = c.aem.ContentManager().Clean(contentRootPath); err != nil {
 				c.Error(fmt.Errorf("content clean failed: %w", err))
 				return
 			}
@@ -68,7 +68,7 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 			}
 			onlyDownload, _ := cmd.Flags().GetBool("only-download")
 			onlyPackage, _ := cmd.Flags().GetBool("only-package")
-			if err = pkg.NewDownloader(c.aem.ContentOpts()).DownloadContent(instance.PackageManager(), pid, contentRootPath, rootPaths, filterFile, !onlyDownload, !onlyPackage); err != nil {
+			if err = instance.PackageManager().DownloadContent(pid, contentRootPath, rootPaths, filterFile, !onlyDownload, !onlyPackage); err != nil {
 				c.Error(fmt.Errorf("content download failed: %w", err))
 				return
 			}
@@ -109,7 +109,7 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 				return
 			}
 			onlyCopy, _ := cmd.Flags().GetBool("only-copy")
-			if err = pkg.NewCopier(c.aem.ContentOpts()).Copy(scrInstance.PackageManager(), destInstance.PackageManager(), "", rootPaths, filterFile, !onlyCopy); err != nil {
+			if err = scrInstance.PackageManager().CopyContent(destInstance, "", rootPaths, filterFile, !onlyCopy); err != nil {
 				c.Error(fmt.Errorf("content copy failed: %w", err))
 				return
 			}

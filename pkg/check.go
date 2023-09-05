@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"context"
 	"fmt"
 	"github.com/samber/lo"
 	"github.com/wttech/aemc/pkg/common/lox"
@@ -32,7 +33,7 @@ func (c *CheckResult) Err() error {
 }
 
 type Checker interface {
-	Check(instance Instance) CheckResult
+	Check(context context.Context, instance Instance) CheckResult
 	Spec() CheckSpec
 }
 
@@ -46,13 +47,14 @@ func NewAwaitChecker(opts *CheckOpts, expectedState string) AwaitChecker {
 	return AwaitChecker{
 		ExpectedState: expectedState,
 		Duration:      cv.GetDuration(fmt.Sprintf("instance.check.await_%s.timeout", expectedState)),
-		Started:       time.Now(),
 	}
 }
 
-func (c AwaitChecker) Check(_ Instance) CheckResult {
+func (c AwaitChecker) Check(ctx context.Context, _ Instance) CheckResult {
+	started := ctx.Value(CheckContextKey{}).(CheckContext).Started
 	now := time.Now()
-	if now.After(c.Started.Add(c.Duration)) {
+
+	if now.After(started.Add(c.Duration)) {
 		return CheckResult{
 			abort:   true,
 			message: fmt.Sprintf("timeout after %s, expected state '%s' not reached", c.Duration, c.ExpectedState),
@@ -100,7 +102,7 @@ type BundleStableChecker struct {
 	SymbolicNamesIgnored []string
 }
 
-func (c BundleStableChecker) Check(instance Instance) CheckResult {
+func (c BundleStableChecker) Check(_ context.Context, instance Instance) CheckResult {
 	bundles, err := instance.osgi.bundleManager.List()
 	if err != nil {
 		return CheckResult{
@@ -141,7 +143,7 @@ func (c EventStableChecker) Spec() CheckSpec {
 	return CheckSpec{Mandatory: true}
 }
 
-func (c EventStableChecker) Check(instance Instance) CheckResult {
+func (c EventStableChecker) Check(_ context.Context, instance Instance) CheckResult {
 	events, err := instance.osgi.eventManager.List()
 	if err != nil {
 		return CheckResult{
@@ -199,7 +201,7 @@ func (c InstallerChecker) Spec() CheckSpec {
 	return CheckSpec{Mandatory: false}
 }
 
-func (c InstallerChecker) Check(instance Instance) CheckResult {
+func (c InstallerChecker) Check(_ context.Context, instance Instance) CheckResult {
 	installer := instance.Sling().Installer()
 	if c.State {
 		state, err := installer.State()
@@ -251,7 +253,7 @@ func (c StatusStoppedChecker) Spec() CheckSpec {
 	return CheckSpec{Mandatory: true}
 }
 
-func (c StatusStoppedChecker) Check(instance Instance) CheckResult {
+func (c StatusStoppedChecker) Check(_ context.Context, instance Instance) CheckResult {
 	if !instance.IsLocal() {
 		return CheckResult{
 			ok:      true,
@@ -302,7 +304,7 @@ func (c ReachableHTTPChecker) Spec() CheckSpec {
 	return CheckSpec{Mandatory: c.Mandatory}
 }
 
-func (c ReachableHTTPChecker) Check(instance Instance) CheckResult {
+func (c ReachableHTTPChecker) Check(_ context.Context, instance Instance) CheckResult {
 	address := fmt.Sprintf("%s:%s", instance.http.Hostname(), instance.http.Port())
 	reachable, _ := netx.IsReachable(instance.http.Hostname(), instance.http.Port(), c.Timeout)
 	if c.Reachable == reachable {
@@ -353,7 +355,7 @@ type PathHTTPChecker struct {
 	ResponseText   string
 }
 
-func (c PathHTTPChecker) Check(instance Instance) CheckResult {
+func (c PathHTTPChecker) Check(_ context.Context, instance Instance) CheckResult {
 	response, err := instance.http.RequestWithTimeout(c.RequestTimeout).Get(c.Path)
 	if err != nil {
 		return CheckResult{

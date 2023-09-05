@@ -177,9 +177,8 @@ func (c Cleaner) lineProcess(path string, line string) (bool, string) {
 		return c.normalizeMixins(path, line, groups[2], groups[3])
 	} else if matchAnyRule(groups[1], path, c.config.PropertiesSkipped) {
 		return true, groups[3]
-	} else {
-		return false, line
 	}
+	return false, line
 }
 
 func (c Cleaner) normalizeMixins(path string, line string, propValue string, lineSuffix string) (bool, string) {

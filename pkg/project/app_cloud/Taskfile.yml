@@ -156,7 +156,9 @@ tasks:
       - ui.config/src/**/*
       - ui.content/pom.xml
       - ui.content/src/**/*
-      - ui.frontend/*
+      - ui.frontend/pom.xml
+      - ui.frontend/*.js
+      - ui.frontend/package.json
       - ui.frontend/src/**/*
     generates:
       - all/target/*.all-*.zip

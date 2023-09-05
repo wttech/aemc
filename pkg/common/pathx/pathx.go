@@ -195,12 +195,12 @@ func DirAndFileName(path string) (string, string) {
 	return stringsx.BeforeLast(path, "/"), stringsx.AfterLast(path, "/")
 }
 
-func RandomTemporaryPathName(tmpDir string, prefix string) string {
+func RandomDir(tmpDir string, prefix string) string {
 	suffix, _ := goutils.RandomNumeric(8)
 	return filepath.Join(tmpDir, prefix+"_"+suffix)
 }
 
-func RandomTemporaryFileName(tmpDir string, prefix string, extension string) string {
+func RandomFileName(tmpDir string, prefix string, extension string) string {
 	suffix, _ := goutils.RandomNumeric(8)
 	return filepath.Join(tmpDir, prefix+"_"+suffix+extension)
 }

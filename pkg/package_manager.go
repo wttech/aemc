@@ -172,8 +172,8 @@ func (pm *PackageManager) Create(pid string, rootPaths []string, filterFile stri
 			}).
 			Post(ExecPath + "?cmd=create")
 	} else {
-		tmpDir := pathx.RandomTemporaryPathName(pm.tmpDir(), "tmppck")
-		tmpFile := pathx.RandomTemporaryFileName(pm.tmpDir(), "tmppck", ".zip")
+		tmpDir := pathx.RandomDir(pm.tmpDir(), "pkg_create")
+		tmpFile := pathx.RandomFileName(pm.tmpDir(), "pkg_create", ".zip")
 		defer func() {
 			_ = pathx.DeleteIfExists(tmpDir)
 			_ = pathx.DeleteIfExists(tmpFile)
@@ -594,7 +594,7 @@ func (pm *PackageManager) DownloadContent(pid string, root string, roots []strin
 	if err != nil {
 		return err
 	}
-	tmpResultDir := pathx.RandomTemporaryPathName(pm.tmpDir(), "pkg_download_content")
+	tmpResultDir := pathx.RandomDir(pm.tmpDir(), "pkg_download_content")
 	defer func() {
 		_ = pathx.DeleteIfExists(tmpResultDir)
 		_ = pathx.DeleteIfExists(tmpResultFile)
@@ -633,8 +633,8 @@ func (pm *PackageManager) CopyContent(destInstance *Instance, pid string, roots 
 
 	var tmpResultFile string
 	if clean {
-		tmpResultFile = pathx.RandomTemporaryFileName(pm.tmpDir(), "pkg_copy_content", ".zip")
-		tmpResultDir := pathx.RandomTemporaryPathName(pm.tmpDir(), "pkg_copy_content")
+		tmpResultFile = pathx.RandomFileName(pm.tmpDir(), "pkg_copy_content", ".zip")
+		tmpResultDir := pathx.RandomDir(pm.tmpDir(), "pkg_copy_content")
 		defer func() {
 			_ = pathx.DeleteIfExists(tmpResultDir)
 			_ = pathx.DeleteIfExists(tmpResultFile)

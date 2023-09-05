@@ -138,17 +138,17 @@ func (pm *PackageManager) IsSnapshot(localPath string) bool {
 }
 
 //go:embed package/default
-var defaultPackage embed.FS
+var packageDefaultFS embed.FS
 
-func copyEmbedFiles(efs *embed.FS, targetTmpDir string, dirPrefix string, data map[string]any) error {
+func copyPackageDefaultFiles(targetTmpDir string, dirPrefix string, data map[string]any) error {
 	if err := pathx.DeleteIfExists(targetTmpDir); err != nil {
 		return fmt.Errorf("cannot delete temporary dir '%s': %w", targetTmpDir, err)
 	}
-	return fs.WalkDir(efs, ".", func(path string, entry fs.DirEntry, err error) error {
+	return fs.WalkDir(packageDefaultFS, ".", func(path string, entry fs.DirEntry, err error) error {
 		if entry.IsDir() {
 			return nil
 		}
-		bytes, err := efs.ReadFile(path)
+		bytes, err := packageDefaultFS.ReadFile(path)
 		if err != nil {
 			return err
 		}
@@ -185,7 +185,7 @@ func (pm *PackageManager) Create(pid string, rootPaths []string, filterFile stri
 			"Version": pidConfig.Version,
 			"Roots":   rootPaths,
 		}
-		if err = copyEmbedFiles(&defaultPackage, tmpDir, "package/default", data); err != nil {
+		if err = copyPackageDefaultFiles(tmpDir, "package/default", data); err != nil {
 			return "", err
 		}
 		if filterFile != "" {

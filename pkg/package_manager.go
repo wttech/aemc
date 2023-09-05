@@ -8,7 +8,6 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
-	"github.com/wttech/aemc/pkg/base"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/httpx"
@@ -28,7 +27,6 @@ import (
 
 type PackageManager struct {
 	instance *Instance
-	config   *base.Opts
 
 	SnapshotDeploySkipping bool
 	InstallRecursive       bool
@@ -44,7 +42,6 @@ func NewPackageManager(res *Instance) *PackageManager {
 
 	return &PackageManager{
 		instance: res,
-		config:   res.manager.aem.baseOpts,
 
 		SnapshotDeploySkipping: cv.GetBool("instance.package.snapshot_deploy_skipping"),
 		InstallHTMLEnabled:     cv.GetBool("instance.package.install_html.enabled"),

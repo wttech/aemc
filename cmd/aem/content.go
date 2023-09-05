@@ -51,25 +51,25 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
-				c.Error(fmt.Errorf("content download failed: %w", err))
+				c.Error(err)
 				return
 			}
 			pid, _ := cmd.Flags().GetString("pid")
 			contentRootPath, err := determineContentRootPath(cmd)
 			if err != nil {
-				c.Error(fmt.Errorf("content download failed: %w", err))
+				c.Error(err)
 				return
 			}
 			rootPaths, _ := cmd.Flags().GetStringSlice("root-path")
 			filterFile, err := determineFilterFile(cmd)
 			if err != nil {
-				c.Error(fmt.Errorf("content download failed: %w", err))
+				c.Error(err)
 				return
 			}
 			onlyDownload, _ := cmd.Flags().GetBool("only-download")
 			onlyPackage, _ := cmd.Flags().GetBool("only-package")
 			if err = instance.PackageManager().DownloadContent(pid, contentRootPath, rootPaths, filterFile, !onlyDownload, !onlyPackage); err != nil {
-				c.Error(fmt.Errorf("content download failed: %w", err))
+				c.Error(err)
 				return
 			}
 			c.Ok("content downloaded")
@@ -94,23 +94,23 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			scrInstance, err := determineInstance(cmd, c.aem.InstanceManager(), "src-instance-url", "src-instance-id", "unable to determine source instance")
 			if err != nil {
-				c.Error(fmt.Errorf("content copy failed: %w", err))
+				c.Error(err)
 				return
 			}
 			destInstance, err := determineInstance(cmd, c.aem.InstanceManager(), "dest-instance-url", "dest-instance-id", "unable to determine destination instance")
 			if err != nil {
-				c.Error(fmt.Errorf("content copy failed: %w", err))
+				c.Error(err)
 				return
 			}
 			rootPaths, _ := cmd.Flags().GetStringSlice("root-path")
 			filterFile, err := determineFilterFile(cmd)
 			if err != nil {
-				c.Error(fmt.Errorf("content copy failed: %w", err))
+				c.Error(err)
 				return
 			}
 			onlyCopy, _ := cmd.Flags().GetBool("only-copy")
 			if err = scrInstance.PackageManager().CopyContent(destInstance, "", rootPaths, filterFile, !onlyCopy); err != nil {
-				c.Error(fmt.Errorf("content copy failed: %w", err))
+				c.Error(err)
 				return
 			}
 			c.Ok("content copied")
@@ -157,7 +157,7 @@ func determineContentRootPath(cmd *cobra.Command) (string, error) {
 func determineFilterFile(cmd *cobra.Command) (string, error) {
 	filterPath, _ := cmd.Flags().GetString("filter-file")
 	if filterPath != "" && !strings.HasSuffix(filterPath, pkg.FilterXML) {
-		return "", fmt.Errorf("filter path '%s' does not end '%s'", filterPath, pkg.FilterXML)
+		return "", fmt.Errorf("filter path '%s' does not end with '%s'", filterPath, pkg.FilterXML)
 	}
 	return filterPath, nil
 }

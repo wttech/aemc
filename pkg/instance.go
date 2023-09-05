@@ -265,7 +265,7 @@ func (i Instance) HealthChecks() []string {
 			i.manager.CheckOpts.Installer,
 		}
 		for _, check := range checks {
-			result := check.Check(i.manager.checkContext(), i)
+			result := check.Check(i.manager.CheckContext().Value(checkContextKey{}).(CheckContext), i)
 			if result.message != "" {
 				messages = append(messages, result.message)
 			} else if result.err != nil {

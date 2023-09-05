@@ -57,16 +57,16 @@ type CheckContext struct {
 	Started time.Time
 }
 
-type CheckContextKey struct{}
+type checkContextKey struct{}
 
-func (im *InstanceManager) checkContext() context.Context {
-	return context.WithValue(context.Background(), CheckContextKey{}, CheckContext{
+func (im *InstanceManager) CheckContext() context.Context {
+	return context.WithValue(context.Background(), checkContextKey{}, CheckContext{
 		Started: time.Now(),
 	})
 }
 
 func (im *InstanceManager) CheckUntilDone(instances []Instance, opts *CheckOpts, checks []Checker) error {
-	return im.checkUntilDone(im.checkContext(), instances, opts, checks)
+	return im.checkUntilDone(im.CheckContext(), instances, opts, checks)
 }
 
 func (im *InstanceManager) checkUntilDone(ctx context.Context, instances []Instance, opts *CheckOpts, checks []Checker) error {
@@ -100,7 +100,7 @@ func (im *InstanceManager) checkUntilDone(ctx context.Context, instances []Insta
 }
 
 func (im *InstanceManager) CheckIfDone(instances []Instance, checks []Checker) (bool, error) {
-	return im.checkIfDone(im.checkContext(), instances, checks)
+	return im.checkIfDone(im.CheckContext(), instances, checks)
 }
 
 func (im *InstanceManager) checkIfDone(ctx context.Context, instances []Instance, checks []Checker) (bool, error) {
@@ -115,7 +115,7 @@ func (im *InstanceManager) checkIfDone(ctx context.Context, instances []Instance
 }
 
 func (im *InstanceManager) Check(instances []Instance, checks []Checker) ([][]CheckResult, error) {
-	return im.check(im.checkContext(), instances, checks)
+	return im.check(im.CheckContext(), instances, checks)
 }
 
 func (im *InstanceManager) check(ctx context.Context, instances []Instance, checks []Checker) ([][]CheckResult, error) {
@@ -123,13 +123,13 @@ func (im *InstanceManager) check(ctx context.Context, instances []Instance, chec
 }
 
 func (im *InstanceManager) CheckOne(i Instance, checks []Checker) ([]CheckResult, error) {
-	return im.checkOne(im.checkContext(), i, checks)
+	return im.checkOne(im.CheckContext(), i, checks)
 }
 
 func (im *InstanceManager) checkOne(ctx context.Context, i Instance, checks []Checker) ([]CheckResult, error) {
 	var results []CheckResult
 	for _, check := range checks {
-		result := check.Check(ctx, i)
+		result := check.Check(ctx.Value(checkContextKey{}).(CheckContext), i)
 		results = append(results, result)
 		if result.abort {
 			log.Fatal(InstanceMsg(i, result.message))

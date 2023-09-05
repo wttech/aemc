@@ -14,7 +14,7 @@ import (
 func (c *CLI) pkgCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "package",
-		Short:   "Communicates with Package Manager",
+		Short:   "Communicate with Package Manager",
 		Aliases: []string{"pkg"},
 	}
 	cmd.AddCommand(c.pkgListCmd())

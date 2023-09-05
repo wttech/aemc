@@ -11,7 +11,7 @@ func (c *CLI) configCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "config",
 		Aliases: []string{"cfg"},
-		Short:   "Manages configuration",
+		Short:   "Manages AEMC configuration",
 	}
 	cmd.AddCommand(c.configInitCmd())
 	cmd.AddCommand(c.configExportCmd())

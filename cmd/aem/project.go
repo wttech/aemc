@@ -13,7 +13,7 @@ func (c *CLI) initCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "init",
 		Aliases: []string{"initialize"},
-		Short:   "Initializes project files and configuration",
+		Short:   "Initializes AEMC in the project",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := c.aem.Project().EnsureDirs(); err != nil {
 				c.Error(err)

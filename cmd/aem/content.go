@@ -12,7 +12,7 @@ func (c *CLI) contentCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "content",
 		Aliases: []string{"cnt"},
-		Short:   "Manages content",
+		Short:   "Manages JCR content",
 	}
 	cmd.AddCommand(c.contentCleanCmd())
 	cmd.AddCommand(c.contentDownloadCmd())

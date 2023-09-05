@@ -31,7 +31,7 @@ func (a AppInfo) String() string {
 func (c *CLI) versionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
-		Short: "Print app details including version",
+		Short: "Print application details including version",
 		Run: func(cmd *cobra.Command, args []string) {
 			c.SetOutput("app", NewAppInfo())
 			c.Ok("application details printed")

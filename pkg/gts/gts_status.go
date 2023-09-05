@@ -3,7 +3,6 @@ package gts
 import (
 	"bytes"
 	"crypto/x509"
-	"fmt"
 	"github.com/samber/lo"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"io"
@@ -53,8 +52,11 @@ func UnmarshalStatus(readCloser io.ReadCloser) (*Status, error) {
 
 func (s *Status) MarshalText() string {
 	bs := bytes.NewBufferString("")
-	bs.WriteString(fmt.Sprintf("Created: %t\n", s.Created))
-	bs.WriteString(fmtx.TblRows("List of certificates", true, []string{"alias"}, lo.Map(s.Certificates, func(c Certificate, _ int) map[string]any {
+	bs.WriteString(fmtx.TblMap("details", "name", "value", map[string]any{
+		"created": s.Created,
+	}))
+	bs.WriteString("\n")
+	bs.WriteString(fmtx.TblRows("certificates", true, []string{"alias"}, lo.Map(s.Certificates, func(c Certificate, _ int) map[string]any {
 		return map[string]any{"alias": c.Alias}
 	})))
 	return bs.String()

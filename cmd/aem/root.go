@@ -30,6 +30,7 @@ func (c *CLI) rootCmd() *cobra.Command {
 	cmd.AddCommand(c.sslCmd())
 	cmd.AddCommand(c.gtsCmd())
 	cmd.AddCommand(c.fileCmd())
+	cmd.AddCommand(c.authCmd())
 	cmd.AddCommand(c.contentCmd())
 	c.rootFlags(cmd)
 	return cmd

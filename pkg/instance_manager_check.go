@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"context"
 	"fmt"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
@@ -52,7 +53,23 @@ func NewCheckOpts(manager *InstanceManager) *CheckOpts {
 	return result
 }
 
+type CheckContext struct {
+	Started time.Time
+}
+
+type checkContextKey struct{}
+
+func (im *InstanceManager) CheckContext() context.Context {
+	return context.WithValue(context.Background(), checkContextKey{}, CheckContext{
+		Started: time.Now(),
+	})
+}
+
 func (im *InstanceManager) CheckUntilDone(instances []Instance, opts *CheckOpts, checks []Checker) error {
+	return im.checkUntilDone(im.CheckContext(), instances, opts, checks)
+}
+
+func (im *InstanceManager) checkUntilDone(ctx context.Context, instances []Instance, opts *CheckOpts, checks []Checker) error {
 	if len(instances) == 0 {
 		log.Debug("no instances to check")
 		return nil
@@ -60,7 +77,7 @@ func (im *InstanceManager) CheckUntilDone(instances []Instance, opts *CheckOpts,
 	time.Sleep(opts.Warmup)
 	doneTimes := 0
 	for {
-		done, err := im.CheckIfDone(instances, checks)
+		done, err := im.checkIfDone(ctx, instances, checks)
 		if err != nil {
 			return err
 		}
@@ -83,7 +100,11 @@ func (im *InstanceManager) CheckUntilDone(instances []Instance, opts *CheckOpts,
 }
 
 func (im *InstanceManager) CheckIfDone(instances []Instance, checks []Checker) (bool, error) {
-	instanceResults, err := im.Check(instances, checks)
+	return im.checkIfDone(im.CheckContext(), instances, checks)
+}
+
+func (im *InstanceManager) checkIfDone(ctx context.Context, instances []Instance, checks []Checker) (bool, error) {
+	instanceResults, err := im.check(ctx, instances, checks)
 	if err != nil {
 		return false, nil
 	}
@@ -94,13 +115,21 @@ func (im *InstanceManager) CheckIfDone(instances []Instance, checks []Checker) (
 }
 
 func (im *InstanceManager) Check(instances []Instance, checks []Checker) ([][]CheckResult, error) {
-	return InstanceProcess(im.aem, instances, func(i Instance) ([]CheckResult, error) { return im.CheckOne(i, checks) })
+	return im.check(im.CheckContext(), instances, checks)
+}
+
+func (im *InstanceManager) check(ctx context.Context, instances []Instance, checks []Checker) ([][]CheckResult, error) {
+	return InstanceProcess(im.aem, instances, func(i Instance) ([]CheckResult, error) { return im.checkOne(ctx, i, checks) })
 }
 
 func (im *InstanceManager) CheckOne(i Instance, checks []Checker) ([]CheckResult, error) {
+	return im.checkOne(im.CheckContext(), i, checks)
+}
+
+func (im *InstanceManager) checkOne(ctx context.Context, i Instance, checks []Checker) ([]CheckResult, error) {
 	var results []CheckResult
 	for _, check := range checks {
-		result := check.Check(i)
+		result := check.Check(ctx.Value(checkContextKey{}).(CheckContext), i)
 		results = append(results, result)
 		if result.abort {
 			log.Fatal(InstanceMsg(i, result.message))

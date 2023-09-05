@@ -254,7 +254,7 @@ func (c *CLI) instanceKillCmd() *cobra.Command {
 func (c *CLI) instanceDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "delete",
-		Aliases: []string{"del", "destroy", "remove"},
+		Aliases: []string{"del", "destroy", "remove", "rm"},
 		Short:   "Deletes AEM instance(s)",
 		Run: func(cmd *cobra.Command, args []string) {
 			localInstances, err := c.aem.InstanceManager().SomeLocals()

@@ -30,6 +30,7 @@ type Instance struct {
 	crypto          *Crypto
 	ssl             *SSL
 	gtsManager      *GTSManager
+	auth            *Auth
 	packageManager  *PackageManager
 	workflowManager *WorkflowManager
 }
@@ -112,6 +113,10 @@ func (i Instance) SSL() *SSL {
 
 func (i Instance) GTS() *GTSManager {
 	return i.gtsManager
+}
+
+func (i Instance) Auth() *Auth {
+	return i.auth
 }
 
 func (i Instance) IDInfo() IDInfo {
@@ -260,7 +265,7 @@ func (i Instance) HealthChecks() []string {
 			i.manager.CheckOpts.Installer,
 		}
 		for _, check := range checks {
-			result := check.Check(i)
+			result := check.Check(i.manager.CheckContext().Value(checkContextKey{}).(CheckContext), i)
 			if result.message != "" {
 				messages = append(messages, result.message)
 			} else if result.err != nil {

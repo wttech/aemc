@@ -277,6 +277,7 @@ func (im *InstanceManager) New(id, url, user, password string) *Instance {
 	res.crypto = NewCrypto(res)
 	res.ssl = NewSSL(res)
 	res.gtsManager = NewGTSMananger(res)
+	res.auth = NewAuth(res)
 
 	if res.IsLocal() {
 		res.local = NewLocal(res)

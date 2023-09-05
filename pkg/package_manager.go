@@ -264,13 +264,13 @@ func (pm *PackageManager) UpdateFilters(remotePath string, pid string, filters [
 
 func (pm *PackageManager) Download(remotePath string, localFile string) error {
 	log.Infof("%s > downloading package '%s'", pm.instance.ID(), remotePath)
-	opts := httpx.DownloadOpts{}
-	opts.URL = pm.instance.HTTP().BaseURL() + remotePath
-	opts.File = localFile
-	opts.Override = true
-	opts.AuthBasicUser = pm.instance.User()
-	opts.AuthBasicPassword = pm.instance.Password()
-	_, err := httpx.DownloadWithChanged(opts)
+	_, err := httpx.DownloadWithChanged(httpx.DownloadOpts{
+		URL:               pm.instance.HTTP().BaseURL() + remotePath,
+		File:              localFile,
+		Override:          true,
+		AuthBasicUser:     pm.instance.User(),
+		AuthBasicPassword: pm.instance.Password(),
+	})
 	if err != nil {
 		return fmt.Errorf("%s > cannot download package '%s': %w", pm.instance.ID(), remotePath, err)
 	}
@@ -568,11 +568,11 @@ func (pm *PackageManager) tmpDir() string {
 	return pm.instance.manager.aem.baseOpts.TmpDir
 }
 
-func (pm *PackageManager) DownloadPackage(pid string, roots []string, filter string) (string, error) {
+func (pm *PackageManager) DownloadPackage(pid string, rootPaths []string, filterFile string) (string, error) {
 	if pid == "" {
 		pid = "my_packages:aemc_content:" + time.Now().Format("2006.102.304") + "-SNAPSHOT"
 	}
-	remotePath, err := pm.Create(pid, roots, filter)
+	remotePath, err := pm.Create(pid, rootPaths, filterFile)
 	if err != nil {
 		return "", err
 	}
@@ -582,7 +582,7 @@ func (pm *PackageManager) DownloadPackage(pid string, roots []string, filter str
 	if err := pm.Build(remotePath); err != nil {
 		return "", err
 	}
-	tmpResultFile := filepath.Join(pm.instance.manager.aem.baseOpts.TmpDir, filepath.Base(remotePath))
+	tmpResultFile := filepath.Join(pm.tmpDir(), filepath.Base(remotePath))
 	if err := pm.Download(remotePath, tmpResultFile); err != nil {
 		return "", err
 	}

@@ -142,7 +142,7 @@ func (p Project) prepareGitIgnore(kind Kind) error {
 			"",
 			"# " + common.AppName,
 			common.HomeDir + "/",
-			"dispatcher/target/",
+			"dispatcher/home/",
 			".task/",
 			"." + osx.EnvFileExt,
 			"." + osx.EnvFileExt + ".*",

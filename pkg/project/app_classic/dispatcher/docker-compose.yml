@@ -3,8 +3,9 @@ services:
   dispatcher:
     container_name: dispatcher
     image: acme/aem-ams/dispatcher-publish:latest
+    platform: linux/amd64
     ports:
       - "80:80"
     volumes:
-      - ./target/docker/httpd/logs:/etc/httpd/logs
-      - ./target/docker/httpd/cache:/var/www/cache
+      - ./home/docker/httpd/logs:/etc/httpd/logs
+      - ./home/docker/httpd/cache:/var/www/cache

@@ -1,5 +1,5 @@
-FROM rockylinux:8
-ENV DISPATCHER_VERSION=4.3.5
+FROM --platform=linux/amd64 rockylinux:8
+ENV DISPATCHER_VERSION=4.3.6
 ENV DISP_ID docker
 
 # Install required OS packages
@@ -13,7 +13,7 @@ RUN mkdir -p /tmp/dispatcher && cd /tmp/dispatcher && \
     chmod 0755 /usr/lib64/httpd/modules/mod_dispatcher.so
 
 # Project-specific source code
-COPY target/src /etc/httpd
+COPY home/src /etc/httpd
 
 # Local environment-specific variables
 COPY docker/src/conf.d/custom.conf /etc/httpd/conf.d/custom.conf

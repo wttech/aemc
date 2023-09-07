@@ -71,6 +71,7 @@ tasks:
 
   destroy:
     desc: destroy AEM instances and dispatcher
+    prompt: This will permanently delete all configured AEM instances and their data. Continue?
     cmds:
       - task: stop
       - task: aem:destroy
@@ -137,7 +138,6 @@ tasks:
 
   aem:destroy:
     desc: destroy AEM instances
-    prompt: This will permanently delete all configured AEM instances and their data. Continue?
     deps: [ aem:stop ]
     cmd: sh aemw instance destroy
 
@@ -219,10 +219,10 @@ tasks:
     cmds:
       - 'command -v docker || { echo "Docker is not installed! Visit: https://www.docker.com/products/docker-desktop"; exit 1; }'
       - 'test -d ../aem/home/opt/sdk/dispatcher || { echo "Dispatcher SDK is not available. Try providing AEM SDK ZIP instead of JAR to directory: aem/home/lib"; exit 1; }'
-      - test -d target/sdk || rm -fr target/sdk && cp -r ../aem/home/opt/sdk/dispatcher target/sdk
-      # - sh target/sdk/bin/validate.sh src > ../aem/home/var/log/dispatcher-validate.log
-      - docker tag "$(docker load --input "target/sdk/lib/dispatcher-publish-{{ARCH}}.tar.gz" | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"
-      - mkdir -p target/sdk/logs target/sdk/cache
+      - test -d home/sdk || (rm -fr home/sdk && mkdir -p home && cp -r ../aem/home/opt/sdk/dispatcher home/sdk)
+      # - sh home/sdk/bin/validate.sh src > ../aem/home/var/log/dispatcher-validate.log
+      - docker tag "$(docker load --input "home/sdk/lib/dispatcher-publish-{{ARCH}}.tar.gz" | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"
+      - mkdir -p home/sdk/logs home/sdk/cache
       - docker compose up -d
 
   dispatcher:stop:
@@ -254,7 +254,7 @@ tasks:
     dir: dispatcher
     cmds:
       - docker compose rm -fsv
-      - rm -fr target/sdk
+      - rm -fr home
 
   dispatcher:hosts:
     desc: add AEM dispatcher domains to hosts file

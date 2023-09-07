@@ -71,6 +71,7 @@ tasks:
 
   destroy:
     desc: destroy AEM instances and dispatcher
+    prompt: This will permanently delete all configured AEM instances and their data. Continue?
     cmds:
       - task: stop
       - task: aem:destroy
@@ -143,7 +144,6 @@ tasks:
 
   aem:destroy:
     desc: destroy AEM instances
-    prompt: This will permanently delete all configured AEM instances and their data. Continue?
     deps: [ aem:stop ]
     cmd: sh aemw instance destroy
 
@@ -223,7 +223,7 @@ tasks:
     dir: dispatcher
     cmds:
       # dereference symbolic links causing problems on Windows
-      - rm -fr target/src && cp -rL src target/src
+      - rm -fr home/src && mkdir -p home && cp -rL src home/src
       # enforce typical architecture to avoid problems on M1/ARM Mac
       - docker build --platform linux/amd64 -t acme/aem-ams/dispatcher-publish .
 

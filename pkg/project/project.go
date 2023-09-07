@@ -142,7 +142,7 @@ func (p Project) prepareGitIgnore(kind Kind) error {
 			"",
 			"# " + common.AppName,
 			common.HomeDir + "/",
-			"dispatcher/home/",
+			common.DispatcherHomeDir + "/",
 			".task/",
 			"." + osx.EnvFileExt,
 			"." + osx.EnvFileExt + ".*",
@@ -225,12 +225,16 @@ func (p Project) KindInfer() (Kind, error) {
 	return KindUnknown, nil
 }
 
-func (p Project) GettingStarted() (string, error) {
+func (p Project) GettingStarted(kind Kind) (string, error) {
+	dirsIgnored := []string{common.HomeDir}
+	if kind == KindAppCloud || kind == KindAppClassic {
+		dirsIgnored = []string{common.HomeDir, common.DispatcherHomeDir}
+	}
 	text := fmt.Sprintf(strings.Join([]string{
 		"As a next step provide AEM files (JAR or SDK ZIP, license, service packs) to directory '" + common.LibDir + "'.",
 		"Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '" + cfg.FileDefault + "'.",
 		"",
-		"Make sure to exclude the directory '" + common.HomeDir + "' from VCS versioning and IDE indexing.",
+		fmt.Sprintf("Make sure to exclude the directories from VCS versioning and IDE indexing: %s", strings.Join(dirsIgnored, ", ")),
 		"",
 		"Finally, use tasks to manage AEM instances and more:",
 		"",

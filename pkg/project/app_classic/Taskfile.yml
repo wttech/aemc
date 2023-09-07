@@ -71,6 +71,7 @@ tasks:
 
   destroy:
     desc: destroy AEM instances and dispatcher
+    prompt: This will permanently delete all configured AEM instances and their data. Continue?
     cmds:
       - task: stop
       - task: aem:destroy
@@ -143,7 +144,6 @@ tasks:
 
   aem:destroy:
     desc: destroy AEM instances
-    prompt: This will permanently delete all configured AEM instances and their data. Continue?
     deps: [ aem:stop ]
     cmd: sh aemw instance destroy
 

@@ -43,10 +43,43 @@ func (c *CLI) contentCleanCmd() *cobra.Command {
 	return cmd
 }
 
+func (c *CLI) contentDownloadCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "download",
+		Aliases: []string{"dl"},
+		Short:   "Download content from running instance to local file",
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			file, _ := cmd.Flags().GetString("file")
+			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
+			filterFile, _ := cmd.Flags().GetString("filter-file")
+			if err = instance.ContentManager().Download(file, pkg.PackageCreateOpts{
+				FilterRoots: filterRoots,
+				FilterFile:  filterFile,
+			}); err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("file", file)
+			c.Ok("content downloaded")
+		},
+	}
+	cmd.Flags().StringP("target-file", "t", "", "Local content package path")
+	_ = cmd.MarkFlagRequired("target-file")
+	cmd.Flags().StringSliceP("filter-roots", "r", nil, "Vault filter root paths")
+	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
+	cmd.MarkFlagsMutuallyExclusive("filter-file", "filter-roots")
+	return cmd
+}
+
 func (c *CLI) contentSyncCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "sync",
-		Aliases: []string{"dl"},
+		Aliases: []string{"pull"},
 		Short:   "Download content from running instance and unpack it under JCR root directory",
 		Run: func(cmd *cobra.Command, args []string) {
 			instance, err := c.aem.InstanceManager().One()
@@ -69,7 +102,8 @@ func (c *CLI) contentSyncCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			c.Ok("content downloaded")
+			c.SetOutput("dir", dir)
+			c.Ok("content synchronized")
 		},
 	}
 	cmd.Flags().StringP("dir", "d", "", "JCR root path")
@@ -114,8 +148,8 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 			c.Ok("content copied")
 		},
 	}
-	cmd.Flags().String("instance-target-url", "", "Destination instance URL")
-	cmd.Flags().String("instance-target-id", "", "Destination instance ID")
+	cmd.Flags().StringP("instance-target-url", "u", "", "Destination instance URL")
+	cmd.Flags().StringP("instance-target-id", "i", "", "Destination instance ID")
 	cmd.MarkFlagsMutuallyExclusive("instance-target-url", "instance-target-id")
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")

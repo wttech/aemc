@@ -27,6 +27,12 @@ tasks:
       - task: aem:status
       - task: dispatcher:status
 
+  check:
+    desc: check health of AEM instances and dispatcher
+    cmds:
+      - task: aem:check
+      - task: dispatcher:check
+
   setup:
     desc: setup AEM instances and dispatcher
     cmds:

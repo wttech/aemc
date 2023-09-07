@@ -27,6 +27,12 @@ tasks:
       - task: aem:status
       - task: dispatcher:status
 
+  check:
+    desc: check health of AEM instances and dispatcher
+    cmds:
+      - task: aem:check
+      - task: dispatcher:check
+
   setup:
     desc: setup AEM instances and dispatcher
     cmds:
@@ -298,5 +304,3 @@ tasks:
       - curl "http://{{.AEM_DISPATCHER_DOMAIN}}" -s -o /dev/null || true # warmup
       - sleep 3
       - curl "http://{{.AEM_DISPATCHER_DOMAIN}}" -s -o /dev/null -w "%{http_code}" | grep -q 200
-https://github:
-  com/go-task/task/issues/225:

@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"bufio"
-	"embed"
 	"encoding/json"
 	"fmt"
 	"github.com/go-resty/resty/v2"
@@ -16,7 +15,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/common/tplx"
-	"github.com/wttech/aemc/pkg/content"
 	"github.com/wttech/aemc/pkg/pkg"
 	"io/fs"
 	"os"
@@ -137,18 +135,15 @@ func (pm *PackageManager) IsSnapshot(localPath string) bool {
 	return stringsx.MatchSome(pathx.Normalize(localPath), pm.SnapshotPatterns)
 }
 
-//go:embed package/default
-var packageDefaultFS embed.FS
-
 func copyPackageDefaultFiles(targetTmpDir string, dirPrefix string, data map[string]any) error {
 	if err := pathx.DeleteIfExists(targetTmpDir); err != nil {
 		return fmt.Errorf("cannot delete temporary dir '%s': %w", targetTmpDir, err)
 	}
-	return fs.WalkDir(packageDefaultFS, ".", func(path string, entry fs.DirEntry, err error) error {
+	return fs.WalkDir(pkg.VaultFS, ".", func(path string, entry fs.DirEntry, err error) error {
 		if entry.IsDir() {
 			return nil
 		}
-		bytes, err := packageDefaultFS.ReadFile(path)
+		bytes, err := pkg.VaultFS.ReadFile(path)
 		if err != nil {
 			return err
 		}
@@ -156,14 +151,20 @@ func copyPackageDefaultFiles(targetTmpDir string, dirPrefix string, data map[str
 	})
 }
 
-func (pm *PackageManager) Create(pid string, rootPaths []string, filterFile string) (string, error) {
-	log.Infof("%s > creating package '%s'", pm.instance.ID(), pid)
-	pidConfig, err := pkg.ParsePID(pid)
+type PackageCreateOpts struct {
+	PID         string
+	FilterRoots []string
+	FilterFile  string
+}
+
+func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
+	log.Infof("%s > creating package '%s'", pm.instance.ID(), opts.PID)
+	pidConfig, err := pkg.ParsePID(opts.PID)
 	if err != nil {
 		return "", err
 	}
 	var response *resty.Response
-	if len(rootPaths) == 0 && filterFile == "" {
+	if len(opts.FilterRoots) == 0 && opts.FilterFile == "" {
 		response, err = pm.instance.http.Request().
 			SetFormData(map[string]string{
 				"packageName":    pidConfig.Name,
@@ -179,17 +180,17 @@ func (pm *PackageManager) Create(pid string, rootPaths []string, filterFile stri
 			_ = pathx.DeleteIfExists(tmpFile)
 		}()
 		data := map[string]any{
-			"Pid":     pid,
-			"Group":   pidConfig.Group,
-			"Name":    pidConfig.Name,
-			"Version": pidConfig.Version,
-			"Roots":   rootPaths,
+			"Pid":         opts.PID,
+			"Group":       pidConfig.Group,
+			"Name":        pidConfig.Name,
+			"Version":     pidConfig.Version,
+			"FilterRoots": opts.FilterRoots,
 		}
 		if err = copyPackageDefaultFiles(tmpDir, "package/default", data); err != nil {
 			return "", err
 		}
-		if filterFile != "" {
-			if err = filex.Copy(filterFile, filepath.Join(tmpDir, "META-INF", "vault", "filter.xml"), true); err != nil {
+		if opts.FilterFile != "" {
+			if err = filex.Copy(opts.FilterFile, filepath.Join(tmpDir, "META-INF", "vault", "filter.xml"), true); err != nil {
 				return "", err
 			}
 		}
@@ -202,32 +203,44 @@ func (pm *PackageManager) Create(pid string, rootPaths []string, filterFile stri
 			Post(ServiceJsonPath + "/?cmd=upload")
 	}
 	if err != nil {
-		return "", fmt.Errorf("%s > cannot create package '%s': %w", pm.instance.ID(), pid, err)
+		return "", fmt.Errorf("%s > cannot create package '%s': %w", pm.instance.ID(), opts.PID, err)
 	} else if response.IsError() {
-		return "", fmt.Errorf("%s > cannot create package '%s': %s", pm.instance.ID(), pid, response.Status())
+		return "", fmt.Errorf("%s > cannot create package '%s': %s", pm.instance.ID(), opts.PID, response.Status())
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return "", fmt.Errorf("%s > cannot create package '%s'; cannot parse response: %w", pm.instance.ID(), pid, err)
+		return "", fmt.Errorf("%s > cannot create package '%s'; cannot parse response: %w", pm.instance.ID(), opts.PID, err)
 	}
 	if !status.Success {
-		return "", fmt.Errorf("%s > cannot create package '%s'; unexpected status: %s", pm.instance.ID(), pid, status.Message)
+		return "", fmt.Errorf("%s > cannot create package '%s'; unexpected status: %s", pm.instance.ID(), opts.PID, status.Message)
 	}
-	log.Infof("%s > created package '%s'", pm.instance.ID(), pid)
+	log.Infof("%s > created package '%s'", pm.instance.ID(), opts.PID)
 	return status.Path, nil
 }
 
-type Filter struct {
-	Root  string `json:"root"`
-	Rules []Rule `json:"rules"`
+func (pm *PackageManager) tmpDir() string {
+	return pm.instance.manager.aem.baseOpts.TmpDir
 }
 
-type Rule struct {
+type PackageFilter struct {
+	Root  string              `json:"root"`
+	Rules []PackageFilterRule `json:"rules"`
+}
+
+func NewPackageFilters(rootPaths []string) []PackageFilter {
+	var filters []PackageFilter
+	for _, root := range rootPaths {
+		filters = append(filters, PackageFilter{Root: root, Rules: []PackageFilterRule{}})
+	}
+	return filters
+}
+
+type PackageFilterRule struct {
 	Modifier string `json:"modifier"`
 	Pattern  string `json:"pattern"`
 }
 
-func (pm *PackageManager) UpdateFilters(remotePath string, pid string, filters []Filter) error {
+func (pm *PackageManager) UpdateFilters(remotePath string, pid string, filters []PackageFilter) error {
 	log.Infof("%s > updating package '%s'", pm.instance.ID(), pid)
 	pidConfig, err := pkg.ParsePID(pid)
 	if err != nil {
@@ -561,108 +574,6 @@ func (pm *PackageManager) Delete(remotePath string) error {
 		return fmt.Errorf("%s > cannot delete package '%s'; unexpected status: %s", pm.instance.ID(), remotePath, status.Message)
 	}
 	log.Infof("%s > deleted package '%s'", pm.instance.ID(), remotePath)
-	return nil
-}
-
-func (pm *PackageManager) tmpDir() string {
-	return pm.instance.manager.aem.baseOpts.TmpDir
-}
-
-func (pm *PackageManager) DownloadPackage(pid string, rootPaths []string, filterFile string) (string, error) {
-	if pid == "" {
-		pid = "my_packages:aemc_content:" + time.Now().Format("2006.102.304") + "-SNAPSHOT"
-	}
-	remotePath, err := pm.Create(pid, rootPaths, filterFile)
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		_ = pm.Delete(remotePath)
-	}()
-	if err := pm.Build(remotePath); err != nil {
-		return "", err
-	}
-	tmpResultFile := filepath.Join(pm.tmpDir(), filepath.Base(remotePath))
-	if err := pm.Download(remotePath, tmpResultFile); err != nil {
-		return "", err
-	}
-	return tmpResultFile, nil
-}
-
-func (pm *PackageManager) DownloadContent(pid string, root string, roots []string, filter string, clean bool, unpack bool) error {
-	tmpResultFile, err := pm.DownloadPackage(pid, roots, filter)
-	if err != nil {
-		return err
-	}
-	tmpResultDir := pathx.RandomDir(pm.tmpDir(), "pkg_download_content")
-	defer func() {
-		_ = pathx.DeleteIfExists(tmpResultDir)
-		_ = pathx.DeleteIfExists(tmpResultFile)
-	}()
-	if unpack {
-		if err = filex.Unarchive(tmpResultFile, tmpResultDir); err != nil {
-			return err
-		}
-		if err := pathx.Ensure(root); err != nil {
-			return err
-		}
-		before, _, _ := strings.Cut(root, content.JCRRoot)
-		contentManager := pm.instance.manager.aem.contentManager
-		if clean {
-			if err = contentManager.BeforeClean(root); err != nil {
-				return err
-			}
-		}
-		if err = filex.CopyDir(filepath.Join(tmpResultDir, content.JCRRoot), before+content.JCRRoot); err != nil {
-			return err
-		}
-		if clean {
-			if err = contentManager.Clean(root); err != nil {
-				return err
-			}
-		}
-	} else {
-		if err = filex.Copy(tmpResultFile, filepath.Join(root, filepath.Base(tmpResultFile)), true); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (pm *PackageManager) CopyContent(destInstance *Instance, pid string, roots []string, filter string, clean bool) error {
-
-	var tmpResultFile string
-	if clean {
-		tmpResultFile = pathx.RandomFileName(pm.tmpDir(), "pkg_copy_content", ".zip")
-		tmpResultDir := pathx.RandomDir(pm.tmpDir(), "pkg_copy_content")
-		defer func() {
-			_ = pathx.DeleteIfExists(tmpResultDir)
-			_ = pathx.DeleteIfExists(tmpResultFile)
-		}()
-		if err := pm.DownloadContent(filepath.Join(tmpResultDir, content.JCRRoot), "", roots, filter, true, true); err != nil {
-			return err
-		}
-		if err := filex.Archive(tmpResultDir, tmpResultFile); err != nil {
-			return err
-		}
-	} else {
-		var err error
-		tmpResultFile, err = pm.DownloadPackage(pid, roots, filter)
-		if err != nil {
-			return err
-		}
-	}
-	defer func() { _ = pathx.DeleteIfExists(tmpResultFile) }()
-	remotePath, err := destInstance.PackageManager().Upload(tmpResultFile)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = destInstance.PackageManager().Delete(remotePath)
-	}()
-	if err = destInstance.PackageManager().Install(remotePath); err != nil {
-		return err
-	}
 	return nil
 }
 

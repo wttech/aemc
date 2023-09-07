@@ -59,7 +59,7 @@ func (p Package) Build() error {
 	return p.manager.Build(state.Data.Path)
 }
 
-func (p *Package) Install() error {
+func (p Package) Install() error {
 	state, err := p.State()
 	if err != nil {
 		return err
@@ -70,7 +70,7 @@ func (p *Package) Install() error {
 	return p.manager.Install(state.Data.Path)
 }
 
-func (p *Package) InstallWithChanged() (bool, error) {
+func (p Package) InstallWithChanged() (bool, error) {
 	state, err := p.State()
 	if err != nil {
 		return false, err
@@ -84,7 +84,7 @@ func (p *Package) InstallWithChanged() (bool, error) {
 	return false, nil
 }
 
-func (p *Package) Uninstall() error {
+func (p Package) Uninstall() error {
 	state, err := p.State()
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func (p *Package) Uninstall() error {
 	return p.manager.Uninstall(state.Data.Path)
 }
 
-func (p *Package) UninstallWithChanged() (bool, error) {
+func (p Package) UninstallWithChanged() (bool, error) {
 	state, err := p.State()
 	if err != nil {
 		return false, err
@@ -162,7 +162,7 @@ func (p Package) String() string {
 	return fmt.Sprintf("package '%s'", p.PID.String())
 }
 
-func (p Package) Create(rootPaths []string, filterFile string) (string, error) {
+func (p Package) Create(opts PackageCreateOpts) (string, error) {
 	state, err := p.State()
 	if err != nil {
 		return "", err
@@ -170,10 +170,11 @@ func (p Package) Create(rootPaths []string, filterFile string) (string, error) {
 	if state.Exists {
 		return "", fmt.Errorf("%s > package '%s' cannot be created as it already exists", p.manager.instance.ID(), p.PID.String())
 	}
-	return p.manager.Create(state.PID, rootPaths, filterFile)
+	opts.PID = state.PID
+	return p.manager.Create(opts)
 }
 
-func (p Package) UpdateFilters(filters []Filter) error {
+func (p Package) UpdateFilters(filters []PackageFilter) error {
 	state, err := p.State()
 	if err != nil {
 		return err

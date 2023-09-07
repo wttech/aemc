@@ -33,6 +33,7 @@ type Instance struct {
 	auth            *Auth
 	packageManager  *PackageManager
 	workflowManager *WorkflowManager
+	contentManager  *ContentManager
 }
 
 type InstanceState struct {
@@ -101,6 +102,10 @@ func (i Instance) PackageManager() *PackageManager {
 
 func (i Instance) WorkflowManager() *WorkflowManager {
 	return i.workflowManager
+}
+
+func (i Instance) ContentManager() *ContentManager {
+	return i.contentManager
 }
 
 func (i Instance) Crypto() *Crypto {

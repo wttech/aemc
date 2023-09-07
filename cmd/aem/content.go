@@ -15,7 +15,7 @@ func (c *CLI) contentCmd() *cobra.Command {
 		Short:   "Manages JCR content",
 	}
 	cmd.AddCommand(c.contentCleanCmd())
-	cmd.AddCommand(c.contentDownloadCmd())
+	cmd.AddCommand(c.contentSyncCmd())
 	cmd.AddCommand(c.contentCopyCmd())
 	return cmd
 }
@@ -24,65 +24,60 @@ func (c *CLI) contentCleanCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "clean",
 		Aliases: []string{"cln"},
-		Short:   "Clean downloaded content",
+		Short:   "Clean content",
 		Run: func(cmd *cobra.Command, args []string) {
-			contentRootPath, err := determineContentRootPath(cmd)
+			dir, err := determineContentDir(cmd)
 			if err != nil {
-				c.Error(fmt.Errorf("content clean failed: %w", err))
+				c.Error(err)
 				return
 			}
-			if err = c.aem.ContentManager().Clean(contentRootPath); err != nil {
-				c.Error(fmt.Errorf("content clean failed: %w", err))
+			if err = c.aem.ContentManager().Clean(dir); err != nil {
+				c.Error(err)
 				return
 			}
 			c.Ok("content cleaned")
 		},
 	}
-	cmd.Flags().StringP("content-root-path", "R", "", "Content root path on file system")
-	_ = cmd.MarkFlagRequired("content-root-path")
+	cmd.Flags().StringP("dir", "d", "", "JCR root path")
+	_ = cmd.MarkFlagRequired("dir")
 	return cmd
 }
 
-func (c *CLI) contentDownloadCmd() *cobra.Command {
+func (c *CLI) contentSyncCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "download",
+		Use:     "sync",
 		Aliases: []string{"dl"},
-		Short:   "Download content from running instance",
+		Short:   "Download content from running instance and unpack it under JCR root directory",
 		Run: func(cmd *cobra.Command, args []string) {
 			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
 				c.Error(err)
 				return
 			}
-			pid, _ := cmd.Flags().GetString("pid")
-			contentRootPath, err := determineContentRootPath(cmd)
+			dir, err := determineContentDir(cmd)
 			if err != nil {
 				c.Error(err)
 				return
 			}
-			rootPaths, _ := cmd.Flags().GetStringSlice("root-path")
-			filterFile, err := determineFilterFile(cmd)
-			if err != nil {
-				c.Error(err)
-				return
-			}
-			onlyDownload, _ := cmd.Flags().GetBool("only-download")
-			onlyPackage, _ := cmd.Flags().GetBool("only-package")
-			if err = instance.PackageManager().DownloadContent(pid, contentRootPath, rootPaths, filterFile, !onlyDownload, !onlyPackage); err != nil {
+			clean, _ := cmd.Flags().GetBool("clean")
+			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
+			filterFile, _ := cmd.Flags().GetString("filter-file")
+			if err = instance.ContentManager().Sync(dir, clean, pkg.PackageCreateOpts{
+				FilterRoots: filterRoots,
+				FilterFile:  filterFile,
+			}); err != nil {
 				c.Error(err)
 				return
 			}
 			c.Ok("content downloaded")
 		},
 	}
-	cmd.Flags().String("pid", "", "ID (group:name:version)'")
-	cmd.Flags().StringP("content-root-path", "R", "", "Content root path on file system")
-	_ = cmd.MarkFlagRequired("content-root-path")
-	cmd.Flags().StringSliceP("root-path", "r", []string{}, "Filter root path(s) on AEM repository")
-	cmd.Flags().StringP("filter-file", "f", "", "Local filter file on file system")
-	cmd.MarkFlagsMutuallyExclusive("root-path", "filter-file")
-	cmd.Flags().Bool("only-download", false, "Only download content")
-	cmd.Flags().Bool("only-package", false, "Only download package")
+	cmd.Flags().StringP("dir", "d", "", "JCR root path")
+	_ = cmd.MarkFlagRequired("dir")
+	cmd.Flags().StringSliceP("filter-roots", "r", nil, "Vault filter root paths")
+	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
+	cmd.MarkFlagsMutuallyExclusive("filter-file", "filter-roots")
+	cmd.Flags().Bool("clean", true, "Normalize content after downloading")
 	return cmd
 }
 
@@ -90,74 +85,65 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "copy",
 		Aliases: []string{"cp"},
-		Short:   "Copy content from one instance to another",
+		Short:   "Copy content to another instance",
 		Run: func(cmd *cobra.Command, args []string) {
-			scrInstance, err := determineInstance(cmd, c.aem.InstanceManager(), "src-instance-url", "src-instance-id", "unable to determine source instance")
+			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
 				c.Error(err)
 				return
 			}
-			destInstance, err := determineInstance(cmd, c.aem.InstanceManager(), "dest-instance-url", "dest-instance-id", "unable to determine destination instance")
+			targetInstance, err := determineContentTargetInstance(cmd, c.aem.InstanceManager())
 			if err != nil {
 				c.Error(err)
 				return
 			}
-			rootPaths, _ := cmd.Flags().GetStringSlice("root-path")
-			filterFile, err := determineFilterFile(cmd)
+			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
+			filterFile, _ := cmd.Flags().GetString("filter-file")
 			if err != nil {
 				c.Error(err)
 				return
 			}
-			onlyCopy, _ := cmd.Flags().GetBool("only-copy")
-			if err = scrInstance.PackageManager().CopyContent(destInstance, "", rootPaths, filterFile, !onlyCopy); err != nil {
+			clean, _ := cmd.Flags().GetBool("clean")
+			if err = instance.ContentManager().Copy(targetInstance, clean, pkg.PackageCreateOpts{
+				FilterRoots: filterRoots,
+				FilterFile:  filterFile,
+			}); err != nil {
 				c.Error(err)
 				return
 			}
 			c.Ok("content copied")
 		},
 	}
-	cmd.Flags().String("src-instance-url", "", "Source instance URL")
-	cmd.Flags().String("src-instance-id", "", "Source instance ID")
-	cmd.MarkFlagsMutuallyExclusive("src-instance-url", "src-instance-id")
-	cmd.Flags().String("dest-instance-url", "", "Destination instance URL")
-	cmd.Flags().String("dest-instance-id", "", "Destination instance ID")
-	cmd.MarkFlagsMutuallyExclusive("dest-instance-url", "dest-instance-id")
-	cmd.Flags().StringSliceP("root-path", "r", []string{}, "Filter root path(s) on AEM repository")
-	cmd.Flags().StringP("filter-file", "f", "", "Local filter file on file system")
-	cmd.MarkFlagsMutuallyExclusive("root-path", "filter-file")
-	cmd.Flags().Bool("only-copy", false, "Only copy content")
+	cmd.Flags().String("instance-target-url", "", "Destination instance URL")
+	cmd.Flags().String("instance-target-id", "", "Destination instance ID")
+	cmd.MarkFlagsMutuallyExclusive("instance-target-url", "instance-target-id")
+	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
+	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
+	cmd.MarkFlagsMutuallyExclusive("filter-file", "filter-roots")
+	cmd.Flags().Bool("clean", false, "Normalize content while copying")
 	return cmd
 }
 
-func determineInstance(cmd *cobra.Command, instanceManager *pkg.InstanceManager, urlParamName string, idParamName string, errorMsg string) (*pkg.Instance, error) {
+func determineContentTargetInstance(cmd *cobra.Command, instanceManager *pkg.InstanceManager) (*pkg.Instance, error) {
 	var instance *pkg.Instance
-	url, _ := cmd.Flags().GetString(urlParamName)
+	url, _ := cmd.Flags().GetString("instance-target-url")
 	if url != "" {
 		instance, _ = instanceManager.NewByURL(url)
 	}
-	id, _ := cmd.Flags().GetString(idParamName)
+	id, _ := cmd.Flags().GetString("instance-target-id")
 	if id != "" {
 		instance = instanceManager.NewByID(id)
 	}
 	if instance == nil {
-		return nil, fmt.Errorf(errorMsg)
+		return nil, fmt.Errorf("missing 'instance-target-url' or 'instance-target-id'")
 	}
 	return instance, nil
 }
 
-func determineContentRootPath(cmd *cobra.Command) (string, error) {
-	rootPath, _ := cmd.Flags().GetString("content-root-path")
-	onlyPackage, _ := cmd.Flags().GetBool("only-package")
-	if !onlyPackage && !strings.Contains(rootPath, content.JCRRoot) {
-		return "", fmt.Errorf("root path '%s' does not contain '%s'", rootPath, content.JCRRoot)
+func determineContentDir(cmd *cobra.Command) (string, error) {
+	rootPath, _ := cmd.Flags().GetString("dir")
+	if !strings.Contains(rootPath, content.JCRRoot) {
+		return "", fmt.Errorf("content dir '%s' does not contain '%s'", rootPath, content.JCRRoot)
 	}
 	return rootPath, nil
-}
-
-func determineFilterFile(cmd *cobra.Command) (string, error) {
-	filterPath, _ := cmd.Flags().GetString("filter-file")
-	if filterPath != "" && !strings.HasSuffix(filterPath, pkg.FilterXML) {
-		return "", fmt.Errorf("filter path '%s' does not end with '%s'", filterPath, pkg.FilterXML)
-	}
-	return filterPath, nil
 }

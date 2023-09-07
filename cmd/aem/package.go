@@ -444,15 +444,15 @@ func pkgDefineDownloadFlags(cmd *cobra.Command) {
 func pkgDefineUpdateFlags(cmd *cobra.Command) {
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
 	cmd.Flags().String("path", "", "Remote path on AEM repository")
-	cmd.Flags().StringSlice("filter-root", []string{}, "Filter root path(s) on AEM repository")
+	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
 	cmd.MarkFlagsMutuallyExclusive("pid", "path")
 }
 
 func pkgDefineCreateFlags(cmd *cobra.Command) {
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
-	cmd.Flags().StringSliceP("root-path", "r", []string{}, "Filter root path(s) on AEM repository")
-	cmd.Flags().StringP("filter-file", "f", "", "Local filter file on file system")
-	cmd.MarkFlagsMutuallyExclusive("root-path", "filter-file")
+	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
+	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
+	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
 }
 
 func pkgDefineBuildFlags(cmd *cobra.Command) {
@@ -541,15 +541,18 @@ func (c *CLI) pkgCreateCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			rootPaths, _ := cmd.Flags().GetStringSlice("root-path")
+			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
 			filterFile, _ := cmd.Flags().GetString("filter-file")
-			_, err = p.Create(rootPaths, filterFile)
+			_, err = p.Create(pkg.PackageCreateOpts{
+				FilterRoots: filterRoots,
+				FilterFile:  filterFile,
+			})
 			if err != nil {
 				c.Error(err)
 				return
 			}
 			c.SetOutput("package", p)
-			c.Ok("package create")
+			c.Ok("package created") // TODO idempotency?
 		},
 	}
 	pkgDefineCreateFlags(cmd)
@@ -571,18 +574,14 @@ func (c *CLI) pkgUpdateCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			roots, _ := cmd.Flags().GetStringSlice("filter-root")
-			var filters []pkg.Filter
-			for _, root := range roots {
-				filters = append(filters, pkg.Filter{Root: root, Rules: []pkg.Rule{}})
-			}
-			err = p.UpdateFilters(filters)
+			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
+			err = p.UpdateFilters(pkg.NewPackageFilters(filterRoots))
 			if err != nil {
 				c.Error(err)
 				return
 			}
 			c.SetOutput("package", p)
-			c.Changed("package filters update")
+			c.Changed("package filters updated") // TODO idempotency?
 		},
 	}
 	pkgDefineUpdateFlags(cmd)
@@ -611,7 +610,7 @@ func (c *CLI) pkgDownloadCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("package", p)
-			c.Ok("package download")
+			c.Ok("package downloaded") // TODO idempotency?
 		},
 	}
 	pkgDefineDownloadFlags(cmd)

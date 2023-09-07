@@ -238,7 +238,7 @@ tasks:
     deps: [ dispatcher:build ]
     dir: dispatcher
     cmds:
-      - mkdir -p target/docker/httpd/logs target/docker/httpd/cache/author target/docker/httpd/cache/publish
+      - mkdir -p home/docker/httpd/logs home/docker/httpd/cache/author home/docker/httpd/cache/publish
       - docker compose up -d
 
   dispatcher:stop:

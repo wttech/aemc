@@ -142,7 +142,7 @@ tasks:
 
   aem:build:
     desc: build AEM application using Maven
-    sources: # https://github.com/go-task/task/issues/225 (generated clientilbs under 'ui.apps' should be excluded)
+    sources: # https://github.com/go-task/task/issues/225 (generated clientlibs under 'ui.apps' should be excluded)
       - pom.xml
       - all/pom.xml
       - all/src/**/*

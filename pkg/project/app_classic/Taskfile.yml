@@ -148,14 +148,18 @@ tasks:
 
   aem:build:
     desc: build AEM application using Maven
-    sources:
+    sources: # https://github.com/go-task/task/issues/225 (generated clientlibs under 'ui.apps' should be excluded)
       - pom.xml
       - all/pom.xml
       - all/src/**/*
       - core/pom.xml
       - core/src/**/*
       - ui.apps/pom.xml
-      - ui.apps/src/**/*
+      - ui.apps/src/main/content/META-INF
+      - ui.apps/src/main/content/jcr_root/apps/mysite/clientlibs/clientlib-grid/**/*
+      - ui.apps/src/main/content/jcr_root/apps/mysite/clientlibs/clientlib-base/**/*
+      - ui.apps/src/main/content/jcr_root/apps/mysite/components
+      - ui.apps/src/main/content/jcr_root/apps/mysite/i18n
       - ui.apps.structure/pom.xml
       - ui.apps.structure/src/**/*
       - ui.config/pom.xml
@@ -294,3 +298,5 @@ tasks:
       - curl "http://{{.AEM_DISPATCHER_DOMAIN}}" -s -o /dev/null || true # warmup
       - sleep 3
       - curl "http://{{.AEM_DISPATCHER_DOMAIN}}" -s -o /dev/null -w "%{http_code}" | grep -q 200
+https://github:
+  com/go-task/task/issues/225:

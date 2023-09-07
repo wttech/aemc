@@ -155,11 +155,8 @@ tasks:
       - core/pom.xml
       - core/src/**/*
       - ui.apps/pom.xml
-      - ui.apps/src/main/content/META-INF
-      - ui.apps/src/main/content/jcr_root/apps/mysite/clientlibs/clientlib-grid/**/*
-      - ui.apps/src/main/content/jcr_root/apps/mysite/clientlibs/clientlib-base/**/*
-      - ui.apps/src/main/content/jcr_root/apps/mysite/components
-      - ui.apps/src/main/content/jcr_root/apps/mysite/i18n
+      - ui.apps/src/**/*
+      - '!ui.apps/src/main/content/jcr_root/apps/mysite/clientlibs/clientlib-{site,dependencies}/**/*'
       - ui.apps.structure/pom.xml
       - ui.apps.structure/src/**/*
       - ui.config/pom.xml
@@ -168,7 +165,8 @@ tasks:
       - ui.content/src/**/*
       - ui.frontend/pom.xml
       - ui.frontend/*.js
-      - ui.frontend/package.json
+      - ui.frontend/*.json
+      - '!ui.frontend/package-lock.json'
       - ui.frontend/src/**/*
     generates:
       - all/target/*.all-*.zip

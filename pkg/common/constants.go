@@ -31,4 +31,5 @@ const (
 	STDOut          = "STDOUT"
 	OutputValueAll  = "ALL"
 	OutputValueNone = "NONE"
+	OutputValueOnly = "ONLY"
 )

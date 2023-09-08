@@ -45,17 +45,17 @@ func NewAwaitChecker(opts *CheckOpts, expectedState string) AwaitChecker {
 
 	return AwaitChecker{
 		ExpectedState: expectedState,
-		Duration:      cv.GetDuration(fmt.Sprintf("instance.check.await_%s.timeout", expectedState)),
+		Timeout:       cv.GetDuration(fmt.Sprintf("instance.check.await_%s.timeout", expectedState)),
 	}
 }
 
 func (c AwaitChecker) Check(ctx CheckContext, _ Instance) CheckResult {
 	now := time.Now()
 
-	if now.After(ctx.Started.Add(c.Duration)) {
+	if now.After(ctx.Started.Add(c.Timeout)) {
 		return CheckResult{
 			abort:   true,
-			message: fmt.Sprintf("timeout after %s, expected state '%s' not reached", c.Duration, c.ExpectedState),
+			message: fmt.Sprintf("timeout after %s, expected state '%s' not reached", c.Timeout, c.ExpectedState),
 		}
 	}
 
@@ -69,8 +69,7 @@ func (c AwaitChecker) Spec() CheckSpec {
 }
 
 type AwaitChecker struct {
-	Started       time.Time
-	Duration      time.Duration
+	Timeout       time.Duration
 	ExpectedState string
 }
 

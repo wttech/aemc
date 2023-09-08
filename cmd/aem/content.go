@@ -16,6 +16,7 @@ func (c *CLI) contentCmd() *cobra.Command {
 	}
 	cmd.AddCommand(c.contentCleanCmd())
 	cmd.AddCommand(c.contentSyncCmd())
+	cmd.AddCommand(c.contentDownloadCmd())
 	cmd.AddCommand(c.contentCopyCmd())
 	return cmd
 }
@@ -54,20 +55,23 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			file, _ := cmd.Flags().GetString("file")
+			pid, _ := cmd.Flags().GetString("pid")
+			targetFile, _ := cmd.Flags().GetString("target-file")
 			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
 			filterFile, _ := cmd.Flags().GetString("filter-file")
-			if err = instance.ContentManager().Download(file, pkg.PackageCreateOpts{
+			if err = instance.ContentManager().Download(targetFile, pkg.PackageCreateOpts{
+				PID:         pid,
 				FilterRoots: filterRoots,
 				FilterFile:  filterFile,
 			}); err != nil {
 				c.Error(err)
 				return
 			}
-			c.SetOutput("file", file)
+			c.SetOutput("file", targetFile)
 			c.Ok("content downloaded")
 		},
 	}
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
 	cmd.Flags().StringP("target-file", "t", "", "Local content package path")
 	_ = cmd.MarkFlagRequired("target-file")
 	cmd.Flags().StringSliceP("filter-roots", "r", nil, "Vault filter root paths")

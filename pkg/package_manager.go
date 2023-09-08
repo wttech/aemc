@@ -135,7 +135,7 @@ func (pm *PackageManager) IsSnapshot(localPath string) bool {
 	return stringsx.MatchSome(pathx.Normalize(localPath), pm.SnapshotPatterns)
 }
 
-func copyPackageDefaultFiles(targetTmpDir string, dirPrefix string, data map[string]any) error {
+func copyPackageDefaultFiles(targetTmpDir string, data map[string]any) error {
 	if err := pathx.DeleteIfExists(targetTmpDir); err != nil {
 		return fmt.Errorf("cannot delete temporary dir '%s': %w", targetTmpDir, err)
 	}
@@ -147,7 +147,7 @@ func copyPackageDefaultFiles(targetTmpDir string, dirPrefix string, data map[str
 		if err != nil {
 			return err
 		}
-		return tplx.RenderFile(targetTmpDir+strings.ReplaceAll(strings.TrimPrefix(path, dirPrefix), "$", ""), string(bytes), data)
+		return tplx.RenderFile(targetTmpDir+strings.ReplaceAll(strings.TrimPrefix(path, "vault"), "$", ""), string(bytes), data)
 	})
 }
 
@@ -186,7 +186,7 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 			"Version":     pidConfig.Version,
 			"FilterRoots": opts.FilterRoots,
 		}
-		if err = copyPackageDefaultFiles(tmpDir, "package/default", data); err != nil {
+		if err = copyPackageDefaultFiles(tmpDir, data); err != nil {
 			return "", err
 		}
 		if opts.FilterFile != "" {

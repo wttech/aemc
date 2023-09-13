@@ -74,7 +74,7 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
 	cmd.Flags().StringP("target-file", "t", "", "Local content package path")
 	_ = cmd.MarkFlagRequired("target-file")
-	cmd.Flags().StringSliceP("filter-roots", "r", nil, "Vault filter root paths")
+	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-file", "filter-roots")
 	return cmd
@@ -112,7 +112,7 @@ func (c *CLI) contentSyncCmd() *cobra.Command {
 	}
 	cmd.Flags().StringP("dir", "d", "", "JCR root path")
 	_ = cmd.MarkFlagRequired("dir")
-	cmd.Flags().StringSliceP("filter-roots", "r", nil, "Vault filter root paths")
+	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-file", "filter-roots")
 	cmd.Flags().Bool("clean", true, "Normalizing content after downloading")
@@ -137,10 +137,6 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 			}
 			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
 			filterFile, _ := cmd.Flags().GetString("filter-file")
-			if err != nil {
-				c.Error(err)
-				return
-			}
 			clean, _ := cmd.Flags().GetBool("clean")
 			if err = instance.ContentManager().Copy(targetInstance, clean, pkg.PackageCreateOpts{
 				FilterRoots: filterRoots,

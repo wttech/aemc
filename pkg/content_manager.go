@@ -30,7 +30,7 @@ func (cm *ContentManager) Download(localFile string, opts PackageCreateOpts) err
 	if opts.PID == "" {
 		opts.PID = fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", time.Now().Format("2006.102.304"))
 	}
-	remotePath, err := cm.pkgMgr().CreateWithChanged(opts)
+	remotePath, err := cm.pkgMgr().Create(opts)
 	if err != nil {
 		return err
 	}

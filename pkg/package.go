@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/wttech/aemc/pkg/common/fmtx"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/pkg"
 )
 
@@ -57,6 +58,20 @@ func (p Package) Build() error {
 		return fmt.Errorf("%s > package '%s' cannot be built as it does not exist", p.manager.instance.ID(), p.PID.String())
 	}
 	return p.manager.Build(state.Data.Path)
+}
+
+func (p Package) BuildWithChanged() (bool, error) {
+	state, err := p.State()
+	if err != nil {
+		return false, err
+	}
+	if !state.Exists {
+		return false, fmt.Errorf("%s > package '%s' cannot be built as it does not exist", p.manager.instance.ID(), p.PID.String())
+	}
+	if !state.Data.Built() {
+		return true, p.manager.Build(state.Data.Path)
+	}
+	return false, nil
 }
 
 func (p Package) Install() error {
@@ -162,16 +177,30 @@ func (p Package) String() string {
 	return fmt.Sprintf("package '%s'", p.PID.String())
 }
 
-func (p Package) CreateWithChanged(opts PackageCreateOpts) (string, error) {
+func (p Package) Create(opts PackageCreateOpts) error {
 	state, err := p.State()
 	if err != nil {
-		return "", err
+		return err
 	}
-	if state.Exists {
-		return "", fmt.Errorf("%s > package '%s' cannot be created as it already exists", p.manager.instance.ID(), p.PID.String())
+	if state.Exists && len(opts.FilterRoots) == 0 && opts.FilterFile == "" {
+		return nil
 	}
 	opts.PID = state.PID
-	return p.manager.CreateWithChanged(opts)
+	_, err = p.manager.Create(opts)
+	return err
+}
+
+func (p Package) CreateWithChanged(opts PackageCreateOpts) (bool, error) {
+	state, err := p.State()
+	if err != nil {
+		return false, err
+	}
+	if !state.Exists {
+		opts.PID = state.PID
+		_, err = p.manager.Create(opts)
+		return true, err
+	}
+	return false, nil
 }
 
 func (p Package) UpdateFiltersWithChanged(filters []PackageFilter) error {
@@ -194,4 +223,18 @@ func (p Package) Download(localFile string) error {
 		return fmt.Errorf("%s > package '%s' cannot be downloaded as it does not exist", p.manager.instance.ID(), p.PID.String())
 	}
 	return p.manager.Download(state.Data.Path, localFile)
+}
+
+func (p Package) DownloadWithChanged(localFile string) (bool, error) {
+	state, err := p.State()
+	if err != nil {
+		return false, err
+	}
+	if !state.Exists {
+		return false, fmt.Errorf("%s > package '%s' cannot be downloaded as it does not exist", p.manager.instance.ID(), p.PID.String())
+	}
+	if !pathx.Exists(localFile) {
+		return true, p.manager.Download(state.Data.Path, localFile)
+	}
+	return false, nil
 }

@@ -157,7 +157,7 @@ type PackageCreateOpts struct {
 	FilterFile  string
 }
 
-func (pm *PackageManager) CreateWithChanged(opts PackageCreateOpts) (string, error) {
+func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	log.Infof("%s > creating package '%s'", pm.instance.ID(), opts.PID)
 	pidConfig, err := pkg.ParsePID(opts.PID)
 	if err != nil {

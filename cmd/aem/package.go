@@ -409,7 +409,14 @@ func (c *CLI) pkgBuildCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			err = p.Build()
+			force, _ := cmd.Flags().GetBool("force")
+			changed := false
+			if force {
+				err = p.Build()
+				changed = true
+			} else {
+				changed, err = p.BuildWithChanged()
+			}
 			if err != nil {
 				c.Error(err)
 				return
@@ -420,10 +427,14 @@ func (c *CLI) pkgBuildCmd() *cobra.Command {
 			}
 			c.SetOutput("package", p)
 			c.SetOutput("instance", instance)
-			c.Changed("package built")
+			if changed {
+				c.Changed("package built")
+			} else {
+				c.Ok("package already built (up-to-date)")
+			}
 		},
 	}
-	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	pkgDefineBuildFlags(cmd)
 	return cmd
 }
 
@@ -436,8 +447,10 @@ func pkgDefineFlags(cmd *cobra.Command) {
 
 func pkgDefineDownloadFlags(cmd *cobra.Command) {
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
-	cmd.Flags().String("file", "", "Local path on file system")
 	cmd.Flags().String("path", "", "Remote path on AEM repository")
+	cmd.Flags().String("file", "", "Local path on file system")
+	cmd.Flags().BoolP("force", "f", false, "Download even when already downloaded")
+	_ = cmd.MarkFlagRequired("file")
 	cmd.MarkFlagsMutuallyExclusive("pid", "path")
 }
 
@@ -451,12 +464,16 @@ func pkgDefineUpdateFlags(cmd *cobra.Command) {
 func pkgDefineCreateFlags(cmd *cobra.Command) {
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
-	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
+	cmd.Flags().StringP("filter-file", "F", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
+	cmd.Flags().BoolP("force", "f", false, "Create even when already created")
 }
 
 func pkgDefineBuildFlags(cmd *cobra.Command) {
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().String("path", "", "Remote path on AEM repository")
+	cmd.MarkFlagsMutuallyExclusive("pid", "path")
+	cmd.Flags().BoolP("force", "f", false, "Build even when already built")
 }
 
 func pkgByFlags(cmd *cobra.Command, instance pkg.Instance) (*pkg.Package, error) {
@@ -543,16 +560,35 @@ func (c *CLI) pkgCreateCmd() *cobra.Command {
 			}
 			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
 			filterFile, _ := cmd.Flags().GetString("filter-file")
-			_, err = p.CreateWithChanged(pkg.PackageCreateOpts{
-				FilterRoots: filterRoots,
-				FilterFile:  filterFile,
-			})
+			force, _ := cmd.Flags().GetBool("force")
+			changed := false
+			if force {
+				err = p.Create(pkg.PackageCreateOpts{
+					FilterRoots: filterRoots,
+					FilterFile:  filterFile,
+				})
+				changed = true
+			} else {
+				changed, err = p.CreateWithChanged(pkg.PackageCreateOpts{
+					FilterRoots: filterRoots,
+					FilterFile:  filterFile,
+				})
+			}
 			if err != nil {
 				c.Error(err)
 				return
 			}
+			if err := c.aem.InstanceManager().AwaitStartedOne(*instance); err != nil {
+				c.Error(err)
+				return
+			}
 			c.SetOutput("package", p)
-			c.Ok("package created") // TODO idempotency?
+			c.SetOutput("instance", instance)
+			if changed {
+				c.Changed("package created")
+			} else {
+				c.Ok("package already created (up-to-date)")
+			}
 		},
 	}
 	pkgDefineCreateFlags(cmd)
@@ -604,13 +640,26 @@ func (c *CLI) pkgDownloadCmd() *cobra.Command {
 				return
 			}
 			localFile, _ := cmd.Flags().GetString("file")
-			err = p.Download(localFile)
+			force, _ := cmd.Flags().GetBool("force")
+			changed := false
+			if force {
+				err = p.Download(localFile)
+				changed = true
+			} else {
+				changed, err = p.DownloadWithChanged(localFile)
+			}
 			if err != nil {
 				c.Error(err)
 				return
 			}
 			c.SetOutput("package", p)
-			c.Ok("package downloaded") // TODO idempotency?
+			c.SetOutput("instance", instance)
+			c.SetOutput("file", localFile)
+			if changed {
+				c.Changed("package downloaded")
+			} else {
+				c.Ok("package already downloaded (up-to-date)")
+			}
 		},
 	}
 	pkgDefineDownloadFlags(cmd)

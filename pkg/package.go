@@ -174,7 +174,7 @@ func (p Package) CreateWithChanged(opts PackageCreateOpts) (string, error) {
 	return p.manager.CreateWithChanged(opts)
 }
 
-func (p Package) UpdateFilters(filters []PackageFilter) error {
+func (p Package) UpdateFiltersWithChanged(filters []PackageFilter) error {
 	state, err := p.State()
 	if err != nil {
 		return err

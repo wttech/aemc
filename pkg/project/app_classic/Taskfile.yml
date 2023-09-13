@@ -27,6 +27,12 @@ tasks:
       - task: aem:status
       - task: dispatcher:status
 
+  check:
+    desc: check health of AEM instances and dispatcher
+    cmds:
+      - task: aem:check
+      - task: dispatcher:check
+
   setup:
     desc: setup AEM instances and dispatcher
     cmds:
@@ -65,6 +71,7 @@ tasks:
 
   destroy:
     desc: destroy AEM instances and dispatcher
+    prompt: This will permanently delete all configured AEM instances and their data. Continue?
     cmds:
       - task: stop
       - task: aem:destroy
@@ -137,7 +144,6 @@ tasks:
 
   aem:destroy:
     desc: destroy AEM instances
-    prompt: This will permanently delete all configured AEM instances and their data. Continue?
     deps: [ aem:stop ]
     cmd: sh aemw instance destroy
 
@@ -217,7 +223,7 @@ tasks:
     dir: dispatcher
     cmds:
       # dereference symbolic links causing problems on Windows
-      - rm -fr target/src && cp -rL src target/src
+      - rm -fr home/src && mkdir -p home && cp -rL src home/src
       # enforce typical architecture to avoid problems on M1/ARM Mac
       - docker build --platform linux/amd64 -t acme/aem-ams/dispatcher-publish .
 
@@ -232,7 +238,7 @@ tasks:
     deps: [ dispatcher:build ]
     dir: dispatcher
     cmds:
-      - mkdir -p target/docker/httpd/logs target/docker/httpd/cache/author target/docker/httpd/cache/publish
+      - mkdir -p home/docker/httpd/logs home/docker/httpd/cache/author home/docker/httpd/cache/publish
       - docker compose up -d
 
   dispatcher:stop:
@@ -298,5 +304,3 @@ tasks:
       - curl "http://{{.AEM_DISPATCHER_DOMAIN}}" -s -o /dev/null || true # warmup
       - sleep 3
       - curl "http://{{.AEM_DISPATCHER_DOMAIN}}" -s -o /dev/null -w "%{http_code}" | grep -q 200
-https://github:
-  com/go-task/task/issues/225:

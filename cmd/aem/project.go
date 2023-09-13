@@ -34,7 +34,7 @@ func (c *CLI) initCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			gettingStarted, err := c.aem.Project().GettingStarted()
+			gettingStarted, err := c.aem.Project().GettingStarted(kind)
 			if err != nil {
 				c.Error(err)
 				return

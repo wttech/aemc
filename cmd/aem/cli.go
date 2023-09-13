@@ -210,8 +210,10 @@ func (c *CLI) printOutputText() {
 		c.printDataAll()
 	} else if c.outputValue == common.OutputValueNone {
 		c.printCommandResult()
+	} else if c.outputValue == common.OutputValueOnly {
+		c.printDataAll()
 	} else {
-		c.printDataValue()
+		c.printDataValue(c.outputValue)
 	}
 }
 
@@ -240,8 +242,8 @@ func (c *CLI) printCommandResult() {
 }
 
 // TODO allow to print 'changed', 'failed', 'elapsed', 'ended' as well
-func (c *CLI) printDataValue() {
-	value, ok := c.outputResponse.Data[c.outputValue]
+func (c *CLI) printDataValue(key string) {
+	value, ok := c.outputResponse.Data[key]
 	if !ok {
 		fmt.Println("<undefined>")
 	} else {

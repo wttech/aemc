@@ -36,7 +36,7 @@ func (c *CLI) contentCleanCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			c.Ok("content cleaned")
+			c.Changed("content cleaned")
 		},
 	}
 	cmd.Flags().StringP("dir", "d", "", "JCR root path")
@@ -68,7 +68,7 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("file", targetFile)
-			c.Ok("content downloaded")
+			c.Changed("content downloaded")
 		},
 	}
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
@@ -107,7 +107,7 @@ func (c *CLI) contentSyncCmd() *cobra.Command {
 				return
 			}
 			c.SetOutput("dir", dir)
-			c.Ok("content synchronized")
+			c.Changed("content synchronized")
 		},
 	}
 	cmd.Flags().StringP("dir", "d", "", "JCR root path")
@@ -115,7 +115,7 @@ func (c *CLI) contentSyncCmd() *cobra.Command {
 	cmd.Flags().StringSliceP("filter-roots", "r", nil, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-file", "filter-roots")
-	cmd.Flags().BoolP("clean", "c", false, "Normalize content after downloading")
+	cmd.Flags().Bool("clean", true, "Normalizing content after downloading")
 	return cmd
 }
 
@@ -149,7 +149,7 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			c.Ok("content copied")
+			c.Changed("content copied")
 		},
 	}
 	cmd.Flags().StringP("instance-target-url", "u", "", "Destination instance URL")
@@ -158,7 +158,7 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-file", "filter-roots")
-	cmd.Flags().BoolP("clean", "c", false, "Normalize content while copying")
+	cmd.Flags().Bool("clean", false, "Normalize content while copying")
 	return cmd
 }
 

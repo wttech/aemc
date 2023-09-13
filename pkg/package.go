@@ -162,7 +162,7 @@ func (p Package) String() string {
 	return fmt.Sprintf("package '%s'", p.PID.String())
 }
 
-func (p Package) Create(opts PackageCreateOpts) (string, error) {
+func (p Package) CreateWithChanged(opts PackageCreateOpts) (string, error) {
 	state, err := p.State()
 	if err != nil {
 		return "", err
@@ -171,7 +171,7 @@ func (p Package) Create(opts PackageCreateOpts) (string, error) {
 		return "", fmt.Errorf("%s > package '%s' cannot be created as it already exists", p.manager.instance.ID(), p.PID.String())
 	}
 	opts.PID = state.PID
-	return p.manager.Create(opts)
+	return p.manager.CreateWithChanged(opts)
 }
 
 func (p Package) UpdateFilters(filters []PackageFilter) error {

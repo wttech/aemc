@@ -543,7 +543,7 @@ func (c *CLI) pkgCreateCmd() *cobra.Command {
 			}
 			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
 			filterFile, _ := cmd.Flags().GetString("filter-file")
-			_, err = p.Create(pkg.PackageCreateOpts{
+			_, err = p.CreateWithChanged(pkg.PackageCreateOpts{
 				FilterRoots: filterRoots,
 				FilterFile:  filterFile,
 			})

@@ -6,6 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
 	"github.com/wttech/aemc/pkg/base"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"io"
 	"io/fs"
@@ -225,8 +226,7 @@ func (c Manager) flattenFile(path string) error {
 	}
 
 	dest := filepath.Dir(path) + ".xml"
-	_, err := os.Stat(dest)
-	if os.IsExist(err) {
+	if pathx.Exists(dest) {
 		log.Infof("flattening file (override): %s", path)
 	} else {
 		log.Infof("flattening file: %s", path)

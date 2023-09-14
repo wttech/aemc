@@ -107,7 +107,7 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.workflow.toggle_retry_delay", time.Second*10)
 	v.SetDefault("instance.workflow.toggle_retry_timeout", time.Minute*5)
 
-	v.SetDefault("content.files_deleted", []any{
+	v.SetDefault("content.clean.files_deleted", []any{
 		map[string]any{
 			"patterns": []string{
 				"**/.vlt",
@@ -116,13 +116,13 @@ func (c *Config) setDefaults() {
 			},
 		},
 	})
-	v.SetDefault("content.files_flattened", []string{
+	v.SetDefault("content.clean.files_flattened", []string{
 		"**/_cq_design_dialog/.content.xml",
 		"**/_cq_dialog/.content.xml",
 		"**/_cq_htmlTag/.content.xml",
 		"**/_cq_template/.content.xml",
 	})
-	v.SetDefault("content.properties_skipped", []any{
+	v.SetDefault("content.clean.properties_skipped", []any{
 		map[string]any{
 			"patterns":       []string{"jcr:uuid"},
 			"excluded_paths": []string{"**/home/users/*", "**/home/groups/*"},
@@ -155,7 +155,7 @@ func (c *Config) setDefaults() {
 		},
 	})
 
-	v.SetDefault("content.mixin_types_skipped", []any{
+	v.SetDefault("content.clean.mixin_types_skipped", []any{
 		map[string]any{
 			"patterns": []string{
 				"cq:ReplicationStatus",
@@ -163,6 +163,6 @@ func (c *Config) setDefaults() {
 			},
 		},
 	})
-	v.SetDefault("content.namespaces_skipped", true)
-	v.SetDefault("content.parents_backup_enabled", true)
+	v.SetDefault("content.clean.namespaces_skipped", true)
+	v.SetDefault("content.clean.parents_backup_enabled", true)
 }

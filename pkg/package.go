@@ -182,9 +182,6 @@ func (p Package) Create(opts PackageCreateOpts) error {
 	if err != nil {
 		return err
 	}
-	if state.Exists && len(opts.FilterRoots) == 0 && opts.FilterFile == "" {
-		return nil
-	}
 	opts.PID = state.PID
 	_, err = p.manager.Create(opts)
 	return err

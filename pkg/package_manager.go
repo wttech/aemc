@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/go-resty/resty/v2"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/filex"
@@ -163,45 +162,35 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	var response *resty.Response
-	if len(opts.FilterRoots) == 0 && opts.FilterFile == "" {
-		response, err = pm.instance.http.Request().
-			SetFormData(map[string]string{
-				"packageName":    pidConfig.Name,
-				"packageVersion": pidConfig.Version,
-				"groupName":      pidConfig.Group,
-			}).
-			Post(ExecPath + "?cmd=create")
-	} else {
-		tmpDir := pathx.RandomDir(pm.tmpDir(), "pkg_create")
-		tmpFile := pathx.RandomFileName(pm.tmpDir(), "pkg_create", ".zip")
-		defer func() {
-			_ = pathx.DeleteIfExists(tmpDir)
-			_ = pathx.DeleteIfExists(tmpFile)
-		}()
-		data := map[string]any{
-			"Pid":         opts.PID,
-			"Group":       pidConfig.Group,
-			"Name":        pidConfig.Name,
-			"Version":     pidConfig.Version,
-			"FilterRoots": opts.FilterRoots,
-		}
-		if err = copyPackageDefaultFiles(tmpDir, data); err != nil {
-			return "", err
-		}
-		if opts.FilterFile != "" {
-			if err = filex.Copy(opts.FilterFile, filepath.Join(tmpDir, "META-INF", "vault", "filter.xml"), true); err != nil {
-				return "", err
-			}
-		}
-		if err = filex.Archive(tmpDir, tmpFile); err != nil {
-			return "", err
-		}
-		response, err = pm.instance.http.Request().
-			SetFile("package", tmpFile).
-			SetMultipartFormData(map[string]string{"force": "true"}).
-			Post(ServiceJsonPath + "/?cmd=upload")
+
+	tmpDir := pathx.RandomDir(pm.tmpDir(), "pkg_create")
+	tmpFile := pathx.RandomFileName(pm.tmpDir(), "pkg_create", ".zip")
+	defer func() {
+		_ = pathx.DeleteIfExists(tmpDir)
+		_ = pathx.DeleteIfExists(tmpFile)
+	}()
+	data := map[string]any{
+		"Pid":         opts.PID,
+		"Group":       pidConfig.Group,
+		"Name":        pidConfig.Name,
+		"Version":     pidConfig.Version,
+		"FilterRoots": opts.FilterRoots,
 	}
+	if err = copyPackageDefaultFiles(tmpDir, data); err != nil {
+		return "", err
+	}
+	if opts.FilterFile != "" {
+		if err = filex.Copy(opts.FilterFile, filepath.Join(tmpDir, "META-INF", "vault", "filter.xml"), true); err != nil {
+			return "", err
+		}
+	}
+	if err = filex.Archive(tmpDir, tmpFile); err != nil {
+		return "", err
+	}
+	response, err := pm.instance.http.Request().
+		SetFile("package", tmpFile).
+		SetMultipartFormData(map[string]string{"force": "true"}).
+		Post(ServiceJsonPath + "/?cmd=upload")
 	if err != nil {
 		return "", fmt.Errorf("%s > cannot create package '%s': %w", pm.instance.ID(), opts.PID, err)
 	} else if response.IsError() {

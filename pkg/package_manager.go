@@ -180,7 +180,7 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 		return "", err
 	}
 	if opts.FilterFile != "" {
-		if err = filex.Copy(opts.FilterFile, filepath.Join(tmpDir, "META-INF", "vault", "filter.xml"), true); err != nil {
+		if err = filex.Copy(opts.FilterFile, filepath.Join(tmpDir, "META-INF", "vault", FilterXML), true); err != nil {
 			return "", err
 		}
 	}
@@ -401,9 +401,9 @@ func (pm *PackageManager) installHTML(remotePath string) error {
 		if err != nil {
 			return fmt.Errorf("%s > cannot install package '%s': cannot open HTML report file '%s'", pm.instance.ID(), remotePath, htmlFilePath)
 		}
-		defer htmlFile.Close()
+		defer func() { _ = htmlFile.Close() }()
 		htmlWriter = bufio.NewWriter(htmlFile)
-		defer htmlWriter.Flush()
+		defer func() { _ = htmlWriter.Flush() }()
 	}
 
 	scanner := bufio.NewScanner(response.RawBody())
@@ -572,8 +572,6 @@ const (
 	ServiceJsonPath = ServicePath + "/.json"
 	ServiceHtmlPath = ServicePath + "/.html"
 	ListJson        = MgrPath + "/list.jsp"
-	IndexPath       = MgrPath + "/index.jsp"
-	ExecPath        = ServicePath + "/exec.json"
 	UpdatePath      = MgrPath + "/update.jsp"
 
 	FilterXML = "filter.xml"

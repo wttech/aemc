@@ -76,7 +76,7 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 	_ = cmd.MarkFlagRequired("target-file")
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
-	cmd.MarkFlagsMutuallyExclusive("filter-file", "filter-roots")
+	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
 	return cmd
 }
 
@@ -114,7 +114,7 @@ func (c *CLI) contentSyncCmd() *cobra.Command {
 	_ = cmd.MarkFlagRequired("dir")
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
-	cmd.MarkFlagsMutuallyExclusive("filter-file", "filter-roots")
+	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
 	cmd.Flags().Bool("clean", true, "Normalizing content after downloading")
 	return cmd
 }
@@ -153,7 +153,7 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 	cmd.MarkFlagsMutuallyExclusive("instance-target-url", "instance-target-id")
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
-	cmd.MarkFlagsMutuallyExclusive("filter-file", "filter-roots")
+	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
 	cmd.Flags().Bool("clean", false, "Normalize content while copying")
 	return cmd
 }

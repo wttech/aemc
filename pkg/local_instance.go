@@ -370,10 +370,7 @@ func (li LocalInstance) Start() error {
 	if err := li.CheckPortsOpen(); err != nil {
 		return err
 	}
-	cmd, tempFile, err := li.binScriptCommand(LocalInstanceScriptStart, true)
-	if tempFile != nil {
-		defer os.Remove(tempFile.Name())
-	}
+	cmd, err := li.binScriptCommand(LocalInstanceScriptStart, true)
 	if err != nil {
 		return err
 	}
@@ -553,10 +550,7 @@ func (li LocalInstance) Stop() error {
 		return fmt.Errorf("%s > cannot stop as it is not created", li.instance.ID())
 	}
 	log.Infof("%s > stopping", li.instance.ID())
-	cmd, tempFile, err := li.binScriptCommand(LocalInstanceScriptStop, true)
-	if tempFile != nil {
-		defer os.Remove(tempFile.Name())
-	}
+	cmd, err := li.binScriptCommand(LocalInstanceScriptStop, true)
 	if err != nil {
 		return err
 	}
@@ -751,10 +745,7 @@ func (li LocalInstance) Status() (LocalStatus, error) {
 	if !li.IsCreated() {
 		return LocalStatusUnknown, fmt.Errorf("%s > cannot check status as it is not created", li.instance.ID())
 	}
-	cmd, tempFile, err := li.binScriptCommand(LocalInstanceScriptStatus, false)
-	if tempFile != nil {
-		defer os.Remove(tempFile.Name())
-	}
+	cmd, err := li.binScriptCommand(LocalInstanceScriptStatus, false)
 	if err != nil {
 		return LocalStatusUnknown, err
 	}
@@ -802,7 +793,7 @@ func (li LocalInstance) Delete() error {
 	return nil
 }
 
-func (li LocalInstance) binScriptCommand(name string, verbose bool) (*exec.Cmd, *os.File, error) {
+func (li LocalInstance) binScriptCommand(name string, verbose bool) (*exec.Cmd, error) {
 	var args []string
 	if osx.IsWindows() { // note 'call' usage here; without it on Windows exit code is always 0
 		args = []string{"call", li.binScriptWindows(name)}
@@ -813,16 +804,12 @@ func (li LocalInstance) binScriptCommand(name string, verbose bool) (*exec.Cmd, 
 	cmd.Dir = li.Dir()
 	env, err := li.JavaOpts().Env()
 	if err != nil {
-		return nil, nil, err
-	}
-	jvmOpts, tempFile, err := li.JVMOptsString()
-	if err != nil {
-		return nil, tempFile, err
+		return nil, err
 	}
 	env = append(env,
 		"CQ_PORT="+li.instance.http.Port(),
 		"CQ_RUNMODE="+li.instance.local.RunModesString(),
-		"CQ_JVM_OPTS="+jvmOpts,
+		"CQ_JVM_OPTS="+li.instance.local.JVMOptsString(),
 		"CQ_START_OPTS="+li.instance.local.StartOptsString(),
 	)
 	env = append(env, li.EnvVars...)
@@ -830,7 +817,7 @@ func (li LocalInstance) binScriptCommand(name string, verbose bool) (*exec.Cmd, 
 	if verbose {
 		li.instance.manager.aem.CommandOutput(cmd)
 	}
-	return cmd, tempFile, nil
+	return cmd, nil
 }
 
 func (li LocalInstance) RunModesString() string {
@@ -840,30 +827,15 @@ func (li LocalInstance) RunModesString() string {
 	return strings.Join(lo.Uniq[string](result), ",")
 }
 
-func (li LocalInstance) JVMOptsString() (string, *os.File, error) {
+func (li LocalInstance) JVMOptsString() string {
 	result := append([]string{}, li.JvmOpts...)
-
-	// This file holds the password to the instance, it has to be deleted after running the command, thus it is returned
-	tempFile := (*os.File)(nil)
 
 	// at the first boot admin password could be customized via property, at the next boot only via Oak Run
 	if !li.IsInitialized() && li.instance.password != instance.PasswordDefault {
-		file, err := os.CreateTemp("", "aem-instance-admin-password-*.txt")
-		if err != nil {
-			return "", file, fmt.Errorf("%s > cannot create temp file to store admin password: %w", li.instance.ID(), err)
-		}
-		tempFile = file
-		passwordProperty := fmt.Sprintf("admin.password=%s", li.instance.password)
-		if _, err := file.WriteString(passwordProperty); err != nil {
-			return "", file, fmt.Errorf("%s > cannot write admin password to temp file: %w", li.instance.ID(), err)
-		}
-		if err := file.Close(); err != nil {
-			return "", file, fmt.Errorf("%s > cannot close temp file to store admin password: %w", li.instance.ID(), err)
-		}
-		result = append(result, fmt.Sprintf("-Dadmin.password.file=%s", tempFile.Name()))
+		result = append(result, fmt.Sprintf("-Dadmin.password=%s", li.instance.password))
 	}
 	sort.Strings(result)
-	return strings.Join(result, " "), tempFile, nil
+	return strings.Join(result, " ")
 }
 
 func (li LocalInstance) StartOptsString() string {

@@ -615,7 +615,7 @@ func (c *CLI) pkgUpdateCmd() *cobra.Command {
 				return
 			}
 			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
-			err = p.UpdateFiltersWithChanged(pkg.NewPackageFilters(filterRoots))
+			err = p.UpdateFilters(pkg.NewPackageFilters(filterRoots))
 			if err != nil {
 				c.Error(err)
 				return

@@ -200,7 +200,7 @@ func (p Package) CreateWithChanged(opts PackageCreateOpts) (bool, error) {
 	return false, nil
 }
 
-func (p Package) UpdateFiltersWithChanged(filters []PackageFilter) error {
+func (p Package) UpdateFilters(filters []PackageFilter) error {
 	state, err := p.State()
 	if err != nil {
 		return err

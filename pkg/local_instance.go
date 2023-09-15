@@ -836,15 +836,22 @@ func (li LocalInstance) passwordFile() string {
 	return fmt.Sprintf("%s/crx-quickstart/conf/admin-password.properties", li.Dir())
 }
 
+func (li LocalInstance) needsPasswordFile() bool {
+	return !li.IsInitialized() && li.instance.password != instance.PasswordDefault
+}
+
 func (li LocalInstance) savePasswordFile() error {
-	return filex.WriteString(li.passwordFile(), fmt.Sprintf("admin.password=%s", li.instance.password))
+	if li.needsPasswordFile() {
+		return filex.WriteString(li.passwordFile(), fmt.Sprintf("admin.password=%s", li.instance.password))
+	}
+	return nil
 }
 
 func (li LocalInstance) JVMOptsString() string {
 	result := append([]string{}, li.JvmOpts...)
 
 	// at the first boot admin password could be customized via property, at the next boot only via Oak Run
-	if !li.IsInitialized() && li.instance.password != instance.PasswordDefault {
+	if li.needsPasswordFile() {
 		if pathx.Exists(li.passwordFile()) {
 			result = append(result, fmt.Sprintf("-Dadmin.password.file=%s", li.passwordFile()))
 		} else {

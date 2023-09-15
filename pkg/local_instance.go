@@ -370,6 +370,10 @@ func (li LocalInstance) Start() error {
 	if err := li.CheckPortsOpen(); err != nil {
 		return err
 	}
+	defer func() { pathx.DeleteIfExists(li.passwordFile()) }()
+	if err := li.savePasswordFile(); err != nil {
+		return err
+	}
 	cmd, err := li.binScriptCommand(LocalInstanceScriptStart, true)
 	if err != nil {
 		return err
@@ -827,12 +831,31 @@ func (li LocalInstance) RunModesString() string {
 	return strings.Join(lo.Uniq[string](result), ",")
 }
 
+func (li LocalInstance) passwordFile() string {
+	return fmt.Sprintf("%s/crx-quickstart/conf/admin-password.properties", li.Dir())
+}
+
+func (li LocalInstance) needsPasswordFile() bool {
+	return !li.IsInitialized() && li.instance.password != instance.PasswordDefault
+}
+
+func (li LocalInstance) savePasswordFile() error {
+	if li.needsPasswordFile() {
+		return filex.WriteString(li.passwordFile(), fmt.Sprintf("admin.password=%s", li.instance.password))
+	}
+	return nil
+}
+
 func (li LocalInstance) JVMOptsString() string {
 	result := append([]string{}, li.JvmOpts...)
 
 	// at the first boot admin password could be customized via property, at the next boot only via Oak Run
-	if !li.IsInitialized() && li.instance.password != instance.PasswordDefault {
-		result = append(result, fmt.Sprintf("-Dadmin.password=%s", li.instance.password))
+	if li.needsPasswordFile() {
+		if pathx.Exists(li.passwordFile()) {
+			result = append(result, fmt.Sprintf("-Dadmin.password.file=%s", li.passwordFile()))
+		} else {
+			log.Debugf("%s > required password file '%s' does not exist but instance is being initialized", li.instance.ID(), li.passwordFile())
+		}
 	}
 	sort.Strings(result)
 	return strings.Join(result, " ")

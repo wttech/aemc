@@ -32,15 +32,25 @@ func (c *CLI) contentCleanCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			if err = c.aem.ContentManager().Clean(dir); err != nil {
-				c.Error(err)
-				return
+			if dir != "" {
+				if err = c.aem.ContentManager().CleanDir(dir); err != nil {
+					c.Error(err)
+					return
+				}
+			}
+			file, _ := cmd.Flags().GetString("file")
+			if file != "" {
+				if err = c.aem.ContentManager().CleanFile(file); err != nil {
+					c.Error(err)
+					return
+				}
 			}
 			c.Changed("content cleaned")
 		},
 	}
 	cmd.Flags().StringP("dir", "d", "", "JCR root path")
-	_ = cmd.MarkFlagRequired("dir")
+	cmd.Flags().StringP("file", "f", "", "Local file path")
+	cmd.MarkFlagsOneRequired("dir", "file")
 	return cmd
 }
 
@@ -178,9 +188,9 @@ func determineContentTargetInstance(cmd *cobra.Command, instanceManager *pkg.Ins
 }
 
 func determineContentDir(cmd *cobra.Command) (string, error) {
-	rootPath, _ := cmd.Flags().GetString("dir")
-	if !strings.Contains(rootPath, content.JCRRoot) {
-		return "", fmt.Errorf("content dir '%s' does not contain '%s'", rootPath, content.JCRRoot)
+	dir, _ := cmd.Flags().GetString("dir")
+	if dir != "" && !strings.Contains(dir, content.JCRRoot) {
+		return "", fmt.Errorf("content dir '%s' does not contain '%s'", dir, content.JCRRoot)
 	}
-	return rootPath, nil
+	return dir, nil
 }

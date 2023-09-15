@@ -2,6 +2,7 @@ package content
 
 import (
 	"bufio"
+	"fmt"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
@@ -65,7 +66,7 @@ func (c Manager) BeforeClean(root string) error {
 	return nil
 }
 
-func (c Manager) Clean(root string) error {
+func (c Manager) CleanDir(root string) error {
 	if err := c.flattenFiles(root); err != nil {
 		return err
 	}
@@ -88,6 +89,19 @@ func (c Manager) Clean(root string) error {
 		return err
 	}
 	if err := deleteEmptyDirs(root); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c Manager) CleanFile(path string) error {
+	if !pathx.Exists(path) {
+		return fmt.Errorf("file does not exist: %s", path)
+	}
+	if err := c.flattenFile(path); err != nil {
+		return err
+	}
+	if err := c.cleanDotContentFile(path); err != nil {
 		return err
 	}
 	return nil

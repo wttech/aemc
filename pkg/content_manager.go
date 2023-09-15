@@ -73,7 +73,7 @@ func (cm *ContentManager) Sync(dir string, clean bool, packageOpts PackageCreate
 		return err
 	}
 	if clean {
-		if err := contentManager.Clean(dir); err != nil {
+		if err := contentManager.CleanDir(dir); err != nil {
 			return err
 		}
 	}

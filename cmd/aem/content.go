@@ -117,7 +117,7 @@ func (c *CLI) contentSyncCmd() *cobra.Command {
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
 	cmd.MarkFlagsOneRequired("filter-roots", "filter-file")
-	cmd.Flags().Bool("clean", true, "Normalizing content after downloading")
+	cmd.Flags().Bool("clean", true, "Normalize content after downloading")
 	return cmd
 }
 

@@ -43,12 +43,12 @@ func NewManager(baseOpts *base.Opts) *Manager {
 	return &Manager{
 		baseOpts: baseOpts,
 
-		FilesDeleted:         determinePathRules(cv.Get("content.files_deleted")),
-		FilesFlattened:       cv.GetStringSlice("content.files_flattened"),
-		PropertiesSkipped:    determinePathRules(cv.Get("content.properties_skipped")),
-		MixinTypesSkipped:    determinePathRules(cv.Get("content.mixin_types_skipped")),
-		NamespacesSkipped:    cv.GetBool("content.namespaces_skipped"),
-		ParentsBackupEnabled: cv.GetBool("content.parents_backup_enabled"),
+		FilesDeleted:         determinePathRules(cv.Get("content.clean.files_deleted")),
+		FilesFlattened:       cv.GetStringSlice("content.clean.files_flattened"),
+		PropertiesSkipped:    determinePathRules(cv.Get("content.clean.properties_skipped")),
+		MixinTypesSkipped:    determinePathRules(cv.Get("content.clean.mixin_types_skipped")),
+		NamespacesSkipped:    cv.GetBool("content.clean.namespaces_skipped"),
+		ParentsBackupEnabled: cv.GetBool("content.clean.parents_backup_enabled"),
 	}
 }
 

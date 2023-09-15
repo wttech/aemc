@@ -371,8 +371,7 @@ func (li LocalInstance) Start() error {
 		return err
 	}
 	defer func() { pathx.DeleteIfExists(li.passwordFile()) }()
-	err := li.savePasswordFile()
-	if err != nil {
+	if err := li.savePasswordFile(); err != nil {
 		return err
 	}
 	cmd, err := li.binScriptCommand(LocalInstanceScriptStart, true)
@@ -855,7 +854,7 @@ func (li LocalInstance) JVMOptsString() string {
 		if pathx.Exists(li.passwordFile()) {
 			result = append(result, fmt.Sprintf("-Dadmin.password.file=%s", li.passwordFile()))
 		} else {
-			log.Fatalf("%s > cannot find password file '%s'", li.instance.ID(), li.passwordFile())
+			log.Debugf("%s > required password file '%s' does not exist but instance is being initialized", li.instance.ID(), li.passwordFile())
 		}
 	}
 	sort.Strings(result)

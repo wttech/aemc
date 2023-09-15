@@ -128,7 +128,7 @@ func (c Manager) cleanDotContentFile(path string) error {
 		return nil
 	}
 
-	log.Infof("Cleaning file %s", path)
+	log.Infof("cleaning file %s", path)
 	inputLines, err := readLines(path)
 	if err != nil {
 		return err

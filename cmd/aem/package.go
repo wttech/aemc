@@ -451,6 +451,7 @@ func pkgDefineDownloadFlags(cmd *cobra.Command) {
 	cmd.Flags().String("file", "", "Local path on file system")
 	cmd.Flags().BoolP("force", "f", false, "Download even when already downloaded")
 	_ = cmd.MarkFlagRequired("file")
+	cmd.MarkFlagsOneRequired("pid", "path")
 	cmd.MarkFlagsMutuallyExclusive("pid", "path")
 }
 
@@ -458,6 +459,7 @@ func pkgDefineUpdateFlags(cmd *cobra.Command) {
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
 	cmd.Flags().String("path", "", "Remote path on AEM repository")
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
+	cmd.MarkFlagsOneRequired("pid", "path")
 	cmd.MarkFlagsMutuallyExclusive("pid", "path")
 }
 
@@ -467,6 +469,7 @@ func pkgDefineCreateFlags(cmd *cobra.Command) {
 	cmd.Flags().StringP("filter-file", "F", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
 	cmd.Flags().BoolP("force", "f", false, "Create even when already created")
+	_ = cmd.MarkFlagRequired("pid")
 }
 
 func pkgDefineBuildFlags(cmd *cobra.Command) {
@@ -474,6 +477,7 @@ func pkgDefineBuildFlags(cmd *cobra.Command) {
 	cmd.Flags().String("path", "", "Remote path on AEM repository")
 	cmd.MarkFlagsMutuallyExclusive("pid", "path")
 	cmd.Flags().BoolP("force", "f", false, "Build even when already built")
+	cmd.MarkFlagsOneRequired("pid", "path")
 }
 
 func pkgByFlags(cmd *cobra.Command, instance pkg.Instance) (*pkg.Package, error) {

@@ -811,14 +811,10 @@ func (li LocalInstance) binScriptCommand(name string, verbose bool) (*exec.Cmd, 
 	if err != nil {
 		return nil, err
 	}
-	jvmOptsString, err := li.instance.local.JVMOptsString()
-	if err != nil {
-		return nil, err
-	}
 	env = append(env,
 		"CQ_PORT="+li.instance.http.Port(),
 		"CQ_RUNMODE="+li.instance.local.RunModesString(),
-		"CQ_JVM_OPTS="+jvmOptsString,
+		"CQ_JVM_OPTS="+li.instance.local.JVMOptsString(),
 		"CQ_START_OPTS="+li.instance.local.StartOptsString(),
 	)
 	env = append(env, li.EnvVars...)
@@ -844,7 +840,7 @@ func (li LocalInstance) savePasswordFile() error {
 	return filex.WriteString(li.passwordFile(), fmt.Sprintf("admin.password=%s", li.instance.password))
 }
 
-func (li LocalInstance) JVMOptsString() (string, error) {
+func (li LocalInstance) JVMOptsString() string {
 	result := append([]string{}, li.JvmOpts...)
 
 	// at the first boot admin password could be customized via property, at the next boot only via Oak Run
@@ -852,11 +848,11 @@ func (li LocalInstance) JVMOptsString() (string, error) {
 		if pathx.Exists(li.passwordFile()) {
 			result = append(result, fmt.Sprintf("-Dadmin.password.file=%s", li.passwordFile()))
 		} else {
-			return "", fmt.Errorf("%s > cannot use custom password as password file '%s' does not exist", li.instance.ID(), li.passwordFile())
+			log.Fatalf("%s > cannot find password file '%s'", li.instance.ID(), li.passwordFile())
 		}
 	}
 	sort.Strings(result)
-	return strings.Join(result, " "), nil
+	return strings.Join(result, " ")
 }
 
 func (li LocalInstance) StartOptsString() string {

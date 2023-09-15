@@ -21,8 +21,8 @@ github.com/cpuguy83/go-md2man/v2 v2.0.2/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46t
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/dominik-przybyl-wttech/archiver/v3 v3.5.3 h1:IPaS/8A+7o9QsCaaNmKkZ1HUG/P2lWvIpNL63nApF5k=
-github.com/dominik-przybyl-wttech/archiver/v3 v3.5.3/go.mod h1:1ovifw9KHloKamchb6IZrdeOIKBKRDpNfTCRPiTA6Ik=
+github.com/dominik-przybyl-wttech/archiver/v3 v3.5.4 h1:GtTMZL6GyHHhRxjczvH4i/rfxlIBSyOx/CdmKK+WjkA=
+github.com/dominik-przybyl-wttech/archiver/v3 v3.5.4/go.mod h1:1ovifw9KHloKamchb6IZrdeOIKBKRDpNfTCRPiTA6Ik=
 github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5 h1:iFaUwBSo5Svw6L7HYpRu/0lE3e0BaElwnNO1qkNQxBY=
 github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5/go.mod h1:qssHWj60/X5sZFNxpG4HBPDHVqxNm4DfnCKgrbZOT+s=
 github.com/dsnet/golib v0.0.0-20171103203638-1ea166775780/go.mod h1:Lj+Z9rebOhdfkVLjJ8T6VcRQv3SXugXy999NBtR9aFY=

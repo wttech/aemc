@@ -8,7 +8,7 @@ require (
 	github.com/antchfx/xmlquery v1.3.12
 	github.com/cheggaaa/pb/v3 v3.1.2
 	github.com/codingsince1985/checksum v1.2.6
-	github.com/dominik-przybyl-wttech/archiver/v3 v3.5.3
+	github.com/dominik-przybyl-wttech/archiver/v3 v3.5.4
 	github.com/dustin/go-humanize v1.0.1
 	github.com/essentialkaos/go-jar v1.0.6
 	github.com/fatih/color v1.14.1

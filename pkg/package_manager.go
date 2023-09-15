@@ -267,11 +267,10 @@ func (pm *PackageManager) UpdateFilters(remotePath string, pid string, filters [
 func (pm *PackageManager) Download(remotePath string, localFile string) error {
 	log.Infof("%s > downloading package '%s'", pm.instance.ID(), remotePath)
 	_, err := httpx.DownloadWithChanged(httpx.DownloadOpts{
-		URL:               pm.instance.HTTP().BaseURL() + remotePath,
-		File:              localFile,
-		Override:          true,
-		AuthBasicUser:     pm.instance.User(),
-		AuthBasicPassword: pm.instance.Password(),
+		Client:   pm.instance.http.Client(),
+		URL:      remotePath,
+		File:     localFile,
+		Override: true,
 	})
 	if err != nil {
 		return fmt.Errorf("%s > cannot download package '%s': %w", pm.instance.ID(), remotePath, err)

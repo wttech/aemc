@@ -1,6 +1,7 @@
 package httpx
 
 import (
+	"crypto/tls"
 	"fmt"
 	"github.com/cheggaaa/pb/v3"
 	"github.com/fatih/color"
@@ -18,13 +19,27 @@ func FileNameFromURL(url string) string {
 }
 
 type DownloadOpts struct {
-	URL      string
-	File     string
-	Override bool
-
+	Client            *resty.Client
+	URL               string
+	File              string
+	Override          bool
 	AuthToken         string
 	AuthBasicUser     string
 	AuthBasicPassword string
+}
+
+func downloadClient(opts DownloadOpts) *resty.Client {
+	client := resty.New()
+	client.DisableWarn = true
+	client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+	client.SetDoNotParseResponse(true)
+	if len(opts.AuthBasicUser) > 0 && len(opts.AuthBasicPassword) > 0 {
+		client.SetBasicAuth(opts.AuthBasicUser, opts.AuthBasicPassword)
+	}
+	if len(opts.AuthToken) > 0 {
+		client.SetAuthToken(opts.AuthToken)
+	}
+	return client
 }
 
 func DownloadWithOpts(opts DownloadOpts) error {
@@ -37,13 +52,8 @@ func DownloadWithOpts(opts DownloadOpts) error {
 	if pathx.Exists(opts.File) && !opts.Override {
 		return fmt.Errorf("destination for downloaded file already exist")
 	}
-	client := resty.New()
-	client.SetDoNotParseResponse(true)
-	if len(opts.AuthBasicUser) > 0 && len(opts.AuthBasicPassword) > 0 {
-		client.SetBasicAuth(opts.AuthBasicUser, opts.AuthBasicPassword)
-	}
-	if len(opts.AuthToken) > 0 {
-		client.SetAuthToken(opts.AuthToken)
+	if opts.Client == nil {
+		opts.Client = downloadClient(opts)
 	}
 	fileTmp := opts.File + ".tmp"
 	if err := pathx.DeleteIfExists(fileTmp); err != nil {
@@ -53,7 +63,7 @@ func DownloadWithOpts(opts DownloadOpts) error {
 	if err := pathx.Ensure(filepath.Dir(fileTmp)); err != nil {
 		return err
 	}
-	res, err := client.R().Get(opts.URL)
+	res, err := opts.Client.R().Get(opts.URL)
 	if err != nil {
 		return fmt.Errorf("cannot download from URL '%s' to file '%s': %w", opts.URL, opts.File, err)
 	}

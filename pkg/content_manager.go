@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/pathx"
+	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/content"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 type ContentManager struct {
@@ -28,7 +28,7 @@ func (cm *ContentManager) tmpDir() string {
 
 func (cm *ContentManager) Download(localFile string, opts PackageCreateOpts) error {
 	if opts.PID == "" {
-		opts.PID = fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", time.Now().Format("2006.102.304"))
+		opts.PID = fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", timex.FileTimestampForNow())
 	}
 	remotePath, err := cm.pkgMgr().Create(opts)
 	if err != nil {

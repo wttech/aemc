@@ -85,7 +85,7 @@ func (c *CLI) contentSyncCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "sync",
 		Aliases: []string{"pull"},
-		Short:   "Download content from running instance and unpack it under JCR root directory",
+		Short:   "Download content from running instance then unpack under JCR root directory",
 		Run: func(cmd *cobra.Command, args []string) {
 			instance, err := c.aem.InstanceManager().One()
 			if err != nil {

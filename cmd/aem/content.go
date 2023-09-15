@@ -109,6 +109,9 @@ func (c *CLI) contentSyncCmd() *cobra.Command {
 			clean, _ := cmd.Flags().GetBool("clean")
 			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
 			filterFile, _ := cmd.Flags().GetString("filter-file")
+			if len(filterRoots) == 0 && filterFile == "" {
+				filterRoots = append(filterRoots, strings.Split(dir, content.JCRRoot)[1])
+			}
 			if err = instance.ContentManager().Sync(dir, clean, pkg.PackageCreateOpts{
 				FilterRoots: filterRoots,
 				FilterFile:  filterFile,

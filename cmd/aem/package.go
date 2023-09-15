@@ -448,7 +448,7 @@ func pkgDefineFlags(cmd *cobra.Command) {
 func pkgDefineDownloadFlags(cmd *cobra.Command) {
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
 	cmd.Flags().String("path", "", "Remote path on AEM repository")
-	cmd.Flags().String("file", "", "Local path on file system")
+	cmd.Flags().StringP("target-file", "t", "", "Target file path")
 	cmd.Flags().BoolP("force", "f", false, "Download even when already downloaded")
 	_ = cmd.MarkFlagRequired("file")
 	cmd.MarkFlagsOneRequired("pid", "path")
@@ -643,14 +643,14 @@ func (c *CLI) pkgDownloadCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			localFile, _ := cmd.Flags().GetString("file")
+			targetFile, _ := cmd.Flags().GetString("target-file")
 			force, _ := cmd.Flags().GetBool("force")
 			changed := false
 			if force {
-				err = p.Download(localFile)
+				err = p.Download(targetFile)
 				changed = true
 			} else {
-				changed, err = p.DownloadWithChanged(localFile)
+				changed, err = p.DownloadWithChanged(targetFile)
 			}
 			if err != nil {
 				c.Error(err)
@@ -658,7 +658,7 @@ func (c *CLI) pkgDownloadCmd() *cobra.Command {
 			}
 			c.SetOutput("package", p)
 			c.SetOutput("instance", instance)
-			c.SetOutput("file", localFile)
+			c.SetOutput("file", targetFile)
 			if changed {
 				c.Changed("package downloaded")
 			} else {

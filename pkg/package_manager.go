@@ -230,7 +230,7 @@ type PackageFilterRule struct {
 }
 
 func (pm *PackageManager) UpdateFilters(remotePath string, pid string, filters []PackageFilter) error {
-	log.Infof("%s > updating package '%s'", pm.instance.ID(), pid)
+	log.Infof("%s > updating filters of package '%s'", pm.instance.ID(), pid)
 	pidConfig, err := pkg.ParsePID(pid)
 	if err != nil {
 		return err
@@ -249,18 +249,18 @@ func (pm *PackageManager) UpdateFilters(remotePath string, pid string, filters [
 		}).
 		Post(UpdatePath)
 	if err != nil {
-		return fmt.Errorf("%s > cannot update filters for package '%s': %w", pm.instance.ID(), pid, err)
+		return fmt.Errorf("%s > cannot update filters of package '%s': %w", pm.instance.ID(), pid, err)
 	} else if response.IsError() {
-		return fmt.Errorf("%s > cannot update filters for package '%s': %s", pm.instance.ID(), pid, response.Status())
+		return fmt.Errorf("%s > cannot update filters of package '%s': %s", pm.instance.ID(), pid, response.Status())
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return fmt.Errorf("%s > cannot update filters for package '%s'; cannot parse response: %w", pm.instance.ID(), pid, err)
+		return fmt.Errorf("%s > cannot update filters of package '%s'; cannot parse response: %w", pm.instance.ID(), pid, err)
 	}
 	if !status.Success {
-		return fmt.Errorf("%s > cannot update filters for package '%s'; unexpected status: %s", pm.instance.ID(), pid, status.Message)
+		return fmt.Errorf("%s > cannot update filters of package '%s'; unexpected status: %s", pm.instance.ID(), pid, status.Message)
 	}
-	log.Infof("%s > update filters for package '%s'", pm.instance.ID(), pid)
+	log.Infof("%s > updated filters of package '%s'", pm.instance.ID(), pid)
 	return nil
 }
 

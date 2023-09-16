@@ -440,14 +440,14 @@ func (c *CLI) pkgBuildCmd() *cobra.Command {
 
 func pkgDefineFlags(cmd *cobra.Command) {
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
-	cmd.Flags().String("file", "", "Local path on file system")
-	cmd.Flags().String("path", "", "Remote path on AEM repository")
+	cmd.Flags().String("file", "", "Local file path")
+	cmd.Flags().String("path", "", "Remote repository path")
 	cmd.MarkFlagsMutuallyExclusive("pid", "file", "path")
 }
 
 func pkgDefineDownloadFlags(cmd *cobra.Command) {
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
-	cmd.Flags().String("path", "", "Remote path on AEM repository")
+	cmd.Flags().String("path", "", "Remote repository path")
 	cmd.Flags().StringP("target-file", "t", "", "Target file path")
 	cmd.Flags().BoolP("force", "f", false, "Download even when already downloaded")
 	_ = cmd.MarkFlagRequired("file")
@@ -457,7 +457,7 @@ func pkgDefineDownloadFlags(cmd *cobra.Command) {
 
 func pkgDefineUpdateFlags(cmd *cobra.Command) {
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
-	cmd.Flags().String("path", "", "Remote path on AEM repository")
+	cmd.Flags().String("path", "", "Remote repository path")
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
 	cmd.MarkFlagsOneRequired("pid", "path")
 	cmd.MarkFlagsMutuallyExclusive("pid", "path")
@@ -474,7 +474,7 @@ func pkgDefineCreateFlags(cmd *cobra.Command) {
 
 func pkgDefineBuildFlags(cmd *cobra.Command) {
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
-	cmd.Flags().String("path", "", "Remote path on AEM repository")
+	cmd.Flags().String("path", "", "Remote repository path")
 	cmd.MarkFlagsMutuallyExclusive("pid", "path")
 	cmd.Flags().BoolP("force", "f", false, "Build even when already built")
 	cmd.MarkFlagsOneRequired("pid", "path")

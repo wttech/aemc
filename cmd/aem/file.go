@@ -82,7 +82,7 @@ func (c *CLI) fileDownloadCmd() *cobra.Command {
 	}
 	cmd.Flags().String("url", "", "Source file URL")
 	_ = cmd.MarkFlagRequired("url")
-	cmd.Flags().String("file", "", "Destination file path")
+	cmd.Flags().String("file", "", "Local file path")
 	_ = cmd.MarkFlagRequired("file")
 	cmd.Flags().String("auth-basic", "", "Basic Authorization (in format 'user:password')")
 	cmd.Flags().String("auth-token", "", "Token Authorization")

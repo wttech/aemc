@@ -206,7 +206,7 @@ func (p Package) UpdateFilters(filters []PackageFilter) error {
 		return err
 	}
 	if !state.Exists {
-		return fmt.Errorf("%s > filters for package '%s' cannot be updated as it does not exist", p.manager.instance.ID(), p.PID.String())
+		return fmt.Errorf("%s > filters of package '%s' cannot be updated as it does not exist", p.manager.instance.ID(), p.PID.String())
 	}
 	return p.manager.UpdateFilters(state.Data.Path, state.PID, filters)
 }

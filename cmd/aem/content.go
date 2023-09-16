@@ -175,7 +175,7 @@ func determineContentTargetInstance(cmd *cobra.Command, instanceManager *pkg.Ins
 	var instance *pkg.Instance
 	url, _ := cmd.Flags().GetString("instance-target-url")
 	if url != "" {
-		instance, _ = instanceManager.NewByURL(url)
+		instance, _ = instanceManager.NewByIDAndURL("remote_adhoc_target", url)
 	}
 	id, _ := cmd.Flags().GetString("instance-target-id")
 	if id != "" {

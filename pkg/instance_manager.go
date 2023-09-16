@@ -232,6 +232,10 @@ func (im *InstanceManager) NewLocalPair() []Instance {
 	return []Instance{im.NewLocalAuthor(), im.NewLocalPublish()}
 }
 
+func (im *InstanceManager) NewByID(id string) *Instance {
+	return im.newFromConfig(id)
+}
+
 func (im *InstanceManager) NewByURL(url string) (*Instance, error) {
 	urlConfig, err := nurl.Parse(url)
 	if err != nil {
@@ -268,6 +272,7 @@ func (im *InstanceManager) New(id, url, user, password string) *Instance {
 	res.repo = NewRepo(res)
 	res.packageManager = NewPackageManager(res)
 	res.workflowManager = NewWorkflowManager(res)
+	res.contentManager = NewContentManager(res)
 	res.osgi = NewOSGi(res)
 	res.sling = NewSling(res)
 	res.crypto = NewCrypto(res)

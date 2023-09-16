@@ -2,6 +2,7 @@ package pathx
 
 import (
 	"fmt"
+	"github.com/Masterminds/goutils"
 	"github.com/gobwas/glob"
 	ignore "github.com/sabhiram/go-gitignore"
 	log "github.com/sirupsen/logrus"
@@ -192,4 +193,14 @@ func Canonical(path string) string {
 
 func DirAndFileName(path string) (string, string) {
 	return stringsx.BeforeLast(path, "/"), stringsx.AfterLast(path, "/")
+}
+
+func RandomDir(tmpDir string, prefix string) string {
+	suffix, _ := goutils.RandomNumeric(8)
+	return filepath.Join(tmpDir, prefix+"_"+suffix)
+}
+
+func RandomFileName(tmpDir string, prefix string, extension string) string {
+	suffix, _ := goutils.RandomNumeric(8)
+	return filepath.Join(tmpDir, prefix+"_"+suffix+extension)
 }

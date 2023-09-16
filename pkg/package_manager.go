@@ -2,16 +2,20 @@ package pkg
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/fmtx"
+	"github.com/wttech/aemc/pkg/common/httpx"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/common/timex"
+	"github.com/wttech/aemc/pkg/common/tplx"
 	"github.com/wttech/aemc/pkg/pkg"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -128,6 +132,150 @@ func (pm *PackageManager) findInternal(pid string) (*pkg.ListItem, error) {
 
 func (pm *PackageManager) IsSnapshot(localPath string) bool {
 	return stringsx.MatchSome(pathx.Normalize(localPath), pm.SnapshotPatterns)
+}
+
+func copyPackageDefaultFiles(targetTmpDir string, data map[string]any) error {
+	if err := pathx.DeleteIfExists(targetTmpDir); err != nil {
+		return fmt.Errorf("cannot delete temporary dir '%s': %w", targetTmpDir, err)
+	}
+	return fs.WalkDir(pkg.VaultFS, ".", func(path string, entry fs.DirEntry, err error) error {
+		if entry.IsDir() {
+			return nil
+		}
+		bytes, err := pkg.VaultFS.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return tplx.RenderFile(targetTmpDir+strings.ReplaceAll(strings.TrimPrefix(path, "vault"), "$", ""), string(bytes), data)
+	})
+}
+
+type PackageCreateOpts struct {
+	PID         string
+	FilterRoots []string
+	FilterFile  string
+}
+
+func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
+	log.Infof("%s > creating package '%s'", pm.instance.ID(), opts.PID)
+	pidConfig, err := pkg.ParsePID(opts.PID)
+	if err != nil {
+		return "", err
+	}
+
+	tmpDir := pathx.RandomDir(pm.tmpDir(), "pkg_create")
+	tmpFile := pathx.RandomFileName(pm.tmpDir(), "pkg_create", ".zip")
+	defer func() {
+		_ = pathx.DeleteIfExists(tmpDir)
+		_ = pathx.DeleteIfExists(tmpFile)
+	}()
+	data := map[string]any{
+		"Pid":         opts.PID,
+		"Group":       pidConfig.Group,
+		"Name":        pidConfig.Name,
+		"Version":     pidConfig.Version,
+		"FilterRoots": opts.FilterRoots,
+	}
+	if err = copyPackageDefaultFiles(tmpDir, data); err != nil {
+		return "", err
+	}
+	if opts.FilterFile != "" {
+		if err = filex.Copy(opts.FilterFile, filepath.Join(tmpDir, "META-INF", "vault", FilterXML), true); err != nil {
+			return "", err
+		}
+	}
+	if err = filex.Archive(tmpDir, tmpFile); err != nil {
+		return "", err
+	}
+	response, err := pm.instance.http.Request().
+		SetFile("package", tmpFile).
+		SetMultipartFormData(map[string]string{"force": "true"}).
+		Post(ServiceJsonPath + "/?cmd=upload")
+	if err != nil {
+		return "", fmt.Errorf("%s > cannot create package '%s': %w", pm.instance.ID(), opts.PID, err)
+	} else if response.IsError() {
+		return "", fmt.Errorf("%s > cannot create package '%s': %s", pm.instance.ID(), opts.PID, response.Status())
+	}
+	var status pkg.CommandResult
+	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
+		return "", fmt.Errorf("%s > cannot create package '%s'; cannot parse response: %w", pm.instance.ID(), opts.PID, err)
+	}
+	if !status.Success {
+		return "", fmt.Errorf("%s > cannot create package '%s'; unexpected status: %s", pm.instance.ID(), opts.PID, status.Message)
+	}
+	log.Infof("%s > created package '%s'", pm.instance.ID(), opts.PID)
+	return status.Path, nil
+}
+
+func (pm *PackageManager) tmpDir() string {
+	return pm.instance.manager.aem.baseOpts.TmpDir
+}
+
+type PackageFilter struct {
+	Root  string              `json:"root"`
+	Rules []PackageFilterRule `json:"rules"`
+}
+
+func NewPackageFilters(rootPaths []string) []PackageFilter {
+	var filters []PackageFilter
+	for _, root := range rootPaths {
+		filters = append(filters, PackageFilter{Root: root, Rules: []PackageFilterRule{}})
+	}
+	return filters
+}
+
+type PackageFilterRule struct {
+	Modifier string `json:"modifier"`
+	Pattern  string `json:"pattern"`
+}
+
+func (pm *PackageManager) UpdateFilters(remotePath string, pid string, filters []PackageFilter) error {
+	log.Infof("%s > updating package '%s'", pm.instance.ID(), pid)
+	pidConfig, err := pkg.ParsePID(pid)
+	if err != nil {
+		return err
+	}
+	filtersJson, err := json.Marshal(filters)
+	if err != nil {
+		return err
+	}
+	response, err := pm.instance.http.Request().
+		SetMultipartFormData(map[string]string{
+			"path":        remotePath,
+			"packageName": pidConfig.Name,
+			"groupName":   pidConfig.Group,
+			"version":     pidConfig.Version,
+			"filter":      string(filtersJson),
+		}).
+		Post(UpdatePath)
+	if err != nil {
+		return fmt.Errorf("%s > cannot update filters for package '%s': %w", pm.instance.ID(), pid, err)
+	} else if response.IsError() {
+		return fmt.Errorf("%s > cannot update filters for package '%s': %s", pm.instance.ID(), pid, response.Status())
+	}
+	var status pkg.CommandResult
+	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
+		return fmt.Errorf("%s > cannot update filters for package '%s'; cannot parse response: %w", pm.instance.ID(), pid, err)
+	}
+	if !status.Success {
+		return fmt.Errorf("%s > cannot update filters for package '%s'; unexpected status: %s", pm.instance.ID(), pid, status.Message)
+	}
+	log.Infof("%s > update filters for package '%s'", pm.instance.ID(), pid)
+	return nil
+}
+
+func (pm *PackageManager) Download(remotePath string, localFile string) error {
+	log.Infof("%s > downloading package '%s'", pm.instance.ID(), remotePath)
+	if err := httpx.DownloadWithOpts(httpx.DownloadOpts{
+		Client:   pm.instance.http.Client(),
+		URL:      remotePath,
+		File:     localFile,
+		Override: true,
+	}); err != nil {
+		return fmt.Errorf("%s > cannot download package '%s': %w", pm.instance.ID(), remotePath, err)
+	}
+	log.Infof("%s > downloaded package '%s'", pm.instance.ID(), remotePath)
+	return nil
 }
 
 func (pm *PackageManager) Build(remotePath string) error {
@@ -251,9 +399,9 @@ func (pm *PackageManager) installHTML(remotePath string) error {
 		if err != nil {
 			return fmt.Errorf("%s > cannot install package '%s': cannot open HTML report file '%s'", pm.instance.ID(), remotePath, htmlFilePath)
 		}
-		defer htmlFile.Close()
+		defer func() { _ = htmlFile.Close() }()
 		htmlWriter = bufio.NewWriter(htmlFile)
-		defer htmlWriter.Flush()
+		defer func() { _ = htmlWriter.Flush() }()
 	}
 
 	scanner := bufio.NewScanner(response.RawBody())
@@ -422,5 +570,7 @@ const (
 	ServiceJsonPath = ServicePath + "/.json"
 	ServiceHtmlPath = ServicePath + "/.html"
 	ListJson        = MgrPath + "/list.jsp"
-	IndexPath       = MgrPath + "/index.jsp"
+	UpdatePath      = MgrPath + "/update.jsp"
+
+	FilterXML = "filter.xml"
 )

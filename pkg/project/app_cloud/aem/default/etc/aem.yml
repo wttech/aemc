@@ -212,3 +212,44 @@ output:
     file: aem/home/var/log/aem.log
     # Controls where outputs and logs should be written to when format is 'text' (console|file|both)
     mode: console
+
+content:
+  clean:
+    files_deleted:
+      - patterns:
+          - "**/.vlt"
+          - "**/.vlt*.tmp"
+          - "**/install/*.jar"
+    files_flattened:
+      - "**/_cq_design_dialog/.content.xml"
+      - "**/_cq_dialog/.content.xml"
+      - "**/_cq_htmlTag/.content.xml"
+      - "**/_cq_template/.content.xml"
+    properties_skipped:
+      - patterns: "jcr:uuid"
+        excluded_paths: [ "**/home/users/*", "**/home/groups/*" ]
+      - patterns: "cq:lastModified*"
+        excluded_paths: [ "**/content/experience-fragments/*" ]
+      - patterns: [ "dam:sha1", "dam:size" ]
+        included_paths: [ "**/content/dam/*.svg/*" ]
+      - patterns:
+          - "jcr:lastModified*"
+          - "jcr:created*"
+          - "jcr:isCheckedOut"
+          - "cq:lastReplicat*"
+          - "cq:lastRolledout*"
+          - "dam:extracted"
+          - "dam:assetState"
+          - "dc:modified"
+          - "*_x0040_*"
+          - "cq:name"
+          - "cq:parentPath"
+          - "dam:copiedAt"
+          - "dam:parentAssetID"
+          - "dam:relativePath"
+    mixin_types_skipped:
+      - patterns:
+          - "cq:ReplicationStatus"
+          - "mix:versionable"
+    namespaces_skipped: true
+    parents_backup_enabled: true

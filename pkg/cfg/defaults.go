@@ -106,4 +106,63 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.workflow.config_root", "/conf/global/settings/workflow/launcher")
 	v.SetDefault("instance.workflow.toggle_retry_delay", time.Second*10)
 	v.SetDefault("instance.workflow.toggle_retry_timeout", time.Minute*5)
+
+	v.SetDefault("content.clean.files_deleted", []any{
+		map[string]any{
+			"patterns": []string{
+				"**/.vlt",
+				"**/.vlt*.tmp",
+				"**/install/*.jar",
+			},
+		},
+	})
+	v.SetDefault("content.clean.files_flattened", []string{
+		"**/_cq_design_dialog/.content.xml",
+		"**/_cq_dialog/.content.xml",
+		"**/_cq_htmlTag/.content.xml",
+		"**/_cq_template/.content.xml",
+	})
+	v.SetDefault("content.clean.properties_skipped", []any{
+		map[string]any{
+			"patterns":       []string{"jcr:uuid"},
+			"excluded_paths": []string{"**/home/users/*", "**/home/groups/*"},
+		},
+		map[string]any{
+			"patterns":       []string{"cq:lastModified*"},
+			"excluded_paths": []string{"**/content/experience-fragments/*"},
+		},
+		map[string]any{
+			"patterns":       []string{"dam:sha1", "dam:size"},
+			"included_paths": []string{"**/content/dam/*.svg/*"},
+		},
+		map[string]any{
+			"patterns": []string{
+				"jcr:lastModified*",
+				"jcr:created*",
+				"jcr:isCheckedOut",
+				"cq:lastReplicat*",
+				"cq:lastRolledout*",
+				"dam:extracted",
+				"dam:assetState",
+				"dc:modified",
+				"*_x0040_*",
+				"cq:name",
+				"cq:parentPath",
+				"dam:copiedAt",
+				"dam:parentAssetID",
+				"dam:relativePath",
+			},
+		},
+	})
+
+	v.SetDefault("content.clean.mixin_types_skipped", []any{
+		map[string]any{
+			"patterns": []string{
+				"cq:ReplicationStatus",
+				"mix:versionable",
+			},
+		},
+	})
+	v.SetDefault("content.clean.namespaces_skipped", true)
+	v.SetDefault("content.clean.parents_backup_enabled", true)
 }

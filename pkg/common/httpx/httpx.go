@@ -1,6 +1,7 @@
 package httpx
 
 import (
+	"crypto/tls"
 	"fmt"
 	"github.com/cheggaaa/pb/v3"
 	"github.com/fatih/color"
@@ -18,12 +19,27 @@ func FileNameFromURL(url string) string {
 }
 
 type DownloadOpts struct {
-	URL  string
-	File string
-
+	Client            *resty.Client
+	URL               string
+	File              string
+	Override          bool
 	AuthToken         string
 	AuthBasicUser     string
 	AuthBasicPassword string
+}
+
+func downloadClient(opts DownloadOpts) *resty.Client {
+	client := resty.New()
+	client.DisableWarn = true
+	client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+	client.SetDoNotParseResponse(true)
+	if len(opts.AuthBasicUser) > 0 && len(opts.AuthBasicPassword) > 0 {
+		client.SetBasicAuth(opts.AuthBasicUser, opts.AuthBasicPassword)
+	}
+	if len(opts.AuthToken) > 0 {
+		client.SetAuthToken(opts.AuthToken)
+	}
+	return client
 }
 
 func DownloadWithOpts(opts DownloadOpts) error {
@@ -33,15 +49,11 @@ func DownloadWithOpts(opts DownloadOpts) error {
 	if len(opts.File) == 0 {
 		return fmt.Errorf("destination for downloaded file is not specified")
 	}
-	if pathx.Exists(opts.File) {
+	if pathx.Exists(opts.File) && !opts.Override {
 		return fmt.Errorf("destination for downloaded file already exist")
 	}
-	client := resty.New()
-	if len(opts.AuthBasicUser) > 0 && len(opts.AuthBasicPassword) > 0 {
-		client.SetBasicAuth(opts.AuthBasicUser, opts.AuthBasicPassword)
-	}
-	if len(opts.AuthToken) > 0 {
-		client.SetAuthToken(opts.AuthToken)
+	if opts.Client == nil {
+		opts.Client = downloadClient(opts)
 	}
 	fileTmp := opts.File + ".tmp"
 	if err := pathx.DeleteIfExists(fileTmp); err != nil {
@@ -51,25 +63,25 @@ func DownloadWithOpts(opts DownloadOpts) error {
 	if err := pathx.Ensure(filepath.Dir(fileTmp)); err != nil {
 		return err
 	}
-	res, err := http.Get(opts.URL)
+	res, err := opts.Client.R().Get(opts.URL)
 	if err != nil {
 		return fmt.Errorf("cannot download from URL '%s' to file '%s': %w", opts.URL, opts.File, err)
 	}
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("cannot download from URL '%s' to file '%s': %s", opts.URL, opts.File, res.Status)
+	defer res.RawBody().Close()
+	if res.StatusCode() != http.StatusOK {
+		return fmt.Errorf("cannot download from URL '%s' to file '%s': %s", opts.URL, opts.File, res.Status())
 	}
 	fhTmp, err := os.Create(fileTmp)
 	if err != nil {
 		return fmt.Errorf("cannot download from URL '%s' as file '%s' cannot be written", opts.URL, opts.File)
 	}
 	if color.NoColor {
-		if _, err := io.Copy(fhTmp, res.Body); err != nil {
+		if _, err := io.Copy(fhTmp, res.RawBody()); err != nil {
 			return fmt.Errorf("cannot download from URL '%s' to file '%s': %w", opts.URL, opts.File, err)
 		}
 	} else {
-		bar := pb.Full.Start64(res.ContentLength)
-		if _, err := io.Copy(bar.NewProxyWriter(fhTmp), res.Body); err != nil {
+		bar := pb.Full.Start64(res.RawResponse.ContentLength)
+		if _, err := io.Copy(bar.NewProxyWriter(fhTmp), res.RawBody()); err != nil {
 			return fmt.Errorf("cannot download from URL '%s' to file '%s': %w", opts.URL, opts.File, err)
 		}
 		bar.Finish()
@@ -83,7 +95,7 @@ func DownloadWithOpts(opts DownloadOpts) error {
 }
 
 func DownloadWithChanged(opts DownloadOpts) (bool, error) {
-	if pathx.Exists(opts.File) {
+	if pathx.Exists(opts.File) && !opts.Override {
 		return false, nil
 	}
 	if err := DownloadWithOpts(opts); err != nil {

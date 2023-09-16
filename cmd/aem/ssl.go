@@ -9,7 +9,7 @@ import (
 func (c *CLI) sslCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ssl",
-		Short: "Manages SSL (HTTPS) Support",
+		Short: "Manages SSL/HTTPS Support",
 	}
 	cmd.AddCommand(c.sslSetupCmd())
 	return cmd

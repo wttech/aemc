@@ -2,7 +2,7 @@ package filex
 
 import (
 	"fmt"
-	"github.com/mholt/archiver/v3"
+	"github.com/dominik-przybyl-wttech/archiver/v3" // TODO improve archiver itself?
 	"github.com/samber/lo"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"os"

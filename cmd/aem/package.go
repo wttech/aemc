@@ -14,7 +14,7 @@ import (
 func (c *CLI) pkgCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "package",
-		Short:   "Communicates with Package Manager",
+		Short:   "Communicate with Package Manager",
 		Aliases: []string{"pkg"},
 	}
 	cmd.AddCommand(c.pkgListCmd())
@@ -24,6 +24,9 @@ func (c *CLI) pkgCmd() *cobra.Command {
 	cmd.AddCommand(c.pkgUninstallCmd())
 	cmd.AddCommand(c.pkgDeleteCmd())
 	cmd.AddCommand(c.pkgPurgeCmd())
+	cmd.AddCommand(c.pkgCreateCmd())
+	cmd.AddCommand(c.pkgUpdateCmd())
+	cmd.AddCommand(c.pkgDownloadCmd())
 	cmd.AddCommand(c.pkgBuildCmd())
 	cmd.AddCommand(c.pkgFindCmd())
 	return cmd
@@ -406,7 +409,14 @@ func (c *CLI) pkgBuildCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			err = p.Build()
+			force, _ := cmd.Flags().GetBool("force")
+			changed := false
+			if force {
+				err = p.Build()
+				changed = true
+			} else {
+				changed, err = p.BuildWithChanged()
+			}
 			if err != nil {
 				c.Error(err)
 				return
@@ -417,10 +427,14 @@ func (c *CLI) pkgBuildCmd() *cobra.Command {
 			}
 			c.SetOutput("package", p)
 			c.SetOutput("instance", instance)
-			c.Changed("package built")
+			if changed {
+				c.Changed("package built")
+			} else {
+				c.Ok("package already built (up-to-date)")
+			}
 		},
 	}
-	pkgDefineFlags(cmd)
+	pkgDefineBuildFlags(cmd)
 	return cmd
 }
 
@@ -429,6 +443,41 @@ func pkgDefineFlags(cmd *cobra.Command) {
 	cmd.Flags().String("file", "", "Local path on file system")
 	cmd.Flags().String("path", "", "Remote path on AEM repository")
 	cmd.MarkFlagsMutuallyExclusive("pid", "file", "path")
+}
+
+func pkgDefineDownloadFlags(cmd *cobra.Command) {
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().String("path", "", "Remote path on AEM repository")
+	cmd.Flags().StringP("target-file", "t", "", "Target file path")
+	cmd.Flags().BoolP("force", "f", false, "Download even when already downloaded")
+	_ = cmd.MarkFlagRequired("file")
+	cmd.MarkFlagsOneRequired("pid", "path")
+	cmd.MarkFlagsMutuallyExclusive("pid", "path")
+}
+
+func pkgDefineUpdateFlags(cmd *cobra.Command) {
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().String("path", "", "Remote path on AEM repository")
+	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
+	cmd.MarkFlagsOneRequired("pid", "path")
+	cmd.MarkFlagsMutuallyExclusive("pid", "path")
+}
+
+func pkgDefineCreateFlags(cmd *cobra.Command) {
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
+	cmd.Flags().StringP("filter-file", "F", "", "Vault filter file path")
+	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
+	cmd.Flags().BoolP("force", "f", false, "Create even when already created")
+	_ = cmd.MarkFlagRequired("pid")
+}
+
+func pkgDefineBuildFlags(cmd *cobra.Command) {
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().String("path", "", "Remote path on AEM repository")
+	cmd.MarkFlagsMutuallyExclusive("pid", "path")
+	cmd.Flags().BoolP("force", "f", false, "Build even when already built")
+	cmd.MarkFlagsOneRequired("pid", "path")
 }
 
 func pkgByFlags(cmd *cobra.Command, instance pkg.Instance) (*pkg.Package, error) {
@@ -452,6 +501,15 @@ func pkgByFlags(cmd *cobra.Command, instance pkg.Instance) (*pkg.Package, error)
 		return descriptor, err
 	}
 	return nil, fmt.Errorf("flag 'pid' or 'file' or 'path' are required")
+}
+
+func pkgPIDByFlags(cmd *cobra.Command, instance pkg.Instance) (*pkg.Package, error) {
+	pid, _ := cmd.Flags().GetString("pid")
+	if len(pid) > 0 {
+		desc, err := instance.PackageManager().ByPID(pid)
+		return desc, err
+	}
+	return nil, fmt.Errorf("flag 'pid' is required")
 }
 
 func pkgDefineFileAndUrlFlags(cmd *cobra.Command) {
@@ -487,4 +545,127 @@ func (c *CLI) pkgPathByFlags(cmd *cobra.Command) (string, error) {
 		return fileGlobbed, nil
 	}
 	return "", fmt.Errorf("flag 'file' or 'url' are required")
+}
+
+func (c *CLI) pkgCreateCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "create",
+		Short: "Create package(s)",
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			p, err := pkgPIDByFlags(cmd, *instance)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
+			filterFile, _ := cmd.Flags().GetString("filter-file")
+			force, _ := cmd.Flags().GetBool("force")
+			changed := false
+			if force {
+				err = p.Create(pkg.PackageCreateOpts{
+					FilterRoots: filterRoots,
+					FilterFile:  filterFile,
+				})
+				changed = true
+			} else {
+				changed, err = p.CreateWithChanged(pkg.PackageCreateOpts{
+					FilterRoots: filterRoots,
+					FilterFile:  filterFile,
+				})
+			}
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			if err := c.aem.InstanceManager().AwaitStartedOne(*instance); err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("package", p)
+			c.SetOutput("instance", instance)
+			if changed {
+				c.Changed("package created")
+			} else {
+				c.Ok("package already created (up-to-date)")
+			}
+		},
+	}
+	pkgDefineCreateFlags(cmd)
+	return cmd
+}
+
+func (c *CLI) pkgUpdateCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "update-filters",
+		Short: "Update package filters",
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			p, err := pkgPIDByFlags(cmd, *instance)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
+			err = p.UpdateFilters(pkg.NewPackageFilters(filterRoots))
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("package", p)
+			c.Changed("package filters updated") // TODO idempotency?
+		},
+	}
+	pkgDefineUpdateFlags(cmd)
+	return cmd
+}
+
+func (c *CLI) pkgDownloadCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "download",
+		Short: "Download package(s)",
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			p, err := pkgByFlags(cmd, *instance)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			targetFile, _ := cmd.Flags().GetString("target-file")
+			force, _ := cmd.Flags().GetBool("force")
+			changed := false
+			if force {
+				err = p.Download(targetFile)
+				changed = true
+			} else {
+				changed, err = p.DownloadWithChanged(targetFile)
+			}
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("package", p)
+			c.SetOutput("instance", instance)
+			c.SetOutput("file", targetFile)
+			if changed {
+				c.Changed("package downloaded")
+			} else {
+				c.Ok("package already downloaded (up-to-date)")
+			}
+		},
+	}
+	pkgDefineDownloadFlags(cmd)
+	return cmd
 }

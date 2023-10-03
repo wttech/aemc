@@ -170,10 +170,11 @@ func (o *Opts) Env() ([]string, error) {
 		return nil, err
 	}
 	javaPath := pathx.Canonical(homeDir + "/bin")
-	envOthers := osx.EnvVarsWithout("PATH", "JAVA_HOME")
+	envOthers := osx.EnvVarsWithout("PATH", "JAVA_HOME", "TERM")
 	envFinal := append([]string{
 		"PATH=" + javaPath + osx.PathVarSep() + os.Getenv("PATH"),
 		"JAVA_HOME=" + homeDir,
+		"TERM=xterm", // unpacking AEM jar requires this on some OSes
 	}, envOthers...)
 	return envFinal, nil
 }

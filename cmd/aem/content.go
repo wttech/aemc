@@ -101,34 +101,84 @@ func (c *CLI) contentSyncCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			clean, _ := cmd.Flags().GetBool("clean")
 			dir, err := determineContentDir(cmd)
 			if err != nil {
 				c.Error(err)
 				return
 			}
-			clean, _ := cmd.Flags().GetBool("clean")
-			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
-			filterFile, _ := cmd.Flags().GetString("filter-file")
-			if len(filterRoots) == 0 && filterFile == "" {
-				filterRoots = append(filterRoots, strings.Split(dir, content.JCRRoot)[1])
+			if dir != "" {
+				filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
+				filterFile, _ := cmd.Flags().GetString("filter-file")
+				if err = instance.ContentManager().SyncDir(dir, clean, pkg.PackageCreateOpts{
+					FilterRoots: filterRoots,
+					FilterFile:  filterFile,
+				}); err != nil {
+					c.Error(err)
+					return
+				}
+				c.SetOutput("dir", dir)
 			}
-			if err = instance.ContentManager().Sync(dir, clean, pkg.PackageCreateOpts{
-				FilterRoots: filterRoots,
-				FilterFile:  filterFile,
-			}); err != nil {
-				c.Error(err)
-				return
+			file, _ := cmd.Flags().GetString("file")
+			if file != "" {
+				if err = instance.ContentManager().SyncFile(dir, clean); err != nil {
+					c.Error(err)
+					return
+				}
+				c.SetOutput("file", dir)
 			}
-			c.SetOutput("dir", dir)
 			c.Changed("content synchronized")
 		},
 	}
 	cmd.Flags().StringP("dir", "d", "", "JCR root path")
-	_ = cmd.MarkFlagRequired("dir")
+	cmd.Flags().String("file", "", "Local file path")
+	cmd.MarkFlagsMutuallyExclusive("dir", "file")
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
 	cmd.Flags().Bool("clean", true, "Normalize content after downloading")
+	return cmd
+}
+
+func (c *CLI) contentPushCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "push",
+		Aliases: []string{"ps"},
+		Short:   "Push content from JCR root directory to running instance",
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			clean, _ := cmd.Flags().GetBool("clean")
+			dir, err := determineContentDir(cmd)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			if dir != "" {
+				if err = instance.ContentManager().PushDir(dir, clean); err != nil {
+					c.Error(err)
+					return
+				}
+				c.SetOutput("dir", dir)
+			}
+			file, _ := cmd.Flags().GetString("file")
+			if file != "" {
+				if err = instance.ContentManager().PushFile(file, clean); err != nil {
+					c.Error(err)
+					return
+				}
+				c.SetOutput("file", file)
+			}
+			c.Changed("content pushed")
+		},
+	}
+	cmd.Flags().StringP("dir", "d", "", "JCR root path")
+	cmd.Flags().StringP("file", "f", "", "Local file path")
+	cmd.MarkFlagsOneRequired("dir", "file")
+	cmd.Flags().Bool("clean", false, "Normalize content while pushing")
 	return cmd
 }
 

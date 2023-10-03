@@ -24,6 +24,7 @@ const (
 	PropPattern         = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
 	NamespacePattern    = "^\\w+:(\\w+)=\"[^\"]+\"$"
 	ParentsBackupSuffix = ".bak"
+	JCRContentNode      = "jcr:content"
 )
 
 type Manager struct {

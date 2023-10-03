@@ -151,9 +151,11 @@ func copyPackageDefaultFiles(targetTmpDir string, data map[string]any) error {
 }
 
 type PackageCreateOpts struct {
-	PID         string
-	FilterRoots []string
-	FilterFile  string
+	PID          string
+	FilterRoots  []string
+	FilterFile   string
+	ContentDirs  []string
+	ContentFiles []string
 }
 
 func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {

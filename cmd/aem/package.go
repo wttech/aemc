@@ -29,6 +29,7 @@ func (c *CLI) pkgCmd() *cobra.Command {
 	cmd.AddCommand(c.pkgDownloadCmd())
 	cmd.AddCommand(c.pkgBuildCmd())
 	cmd.AddCommand(c.pkgFindCmd())
+	cmd.AddCommand(c.pkgCopyCmd())
 	return cmd
 }
 
@@ -667,5 +668,42 @@ func (c *CLI) pkgDownloadCmd() *cobra.Command {
 		},
 	}
 	pkgDefineDownloadFlags(cmd)
+	return cmd
+}
+
+func (c *CLI) pkgCopyCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "copy",
+		Aliases: []string{"cp"},
+		Short:   "Copy package to another instance",
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			targetInstance, err := determineContentTargetInstance(cmd, c.aem.InstanceManager())
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			p, err := pkgPIDByFlags(cmd, *instance)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			if err := p.Copy(targetInstance); err != nil {
+				c.Error(err)
+				return
+			}
+			c.Changed("package copied")
+		},
+	}
+	cmd.Flags().StringP("instance-target-url", "u", "", "Destination instance URL")
+	cmd.Flags().StringP("instance-target-id", "i", "", "Destination instance ID")
+	cmd.MarkFlagsOneRequired("instance-target-url", "instance-target-id")
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().String("path", "", "Remote repository path")
+	cmd.MarkFlagsOneRequired("pid", "path")
 	return cmd
 }

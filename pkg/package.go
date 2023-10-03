@@ -235,3 +235,14 @@ func (p Package) DownloadWithChanged(localFile string) (bool, error) {
 	}
 	return false, nil
 }
+
+func (p Package) Copy(destInstance *Instance) error {
+	state, err := p.State()
+	if err != nil {
+		return err
+	}
+	if !state.Exists {
+		return fmt.Errorf("%s > package '%s' cannot be copied as it does not exist", p.manager.instance.ID(), p.PID.String())
+	}
+	return p.manager.Copy(state.Data.Path, destInstance)
+}

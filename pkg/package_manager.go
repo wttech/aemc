@@ -207,6 +207,24 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	return status.Path, nil
 }
 
+func (pm *PackageManager) Copy(remotePath string, destInstance *Instance) error {
+	var localPath = pathx.RandomFileName(pm.tmpDir(), "pkg_copy", ".zip")
+	defer func() {
+		_ = pathx.DeleteIfExists(localPath)
+	}()
+	if err := pm.Download(remotePath, localPath); err != nil {
+		return err
+	}
+	destRemotePath, err := destInstance.PackageManager().Upload(localPath)
+	if err != nil {
+		return err
+	}
+	if err := destInstance.PackageManager().Install(destRemotePath); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (pm *PackageManager) tmpDir() string {
 	return pm.instance.manager.aem.baseOpts.TmpDir
 }

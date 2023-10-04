@@ -29,6 +29,7 @@ func (c *CLI) pkgCmd() *cobra.Command {
 	cmd.AddCommand(c.pkgDownloadCmd())
 	cmd.AddCommand(c.pkgBuildCmd())
 	cmd.AddCommand(c.pkgFindCmd())
+	cmd.AddCommand(c.pkgCopyCmd())
 	return cmd
 }
 
@@ -668,4 +669,77 @@ func (c *CLI) pkgDownloadCmd() *cobra.Command {
 	}
 	pkgDefineDownloadFlags(cmd)
 	return cmd
+}
+
+func (c *CLI) pkgCopyCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "copy",
+		Aliases: []string{"cp"},
+		Short:   "Copy package to another instance",
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			targetInstance, err := determineTargetInstance(cmd, c.aem.InstanceManager())
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			p, err := pkgPIDByFlags(cmd, *instance)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			force, _ := cmd.Flags().GetBool("force")
+			changed := false
+			if force {
+				err = p.Copy(targetInstance)
+				changed = true
+			} else {
+				changed, err = p.CopyWithChanged(targetInstance)
+			}
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			if err := c.aem.InstanceManager().AwaitStartedOne(*targetInstance); err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("package", p)
+			c.SetOutput("instance", instance)
+			c.SetOutput("targetInstance", targetInstance)
+			if changed {
+				c.Changed("package copied")
+			} else {
+				c.Ok("package already copied (up-to-date)")
+			}
+		},
+	}
+	cmd.Flags().StringP("instance-target-url", "u", "", "Destination instance URL")
+	cmd.Flags().StringP("instance-target-id", "i", "", "Destination instance ID")
+	cmd.MarkFlagsOneRequired("instance-target-url", "instance-target-id")
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().String("path", "", "Remote repository path")
+	cmd.MarkFlagsOneRequired("pid", "path")
+	cmd.Flags().BoolP("force", "f", false, "Copy even when already copied")
+	return cmd
+}
+
+func determineTargetInstance(cmd *cobra.Command, instanceManager *pkg.InstanceManager) (*pkg.Instance, error) {
+	var instance *pkg.Instance
+	url, _ := cmd.Flags().GetString("instance-target-url")
+	if url != "" {
+		instance, _ = instanceManager.NewByIDAndURL("remote_adhoc_target", url)
+	}
+	id, _ := cmd.Flags().GetString("instance-target-id")
+	if id != "" {
+		instance = instanceManager.NewByID(id)
+	}
+	if instance == nil {
+		return nil, fmt.Errorf("missing 'instance-target-url' or 'instance-target-id'")
+	}
+	return instance, nil
 }

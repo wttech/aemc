@@ -682,7 +682,7 @@ func (c *CLI) pkgCopyCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			targetInstance, err := determineContentTargetInstance(cmd, c.aem.InstanceManager())
+			targetInstance, err := determineTargetInstance(cmd, c.aem.InstanceManager())
 			if err != nil {
 				c.Error(err)
 				return
@@ -726,4 +726,20 @@ func (c *CLI) pkgCopyCmd() *cobra.Command {
 	cmd.MarkFlagsOneRequired("pid", "path")
 	cmd.Flags().BoolP("force", "f", false, "Copy even when already copied")
 	return cmd
+}
+
+func determineTargetInstance(cmd *cobra.Command, instanceManager *pkg.InstanceManager) (*pkg.Instance, error) {
+	var instance *pkg.Instance
+	url, _ := cmd.Flags().GetString("instance-target-url")
+	if url != "" {
+		instance, _ = instanceManager.NewByIDAndURL("remote_adhoc_target", url)
+	}
+	id, _ := cmd.Flags().GetString("instance-target-id")
+	if id != "" {
+		instance = instanceManager.NewByID(id)
+	}
+	if instance == nil {
+		return nil, fmt.Errorf("missing 'instance-target-url' or 'instance-target-id'")
+	}
+	return instance, nil
 }

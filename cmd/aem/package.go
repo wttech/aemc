@@ -692,11 +692,30 @@ func (c *CLI) pkgCopyCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			if err := p.Copy(targetInstance); err != nil {
+			force, _ := cmd.Flags().GetBool("force")
+			changed := false
+			if force {
+				err = p.Copy(targetInstance)
+				changed = true
+			} else {
+				changed, err = p.CopyWithChanged(targetInstance)
+			}
+			if err != nil {
 				c.Error(err)
 				return
 			}
-			c.Changed("package copied")
+			if err := c.aem.InstanceManager().AwaitStartedOne(*targetInstance); err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("package", p)
+			c.SetOutput("instance", instance)
+			c.SetOutput("targetInstance", targetInstance)
+			if changed {
+				c.Changed("package copied")
+			} else {
+				c.Ok("package already copied (up-to-date)")
+			}
 		},
 	}
 	cmd.Flags().StringP("instance-target-url", "u", "", "Destination instance URL")
@@ -705,5 +724,6 @@ func (c *CLI) pkgCopyCmd() *cobra.Command {
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
 	cmd.Flags().String("path", "", "Remote repository path")
 	cmd.MarkFlagsOneRequired("pid", "path")
+	cmd.Flags().BoolP("force", "f", false, "Copy even when already copied")
 	return cmd
 }

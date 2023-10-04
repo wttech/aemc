@@ -246,3 +246,21 @@ func (p Package) Copy(destInstance *Instance) error {
 	}
 	return p.manager.Copy(state.Data.Path, destInstance)
 }
+
+func (p Package) CopyWithChanged(destInstance *Instance) (bool, error) {
+	state, err := p.State()
+	if err != nil {
+		return false, err
+	}
+	if !state.Exists {
+		return false, fmt.Errorf("%s > package '%s' cannot be copied as it does not exist", p.manager.instance.ID(), p.PID.String())
+	}
+	destItem, err := destInstance.PackageManager().Find(state.PID)
+	if err != nil {
+		return false, err
+	}
+	if destItem != nil {
+		return false, nil
+	}
+	return true, p.manager.Copy(state.Data.Path, destInstance)
+}

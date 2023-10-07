@@ -15,7 +15,10 @@ import (
 	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/common/tplx"
 	"github.com/wttech/aemc/pkg/pkg"
+	"io"
 	"io/fs"
+	"mime/multipart"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,6 +29,7 @@ type PackageManager struct {
 	instance *Instance
 
 	SnapshotDeploySkipping bool
+	UploadOptimized        bool
 	InstallRecursive       bool
 	InstallHTMLEnabled     bool
 	InstallHTMLConsole     bool
@@ -41,6 +45,7 @@ func NewPackageManager(res *Instance) *PackageManager {
 		instance: res,
 
 		SnapshotDeploySkipping: cv.GetBool("instance.package.snapshot_deploy_skipping"),
+		UploadOptimized:        cv.GetBool("instance.package.upload_optimized"),
 		InstallHTMLEnabled:     cv.GetBool("instance.package.install_html.enabled"),
 		InstallHTMLConsole:     cv.GetBool("instance.package.install_html.console"),
 		InstallHTMLStrict:      cv.GetBool("instance.package.install_html.strict"),
@@ -342,6 +347,59 @@ func (pm *PackageManager) UploadWithChanged(localPath string) (bool, error) {
 }
 
 func (pm *PackageManager) Upload(localPath string) (string, error) {
+	if pm.UploadOptimized {
+		return pm.uploadOptimized(localPath)
+	}
+	return pm.uploadBuffered(localPath)
+}
+
+// https://medium.com/@owlwalks/sending-big-file-with-minimal-memory-in-golang-8f3fc280d2c
+// https://github.com/go-resty/resty/issues/309#issuecomment-1750659170
+func (pm *PackageManager) uploadOptimized(localPath string) (string, error) {
+	log.Infof("%s > uploading package '%s'", pm.instance.ID(), localPath)
+	r, w := io.Pipe()
+	m := multipart.NewWriter(w)
+	go func() {
+		defer func(w *io.PipeWriter) { _ = w.Close() }(w)
+		defer func(m *multipart.Writer) { _ = m.Close() }(m)
+		part, err := m.CreateFormFile("package", filepath.Base(localPath))
+		if err != nil {
+			return
+		}
+		file, err := os.Open(localPath)
+		if err != nil {
+			return
+		}
+		defer func(file *os.File) { _ = file.Close() }(file)
+		if _, err = io.Copy(part, file); err != nil {
+			return
+		}
+	}()
+	request, err := http.NewRequest("POST", pm.instance.HTTP().BaseURL()+ServiceJsonPath+"/?cmd=upload&force=true", r)
+	if err != nil {
+		return "", err
+	}
+	request.Header.Set("Content-Type", m.FormDataContentType())
+	request.SetBasicAuth(pm.instance.user, pm.instance.password)
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		return "", fmt.Errorf("%s > cannot upload package '%s': %w", pm.instance.ID(), localPath, err)
+	} else if response.StatusCode > 399 {
+		return "", fmt.Errorf("%s > cannot upload package '%s': %s", pm.instance.ID(), localPath, response.Status)
+	}
+	var status pkg.CommandResult
+	if err = fmtx.UnmarshalJSON(response.Body, &status); err != nil {
+		return "", fmt.Errorf("%s > cannot upload package '%s'; cannot parse response: %w", pm.instance.ID(), localPath, err)
+	}
+	if !status.Success {
+		return "", fmt.Errorf("%s > cannot upload package '%s'; unexpected status: %s", pm.instance.ID(), localPath, status.Message)
+	}
+	log.Infof("%s > uploaded package '%s'", pm.instance.ID(), localPath)
+	return status.Path, nil
+}
+
+func (pm *PackageManager) uploadBuffered(localPath string) (string, error) {
 	log.Infof("%s > uploading package '%s'", pm.instance.ID(), localPath)
 	response, err := pm.instance.http.Request().
 		SetFile("package", localPath).

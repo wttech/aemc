@@ -354,6 +354,7 @@ func (pm *PackageManager) Upload(localPath string) (string, error) {
 }
 
 // https://medium.com/@owlwalks/sending-big-file-with-minimal-memory-in-golang-8f3fc280d2c
+// https://github.com/go-resty/resty/issues/309#issuecomment-1750659170
 func (pm *PackageManager) uploadOptimized(localPath string) (string, error) {
 	log.Infof("%s > uploading package '%s'", pm.instance.ID(), localPath)
 	r, w := io.Pipe()

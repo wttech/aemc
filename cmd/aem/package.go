@@ -96,8 +96,15 @@ func (c *CLI) pkgUploadCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			force, _ := cmd.Flags().GetBool("force")
 			uploaded, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
-				changed, err := instance.PackageManager().UploadWithChanged(path)
+				changed := false
+				if force {
+					_, err = instance.PackageManager().Upload(path)
+					changed = true
+				} else {
+					changed, err = instance.PackageManager().UploadWithChanged(path)
+				}
 				if err != nil {
 					return nil, err
 				}
@@ -128,6 +135,7 @@ func (c *CLI) pkgUploadCmd() *cobra.Command {
 		},
 	}
 	pkgDefineFileAndUrlFlags(cmd)
+	cmd.Flags().BoolP("force", "f", false, "Upload even when already uploaded")
 	return cmd
 }
 

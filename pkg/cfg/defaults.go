@@ -83,6 +83,8 @@ func (c *Config) setDefaults() {
 
 	v.SetDefault("instance.status.timeout", time.Millisecond*500)
 
+	v.SetDefault("instance.package.upload_optimized", true)
+
 	v.SetDefault("instance.package.install_recursive", true)
 
 	v.SetDefault("instance.package.install_html.enabled", false)

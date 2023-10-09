@@ -443,7 +443,11 @@ func (c *CLI) pkgBuildCmd() *cobra.Command {
 			}
 		},
 	}
-	pkgDefineBuildFlags(cmd)
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().String("path", "", "Remote repository path")
+	cmd.MarkFlagsMutuallyExclusive("pid", "path")
+	cmd.Flags().BoolP("force", "f", false, "Build even when already built")
+	cmd.MarkFlagsOneRequired("pid", "path")
 	return cmd
 }
 
@@ -452,41 +456,6 @@ func pkgDefineFlags(cmd *cobra.Command) {
 	cmd.Flags().String("file", "", "Local file path")
 	cmd.Flags().String("path", "", "Remote repository path")
 	cmd.MarkFlagsMutuallyExclusive("pid", "file", "path")
-}
-
-func pkgDefineDownloadFlags(cmd *cobra.Command) {
-	cmd.Flags().String("pid", "", "ID (group:name:version)'")
-	cmd.Flags().String("path", "", "Remote repository path")
-	cmd.Flags().StringP("target-file", "t", "", "Target file path")
-	cmd.Flags().BoolP("force", "f", false, "Download even when already downloaded")
-	_ = cmd.MarkFlagRequired("file")
-	cmd.MarkFlagsOneRequired("pid", "path")
-	cmd.MarkFlagsMutuallyExclusive("pid", "path")
-}
-
-func pkgDefineUpdateFlags(cmd *cobra.Command) {
-	cmd.Flags().String("pid", "", "ID (group:name:version)'")
-	cmd.Flags().String("path", "", "Remote repository path")
-	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
-	cmd.MarkFlagsOneRequired("pid", "path")
-	cmd.MarkFlagsMutuallyExclusive("pid", "path")
-}
-
-func pkgDefineCreateFlags(cmd *cobra.Command) {
-	cmd.Flags().String("pid", "", "ID (group:name:version)'")
-	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
-	cmd.Flags().StringP("filter-file", "F", "", "Vault filter file path")
-	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
-	cmd.Flags().BoolP("force", "f", false, "Create even when already created")
-	_ = cmd.MarkFlagRequired("pid")
-}
-
-func pkgDefineBuildFlags(cmd *cobra.Command) {
-	cmd.Flags().String("pid", "", "ID (group:name:version)'")
-	cmd.Flags().String("path", "", "Remote repository path")
-	cmd.MarkFlagsMutuallyExclusive("pid", "path")
-	cmd.Flags().BoolP("force", "f", false, "Build even when already built")
-	cmd.MarkFlagsOneRequired("pid", "path")
 }
 
 func pkgByFlags(cmd *cobra.Command, instance pkg.Instance) (*pkg.Package, error) {
@@ -604,7 +573,12 @@ func (c *CLI) pkgCreateCmd() *cobra.Command {
 			}
 		},
 	}
-	pkgDefineCreateFlags(cmd)
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
+	cmd.Flags().StringP("filter-file", "F", "", "Vault filter file path")
+	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
+	cmd.Flags().BoolP("force", "f", false, "Create even when already created")
+	_ = cmd.MarkFlagRequired("pid")
 	return cmd
 }
 
@@ -633,14 +607,19 @@ func (c *CLI) pkgUpdateCmd() *cobra.Command {
 			c.Changed("package filters updated") // TODO idempotency?
 		},
 	}
-	pkgDefineUpdateFlags(cmd)
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().String("path", "", "Remote repository path")
+	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
+	cmd.MarkFlagsOneRequired("pid", "path")
+	cmd.MarkFlagsMutuallyExclusive("pid", "path")
 	return cmd
 }
 
 func (c *CLI) pkgDownloadCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "download",
-		Short: "Download package(s)",
+		Use:     "download",
+		Aliases: []string{"dl"},
+		Short:   "Download package",
 		Run: func(cmd *cobra.Command, args []string) {
 			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
@@ -675,7 +654,13 @@ func (c *CLI) pkgDownloadCmd() *cobra.Command {
 			}
 		},
 	}
-	pkgDefineDownloadFlags(cmd)
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().String("path", "", "Remote repository path")
+	cmd.Flags().StringP("target-file", "t", "", "Target file path")
+	cmd.Flags().BoolP("force", "f", false, "Download even when already downloaded")
+	_ = cmd.MarkFlagRequired("file")
+	cmd.MarkFlagsOneRequired("pid", "path")
+	cmd.MarkFlagsMutuallyExclusive("pid", "path")
 	return cmd
 }
 

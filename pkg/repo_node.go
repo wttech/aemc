@@ -7,6 +7,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/langx"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"golang.org/x/exp/maps"
 	"strings"
@@ -290,6 +291,31 @@ func (n RepoNode) MoveWithChanged(targetPath string, replace bool) (bool, error)
 		}
 	}
 	return true, n.repo.Move(n.path, targetPath, replace)
+}
+
+func (n RepoNode) Download(localFile string) error {
+	state, err := n.State()
+	if err != nil {
+		return err
+	}
+	if !state.Exists {
+		return fmt.Errorf("%s > node '%s' cannot be downloaded as it does not exist", n.repo.instance.ID(), n.path)
+	}
+	return n.repo.Download(state.Path, localFile)
+}
+
+func (n RepoNode) DownloadWithChanged(localFile string) (bool, error) {
+	state, err := n.State()
+	if err != nil {
+		return false, err
+	}
+	if !state.Exists {
+		return false, fmt.Errorf("%s > node '%s' cannot be downloaded as it does not exist", n.repo.instance.ID(), n.path)
+	}
+	if !pathx.Exists(localFile) {
+		return true, n.repo.Download(state.Path, localFile)
+	}
+	return false, nil
 }
 
 func (n RepoNode) String() string {

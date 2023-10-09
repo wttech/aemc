@@ -260,7 +260,7 @@ func (c *CLI) repoNodeMoveCmd() *cobra.Command {
 func (c *CLI) repoNodeDownloadCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "download",
-		Short:   "Download node pointing to file",
+		Short:   "Download node to file",
 		Aliases: []string{"dl"},
 		Run: func(cmd *cobra.Command, args []string) {
 			instance, err := c.aem.InstanceManager().One()
@@ -295,6 +295,7 @@ func (c *CLI) repoNodeDownloadCmd() *cobra.Command {
 	}
 	repoNodeDefineFlags(cmd)
 	cmd.Flags().StringP("target-file", "t", "", "Target file path")
+	_ = cmd.MarkFlagRequired("target-file")
 	cmd.Flags().BoolP("force", "f", false, "Download even when already downloaded")
 	return cmd
 }

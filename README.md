@@ -23,6 +23,9 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
 # References
 
 * Intro Guide Blog Post - [Get your AEM together with AEM Compose!](https://wttech.blog/blog/2023/get-your-aem-together-with-aem-compose/) by [Krystian Panek](mailto:krystian.panek@wundermanthompson.com)
+* Talk at AdaptTo 2023 Conference - [Get Your AEM Together: AEM Compose, the Ultimate DevEx Tool](https://www.youtube.com/watch?v=EH4ubsxNpbs)
+
+    [![AdaptTo 2023 Video](docs/adapto-to-video.png)](https://www.youtube.com/watch?v=EH4ubsxNpbs)
 
 # Table of Contents
 

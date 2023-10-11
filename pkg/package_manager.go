@@ -28,12 +28,13 @@ import (
 type PackageManager struct {
 	instance *Instance
 
-	SnapshotDeploySkipping bool
 	UploadOptimized        bool
 	InstallRecursive       bool
 	InstallHTMLEnabled     bool
 	InstallHTMLConsole     bool
 	InstallHTMLStrict      bool
+	SnapshotDeploySkipping bool
+	SnapshotIgnored        bool
 	SnapshotPatterns       []string
 	ToggledWorkflows       []string
 }
@@ -44,12 +45,13 @@ func NewPackageManager(res *Instance) *PackageManager {
 	return &PackageManager{
 		instance: res,
 
-		SnapshotDeploySkipping: cv.GetBool("instance.package.snapshot_deploy_skipping"),
 		UploadOptimized:        cv.GetBool("instance.package.upload_optimized"),
 		InstallHTMLEnabled:     cv.GetBool("instance.package.install_html.enabled"),
 		InstallHTMLConsole:     cv.GetBool("instance.package.install_html.console"),
 		InstallHTMLStrict:      cv.GetBool("instance.package.install_html.strict"),
 		InstallRecursive:       cv.GetBool("instance.package.install_recursive"),
+		SnapshotDeploySkipping: cv.GetBool("instance.package.snapshot_deploy_skipping"),
+		SnapshotIgnored:        cv.GetBool("instance.package.snapshot_ignored"),
 		SnapshotPatterns:       cv.GetStringSlice("instance.package.snapshot_patterns"),
 		ToggledWorkflows:       cv.GetStringSlice("instance.package.toggled_workflows"),
 	}
@@ -136,7 +138,7 @@ func (pm *PackageManager) findInternal(pid string) (*pkg.ListItem, error) {
 }
 
 func (pm *PackageManager) IsSnapshot(localPath string) bool {
-	return stringsx.MatchSome(pathx.Normalize(localPath), pm.SnapshotPatterns)
+	return !pm.SnapshotIgnored && stringsx.MatchSome(pathx.Normalize(localPath), pm.SnapshotPatterns)
 }
 
 func copyPackageDefaultFiles(targetTmpDir string, data map[string]any) error {

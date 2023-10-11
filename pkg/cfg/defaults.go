@@ -92,7 +92,9 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.package.install_html.console", false)
 
 	v.SetDefault("instance.package.snapshot_deploy_skipping", true)
+	v.SetDefault("instance.package.snapshot_ignored", false)
 	v.SetDefault("instance.package.snapshot_patterns", []string{"**/*-SNAPSHOT.zip"})
+
 	v.SetDefault("instance.package.toggled_workflows", []string{})
 
 	v.SetDefault("instance.repo.property_change_ignored", []string{"jcr:created", "cq:lastModified", "transportPassword"})

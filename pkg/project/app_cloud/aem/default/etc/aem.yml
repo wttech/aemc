@@ -137,6 +137,7 @@ instance:
   package:
     # Force re-uploading/installing of snapshot AEM packages (just built / unreleased)
     snapshot_patterns: [ "**/*-SNAPSHOT.zip" ]
+    snapshot_ignored: false
     # Use checksums to avoid re-deployments when snapshot AEM packages are unchanged
     snapshot_deploy_skipping: true
     # Disable following workflow launchers for a package deployment time only

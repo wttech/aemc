@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"context"
 	"encoding/pem"
 	"fmt"
 	"github.com/go-resty/resty/v2"
@@ -86,7 +87,7 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 		"privatekeyFile":  privateKeyFile,
 	}
 
-	response, err := s.SendSetupRequest(params, files)
+	response, err := s.sendSetupRequest(params, files)
 
 	if err != nil {
 		return false, fmt.Errorf("%s > failed to setup SSL: %w", s.instance.ID(), err)
@@ -114,28 +115,29 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 	return true, nil
 }
 
-func (s SSL) SendSetupRequest(params map[string]any, files map[string]string) (*resty.Response, error) {
-	var response *resty.Response
-	var err error
-	maxTries := 2
+func (s SSL) sendSetupRequest(params map[string]any, files map[string]string) (*resty.Response, error) {
+	timeout := time.Duration(30) * time.Second
 	pause := time.Duration(2) * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 
-	for i := 0; i < maxTries; i++ {
-		response, err = s.instance.http.
-			RequestFormData(params).
-			SetFiles(files).
-			SetDoNotParseResponse(true).
-			Post(SSLSetupPath)
-		if err == nil {
-			break
-		}
-		if i+1 != maxTries {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+			response, err := s.instance.http.
+				RequestFormData(params).
+				SetFiles(files).
+				SetDoNotParseResponse(true).
+				Post(SSLSetupPath)
+			if err == nil {
+				return response, err
+			}
+			log.Warnf("%s > failed to setup SSL: %s, retrying", s.instance.ID(), err)
 			time.Sleep(pause)
-			log.Debugf("%s > failed to setup SSL: %s, retrying", s.instance.ID(), err)
 		}
 	}
-
-	return response, err
 }
 
 // From HTML response body, e.g.:

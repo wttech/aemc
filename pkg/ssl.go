@@ -22,7 +22,8 @@ const (
 )
 
 type SSL struct {
-	instance *Instance
+	instance     *Instance
+	setupTimeout time.Duration
 }
 
 type sslLock struct {
@@ -35,7 +36,12 @@ type sslLock struct {
 }
 
 func NewSSL(instance *Instance) *SSL {
-	return &SSL{instance: instance}
+	configValues := instance.manager.aem.config.Values()
+
+	return &SSL{
+		instance:     instance,
+		setupTimeout: configValues.GetDuration("instance.ssl.setup_timeout"),
+	}
 }
 
 func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privateKeyFile, httpsHostname, httpsPort string) (bool, error) {
@@ -116,9 +122,8 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 }
 
 func (s SSL) sendSetupRequest(params map[string]any, files map[string]string) (*resty.Response, error) {
-	timeout := time.Duration(30) * time.Second
 	pause := time.Duration(2) * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), s.setupTimeout)
 	defer cancel()
 
 	for {

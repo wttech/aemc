@@ -151,6 +151,10 @@ instance:
       # Fail on case 'installed with errors'
       strict: true
 
+  # 'SSL By Default'
+  ssl:
+    setup_timeout: 30s
+
   # OSGi Framework
   osgi:
     shutdown_delay: 3s

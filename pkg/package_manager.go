@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"bufio"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"github.com/samber/lo"
@@ -383,7 +384,12 @@ func (pm *PackageManager) uploadOptimized(localPath string) (string, error) {
 	}
 	request.Header.Set("Content-Type", m.FormDataContentType())
 	request.SetBasicAuth(pm.instance.user, pm.instance.password)
-	client := &http.Client{}
+	cv := pm.instance.manager.aem.config.Values()
+	transport := &http.Transport{}
+	if cv.GetBool("instance.http.ignore_ssl_errors") {
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	}
+	client := &http.Client{Transport: transport}
 	response, err := client.Do(request)
 	if err != nil {
 		return "", fmt.Errorf("%s > cannot upload package '%s': %w", pm.instance.ID(), localPath, err)

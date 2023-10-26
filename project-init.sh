@@ -5,7 +5,7 @@ AEM_WRAPPER="aemw"
 if [ -f "$AEM_WRAPPER" ]; then
   echo ""
   echo "The project already contains AEM Compose!"
-  exit 1
+  exit 0
 fi
 
 SOURCE_URL="https://raw.githubusercontent.com/wttech/aemc/main/pkg/project/common"

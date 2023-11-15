@@ -102,7 +102,11 @@ func (c *CLI) replAgentSetupCmd() *cobra.Command {
 				return
 			}
 			if changed {
-				if err := c.aem.InstanceManager().AwaitStartedOne(*instance); err != nil { // TODO if changed restart bundle afterwards (togglable)
+				if err = instance.Replication().Bundle().Restart(); err != nil {
+					c.Error(err)
+					return
+				}
+				if err := c.aem.InstanceManager().AwaitStartedOne(*instance); err != nil {
 					c.Error(err)
 					return
 				}

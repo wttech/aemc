@@ -171,6 +171,10 @@ instance:
   crypto:
     key_bundle_symbolic_name: com.adobe.granite.crypto.file
 
+  # Replication
+  replication:
+    bundle_symbolic_name: com.day.cq.cq-replication
+
   # Workflow Manager
   workflow:
     launcher:

@@ -401,7 +401,7 @@ func (pm *PackageManager) uploadOptimized(localPath string) (string, error) {
 		return "", fmt.Errorf("%s > cannot upload package '%s'; cannot parse response: %w", pm.instance.ID(), localPath, err)
 	}
 	if !status.Success {
-		return "", fmt.Errorf("%s > cannot upload package '%s'; unexpected status: %s", pm.instance.ID(), localPath, status.Message)
+		return "", fmt.Errorf("%s > cannot upload package '%s'; %s", pm.instance.ID(), localPath, pm.interpretFail(status.Message))
 	}
 	log.Infof("%s > uploaded package '%s'", pm.instance.ID(), localPath)
 	return status.Path, nil
@@ -423,10 +423,17 @@ func (pm *PackageManager) uploadBuffered(localPath string) (string, error) {
 		return "", fmt.Errorf("%s > cannot upload package '%s'; cannot parse response: %w", pm.instance.ID(), localPath, err)
 	}
 	if !status.Success {
-		return "", fmt.Errorf("%s > cannot upload package '%s'; unexpected status: %s", pm.instance.ID(), localPath, status.Message)
+		return "", fmt.Errorf("%s > cannot upload package '%s'; %s", pm.instance.ID(), localPath, pm.interpretFail(status.Message))
 	}
 	log.Infof("%s > uploaded package '%s'", pm.instance.ID(), localPath)
 	return status.Path, nil
+}
+
+func (pm *PackageManager) interpretFail(message string) string {
+	if strings.EqualFold(message, "Inaccessible value") {
+		return fmt.Sprintf("probably no disk space left (server respond with '%s')", message) // https://forums.adobe.com/thread/2338290
+	}
+	return fmt.Sprintf("unexpected status: %s", message)
 }
 
 func (pm *PackageManager) Install(remotePath string) error {

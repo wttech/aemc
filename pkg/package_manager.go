@@ -430,7 +430,7 @@ func (pm *PackageManager) uploadBuffered(localPath string) (string, error) {
 }
 
 func (pm *PackageManager) interpretFail(message string) string {
-	if strings.EqualFold(message, "Inaccessible value") {
+	if strings.Contains(strings.ToLower(message), "inaccessible value") {
 		return fmt.Sprintf("probably no disk space left (server respond with '%s')", message) // https://forums.adobe.com/thread/2338290
 	}
 	return fmt.Sprintf("unexpected status: %s", message)

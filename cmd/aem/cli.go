@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/fatih/color"
 	"github.com/iancoleman/strcase"
@@ -298,24 +299,35 @@ func (c *CLI) printOutputDataIndented(writer *textio.PrefixWriter, value any, ke
 }
 
 func (c *CLI) printOutputMarshaled() {
-	outputTransformed, err := jmespath.Search(c.outputQuery, c.outputResponse)
+	// JMESPath is having hard time querying data as is, so we need to serialize it first
+	outputResponseJson, err := fmtx.MarshalJSON(c.outputResponse)
 	if err != nil {
-		log.Fatalf("cannot transform CLI output data: %s", err)
+		log.Fatalf("cannot serialize CLI output to target JSON format!")
 	}
+	var outputResponseData interface{}
+	err = json.Unmarshal([]byte(outputResponseJson), &outputResponseData)
+	if err != nil {
+		log.Fatalf("cannot deserialize CLI output from target JSON format!")
+	}
+	outputQueried, err := jmespath.Search(c.outputQuery, outputResponseData)
+	if err != nil {
+		log.Fatalf("cannot perform query '%s' on CLI output data: %s", c.outputQuery, err)
+	}
+
 	switch c.outputFormat {
 	case fmtx.JSON:
-		json, err := fmtx.MarshalJSON(outputTransformed)
+		jsonQueried, err := fmtx.MarshalJSON(outputQueried)
 		if err != nil {
 			log.Fatalf("cannot serialize CLI output to target JSON format!")
 		}
-		fmt.Println(json)
+		fmt.Println(jsonQueried)
 		break
 	case fmtx.YML:
-		yml, err := fmtx.MarshalYML(outputTransformed)
+		ymlQueried, err := fmtx.MarshalYML(outputQueried)
 		if err != nil {
 			log.Fatalf("cannot serialize CLI output to target YML format!")
 		}
-		fmt.Println(yml)
+		fmt.Println(ymlQueried)
 		break
 	default:
 		log.Fatalf("cannot serialize CLI output to unsupported format '%s'", c.outputFormat)

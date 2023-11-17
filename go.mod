@@ -17,6 +17,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/go-version v1.6.0
 	github.com/iancoleman/strcase v0.2.0
+	github.com/jmespath-community/go-jmespath v1.1.1
 	github.com/joho/godotenv v1.5.1
 	github.com/magiconair/properties v1.8.7
 	github.com/olekukonko/tablewriter v0.0.5
@@ -28,8 +29,8 @@ require (
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/cobra v1.7.1-0.20230908172906-0c72800b8dba
 	github.com/spf13/viper v1.10.1
-	github.com/stretchr/testify v1.8.0
-	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17
+	github.com/stretchr/testify v1.8.4
+	golang.org/x/exp v0.0.0-20230314191032-db074128a8ec
 	golang.org/x/sync v0.1.0
 	gopkg.in/yaml.v3 v3.0.1
 )

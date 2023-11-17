@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/fatih/color"
 	"github.com/iancoleman/strcase"
+	"github.com/jmespath-community/go-jmespath"
 	"github.com/samber/lo"
 	"github.com/segmentio/textio"
 	log "github.com/sirupsen/logrus"
@@ -45,6 +46,7 @@ type CLI struct {
 	outputLogFile  string
 	outputLogMode  string
 	outputResponse *OutputResponse
+	outputQuery    string
 	outputWriter   io.Writer
 	outputNoColor  bool
 
@@ -105,6 +107,7 @@ func (c *CLI) onStart() {
 	c.outputResponse = outputResponseDefault()
 	c.outputValue = cv.GetString("output.value")
 	c.outputFormat = strings.ReplaceAll(cv.GetString("output.format"), "yaml", "yml")
+	c.outputQuery = cv.GetString("output.query")
 	c.outputLogFile = cv.GetString("output.log.file")
 	c.outputLogMode = cv.GetString("output.log.mode")
 
@@ -295,18 +298,22 @@ func (c *CLI) printOutputDataIndented(writer *textio.PrefixWriter, value any, ke
 }
 
 func (c *CLI) printOutputMarshaled() {
+	outputTransformed, err := jmespath.Search(c.outputQuery, c.outputResponse)
+	if err != nil {
+		log.Fatalf("cannot transform CLI output data: %s", err)
+	}
 	switch c.outputFormat {
 	case fmtx.JSON:
-		json, err := fmtx.MarshalJSON(c.outputResponse)
+		json, err := fmtx.MarshalJSON(outputTransformed)
 		if err != nil {
-			log.Fatalf("cannot serialize CLI output to to target JSON format!")
+			log.Fatalf("cannot serialize CLI output to target JSON format!")
 		}
 		fmt.Println(json)
 		break
 	case fmtx.YML:
-		yml, err := fmtx.MarshalYML(c.outputResponse)
+		yml, err := fmtx.MarshalYML(outputTransformed)
 		if err != nil {
-			log.Fatalf("cannot serialize CLI output to to target YML format!")
+			log.Fatalf("cannot serialize CLI output to target YML format!")
 		}
 		fmt.Println(yml)
 		break

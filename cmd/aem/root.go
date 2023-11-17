@@ -55,6 +55,9 @@ func (c *CLI) rootFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().String("output-format", cv.GetString("output.format"), "Controls output format ("+strings.Join(cfg.OutputFormats(), "|")+")")
 	_ = cv.BindPFlag("output.format", cmd.PersistentFlags().Lookup("output-format"))
 
+	cmd.PersistentFlags().String("output-query", cv.GetString("output.query"), "JMESPath query to filter output (for JSON and YAML format only)")
+	_ = cv.BindPFlag("output.query", cmd.PersistentFlags().Lookup("output-query"))
+
 	cmd.PersistentFlags().String("output-log-file", cv.GetString("output.log.file"), "Controls output file path")
 	_ = cv.BindPFlag("output.log.file", cmd.PersistentFlags().Lookup("output-log-file"))
 

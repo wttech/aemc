@@ -108,6 +108,7 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.ssl.setup_timeout", time.Second*30)
 
 	v.SetDefault("instance.crypto.key_bundle_symbolic_name", "com.adobe.granite.crypto.file")
+	v.SetDefault("instance.replication.bundle_symbolic_name", "com.day.cq.cq-replication")
 
 	v.SetDefault("instance.workflow.lib_root", "/libs/settings/workflow/launcher")
 	v.SetDefault("instance.workflow.config_root", "/conf/global/settings/workflow/launcher")

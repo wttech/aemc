@@ -433,6 +433,9 @@ func (pm *PackageManager) interpretFail(message string) string {
 	if strings.Contains(strings.ToLower(message), "inaccessible value") {
 		return fmt.Sprintf("probably no disk space left (server respond with '%s')", message) // https://forums.adobe.com/thread/2338290
 	}
+	if strings.Contains(strings.ToLower(message), "package file parameter missing") {
+		return fmt.Sprintf("probably no disk space left (server respond with '%s')", message)
+	}
 	return fmt.Sprintf("unexpected status: %s", message)
 }
 

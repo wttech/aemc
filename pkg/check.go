@@ -187,6 +187,7 @@ func (c EventStableChecker) Check(_ CheckContext, instance Instance) CheckResult
 
 type ComponentStableChecker struct {
 	Skip                     bool
+	Abort                    bool
 	PIDsIgnored              []string
 	PIDsFailedActivation     []string
 	PIDsUnsatisfiedReference []string
@@ -197,6 +198,7 @@ func NewComponentStableChecker(opts *CheckOpts) ComponentStableChecker {
 
 	return ComponentStableChecker{
 		Skip:                     cv.GetBool("instance.check.component_stable.skip"),
+		Abort:                    cv.GetBool("instance.check.component_stable.abort"),
 		PIDsIgnored:              cv.GetStringSlice("instance.check.component_stable.pids_ignored"),
 		PIDsFailedActivation:     cv.GetStringSlice("instance.check.component_stable.pids_failed_activation"),
 		PIDsUnsatisfiedReference: cv.GetStringSlice("instance.check.component_stable.pids_unsatisfied_reference"),
@@ -225,6 +227,7 @@ func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckRe
 		message := fmt.Sprintf("some components failed activation (%d): '%s'", failedComponentCount, failedComponents[0].PID)
 		return CheckResult{
 			ok:      false,
+			abort:   c.Abort,
 			message: message,
 		}
 	}
@@ -237,6 +240,7 @@ func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckRe
 		message := fmt.Sprintf("some components unsatisfied (%d): '%s'", unsatisfiedComponentCount, unsatisfiedComponents[0].PID)
 		return CheckResult{
 			ok:      false,
+			abort:   c.Abort,
 			message: message,
 		}
 	}

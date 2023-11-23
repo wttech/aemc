@@ -93,11 +93,14 @@ instance:
       received_max_age: 5s
     # OSGi components state tracking
     component_stable:
+      skip: false
+      abort: true
       pids_ignored: []
       pids_failed_activation: ["*"]
       pids_unsatisfied_reference: []
     # Sling Installer tracking
     installer:
+      skip: false
       # JMX state checking
       state: true
       # Pause Installation nodes checking
@@ -105,6 +108,11 @@ instance:
     # Specific endpoints / paths (like login page)
     path_ready:
       timeout: 10s
+    login_page:
+      skip: false
+      path: "/libs/granite/core/content/login.html"
+      status_code: 200
+      contained_text: QUICKSTART_HOMEPAGE
 
   # Managed locally (set up automatically)
   local:

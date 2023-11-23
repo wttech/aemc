@@ -65,6 +65,7 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.check.event_stable.details_ignored", []string{"*.*MBean", "org.osgi.service.component.runtime.ServiceComponentRuntime", "java.util.ResourceBundle"})
 
 	v.SetDefault("instance.check.component_stable.skip", false)
+	v.SetDefault("instance.check.component_stable.abort", true)
 	v.SetDefault("instance.check.component_stable.pids_ignored", []string{})
 	v.SetDefault("instance.check.component_stable.pids_failed_activation", []string{"*"})
 	v.SetDefault("instance.check.component_stable.pids_unsatisfied_reference", []string{})

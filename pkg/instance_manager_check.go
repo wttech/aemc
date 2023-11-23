@@ -131,6 +131,9 @@ func (im *InstanceManager) CheckOne(i Instance, checks []Checker) ([]CheckResult
 func (im *InstanceManager) checkOne(ctx context.Context, i Instance, checks []Checker) ([]CheckResult, error) {
 	var results []CheckResult
 	for _, check := range checks {
+		if check.Spec().Skip {
+			continue
+		}
 		result := check.Check(ctx.Value(checkContextKey{}).(CheckContext), i)
 		results = append(results, result)
 		if result.abort {

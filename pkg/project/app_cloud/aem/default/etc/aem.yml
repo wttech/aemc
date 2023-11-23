@@ -93,6 +93,7 @@ instance:
       received_max_age: 5s
     # OSGi components state tracking
     component_stable:
+      pids_ignored: []
       pids_failed_activation: ["*"]
       pids_unsatisfied_reference: []
     # Sling Installer tracking

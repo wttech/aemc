@@ -181,6 +181,7 @@ func (c EventStableChecker) Check(_ CheckContext, instance Instance) CheckResult
 }
 
 type ComponentStableChecker struct {
+	PIDsIgnored              []string
 	PIDsFailedActivation     []string
 	PIDsUnsatisfiedReference []string
 }
@@ -189,6 +190,7 @@ func NewComponentStableChecker(opts *CheckOpts) ComponentStableChecker {
 	cv := opts.manager.aem.config.Values()
 
 	return ComponentStableChecker{
+		PIDsIgnored:              cv.GetStringSlice("instance.check.component_stable.pids_ignored"),
 		PIDsFailedActivation:     cv.GetStringSlice("instance.check.component_stable.pids_failed_activation"),
 		PIDsUnsatisfiedReference: cv.GetStringSlice("instance.check.component_stable.pids_unsatisfied_reference"),
 	}
@@ -209,7 +211,7 @@ func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckRe
 	}
 
 	failedComponents := lo.Filter(components.List, func(component osgi.ComponentListItem, _ int) bool {
-		return stringsx.MatchSome(component.PID, c.PIDsFailedActivation) && component.State == osgi.ComponentStateFailedActivation
+		return !stringsx.MatchSome(component.PID, c.PIDsIgnored) && stringsx.MatchSome(component.PID, c.PIDsFailedActivation) && component.State == osgi.ComponentStateFailedActivation
 	})
 	failedComponentCount := len(failedComponents)
 	if failedComponentCount > 0 {
@@ -221,7 +223,7 @@ func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckRe
 	}
 
 	unsatisfiedComponents := lo.Filter(components.List, func(component osgi.ComponentListItem, _ int) bool {
-		return stringsx.MatchSome(component.PID, c.PIDsUnsatisfiedReference) && component.State == osgi.ComponentStateUnsatisfiedReference
+		return !stringsx.MatchSome(component.PID, c.PIDsIgnored) && stringsx.MatchSome(component.PID, c.PIDsUnsatisfiedReference) && component.State == osgi.ComponentStateUnsatisfiedReference
 	})
 	unsatisfiedComponentCount := len(unsatisfiedComponents)
 	if unsatisfiedComponentCount > 0 {

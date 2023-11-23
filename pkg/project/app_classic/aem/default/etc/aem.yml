@@ -97,6 +97,7 @@ instance:
     # OSGi components state tracking
     component_stable:
       skip: false
+      abort: true
       pids_ignored: []
       pids_failed_activation: ["*"]
       pids_unsatisfied_reference: []

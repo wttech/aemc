@@ -93,11 +93,14 @@ instance:
       received_max_age: 5s
     # OSGi components state tracking
     component_stable:
+      skip: false
+      abort: true
       pids_ignored: []
       pids_failed_activation: ["*"]
       pids_unsatisfied_reference: []
     # Sling Installer tracking
     installer:
+      skip: false
       # JMX state checking
       state: true
       # Pause Installation nodes checking

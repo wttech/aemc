@@ -73,16 +73,6 @@ type AwaitChecker struct {
 	ExpectedState string
 }
 
-func NewEventStableChecker(opts *CheckOpts) EventStableChecker {
-	cv := opts.manager.aem.config.Values()
-
-	return EventStableChecker{
-		ReceivedMaxAge: cv.GetDuration("instance.check.event_stable.received_max_age"),
-		TopicsUnstable: cv.GetStringSlice("instance.check.event_stable.topics_unstable"),
-		DetailsIgnored: cv.GetStringSlice("instance.check.event_stable.details_ignored"),
-	}
-}
-
 func NewBundleStableChecker(opts *CheckOpts) BundleStableChecker {
 	cv := opts.manager.aem.config.Values()
 
@@ -136,6 +126,16 @@ type EventStableChecker struct {
 	DetailsIgnored []string
 }
 
+func NewEventStableChecker(opts *CheckOpts) EventStableChecker {
+	cv := opts.manager.aem.config.Values()
+
+	return EventStableChecker{
+		ReceivedMaxAge: cv.GetDuration("instance.check.event_stable.received_max_age"),
+		TopicsUnstable: cv.GetStringSlice("instance.check.event_stable.topics_unstable"),
+		DetailsIgnored: cv.GetStringSlice("instance.check.event_stable.details_ignored"),
+	}
+}
+
 func (c EventStableChecker) Spec() CheckSpec {
 	return CheckSpec{Mandatory: true}
 }
@@ -177,6 +177,64 @@ func (c EventStableChecker) Check(_ CheckContext, instance Instance) CheckResult
 	return CheckResult{
 		ok:      true,
 		message: "recent events stable",
+	}
+}
+
+type ComponentStableChecker struct {
+	PIDsFailedActivation     []string
+	PIDsUnsatisfiedReference []string
+}
+
+func NewComponentStableChecker(opts *CheckOpts) ComponentStableChecker {
+	cv := opts.manager.aem.config.Values()
+
+	return ComponentStableChecker{
+		PIDsFailedActivation:     cv.GetStringSlice("instance.check.component_stable.pids_failed_activation"),
+		PIDsUnsatisfiedReference: cv.GetStringSlice("instance.check.component_stable.pids_unsatisfied_reference"),
+	}
+}
+
+func (c ComponentStableChecker) Spec() CheckSpec {
+	return CheckSpec{Mandatory: true}
+}
+
+func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckResult {
+	components, err := instance.osgi.componentManager.List()
+	if err != nil {
+		return CheckResult{
+			ok:      false,
+			message: "components unknown",
+			err:     err,
+		}
+	}
+
+	failedComponents := lo.Filter(components.List, func(component osgi.ComponentListItem, _ int) bool {
+		return stringsx.MatchSome(component.PID, c.PIDsFailedActivation) && component.State == osgi.ComponentStateFailedActivation
+	})
+	failedComponentCount := len(failedComponents)
+	if failedComponentCount > 0 {
+		message := fmt.Sprintf("some components failed activation (%d): '%s'", failedComponentCount, failedComponents[0].PID)
+		return CheckResult{
+			ok:      false,
+			message: message,
+		}
+	}
+
+	unsatisfiedComponents := lo.Filter(components.List, func(component osgi.ComponentListItem, _ int) bool {
+		return stringsx.MatchSome(component.PID, c.PIDsUnsatisfiedReference) && component.State == osgi.ComponentStateUnsatisfiedReference
+	})
+	unsatisfiedComponentCount := len(unsatisfiedComponents)
+	if unsatisfiedComponentCount > 0 {
+		message := fmt.Sprintf("some components unsatisfied (%d): '%s'", unsatisfiedComponentCount, unsatisfiedComponents[0].PID)
+		return CheckResult{
+			ok:      false,
+			message: message,
+		}
+	}
+
+	return CheckResult{
+		ok:      true,
+		message: "all components stable",
 	}
 }
 

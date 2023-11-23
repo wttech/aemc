@@ -18,15 +18,16 @@ type CheckOpts struct {
 	AwaitStrict   bool
 	Skip          bool
 
-	Reachable     ReachableHTTPChecker
-	BundleStable  BundleStableChecker
-	EventStable   EventStableChecker
-	Installer     InstallerChecker
-	AwaitStarted  AwaitChecker
-	Unreachable   ReachableHTTPChecker
-	StatusStopped StatusStoppedChecker
-	AwaitStopped  AwaitChecker
-	LoginPage     PathHTTPChecker
+	Reachable       ReachableHTTPChecker
+	BundleStable    BundleStableChecker
+	EventStable     EventStableChecker
+	ComponentStable ComponentStableChecker
+	Installer       InstallerChecker
+	AwaitStarted    AwaitChecker
+	Unreachable     ReachableHTTPChecker
+	StatusStopped   StatusStoppedChecker
+	AwaitStopped    AwaitChecker
+	LoginPage       PathHTTPChecker
 }
 
 func NewCheckOpts(manager *InstanceManager) *CheckOpts {
@@ -43,6 +44,7 @@ func NewCheckOpts(manager *InstanceManager) *CheckOpts {
 	result.Reachable = NewReachableChecker(result, true)
 	result.BundleStable = NewBundleStableChecker(result)
 	result.EventStable = NewEventStableChecker(result)
+	result.ComponentStable = NewComponentStableChecker(result)
 	result.AwaitStarted = NewAwaitChecker(result, "started")
 	result.Installer = NewInstallerChecker(result)
 	result.StatusStopped = NewStatusStoppedChecker()
@@ -129,6 +131,9 @@ func (im *InstanceManager) CheckOne(i Instance, checks []Checker) ([]CheckResult
 func (im *InstanceManager) checkOne(ctx context.Context, i Instance, checks []Checker) ([]CheckResult, error) {
 	var results []CheckResult
 	for _, check := range checks {
+		if check.Spec().Skip {
+			continue
+		}
 		result := check.Check(ctx.Value(checkContextKey{}).(CheckContext), i)
 		results = append(results, result)
 		if result.abort {
@@ -174,6 +179,7 @@ func (im *InstanceManager) AwaitStarted(instances []Instance) error {
 			im.CheckOpts.EventStable,
 			im.CheckOpts.Installer,
 			im.CheckOpts.LoginPage,
+			im.CheckOpts.ComponentStable,
 		}
 	}
 	return im.CheckUntilDone(instances, im.CheckOpts, checkers)

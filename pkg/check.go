@@ -37,6 +37,7 @@ type Checker interface {
 }
 
 type CheckSpec struct {
+	Skip      bool // occasionally skip checking e.g. due to performance reasons
 	Mandatory bool // indicates if next checks should be skipped if that particular one fails
 }
 
@@ -65,7 +66,7 @@ func (c AwaitChecker) Check(ctx CheckContext, _ Instance) CheckResult {
 }
 
 func (c AwaitChecker) Spec() CheckSpec {
-	return CheckSpec{Mandatory: true}
+	return CheckSpec{Skip: false, Mandatory: true}
 }
 
 type AwaitChecker struct {
@@ -73,29 +74,21 @@ type AwaitChecker struct {
 	ExpectedState string
 }
 
-func NewEventStableChecker(opts *CheckOpts) EventStableChecker {
-	cv := opts.manager.aem.config.Values()
-
-	return EventStableChecker{
-		ReceivedMaxAge: cv.GetDuration("instance.check.event_stable.received_max_age"),
-		TopicsUnstable: cv.GetStringSlice("instance.check.event_stable.topics_unstable"),
-		DetailsIgnored: cv.GetStringSlice("instance.check.event_stable.details_ignored"),
-	}
-}
-
 func NewBundleStableChecker(opts *CheckOpts) BundleStableChecker {
 	cv := opts.manager.aem.config.Values()
 
 	return BundleStableChecker{
+		Skip:                 cv.GetBool("instance.check.bundle_stable.skip"),
 		SymbolicNamesIgnored: cv.GetStringSlice("instance.check.bundle_stable.symbolic_names_ignored"),
 	}
 }
 
 func (c BundleStableChecker) Spec() CheckSpec {
-	return CheckSpec{Mandatory: true}
+	return CheckSpec{Skip: c.Skip, Mandatory: true}
 }
 
 type BundleStableChecker struct {
+	Skip                 bool
 	SymbolicNamesIgnored []string
 }
 
@@ -131,13 +124,25 @@ func (c BundleStableChecker) Check(_ CheckContext, instance Instance) CheckResul
 }
 
 type EventStableChecker struct {
+	Skip           bool
 	ReceivedMaxAge time.Duration
 	TopicsUnstable []string
 	DetailsIgnored []string
 }
 
+func NewEventStableChecker(opts *CheckOpts) EventStableChecker {
+	cv := opts.manager.aem.config.Values()
+
+	return EventStableChecker{
+		Skip:           cv.GetBool("instance.check.event_stable.skip"),
+		ReceivedMaxAge: cv.GetDuration("instance.check.event_stable.received_max_age"),
+		TopicsUnstable: cv.GetStringSlice("instance.check.event_stable.topics_unstable"),
+		DetailsIgnored: cv.GetStringSlice("instance.check.event_stable.details_ignored"),
+	}
+}
+
 func (c EventStableChecker) Spec() CheckSpec {
-	return CheckSpec{Mandatory: true}
+	return CheckSpec{Skip: c.Skip, Mandatory: true}
 }
 
 func (c EventStableChecker) Check(_ CheckContext, instance Instance) CheckResult {
@@ -180,22 +185,86 @@ func (c EventStableChecker) Check(_ CheckContext, instance Instance) CheckResult
 	}
 }
 
+type ComponentStableChecker struct {
+	Skip                     bool
+	PIDsIgnored              []string
+	PIDsFailedActivation     []string
+	PIDsUnsatisfiedReference []string
+}
+
+func NewComponentStableChecker(opts *CheckOpts) ComponentStableChecker {
+	cv := opts.manager.aem.config.Values()
+
+	return ComponentStableChecker{
+		Skip:                     cv.GetBool("instance.check.component_stable.skip"),
+		PIDsIgnored:              cv.GetStringSlice("instance.check.component_stable.pids_ignored"),
+		PIDsFailedActivation:     cv.GetStringSlice("instance.check.component_stable.pids_failed_activation"),
+		PIDsUnsatisfiedReference: cv.GetStringSlice("instance.check.component_stable.pids_unsatisfied_reference"),
+	}
+}
+
+func (c ComponentStableChecker) Spec() CheckSpec {
+	return CheckSpec{Skip: c.Skip, Mandatory: true}
+}
+
+func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckResult {
+	components, err := instance.osgi.componentManager.List()
+	if err != nil {
+		return CheckResult{
+			ok:      false,
+			message: "components unknown",
+			err:     err,
+		}
+	}
+
+	failedComponents := lo.Filter(components.List, func(component osgi.ComponentListItem, _ int) bool {
+		return !stringsx.MatchSome(component.PID, c.PIDsIgnored) && stringsx.MatchSome(component.PID, c.PIDsFailedActivation) && component.State == osgi.ComponentStateFailedActivation
+	})
+	failedComponentCount := len(failedComponents)
+	if failedComponentCount > 0 {
+		message := fmt.Sprintf("some components failed activation (%d): '%s'", failedComponentCount, failedComponents[0].PID)
+		return CheckResult{
+			ok:      false,
+			message: message,
+		}
+	}
+
+	unsatisfiedComponents := lo.Filter(components.List, func(component osgi.ComponentListItem, _ int) bool {
+		return !stringsx.MatchSome(component.PID, c.PIDsIgnored) && stringsx.MatchSome(component.PID, c.PIDsUnsatisfiedReference) && component.State == osgi.ComponentStateUnsatisfiedReference
+	})
+	unsatisfiedComponentCount := len(unsatisfiedComponents)
+	if unsatisfiedComponentCount > 0 {
+		message := fmt.Sprintf("some components unsatisfied (%d): '%s'", unsatisfiedComponentCount, unsatisfiedComponents[0].PID)
+		return CheckResult{
+			ok:      false,
+			message: message,
+		}
+	}
+
+	return CheckResult{
+		ok:      true,
+		message: "all components stable",
+	}
+}
+
+type InstallerChecker struct {
+	Skip  bool
+	State bool
+	Pause bool
+}
+
 func NewInstallerChecker(opts *CheckOpts) InstallerChecker {
 	cv := opts.manager.aem.config.Values()
 
 	return InstallerChecker{
+		Skip:  cv.GetBool("instance.check.installer.skip"),
 		State: cv.GetBool("instance.check.installer.state"),
 		Pause: cv.GetBool("instance.check.installer.pause"),
 	}
 }
 
-type InstallerChecker struct {
-	State bool
-	Pause bool
-}
-
 func (c InstallerChecker) Spec() CheckSpec {
-	return CheckSpec{Mandatory: false}
+	return CheckSpec{Skip: c.Skip, Mandatory: false}
 }
 
 func (c InstallerChecker) Check(_ CheckContext, instance Instance) CheckResult {
@@ -247,7 +316,7 @@ func NewStatusStoppedChecker() StatusStoppedChecker {
 type StatusStoppedChecker struct{}
 
 func (c StatusStoppedChecker) Spec() CheckSpec {
-	return CheckSpec{Mandatory: true}
+	return CheckSpec{Skip: false, Mandatory: true}
 }
 
 func (c StatusStoppedChecker) Check(_ CheckContext, instance Instance) CheckResult {
@@ -285,6 +354,7 @@ func NewReachableChecker(opts *CheckOpts, reachable bool) ReachableHTTPChecker {
 	cv := opts.manager.aem.config.Values()
 
 	return ReachableHTTPChecker{
+		Skip:      cv.GetBool("instance.check.reachable.skip"),
 		Mandatory: reachable,
 		Reachable: reachable,
 		Timeout:   cv.GetDuration("instance.check.reachable.timeout"),
@@ -292,13 +362,14 @@ func NewReachableChecker(opts *CheckOpts, reachable bool) ReachableHTTPChecker {
 }
 
 type ReachableHTTPChecker struct {
+	Skip      bool
 	Mandatory bool
 	Reachable bool
 	Timeout   time.Duration
 }
 
 func (c ReachableHTTPChecker) Spec() CheckSpec {
-	return CheckSpec{Mandatory: c.Mandatory}
+	return CheckSpec{Skip: c.Skip, Mandatory: c.Mandatory}
 }
 
 func (c ReachableHTTPChecker) Check(_ CheckContext, instance Instance) CheckResult {
@@ -321,17 +392,19 @@ func (c ReachableHTTPChecker) Check(_ CheckContext, instance Instance) CheckResu
 
 func NewLoginPageChecker(opts *CheckOpts) PathHTTPChecker {
 	cv := opts.manager.aem.config.Values()
-	return NewPathReadyChecker(opts, "login page",
+	return NewPathReadyChecker(opts, cv.GetBool("instance.check.login_page.skip"),
+		"login page",
 		cv.GetString("instance.check.login_page.path"),
 		cv.GetInt("instance.check.login_page.status_code"),
 		cv.GetString("instance.check.login_page.contained_text"),
 	)
 }
 
-func NewPathReadyChecker(opts *CheckOpts, name string, path string, statusCode int, containedText string) PathHTTPChecker {
+func NewPathReadyChecker(opts *CheckOpts, skip bool, name string, path string, statusCode int, containedText string) PathHTTPChecker {
 	cv := opts.manager.aem.config.Values()
 
 	return PathHTTPChecker{
+		Skip:           skip,
 		Name:           name,
 		Path:           path,
 		RequestTimeout: cv.GetDuration("instance.check.path_ready.timeout"),
@@ -341,10 +414,11 @@ func NewPathReadyChecker(opts *CheckOpts, name string, path string, statusCode i
 }
 
 func (c PathHTTPChecker) Spec() CheckSpec {
-	return CheckSpec{Mandatory: false}
+	return CheckSpec{Skip: c.Skip, Mandatory: false}
 }
 
 type PathHTTPChecker struct {
+	Skip           bool
 	Name           string
 	Path           string
 	RequestTimeout time.Duration

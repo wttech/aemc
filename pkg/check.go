@@ -187,10 +187,9 @@ func (c EventStableChecker) Check(_ CheckContext, instance Instance) CheckResult
 
 type ComponentStableChecker struct {
 	Skip                     bool
-	Abort                    bool
-	PIDsIgnored              []string
-	PIDsFailedActivation     []string
-	PIDsUnsatisfiedReference []string
+	IgnoredPIDs              []string
+	FailedActivationPIDs     []string
+	UnsatisfiedReferencePIDs []string
 }
 
 func NewComponentStableChecker(opts *CheckOpts) ComponentStableChecker {
@@ -198,10 +197,9 @@ func NewComponentStableChecker(opts *CheckOpts) ComponentStableChecker {
 
 	return ComponentStableChecker{
 		Skip:                     cv.GetBool("instance.check.component_stable.skip"),
-		Abort:                    cv.GetBool("instance.check.component_stable.abort"),
-		PIDsIgnored:              cv.GetStringSlice("instance.check.component_stable.pids_ignored"),
-		PIDsFailedActivation:     cv.GetStringSlice("instance.check.component_stable.pids_failed_activation"),
-		PIDsUnsatisfiedReference: cv.GetStringSlice("instance.check.component_stable.pids_unsatisfied_reference"),
+		IgnoredPIDs:              cv.GetStringSlice("instance.check.component_stable.ignored_pids"),
+		FailedActivationPIDs:     cv.GetStringSlice("instance.check.component_stable.failed_activation_pids"),
+		UnsatisfiedReferencePIDs: cv.GetStringSlice("instance.check.component_stable.unsatisfied_reference_pids"),
 	}
 }
 
@@ -220,27 +218,25 @@ func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckRe
 	}
 
 	failedComponents := lo.Filter(components.List, func(component osgi.ComponentListItem, _ int) bool {
-		return !stringsx.MatchSome(component.PID, c.PIDsIgnored) && stringsx.MatchSome(component.PID, c.PIDsFailedActivation) && component.State == osgi.ComponentStateFailedActivation
+		return !stringsx.MatchSome(component.PID, c.IgnoredPIDs) && stringsx.MatchSome(component.PID, c.FailedActivationPIDs) && component.State == osgi.ComponentStateFailedActivation
 	})
 	failedComponentCount := len(failedComponents)
 	if failedComponentCount > 0 {
 		message := fmt.Sprintf("some components failed activation (%d): '%s'", failedComponentCount, failedComponents[0].PID)
 		return CheckResult{
 			ok:      false,
-			abort:   c.Abort,
 			message: message,
 		}
 	}
 
 	unsatisfiedComponents := lo.Filter(components.List, func(component osgi.ComponentListItem, _ int) bool {
-		return !stringsx.MatchSome(component.PID, c.PIDsIgnored) && stringsx.MatchSome(component.PID, c.PIDsUnsatisfiedReference) && component.State == osgi.ComponentStateUnsatisfiedReference
+		return !stringsx.MatchSome(component.PID, c.IgnoredPIDs) && stringsx.MatchSome(component.PID, c.UnsatisfiedReferencePIDs) && component.State == osgi.ComponentStateUnsatisfiedReference
 	})
 	unsatisfiedComponentCount := len(unsatisfiedComponents)
 	if unsatisfiedComponentCount > 0 {
 		message := fmt.Sprintf("some components unsatisfied (%d): '%s'", unsatisfiedComponentCount, unsatisfiedComponents[0].PID)
 		return CheckResult{
 			ok:      false,
-			abort:   c.Abort,
 			message: message,
 		}
 	}

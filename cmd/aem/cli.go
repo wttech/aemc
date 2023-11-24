@@ -299,6 +299,9 @@ func (c *CLI) printOutputDataIndented(writer *textio.PrefixWriter, value any, ke
 }
 
 func (c *CLI) printOutputMarshaled() {
+	if c.outputValue == common.OutputValueNone {
+		return
+	}
 	// Due to bug in JMESPath we need to clone response data using JSON serialization.
 	// Ref.: https://github.com/jmespath/go-jmespath/issues/32
 	outputResponse, err := c.outputResponse.Clone()

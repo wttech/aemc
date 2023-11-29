@@ -45,7 +45,7 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.check.skip", false)
 	v.SetDefault("instance.check.warmup", time.Second*1)
 	v.SetDefault("instance.check.interval", time.Second*6)
-	v.SetDefault("instance.check.done_threshold", 5)
+	v.SetDefault("instance.check.done_threshold", 4)
 	v.SetDefault("instance.check.installer.state", true)
 	v.SetDefault("instance.check.installer.pause", true)
 
@@ -66,7 +66,7 @@ func (c *Config) setDefaults() {
 
 	v.SetDefault("instance.check.component_stable.skip", false)
 	v.SetDefault("instance.check.component_stable.pids_ignored", []string{})
-	v.SetDefault("instance.check.component_stable.pids_failed_activation", []string{"*"})
+	v.SetDefault("instance.check.component_stable.pids_failed_activation", []string{})
 	v.SetDefault("instance.check.component_stable.pids_unsatisfied_reference", []string{})
 
 	v.SetDefault("instance.check.installer.skip", false)

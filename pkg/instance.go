@@ -276,10 +276,9 @@ func (i Instance) HealthChecks() []string {
 		}
 		for _, check := range checks {
 			result := check.Check(i.manager.CheckContext().Value(checkContextKey{}).(CheckContext), i)
-			if result.message != "" {
-				messages = append(messages, result.message)
-			} else if result.err != nil {
-				messages = append(messages, fmt.Sprintf("%s", result.err))
+			resultText := result.Text()
+			if resultText != "" {
+				messages = append(messages, resultText)
 			}
 		}
 	}

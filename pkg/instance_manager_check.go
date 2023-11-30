@@ -139,10 +139,13 @@ func (im *InstanceManager) checkOne(ctx context.Context, i Instance, checks []Ch
 		if result.abort {
 			log.Fatal(InstanceMsg(i, result.message))
 		}
-		if result.err != nil {
-			log.Info(InstanceMsg(i, result.err))
-		} else if len(result.message) > 0 {
-			log.Info(InstanceMsg(i, result.message))
+		resultText := result.Text()
+		if resultText != "" {
+			if result.ok {
+				log.Info(InstanceMsg(i, resultText))
+			} else {
+				log.Error(InstanceMsg(i, resultText))
+			}
 		}
 		if !result.ok && check.Spec().Mandatory {
 			break

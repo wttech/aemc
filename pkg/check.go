@@ -31,6 +31,19 @@ func (c *CheckResult) Err() error {
 	return c.err
 }
 
+func (c *CheckResult) Text() string {
+	if c.message != "" && c.err != nil {
+		return fmt.Sprintf("%s: %s", c.message, c.err)
+	}
+	if c.message != "" {
+		return c.message
+	}
+	if c.err != nil {
+		return fmt.Sprintf("%s", c.err)
+	}
+	return ""
+}
+
 type Checker interface {
 	Check(ctx CheckContext, instance Instance) CheckResult
 	Spec() CheckSpec
@@ -282,7 +295,6 @@ func (c InstallerChecker) Check(_ CheckContext, instance Instance) CheckResult {
 			return CheckResult{
 				ok:      false,
 				message: fmt.Sprintf("installer active (%d)", state.ActiveResources()),
-				err:     err,
 			}
 		}
 	}
@@ -299,7 +311,6 @@ func (c InstallerChecker) Check(_ CheckContext, instance Instance) CheckResult {
 			return CheckResult{
 				ok:      false,
 				message: fmt.Sprintf("installer paused (%d)", pauseCount),
-				err:     err,
 			}
 		}
 	}

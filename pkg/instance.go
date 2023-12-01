@@ -273,6 +273,8 @@ func (i Instance) HealthChecks() []string {
 			i.manager.CheckOpts.BundleStable,
 			i.manager.CheckOpts.EventStable,
 			i.manager.CheckOpts.Installer,
+			i.manager.CheckOpts.LoginPage,
+			i.manager.CheckOpts.ComponentStable,
 		}
 		for _, check := range checks {
 			result := check.Check(i.manager.CheckContext().Value(checkContextKey{}).(CheckContext), i)

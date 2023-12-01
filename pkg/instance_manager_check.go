@@ -144,7 +144,7 @@ func (im *InstanceManager) checkOne(ctx context.Context, i Instance, checks []Ch
 			if result.ok {
 				log.Info(InstanceMsg(i, resultText))
 			} else {
-				log.Error(InstanceMsg(i, resultText))
+				log.Warn(InstanceMsg(i, resultText))
 			}
 		}
 		if !result.ok && check.Spec().Mandatory {

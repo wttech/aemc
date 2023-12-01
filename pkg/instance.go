@@ -277,6 +277,9 @@ func (i Instance) HealthChecks() []string {
 			i.manager.CheckOpts.ComponentStable,
 		}
 		for _, check := range checks {
+			if check.Spec().Skip {
+				continue
+			}
 			result := check.Check(i.manager.CheckContext().Value(checkContextKey{}).(CheckContext), i)
 			resultText := result.Text()
 			if resultText != "" {

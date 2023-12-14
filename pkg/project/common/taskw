@@ -108,6 +108,14 @@ if [ ! -f "${BIN_EXEC_FILE}" ]; then
   chmod +x "${BIN_EXEC_FILE}"
 fi
 
+# Prevent OS or shell-specific glitches
+# =====================================
+
+# https://stackoverflow.com/questions/7250130/how-to-stop-mingw-and-msys-from-mangling-path-names-given-at-the-command-line
+export MSYS_NO_PATHCONV=1
+export MSYS2_ARG_CONV_EXCL="*"
+export MSYS2_ENV_CONV_EXCL="*"
+
 # Execute Task Tool
 # =================
 

@@ -115,9 +115,13 @@ func (c BundleStableChecker) Check(_ CheckContext, instance Instance) CheckResul
 			err:     err,
 		}
 	}
-	unstableBundles := bundles.FindUnstable()
+	unstableBundles := lo.Filter(bundles.FindUnstable(), func(bi osgi.BundleListItem, index int) bool {
+		if inst.MatchSome(instance.ID(), bi.SymbolicName, c.SymbolicNamesIgnored) {
+			return false
+		}
+		return true
+	})
 	unstableBundleCount := len(unstableBundles)
-
 	if unstableBundleCount > 0 {
 		var message string
 		randomBundleSymbolicName := lox.Random(unstableBundles).SymbolicName
@@ -178,7 +182,7 @@ func (c EventStableChecker) Check(_ CheckContext, instance Instance) CheckResult
 		if !stringsx.MatchSome(e.Topic, c.TopicsUnstable) {
 			return false
 		}
-		if stringsx.MatchSome(e.Details(), c.DetailsIgnored) {
+		if inst.MatchSome(instance.ID(), e.Details(), c.DetailsIgnored) {
 			return false
 		}
 		return true

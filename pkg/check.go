@@ -6,6 +6,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/lox"
 	"github.com/wttech/aemc/pkg/common/netx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
+	inst "github.com/wttech/aemc/pkg/instance"
 	"github.com/wttech/aemc/pkg/osgi"
 	"io"
 	"strings"
@@ -114,9 +115,13 @@ func (c BundleStableChecker) Check(_ CheckContext, instance Instance) CheckResul
 			err:     err,
 		}
 	}
-	unstableBundles := bundles.FindUnstable()
+	unstableBundles := lo.Filter(bundles.FindUnstable(), func(bi osgi.BundleListItem, index int) bool {
+		if inst.MatchSome(instance.ID(), bi.SymbolicName, c.SymbolicNamesIgnored) {
+			return false
+		}
+		return true
+	})
 	unstableBundleCount := len(unstableBundles)
-
 	if unstableBundleCount > 0 {
 		var message string
 		randomBundleSymbolicName := lox.Random(unstableBundles).SymbolicName
@@ -177,7 +182,7 @@ func (c EventStableChecker) Check(_ CheckContext, instance Instance) CheckResult
 		if !stringsx.MatchSome(e.Topic, c.TopicsUnstable) {
 			return false
 		}
-		if stringsx.MatchSome(e.Details(), c.DetailsIgnored) {
+		if inst.MatchSome(instance.ID(), e.Details(), c.DetailsIgnored) {
 			return false
 		}
 		return true
@@ -231,7 +236,7 @@ func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckRe
 	}
 
 	failedComponents := lo.Filter(components.List, func(component osgi.ComponentListItem, _ int) bool {
-		return !stringsx.MatchSome(component.PID, c.PIDsIgnored) && stringsx.MatchSome(component.PID, c.PIDsFailedActivation) && component.State == osgi.ComponentStateFailedActivation
+		return !inst.MatchSome(instance.ID(), component.PID, c.PIDsIgnored) && inst.MatchSome(instance.ID(), component.PID, c.PIDsFailedActivation) && component.State == osgi.ComponentStateFailedActivation
 	})
 	failedComponentCount := len(failedComponents)
 	if failedComponentCount > 0 {
@@ -243,7 +248,7 @@ func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckRe
 	}
 
 	unsatisfiedComponents := lo.Filter(components.List, func(component osgi.ComponentListItem, _ int) bool {
-		return !stringsx.MatchSome(component.PID, c.PIDsIgnored) && stringsx.MatchSome(component.PID, c.PIDsUnsatisfiedReference) && component.State == osgi.ComponentStateUnsatisfiedReference
+		return !inst.MatchSome(instance.ID(), component.PID, c.PIDsIgnored) && inst.MatchSome(instance.ID(), component.PID, c.PIDsUnsatisfiedReference) && component.State == osgi.ComponentStateUnsatisfiedReference
 	})
 	unsatisfiedComponentCount := len(unsatisfiedComponents)
 	if unsatisfiedComponentCount > 0 {

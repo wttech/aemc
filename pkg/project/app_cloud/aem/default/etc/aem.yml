@@ -165,7 +165,7 @@ instance:
       # Fail on case 'installed with errors'
       strict: true
     # Number of changes after which the commit to the repository is performed
-    install_save_threshold: 2048
+    install_save_threshold: 1024
     # Allows to relax dependency handling if needed
     install_dependency_handling: required
     # Controls how 'rep:policy' nodes are handled during import

@@ -98,7 +98,7 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.package.upload_optimized", true)
 
 	v.SetDefault("instance.package.install_recursive", true)
-	v.SetDefault("instance.package.install_save_threshold", 2048)
+	v.SetDefault("instance.package.install_save_threshold", 1024)
 	v.SetDefault("instance.package.install_ac_handling", "")
 	v.SetDefault("instance.package.install_dependency_handling", "required")
 

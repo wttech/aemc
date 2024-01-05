@@ -6,7 +6,7 @@
 all: deps test vet fmt lint install
 
 deps:
-	go install github.com/mgechev/revive@latest
+	go install github.com/mgechev/revive@v1.3.3
 	go mod tidy
 
 test:

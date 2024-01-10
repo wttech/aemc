@@ -101,10 +101,10 @@ instance:
         include: []
         exclude: []
         match:
-          disabled: []
-          no_config: []
-          unsatisfied_reference: []
-          satisfied: []
+          "disabled": []
+          "no config": []
+          "unsatisfied (reference)": []
+          "satisfied": []
     # Sling Installer tracking
     installer:
       skip: false

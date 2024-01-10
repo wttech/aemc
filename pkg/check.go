@@ -10,6 +10,7 @@ import (
 	"github.com/wttech/aemc/pkg/osgi"
 	"golang.org/x/exp/maps"
 	"io"
+	"sort"
 	"strings"
 	"time"
 )
@@ -246,7 +247,7 @@ func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckRe
 		return inst.MatchSome(instance.ID(), component.PID, c.PIDs.Include) && !inst.MatchSome(instance.ID(), component.PID, c.PIDs.Exclude)
 	})
 
-	implicitActive := !lo.ContainsBy(maps.Keys(c.PIDs.Match), func(explicitState string) bool { return osgi.IsComponentStateActive(explicitState) })
+	implicitActive := !lo.Contains(maps.Keys(c.PIDs.Match), osgi.ComponentStateActive)
 	var implicitActiveComponents map[string]osgi.ComponentListItem
 	if implicitActive {
 		implicitActiveComponents = make(map[string]osgi.ComponentListItem)
@@ -255,24 +256,28 @@ func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckRe
 		}
 	}
 
-	for state, statePIDs := range c.PIDs.Match {
-		var stateComponents []osgi.ComponentListItem
-		for _, component := range includedComponents { // TODO order by state keys to ensure stable result
+	pidsMatched := maps.Keys(c.PIDs.Match)
+	sort.Strings(pidsMatched) // stable order for better readability
+
+	for _, state := range pidsMatched {
+		for _, component := range includedComponents {
+			statePIDs := c.PIDs.Match[state]
+			var stateComponents []osgi.ComponentListItem
 			if inst.MatchSome(instance.ID(), component.PID, statePIDs) {
-				if !component.MatchState(state) {
+				if component.State != state {
 					stateComponents = append(stateComponents, component)
 				}
 				if implicitActive {
 					delete(implicitActiveComponents, component.PID)
 				}
 			}
-		}
-
-		stateComponentCount := len(stateComponents)
-		if len(stateComponents) > 0 {
-			return CheckResult{
-				ok:      false,
-				message: fmt.Sprintf("some components states are not matching '%s' (%d): '%s'", state, stateComponentCount, stateComponents[0].PID),
+			stateComponentCount := len(stateComponents)
+			if len(stateComponents) > 0 {
+				stateComponentRandom := lox.Random(stateComponents)
+				return CheckResult{
+					ok:      false,
+					message: fmt.Sprintf("components with state not matched '%s' (%d): '%s'", state, stateComponentCount, stateComponentRandom.PID),
+				}
 			}
 		}
 	}
@@ -283,9 +288,10 @@ func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckRe
 		})
 		inactiveComponentCount := len(inactiveComponents)
 		if inactiveComponentCount > 0 {
+			inactiveComponentRandom := lox.Random(inactiveComponents)
 			return CheckResult{
 				ok:      false,
-				message: fmt.Sprintf("some components state are not active (%d): '%s'", inactiveComponentCount, inactiveComponents[0].PID),
+				message: fmt.Sprintf("components not active (%d): '%s'", inactiveComponentCount, inactiveComponentRandom.PID),
 			}
 		}
 	}

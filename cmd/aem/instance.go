@@ -290,7 +290,7 @@ func (c *CLI) instanceDeleteCmd() *cobra.Command {
 func (c *CLI) instanceAwaitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "await",
-		Aliases: []string{"wait"},
+		Aliases: []string{"wait", "check"},
 		Short:   "Awaits stable AEM instance(s)",
 		Run: func(cmd *cobra.Command, args []string) {
 			doneThreshold, _ := cmd.Flags().GetInt("done-threshold")

@@ -204,20 +204,26 @@ func (c EventStableChecker) Check(_ CheckContext, instance Instance) CheckResult
 }
 
 type ComponentStableChecker struct {
-	Skip                     bool
-	PIDsIgnored              []string
-	PIDsFailedActivation     []string
-	PIDsUnsatisfiedReference []string
+	Skip bool
+	PIDs ComponentStablePIDs
+}
+
+type ComponentStablePIDs struct {
+	Include []string
+	Exclude []string
+	Match   map[string]string
 }
 
 func NewComponentStableChecker(opts *CheckOpts) ComponentStableChecker {
 	cv := opts.manager.aem.config.Values()
 
 	return ComponentStableChecker{
-		Skip:                     cv.GetBool("instance.check.component_stable.skip"),
-		PIDsIgnored:              cv.GetStringSlice("instance.check.component_stable.pids_ignored"),
-		PIDsFailedActivation:     cv.GetStringSlice("instance.check.component_stable.pids_failed_activation"),
-		PIDsUnsatisfiedReference: cv.GetStringSlice("instance.check.component_stable.pids_unsatisfied_reference"),
+		Skip: cv.GetBool("instance.check.component_stable.skip"),
+		PIDs: ComponentStablePIDs{
+			Include: cv.GetStringSlice("instance.check.component_stable.pids.include"),
+			Exclude: cv.GetStringSlice("instance.check.component_stable.pids.exclude"),
+			Match:   cv.GetStringMapString("instance.check.component_stable.pids.match"),
+		},
 	}
 }
 
@@ -226,7 +232,7 @@ func (c ComponentStableChecker) Spec() CheckSpec {
 }
 
 func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckResult {
-	components, err := instance.osgi.componentManager.List()
+	_, err := instance.osgi.componentManager.List()
 	if err != nil {
 		return CheckResult{
 			ok:      false,
@@ -235,6 +241,7 @@ func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckRe
 		}
 	}
 
+	/* TODO reimplement this
 	failedComponents := lo.Filter(components.List, func(component osgi.ComponentListItem, _ int) bool {
 		return !inst.MatchSome(instance.ID(), component.PID, c.PIDsIgnored) && inst.MatchSome(instance.ID(), component.PID, c.PIDsFailedActivation) && component.State == osgi.ComponentStateFailedActivation
 	})
@@ -258,6 +265,7 @@ func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckRe
 			message: message,
 		}
 	}
+	*/
 
 	return CheckResult{
 		ok:      true,

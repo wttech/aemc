@@ -97,9 +97,14 @@ instance:
     # OSGi components state tracking
     component_stable:
       skip: false
-      pids_ignored: []
-      pids_failed_activation: []
-      pids_unsatisfied_reference: []
+      pids:
+        include: []
+        exclude: []
+        match:
+          disabled: []
+          no_config: []
+          unsatisfied_reference: []
+          satisfied: []
     # Sling Installer tracking
     installer:
       skip: false

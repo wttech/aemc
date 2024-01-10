@@ -78,6 +78,14 @@ func (c ComponentListItem) String() string {
 	return fmt.Sprintf("component '%s' (state: %s)", c.PID, c.State)
 }
 
+func (c ComponentListItem) MatchState(state string) bool {
+	return c.State == state || fmt.Sprintf("%d", c.StateRaw) == state
+}
+
+func IsComponentStateActive(state string) bool {
+	return state == ComponentStateActive || state == fmt.Sprintf("%d", ComponentStateRawActive)
+}
+
 type ComponentStateRaw int
 
 const (

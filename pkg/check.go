@@ -8,6 +8,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	inst "github.com/wttech/aemc/pkg/instance"
 	"github.com/wttech/aemc/pkg/osgi"
+	"golang.org/x/exp/maps"
 	"io"
 	"strings"
 	"time"
@@ -211,7 +212,7 @@ type ComponentStableChecker struct {
 type ComponentStablePIDs struct {
 	Include []string
 	Exclude []string
-	Match   map[string]string
+	Match   map[string][]string
 }
 
 func NewComponentStableChecker(opts *CheckOpts) ComponentStableChecker {
@@ -222,7 +223,7 @@ func NewComponentStableChecker(opts *CheckOpts) ComponentStableChecker {
 		PIDs: ComponentStablePIDs{
 			Include: cv.GetStringSlice("instance.check.component_stable.pids.include"),
 			Exclude: cv.GetStringSlice("instance.check.component_stable.pids.exclude"),
-			Match:   cv.GetStringMapString("instance.check.component_stable.pids.match"),
+			Match:   cv.GetStringMapStringSlice("instance.check.component_stable.pids.match"),
 		},
 	}
 }
@@ -232,7 +233,7 @@ func (c ComponentStableChecker) Spec() CheckSpec {
 }
 
 func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckResult {
-	_, err := instance.osgi.componentManager.List()
+	components, err := instance.osgi.componentManager.List()
 	if err != nil {
 		return CheckResult{
 			ok:      false,
@@ -241,31 +242,53 @@ func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckRe
 		}
 	}
 
-	/* TODO reimplement this
-	failedComponents := lo.Filter(components.List, func(component osgi.ComponentListItem, _ int) bool {
-		return !inst.MatchSome(instance.ID(), component.PID, c.PIDsIgnored) && inst.MatchSome(instance.ID(), component.PID, c.PIDsFailedActivation) && component.State == osgi.ComponentStateFailedActivation
+	includedComponents := lo.Filter(components.List, func(component osgi.ComponentListItem, _ int) bool {
+		return inst.MatchSome(instance.ID(), component.PID, c.PIDs.Include) && !inst.MatchSome(instance.ID(), component.PID, c.PIDs.Exclude)
 	})
-	failedComponentCount := len(failedComponents)
-	if failedComponentCount > 0 {
-		message := fmt.Sprintf("some components failed activation (%d): '%s'", failedComponentCount, failedComponents[0].PID)
-		return CheckResult{
-			ok:      false,
-			message: message,
+
+	implicitActive := !lo.ContainsBy(maps.Keys(c.PIDs.Match), func(explicitState string) bool { return osgi.IsComponentStateActive(explicitState) })
+	var implicitActiveComponents map[string]osgi.ComponentListItem
+	if implicitActive {
+		implicitActiveComponents = make(map[string]osgi.ComponentListItem)
+		for _, component := range includedComponents {
+			implicitActiveComponents[component.PID] = component
 		}
 	}
 
-	unsatisfiedComponents := lo.Filter(components.List, func(component osgi.ComponentListItem, _ int) bool {
-		return !inst.MatchSome(instance.ID(), component.PID, c.PIDsIgnored) && inst.MatchSome(instance.ID(), component.PID, c.PIDsUnsatisfiedReference) && component.State == osgi.ComponentStateUnsatisfiedReference
-	})
-	unsatisfiedComponentCount := len(unsatisfiedComponents)
-	if unsatisfiedComponentCount > 0 {
-		message := fmt.Sprintf("some components unsatisfied (%d): '%s'", unsatisfiedComponentCount, unsatisfiedComponents[0].PID)
-		return CheckResult{
-			ok:      false,
-			message: message,
+	for state, statePIDs := range c.PIDs.Match {
+		var stateComponents []osgi.ComponentListItem
+		for _, component := range includedComponents { // TODO order by state keys to ensure stable result
+			if inst.MatchSome(instance.ID(), component.PID, statePIDs) {
+				if !component.MatchState(state) {
+					stateComponents = append(stateComponents, component)
+				}
+				if implicitActive {
+					delete(implicitActiveComponents, component.PID)
+				}
+			}
+		}
+
+		stateComponentCount := len(stateComponents)
+		if len(stateComponents) > 0 {
+			return CheckResult{
+				ok:      false,
+				message: fmt.Sprintf("some components states are not matching '%s' (%d): '%s'", state, stateComponentCount, stateComponents[0].PID),
+			}
 		}
 	}
-	*/
+
+	if implicitActive {
+		inactiveComponents := lo.Filter(maps.Values(implicitActiveComponents), func(component osgi.ComponentListItem, _ int) bool {
+			return component.State != osgi.ComponentStateActive
+		})
+		inactiveComponentCount := len(inactiveComponents)
+		if inactiveComponentCount > 0 {
+			return CheckResult{
+				ok:      false,
+				message: fmt.Sprintf("some components state are not active (%d): '%s'", inactiveComponentCount, inactiveComponents[0].PID),
+			}
+		}
+	}
 
 	return CheckResult{
 		ok:      true,

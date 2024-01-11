@@ -96,7 +96,7 @@ instance:
     component_stable:
       skip: false
       pids:
-        include: []
+        include: ['com.day.crx.packaging.*', 'org.apache.sling.installer.*']
         exclude: []
         match:
           "disabled": []

@@ -10,7 +10,6 @@ import (
 	"github.com/wttech/aemc/pkg/osgi"
 	"golang.org/x/exp/maps"
 	"io"
-	"sort"
 	"strings"
 	"time"
 )
@@ -257,7 +256,7 @@ func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckRe
 	}
 
 	pidsMatched := maps.Keys(c.PIDs.Match)
-	sort.Strings(pidsMatched) // stable order for better readability
+	// sort.Strings(pidsMatched) // stable order for better readability
 
 	for _, state := range pidsMatched {
 		for _, component := range includedComponents {
@@ -276,7 +275,7 @@ func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckRe
 				stateComponentRandom := lox.Random(stateComponents)
 				return CheckResult{
 					ok:      false,
-					message: fmt.Sprintf("components with state not matched '%s' (%d): '%s'", state, stateComponentCount, stateComponentRandom.PID),
+					message: fmt.Sprintf("components state not matching '%s' (%d): '%s'", state, stateComponentCount, stateComponentRandom.PID),
 				}
 			}
 		}

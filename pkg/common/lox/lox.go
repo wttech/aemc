@@ -44,10 +44,11 @@ func SerialMap[I any, R any](iterable []I, callback func(iteratee I) (R, error))
 	return results, nil
 }
 
+var random = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 func Random[I any](iterable []I) I {
 	if len(iterable) == 0 {
 		panic("cannot get random value from empty slice")
 	}
-	rand.Seed(time.Now().Unix())
-	return iterable[rand.Intn(len(iterable))]
+	return iterable[random.Intn(len(iterable))]
 }

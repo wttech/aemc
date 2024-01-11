@@ -189,7 +189,6 @@ func (c EventStableChecker) Check(_ CheckContext, instance Instance) CheckResult
 		return true
 	})
 	unstableEventCount := len(unstableEvents)
-
 	if unstableEventCount > 0 {
 		message := fmt.Sprintf("some events unstable (%d): '%s'", unstableEventCount, unstableEvents[0].Details())
 		return CheckResult{
@@ -271,7 +270,7 @@ func (c ComponentStableChecker) Check(_ CheckContext, instance Instance) CheckRe
 				}
 			}
 			stateComponentCount := len(stateComponents)
-			if len(stateComponents) > 0 {
+			if stateComponentCount > 0 {
 				stateComponentRandom := lox.Random(stateComponents)
 				return CheckResult{
 					ok:      false,

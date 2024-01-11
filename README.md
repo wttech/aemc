@@ -321,6 +321,17 @@ instance:
         - "org.osgi.service.component.runtime.ServiceComponentRuntime"
         - "java.util.ResourceBundle"
       received_max_age: 5s
+    # OSGi components state tracking
+    component_stable:
+      skip: false
+      pids:
+        include: ['com.day.crx.packaging.*', 'org.apache.sling.installer.*']
+        exclude: ['org.apache.sling.installer.hc.*', 'org.apache.sling.installer.core.impl.console.*']
+        match:
+          "disabled": []
+          "no config": []
+          "unsatisfied (reference)": []
+          "satisfied": []
     # Sling Installer tracking
     installer:
       # JMX state checking

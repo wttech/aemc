@@ -66,7 +66,7 @@ func (c *Config) setDefaults() {
 
 	v.SetDefault("instance.check.component_stable.skip", false)
 	v.SetDefault("instance.check.component_stable.pids.include", []string{"com.day.crx.packaging.*", "org.apache.sling.installer.*"})
-	v.SetDefault("instance.check.component_stable.pids.exclude", []string{})
+	v.SetDefault("instance.check.component_stable.pids.exclude", []string{"org.apache.sling.installer.hc.*", "org.apache.sling.installer.core.impl.console.*"})
 	v.SetDefault("instance.check.component_stable.pids.match", map[string][]string{})
 
 	v.SetDefault("instance.check.installer.skip", false)

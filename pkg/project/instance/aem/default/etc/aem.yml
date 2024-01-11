@@ -97,7 +97,7 @@ instance:
       skip: false
       pids:
         include: ['com.day.crx.packaging.*', 'org.apache.sling.installer.*']
-        exclude: []
+        exclude: ['org.apache.sling.installer.hc.*', 'org.apache.sling.installer.core.impl.console.*']
         match:
           "disabled": []
           "no config": []

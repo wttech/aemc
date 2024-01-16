@@ -302,31 +302,40 @@ func (c *CLI) printOutputMarshaled() {
 	if c.outputValue == common.OutputValueNone {
 		return
 	}
-	// Due to bug in JMESPath we need to clone response data using JSON serialization.
-	// Ref.: https://github.com/jmespath/go-jmespath/issues/32
-	outputResponse, err := c.outputResponse.Clone()
+
+	if c.outputQuery == "" {
+		c.printOutputMarshaledValue(c.outputResponse)
+		return
+	}
+
+	// JMESPath bug workaround, see: https://github.com/jmespath/go-jmespath/issues/32)
+	cloned, err := c.outputResponse.Clone()
 	if err != nil {
 		log.Fatalf("cannot clone CLI output data: %s", err)
 	}
-	outputQueried, err := jmespath.Search(c.outputQuery, outputResponse)
+	queried, err := jmespath.Search(c.outputQuery, cloned)
 	if err != nil {
 		log.Fatalf("cannot perform query '%s' on CLI output data: %s", c.outputQuery, err)
 	}
 
+	c.printOutputMarshaledValue(queried)
+}
+
+func (c *CLI) printOutputMarshaledValue(value any) {
 	switch c.outputFormat {
 	case fmtx.JSON:
-		jsonQueried, err := fmtx.MarshalJSON(outputQueried)
+		jsonValue, err := fmtx.MarshalJSON(value)
 		if err != nil {
 			log.Fatalf("cannot serialize CLI output to target JSON format!")
 		}
-		fmt.Println(jsonQueried)
+		fmt.Println(jsonValue)
 		break
 	case fmtx.YML:
-		ymlQueried, err := fmtx.MarshalYML(outputQueried)
+		ymlValue, err := fmtx.MarshalYML(value)
 		if err != nil {
 			log.Fatalf("cannot serialize CLI output to target YML format!")
 		}
-		fmt.Println(ymlQueried)
+		fmt.Println(ymlValue)
 		break
 	default:
 		log.Fatalf("cannot serialize CLI output to unsupported format '%s'", c.outputFormat)

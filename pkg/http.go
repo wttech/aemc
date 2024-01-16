@@ -84,6 +84,10 @@ func (h *HTTP) Hostname() string {
 	return urlConfig.Hostname()
 }
 
+func (h *HTTP) Address() string {
+	return fmt.Sprintf("%s:%s", h.Hostname(), h.Port())
+}
+
 func (h *HTTP) BaseURL() string {
 	return h.baseURL
 }

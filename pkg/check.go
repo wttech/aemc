@@ -424,7 +424,6 @@ func (c ReachableHTTPChecker) Spec() CheckSpec {
 }
 
 func (c ReachableHTTPChecker) Check(_ CheckContext, instance Instance) CheckResult {
-	address := fmt.Sprintf("%s:%s", instance.http.Hostname(), instance.http.Port())
 	reachable, _ := netx.IsReachable(instance.http.Hostname(), instance.http.Port(), c.Timeout)
 	if c.Reachable == reachable {
 		return CheckResult{ok: true}
@@ -432,12 +431,12 @@ func (c ReachableHTTPChecker) Check(_ CheckContext, instance Instance) CheckResu
 	if reachable {
 		return CheckResult{
 			ok:      false,
-			message: fmt.Sprintf("still reachable: %s", address),
+			message: fmt.Sprintf("still reachable: %s", instance.http.Address()),
 		}
 	}
 	return CheckResult{
 		ok:      false,
-		message: fmt.Sprintf("not reachable (%s)", address),
+		message: fmt.Sprintf("not reachable (%s)", instance.http.Address()),
 	}
 }
 

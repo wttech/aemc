@@ -29,15 +29,18 @@ import (
 type PackageManager struct {
 	instance *Instance
 
-	UploadOptimized        bool
-	InstallRecursive       bool
-	InstallHTMLEnabled     bool
-	InstallHTMLConsole     bool
-	InstallHTMLStrict      bool
-	SnapshotDeploySkipping bool
-	SnapshotIgnored        bool
-	SnapshotPatterns       []string
-	ToggledWorkflows       []string
+	UploadOptimized           bool
+	InstallRecursive          bool
+	InstallSaveThreshold      int
+	InstallACHandling         string
+	InstallDependencyHandling string
+	InstallHTMLEnabled        bool
+	InstallHTMLConsole        bool
+	InstallHTMLStrict         bool
+	SnapshotDeploySkipping    bool
+	SnapshotIgnored           bool
+	SnapshotPatterns          []string
+	ToggledWorkflows          []string
 }
 
 func NewPackageManager(res *Instance) *PackageManager {
@@ -46,15 +49,18 @@ func NewPackageManager(res *Instance) *PackageManager {
 	return &PackageManager{
 		instance: res,
 
-		UploadOptimized:        cv.GetBool("instance.package.upload_optimized"),
-		InstallHTMLEnabled:     cv.GetBool("instance.package.install_html.enabled"),
-		InstallHTMLConsole:     cv.GetBool("instance.package.install_html.console"),
-		InstallHTMLStrict:      cv.GetBool("instance.package.install_html.strict"),
-		InstallRecursive:       cv.GetBool("instance.package.install_recursive"),
-		SnapshotDeploySkipping: cv.GetBool("instance.package.snapshot_deploy_skipping"),
-		SnapshotIgnored:        cv.GetBool("instance.package.snapshot_ignored"),
-		SnapshotPatterns:       cv.GetStringSlice("instance.package.snapshot_patterns"),
-		ToggledWorkflows:       cv.GetStringSlice("instance.package.toggled_workflows"),
+		UploadOptimized:           cv.GetBool("instance.package.upload_optimized"),
+		InstallRecursive:          cv.GetBool("instance.package.install_recursive"),
+		InstallSaveThreshold:      cv.GetInt("instance.package.install_save_threshold"),
+		InstallACHandling:         cv.GetString("instance.package.install_ac_handling"),
+		InstallDependencyHandling: cv.GetString("instance.package.install_dependency_handling"),
+		InstallHTMLEnabled:        cv.GetBool("instance.package.install_html.enabled"),
+		InstallHTMLConsole:        cv.GetBool("instance.package.install_html.console"),
+		InstallHTMLStrict:         cv.GetBool("instance.package.install_html.strict"),
+		SnapshotDeploySkipping:    cv.GetBool("instance.package.snapshot_deploy_skipping"),
+		SnapshotIgnored:           cv.GetBool("instance.package.snapshot_ignored"),
+		SnapshotPatterns:          cv.GetStringSlice("instance.package.snapshot_patterns"),
+		ToggledWorkflows:          cv.GetStringSlice("instance.package.toggled_workflows"),
 	}
 }
 
@@ -401,7 +407,7 @@ func (pm *PackageManager) uploadOptimized(localPath string) (string, error) {
 		return "", fmt.Errorf("%s > cannot upload package '%s'; cannot parse response: %w", pm.instance.ID(), localPath, err)
 	}
 	if !status.Success {
-		return "", fmt.Errorf("%s > cannot upload package '%s'; unexpected status: %s", pm.instance.ID(), localPath, status.Message)
+		return "", fmt.Errorf("%s > cannot upload package '%s'; %s", pm.instance.ID(), localPath, pm.interpretFail(status.Message))
 	}
 	log.Infof("%s > uploaded package '%s'", pm.instance.ID(), localPath)
 	return status.Path, nil
@@ -423,10 +429,20 @@ func (pm *PackageManager) uploadBuffered(localPath string) (string, error) {
 		return "", fmt.Errorf("%s > cannot upload package '%s'; cannot parse response: %w", pm.instance.ID(), localPath, err)
 	}
 	if !status.Success {
-		return "", fmt.Errorf("%s > cannot upload package '%s'; unexpected status: %s", pm.instance.ID(), localPath, status.Message)
+		return "", fmt.Errorf("%s > cannot upload package '%s'; %s", pm.instance.ID(), localPath, pm.interpretFail(status.Message))
 	}
 	log.Infof("%s > uploaded package '%s'", pm.instance.ID(), localPath)
 	return status.Path, nil
+}
+
+func (pm *PackageManager) interpretFail(message string) string {
+	if strings.Contains(strings.ToLower(message), "inaccessible value") {
+		return fmt.Sprintf("probably no disk space left (server respond with '%s')", message) // https://forums.adobe.com/thread/2338290
+	}
+	if strings.Contains(strings.ToLower(message), "package file parameter missing") {
+		return fmt.Sprintf("probably no disk space left (server respond with '%s')", message)
+	}
+	return fmt.Sprintf("unexpected status: %s", message)
 }
 
 func (pm *PackageManager) Install(remotePath string) error {
@@ -438,9 +454,7 @@ func (pm *PackageManager) Install(remotePath string) error {
 
 func (pm *PackageManager) installJSON(remotePath string) error {
 	log.Infof("%s > installing package '%s'", pm.instance.ID(), remotePath)
-	response, err := pm.instance.http.Request().
-		SetFormData(map[string]string{"cmd": "install", "recursive": fmt.Sprintf("%v", pm.InstallRecursive)}).
-		Post(ServiceJsonPath + remotePath)
+	response, err := pm.instance.http.Request().SetFormData(pm.installParams()).Post(ServiceJsonPath + remotePath)
 	if err != nil {
 		return fmt.Errorf("%s > cannot install package '%s': %w", pm.instance.ID(), remotePath, err)
 	} else if response.IsError() {
@@ -460,9 +474,7 @@ func (pm *PackageManager) installJSON(remotePath string) error {
 func (pm *PackageManager) installHTML(remotePath string) error {
 	log.Infof("%s > installing package '%s'", pm.instance.ID(), remotePath)
 
-	response, err := pm.instance.http.Request().
-		SetFormData(map[string]string{"cmd": "install", "recursive": fmt.Sprintf("%v", pm.InstallRecursive)}).
-		Post(ServiceHtmlPath + remotePath)
+	response, err := pm.instance.http.Request().SetFormData(pm.installParams()).Post(ServiceHtmlPath + remotePath)
 	if err != nil {
 		return fmt.Errorf("%s > cannot install package '%s': %w", pm.instance.ID(), remotePath, err)
 	} else if response.IsError() {
@@ -523,6 +535,16 @@ func (pm *PackageManager) installHTML(remotePath string) error {
 	}
 	log.Infof("%s > installed package '%s'", pm.instance.ID(), remotePath)
 	return nil
+}
+
+func (pm *PackageManager) installParams() map[string]string {
+	return map[string]string{
+		"cmd":                "install",
+		"recursive":          fmt.Sprintf("%v", pm.InstallRecursive),
+		"autosave":           fmt.Sprintf("%d", pm.InstallSaveThreshold),
+		"acHandling":         pm.InstallACHandling,
+		"dependencyHandling": pm.InstallDependencyHandling,
+	}
 }
 
 func (pm *PackageManager) DeployWithChanged(localPath string) (bool, error) {

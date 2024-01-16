@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-VERSION=${TASK_VERSION:-"3.31.0"}
+VERSION=${TASK_VERSION:-"3.33.1"}
 
 # Define API
 # ==========
@@ -107,6 +107,14 @@ if [ ! -f "${BIN_EXEC_FILE}" ]; then
   unarchive_file "${BIN_ARCHIVE_FILE}" "${BIN_ARCHIVE_DIR}"
   chmod +x "${BIN_EXEC_FILE}"
 fi
+
+# Prevent OS or shell-specific glitches
+# =====================================
+
+# https://stackoverflow.com/questions/7250130/how-to-stop-mingw-and-msys-from-mangling-path-names-given-at-the-command-line
+export MSYS_NO_PATHCONV=1
+export MSYS2_ARG_CONV_EXCL="*"
+export MSYS2_ENV_CONV_EXCL="*"
 
 # Execute Task Tool
 # =================

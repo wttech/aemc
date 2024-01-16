@@ -29,6 +29,7 @@ func (c *Config) setDefaults() {
 	v.SetDefault("output.value", common.OutputValueAll)
 	v.SetDefault("output.log.file", common.LogFile)
 	v.SetDefault("output.log.mode", OutputLogConsole)
+	v.SetDefault("output.query", "")
 
 	v.SetDefault("java.home_dir", "")
 	v.SetDefault("java.version_constraints", ">= 11, < 12")

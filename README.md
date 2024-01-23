@@ -11,10 +11,10 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
 
 - Reusable core designed to handle advanced dev-ops operations needed to manage AEM instances
 - Various distributions based on core for context-specific use cases:
-  - [*CLI*](#cli---overview) - for developer workstations, shell scripting
+  - [_CLI_](#cli---overview) - for developer workstations, shell scripting
     - [AEM Project Quickstart](https://github.com/wttech/aemc#cli---aem-project-quickstart) - add development environment automation to the existing AEM projects
     - [Docker Example](examples/docker) - for experiments only
-  - [*Ansible Collection/Modules*](#ansible-collection) - for managing higher AEM environments
+  - [_Ansible Collection/Modules_](#ansible-collection) - for managing higher AEM environments
     - [Packer Example](https://github.com/wttech/aemc-ansible/tree/main/examples/packer) - starting point for baking AWS EC2 image using Ansible
     - [Local Example](https://github.com/wttech/aemc-ansible/tree/main/examples/local) - development & testing sandbox for AEM Compose project
 - Fast & lightweight
@@ -22,35 +22,36 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
 
 # References
 
-* Intro Guide Blog Post - [Get your AEM together with AEM Compose!](https://wttech.blog/blog/2023/get-your-aem-together-with-aem-compose/) by [Krystian Panek](mailto:krystian.panek@wundermanthompson.com)
-* Talk at AdaptTo 2023 Conference - [Get Your AEM Together: AEM Compose, the Ultimate DevEx Tool](https://www.youtube.com/watch?v=EH4ubsxNpbs) by [Tomasz Sobczyk](mailto:tomasz.sobczyk@wundermanthompson.com) & [Krystian Panek](mailto:krystian.panek@wundermanthompson.com)
+- Intro Guide Blog Post - [Get your AEM together with AEM Compose!](https://wttech.blog/blog/2023/get-your-aem-together-with-aem-compose/) by [Krystian Panek](mailto:krystian.panek@wundermanthompson.com)
+- Talk at AdaptTo 2023 Conference - [Get Your AEM Together: AEM Compose, the Ultimate DevEx Tool](https://www.youtube.com/watch?v=EH4ubsxNpbs) by [Tomasz Sobczyk](mailto:tomasz.sobczyk@wundermanthompson.com) & [Krystian Panek](mailto:krystian.panek@wundermanthompson.com)
 
-    [![AdaptTo 2023 Video](docs/adapto-to-video.png)](https://www.youtube.com/watch?v=EH4ubsxNpbs)
+  [![AdaptTo 2023 Video](docs/adapto-to-video.png)](https://www.youtube.com/watch?v=EH4ubsxNpbs)
 
 # Table of Contents
 
-* [Distributions](#distributions)
-  * [CLI - Overview](#cli---overview)
-  * [CLI - Screenshots](#cli---screenshots)
-  * [CLI - AEM Project Quickstart](#cli---aem-project-quickstart)
-  * [Ansible Collection](#ansible-collection)
-  * [Go Scripting](#go-scripting)
-* [Dependencies](#dependencies)
-* [Configuration](#configuration)
-  * [Generating default configuration](#generating-default-configuration)
-  * [Configuration precedence](#configuration-precedence)
-  * [Context-specific customization](#context-specific-customization)
-    * [Improving performance](#improving-performance)
-    * [Increasing verbosity](#increasing-verbosity)
-    * [Installing content packages](#installing-content-packages)
-    * [Installing packages with troubleshooting](#installing-packages-with-troubleshooting)
-* [Examples](#examples)
-  * [Replication agents](#replication-agents)
-  * [SSL by Default](#ssl-by-default)
-  * [Global Trust Store](#global-trust-store)
-* [Contributing](#contributing)
-* [Authors](#authors)
-* [License](#license)
+- [Distributions](#distributions)
+  - [CLI - Overview](#cli---overview)
+  - [CLI - Screenshots](#cli---screenshots)
+  - [CLI - AEM Project Quickstart](#cli---aem-project-quickstart)
+  - [Ansible Collection](#ansible-collection)
+  - [Go Scripting](#go-scripting)
+- [Dependencies](#dependencies)
+- [Configuration](#configuration)
+  - [Generating default configuration](#generating-default-configuration)
+  - [Configuration precedence](#configuration-precedence)
+  - [Context-specific customization](#context-specific-customization)
+    - [Improving performance](#improving-performance)
+    - [Increasing verbosity](#increasing-verbosity)
+    - [Installing content packages](#installing-content-packages)
+    - [Installing packages with troubleshooting](#installing-packages-with-troubleshooting)
+- [Examples](#examples)
+  - [Replication agents](#replication-agents)
+  - [SSL by Default](#ssl-by-default)
+  - [Global Trust Store](#global-trust-store)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [Authors](#authors)
+- [License](#license)
 
 # Distributions
 
@@ -62,7 +63,7 @@ Key assumptions:
 
 - Idempotent and fast
 - Rich configuration options
-- Self-describing, both machine & human-readable 
+- Self-describing, both machine & human-readable
 - Multiple input & output formats (text/yaml/json)
 
 Main features:
@@ -71,14 +72,14 @@ Main features:
   - JDK (isolated, version tied to project)
   - AEM instances (run modes, JVM & start opts, env & secret vars, Sling props, custom admin password)
   - OSGi (configurations, bundles, components)
-  - replication agents 
+  - replication agents
   - any repository nodes
 - deploying AEM packages with:
   - automatic workflow toggling - avoiding DAM asset renditions regeneration
   - advanced snapshot handling - avoiding redeploying the same package by checksum verification
   - customizable instance health checking
 - building AEM packages with:
-  - source code change detection - avoiding rebuilding application when it is not needed 
+  - source code change detection - avoiding rebuilding application when it is not needed
 - making AEM instance backups (with restoring)
   - advanced archive format to speed up performance and storage efficiency ([ZSTD](https://github.com/facebook/zstd) used by default)
   - instance state aware - stopping, archiving then starting again AEM instances automatically (if needed)
@@ -117,10 +118,10 @@ Supported project types:
 - with structure based on [Adobe AEM Project Archetype](https://github.com/adobe/aem-project-archetype#usage), compatibility:
 
   | AEM Compose (init) | AEM Project Archetype |
-  |--------------------|-----------------------|
+  | ------------------ | --------------------- |
   | 1.2.0 - 1.4.x      | 41-43                 |
 
-- with any type of structure, however afterwards only a little customizations in *Taskfile.yml* need to be done to reflect configuration related to built AEM application artifact path and AEM dispatcher files location
+- with any type of structure, however afterwards only a little customizations in _Taskfile.yml_ need to be done to reflect configuration related to built AEM application artifact path and AEM dispatcher files location
 - empty folder; the project kind will be needed to be specified explicitly during initialization
 
 ---
@@ -167,7 +168,7 @@ Some tasks like `aem:build` may accept parameters.
 For example, to build AEM application with:
 
 - Applying frontend development mode Maven profile
-- Unit tests skipping 
+- Unit tests skipping
 - UI tests skipping
 
 Simply run command with appending [task variable](https://taskfile.dev/usage/#variables) to the end:
@@ -184,7 +185,7 @@ See a separate project based on AEM Compose: <https://github.com/wttech/aemc-ans
 
 Consider implementing any application on top of AEM Compose API like using snippet below:
 
-File: *aem.go*
+File: _aem.go_
 
 ```go
 package main
@@ -217,7 +218,7 @@ go run aem.go
 
 # Dependencies
 
-This tool is written in Go. Go applications are very often self-sufficient which means that they are not relying on platform-specific libraries/dependencies. 
+This tool is written in Go. Go applications are very often self-sufficient which means that they are not relying on platform-specific libraries/dependencies.
 The only requirement is to use proper tool binary distribution for each operating system and architecture.
 Check out [releases page](https://github.com/wttech/aemc/releases) to review available binary distributions.
 
@@ -468,13 +469,13 @@ output:
     mode: console
 ```
 
-Note that environment variables may be injected in any part of config file. 
+Note that environment variables may be injected in any part of config file.
 Environment variables could be defined in one or many [dotenv files](https://github.com/wttech/aemc/blob/main/pkg/common/osx/osx.go#L32).
 
 ## Overriding default configuration
 
-By default, the VCS-tracked file is loaded (*aem/default/etc*).
-However, occasionally developers might want to override the default config file and load a VCS-ignored file instead (*aem/home/etc/aem.yml*).
+By default, the VCS-tracked file is loaded (_aem/default/etc_).
+However, occasionally developers might want to override the default config file and load a VCS-ignored file instead (_aem/home/etc/aem.yml_).
 
 To do so, run the command:
 
@@ -484,7 +485,7 @@ sh aemw config init
 
 ## Configuration precedence
 
-All configuration options specified in file *aem.yml* could be overridden by environment variables.
+All configuration options specified in file _aem.yml_ could be overridden by environment variables.
 Simply add prefix `AEM_` then each level of nested YAML object join with `_` and lowercase the name of each object.
 
 For example: `instance.local.quickstart.dist_file` could be overridden by environment variable `AEM_INSTANCE_LOCAL_QUICKSTART_DIST_FILE`
@@ -493,29 +494,29 @@ Also note that some configuration options may be ultimately overridden by CLI fl
 
 ## Context-specific customization
 
-By default, fail-safe options are in use. However, consider using the configuration options listed below to achieve a more desired tool experience. 
+By default, fail-safe options are in use. However, consider using the configuration options listed below to achieve a more desired tool experience.
 
 ### Improving performance
 
-  ```shell
-  export AEM_INSTANCE_PROCESSING_MODE=parallel
-  ```
+```shell
+export AEM_INSTANCE_PROCESSING_MODE=parallel
+```
 
-  This setting will significantly reduce command execution time. Although be aware that when deploying heavy AEM packages like Service Packs on the same machine in parallel, a heavy load could be observed, which could lead to unpredicted AEM CMS and AEM Compose tool behavior.
+This setting will significantly reduce command execution time. Although be aware that when deploying heavy AEM packages like Service Packs on the same machine in parallel, a heavy load could be observed, which could lead to unpredicted AEM CMS and AEM Compose tool behavior.
 
 ### Increasing verbosity
 
-  ```shell
-  export AEM_OUTPUT_VALUE=ALL
-  ```
+```shell
+export AEM_OUTPUT_VALUE=ALL
+```
 
-  Setting this environment variable will instruct the tool to request from the AEM instance descriptive information about the recently executed command subject.
-  For example, if a recently executed command was `sh aemw package deploy my-package.zip -A` the AEM Compose tool after doing the actual package deployment will request from CRX Package Manager the exact information about just deployed package.
-  This feature is beneficial for clarity and debugging purposes.
+Setting this environment variable will instruct the tool to request from the AEM instance descriptive information about the recently executed command subject.
+For example, if a recently executed command was `sh aemw package deploy my-package.zip -A` the AEM Compose tool after doing the actual package deployment will request from CRX Package Manager the exact information about just deployed package.
+This feature is beneficial for clarity and debugging purposes.
 
 ### Installing content packages
 
-To install larger AEM packages that may include content pages, assets, and more, you can adjust the HTTP timeout setting. 
+To install larger AEM packages that may include content pages, assets, and more, you can adjust the HTTP timeout setting.
 By default, the timeout is set to `10m`, but you have the option to increase it (e.g., to `3h`) or disable it completely (by using `0`).
 
 To set the timeout for a single AEMC command, use the following syntax:
@@ -558,38 +559,40 @@ This new feature offers two distinct modes for leveraging its benefits:
 
 1. Configuring publish agent on AEM author:
 
-    ```shell
-    PROPS="
-    enabled: true
-    transportUri: http://localhost:4503/bin/receive?sling:authRequestLogin=1
-    transportUser: admin
-    transportPassword: admin
-    userId: admin
-    "
-    echo "$PROPS" | sh aemw repl agent setup -A --location "author" --name "publish"
-    ```
+   ```shell
+   PROPS="
+   enabled: true
+   transportUri: http://localhost:4503/bin/receive?sling:authRequestLogin=1
+   transportUser: admin
+   transportPassword: admin
+   userId: admin
+   "
+   echo "$PROPS" | sh aemw repl agent setup -A --location "author" --name "publish"
+   ```
 
 2. Configuring flush agent on AEM publish:
 
-    ```shell
-    PROPS="
-    enabled: true
-    transportUri: http://localhost/dispatcher/invalidate.cache
-    protocolHTTPHeaders:
-    - 'CQ-Action: {action}'
-    - 'CQ-Handle: {path}'
-    - 'CQ-Path: {path}'
-    - 'Host: flush'
-    "
-    echo "$PROPS" | sh aemw repl agent setup -P --location "publish" --name "flush"
-    ```
+   ```shell
+   PROPS="
+   enabled: true
+   transportUri: http://localhost/dispatcher/invalidate.cache
+   protocolHTTPHeaders:
+   - 'CQ-Action: {action}'
+   - 'CQ-Handle: {path}'
+   - 'CQ-Path: {path}'
+   - 'Host: flush'
+   "
+   echo "$PROPS" | sh aemw repl agent setup -P --location "publish" --name "flush"
+   ```
+
    If needed, update `localhost` to the value on which AEM dispatcher is available, e.g.`localhost:8080`.
 
 ## SSL by Default
 
-AEM Compose supports *SSL by Default* feature of AEM.
+AEM Compose supports _SSL by Default_ feature of AEM.
 
 This feature requires:
+
 - certificate file in PEM format
 - private key file in DER or PEM format
 - password for keystore (has to be the same for each invocation of the tool)
@@ -597,7 +600,7 @@ This feature requires:
 - hostname for HTTPS connector (used by AEM to check if the setup was successful; has to be reachable by AEM)
 - port for HTTPS connector
 
-To set up *SSL by Default*, run:
+To set up _SSL by Default_, run:
 
 ```shell
 sh aemw ssl setup \
@@ -632,32 +635,51 @@ AEM Compose supports managing the trust store of AEM instances.
 This feature supports:
 
 - creation of the general trust store if it does not exist
-    ```shell
-    sh aemw gts create --password PASSWORD_HERE -A
-    ```
+
+  ```shell
+  sh aemw gts create --password PASSWORD_HERE -A
+  ```
 
 - getting the general trust store status
-    ```shell
-    sh aemw gts status -A
-    ```
+
+  ```shell
+  sh aemw gts status -A
+  ```
 
 - adding a certificate to the general trust store
-    ```shell
-    sh aemw gts certificate add --path <path> -A
-    ```
-  
+  ```shell
+  sh aemw gts certificate add --path <path> -A
+  ```
+
 This command will add a certificate to the general trust store only if not exists in trust store and will return the alias of the certificate.
 Command `certificate add` supports certificates in PEM and DER formats.
 
 - reading a certificate from the general trust store (by alias)
-    ```shell
-    sh aemw gts certificate read --alias <alias> -A
-    ```
+
+  ```shell
+  sh aemw gts certificate read --alias <alias> -A
+  ```
 
 - removing a certificate from the general trust store (by alias)
-    ```shell
-    sh aemw gts certificate remove --alias <alias> -A
-    ```
+  ```shell
+  sh aemw gts certificate remove --alias <alias> -A
+  ```
+
+# Troubleshooting
+
+If you're migrating from Gradle AEM Plugin (GAP) you may run into issue with setting up dispatcher.
+In case of error:
+
+```
+2024-01-22 16:37:23 dispatcher  | 2024/01/22 15:37:23 Dispatcher configuration validation failed:
+2024-01-22 16:37:23 dispatcher  | 2024/01/22 15:37:23   /mnt/dev/src/conf.d/variables/default.vars: lstat /etc/httpd.extra: no such file or directory
+2024-01-22 16:37:23 dispatcher  |
+2024-01-22 16:37:23 dispatcher  | ERROR Mon Jan 22 15:37:23 UTC 2024 Configuration invalid, please fix and retry,
+2024-01-22 16:37:23 dispatcher  |               Line numbers reported are correct for your configuration files.
+```
+
+Check if there is a broken symlink/file in `dispatcher/src/variables/default.vars`. If the file exists, delete it and
+run the task again.
 
 # Contributing
 
@@ -665,8 +687,8 @@ Issues reported or pull requests created will be very appreciated.
 
 1. Fork plugin source code using a dedicated GitHub button.
 2. See [development guide](DEVELOPMENT.md)
-3. Do code changes on a feature branch created from *main* branch.
-4. Create a pull request with a base of *main* branch.
+3. Do code changes on a feature branch created from _main_ branch.
+4. Create a pull request with a base of _main_ branch.
 
 # Authors
 

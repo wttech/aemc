@@ -665,8 +665,8 @@ Command `certificate add` supports certificates in PEM and DER formats.
 
 ## Migration from Gradle plugins
 
-If you're migrating from [Gradle AEM Plugin](https://github.com/wttech/gradle-aem-plugin) you may run into issue when running task dispatcher:start or dispatcher:setup.
-In case of error:
+If you're migrating from [Gradle AEM Plugin](https://github.com/wttech/gradle-aem-plugin) you may run into issue with setting up dispatcher.
+In case of error when running task dispatcher:start or dispatcher:setup:
 
 ```
 2024-01-22 16:37:23 dispatcher  | 2024/01/22 15:37:23 Dispatcher configuration validation failed:

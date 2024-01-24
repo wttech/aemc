@@ -660,9 +660,12 @@ Command `certificate add` supports certificates in PEM and DER formats.
     sh aemw gts certificate remove --alias <alias> -A
     ```
 
+
 # Troubleshooting
 
-If you're migrating from Gradle AEM Plugin (GAP) you may run into issue with setting up dispatcher.
+## Migration from Gradle plugins
+
+If you're migrating from [Gradle AEM Plugin](https://github.com/wttech/gradle-aem-plugin) you may run into issue when running task dispatcher:start or dispatcher:setup.
 In case of error:
 
 ```

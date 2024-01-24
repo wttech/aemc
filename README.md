@@ -48,6 +48,7 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
   * [Replication agents](#replication-agents)
   * [SSL by Default](#ssl-by-default)
   * [Global Trust Store](#global-trust-store)
+* [Troubleshooting](#troubleshooting)
 * [Contributing](#contributing)
 * [Authors](#authors)
 * [License](#license)
@@ -658,6 +659,22 @@ Command `certificate add` supports certificates in PEM and DER formats.
     ```shell
     sh aemw gts certificate remove --alias <alias> -A
     ```
+
+# Troubleshooting
+
+If you're migrating from Gradle AEM Plugin (GAP) you may run into issue with setting up dispatcher.
+In case of error:
+
+```
+2024-01-22 16:37:23 dispatcher  | 2024/01/22 15:37:23 Dispatcher configuration validation failed:
+2024-01-22 16:37:23 dispatcher  | 2024/01/22 15:37:23   /mnt/dev/src/conf.d/variables/default.vars: lstat /etc/httpd.extra: no such file or directory
+2024-01-22 16:37:23 dispatcher  |
+2024-01-22 16:37:23 dispatcher  | ERROR Mon Jan 22 15:37:23 UTC 2024 Configuration invalid, please fix and retry,
+2024-01-22 16:37:23 dispatcher  |               Line numbers reported are correct for your configuration files.
+```
+
+Check if there is a broken symlink/file in `dispatcher/src/variables/default.vars`. If the file exists, delete it and
+run the task again.
 
 # Contributing
 

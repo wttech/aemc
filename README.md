@@ -13,6 +13,7 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
 - Various distributions based on core for context-specific use cases:
   - [*CLI*](#cli---overview) - for developer workstations, shell scripting
     - [AEM Project Quickstart](https://github.com/wttech/aemc#cli---aem-project-quickstart) - add development environment automation to the existing AEM projects
+    - [Terraform AEM Provider](https://github.com/wttech/terraform-provider-aem) - set up with ease higher environments (VMs and AEM instances) in the cloud (AWS, Azure, GCP, ...)
     - [Docker Example](examples/docker) - for experiments only
   - [*Ansible Collection/Modules*](#ansible-collection) - for managing higher AEM environments
     - [Packer Example](https://github.com/wttech/aemc-ansible/tree/main/examples/packer) - starting point for baking AWS EC2 image using Ansible

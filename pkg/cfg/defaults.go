@@ -29,6 +29,7 @@ func (c *Config) setDefaults() {
 	v.SetDefault("output.value", common.OutputValueAll)
 	v.SetDefault("output.log.file", common.LogFile)
 	v.SetDefault("output.log.mode", OutputLogConsole)
+	v.SetDefault("output.query", "")
 
 	v.SetDefault("java.home_dir", "")
 	v.SetDefault("java.version_constraints", ">= 11, < 12")
@@ -45,7 +46,7 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.check.skip", false)
 	v.SetDefault("instance.check.warmup", time.Second*1)
 	v.SetDefault("instance.check.interval", time.Second*6)
-	v.SetDefault("instance.check.done_threshold", 5)
+	v.SetDefault("instance.check.done_threshold", 4)
 	v.SetDefault("instance.check.installer.state", true)
 	v.SetDefault("instance.check.installer.pause", true)
 
@@ -53,17 +54,29 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.check.await_started.timeout", time.Minute*30)
 	v.SetDefault("instance.check.await_stopped.timeout", time.Minute*10)
 
+	v.SetDefault("instance.check.reachable.skip", false)
 	v.SetDefault("instance.check.reachable.timeout", time.Second*3)
 
+	v.SetDefault("instance.check.bundle_stable.skip", false)
+	v.SetDefault("instance.check.bundle_stable.symbolic_names_ignored", []string{})
+
+	v.SetDefault("instance.check.event_stable.skip", false)
 	v.SetDefault("instance.check.event_stable.received_max_age", time.Second*5)
 	v.SetDefault("instance.check.event_stable.topics_unstable", []string{"org/osgi/framework/ServiceEvent/*", "org/osgi/framework/FrameworkEvent/*", "org/osgi/framework/BundleEvent/*"})
 	v.SetDefault("instance.check.event_stable.details_ignored", []string{"*.*MBean", "org.osgi.service.component.runtime.ServiceComponentRuntime", "java.util.ResourceBundle"})
 
+	v.SetDefault("instance.check.component_stable.skip", false)
+	v.SetDefault("instance.check.component_stable.pids.include", []string{"com.day.crx.packaging.*", "org.apache.sling.installer.*"})
+	v.SetDefault("instance.check.component_stable.pids.exclude", []string{"org.apache.sling.installer.hc.*", "org.apache.sling.installer.core.impl.console.*"})
+	v.SetDefault("instance.check.component_stable.pids.match", map[string][]string{})
+
+	v.SetDefault("instance.check.installer.skip", false)
 	v.SetDefault("instance.check.installer.state", true)
 	v.SetDefault("instance.check.installer.pause", true)
 
 	v.SetDefault("instance.check.path_ready.timeout", time.Second*10)
 
+	v.SetDefault("instance.check.login_page.skip", false)
 	v.SetDefault("instance.check.login_page.path", "/libs/granite/core/content/login.html")
 	v.SetDefault("instance.check.login_page.status_code", 200)
 	v.SetDefault("instance.check.login_page.contained_text", "QUICKSTART_HOMEPAGE")
@@ -83,14 +96,21 @@ func (c *Config) setDefaults() {
 
 	v.SetDefault("instance.status.timeout", time.Millisecond*500)
 
+	v.SetDefault("instance.package.upload_optimized", true)
+
 	v.SetDefault("instance.package.install_recursive", true)
+	v.SetDefault("instance.package.install_save_threshold", 1024)
+	v.SetDefault("instance.package.install_ac_handling", "")
+	v.SetDefault("instance.package.install_dependency_handling", "required")
 
 	v.SetDefault("instance.package.install_html.enabled", false)
 	v.SetDefault("instance.package.install_html.strict", true)
 	v.SetDefault("instance.package.install_html.console", false)
 
 	v.SetDefault("instance.package.snapshot_deploy_skipping", true)
+	v.SetDefault("instance.package.snapshot_ignored", false)
 	v.SetDefault("instance.package.snapshot_patterns", []string{"**/*-SNAPSHOT.zip"})
+
 	v.SetDefault("instance.package.toggled_workflows", []string{})
 
 	v.SetDefault("instance.repo.property_change_ignored", []string{"jcr:created", "cq:lastModified", "transportPassword"})
@@ -100,7 +120,10 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.osgi.bundle.install.start_level", 20)
 	v.SetDefault("instance.osgi.bundle.install.refresh_packages", true)
 
+	v.SetDefault("instance.ssl.setup_timeout", time.Second*30)
+
 	v.SetDefault("instance.crypto.key_bundle_symbolic_name", "com.adobe.granite.crypto.file")
+	v.SetDefault("instance.replication.bundle_symbolic_name", "com.day.cq.cq-replication")
 
 	v.SetDefault("instance.workflow.lib_root", "/libs/settings/workflow/launcher")
 	v.SetDefault("instance.workflow.config_root", "/conf/global/settings/workflow/launcher")

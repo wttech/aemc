@@ -123,7 +123,12 @@ func GlobOne(pathPattern string) (string, error) {
 }
 
 func GlobAll(pathPattern string) ([]string, error) {
-	dir := stringsx.BeforeLast(pathPattern, "/")
+	var dir string
+	if !strings.Contains(pathPattern, "/") {
+		dir = "."
+	} else {
+		dir = stringsx.BeforeLast(pathPattern, "/")
+	}
 	if !Exists(dir) {
 		return nil, nil
 	}

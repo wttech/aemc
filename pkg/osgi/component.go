@@ -89,8 +89,10 @@ const (
 )
 
 const (
-	ComponentStateActive    = "active"
-	ComponentStateSatisfied = "satisfied"
-	ComponentStateNoConfig  = "no config"
-	ComponentStateDisabled  = "disabled"
+	ComponentStateActive               = "active"
+	ComponentStateSatisfied            = "satisfied"
+	ComponentStateUnsatisfiedReference = "unsatisfied (reference)"
+	ComponentStateNoConfig             = "no config"
+	ComponentStateDisabled             = "disabled"
+	ComponentStateFailedActivation     = "failed activation"
 )

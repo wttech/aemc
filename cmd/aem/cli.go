@@ -3,9 +3,11 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/fatih/color"
 	"github.com/iancoleman/strcase"
+	"github.com/jmespath-community/go-jmespath"
 	"github.com/samber/lo"
 	"github.com/segmentio/textio"
 	log "github.com/sirupsen/logrus"
@@ -45,6 +47,7 @@ type CLI struct {
 	outputLogFile  string
 	outputLogMode  string
 	outputResponse *OutputResponse
+	outputQuery    string
 	outputWriter   io.Writer
 	outputNoColor  bool
 
@@ -105,6 +108,7 @@ func (c *CLI) onStart() {
 	c.outputResponse = outputResponseDefault()
 	c.outputValue = cv.GetString("output.value")
 	c.outputFormat = strings.ReplaceAll(cv.GetString("output.format"), "yaml", "yml")
+	c.outputQuery = cv.GetString("output.query")
 	c.outputLogFile = cv.GetString("output.log.file")
 	c.outputLogMode = cv.GetString("output.log.mode")
 
@@ -295,24 +299,59 @@ func (c *CLI) printOutputDataIndented(writer *textio.PrefixWriter, value any, ke
 }
 
 func (c *CLI) printOutputMarshaled() {
+	if c.outputValue == common.OutputValueNone {
+		return
+	}
+
+	if c.outputQuery == "" {
+		c.printOutputMarshaledValue(c.outputResponse)
+		return
+	}
+
+	// JMESPath bug workaround, see: https://github.com/jmespath/go-jmespath/issues/32)
+	cloned, err := c.outputResponse.Clone()
+	if err != nil {
+		log.Fatalf("cannot clone CLI output data: %s", err)
+	}
+	queried, err := jmespath.Search(c.outputQuery, cloned)
+	if err != nil {
+		log.Fatalf("cannot perform query '%s' on CLI output data: %s", c.outputQuery, err)
+	}
+
+	c.printOutputMarshaledValue(queried)
+}
+
+func (c *CLI) printOutputMarshaledValue(value any) {
 	switch c.outputFormat {
 	case fmtx.JSON:
-		json, err := fmtx.MarshalJSON(c.outputResponse)
+		jsonValue, err := fmtx.MarshalJSON(value)
 		if err != nil {
-			log.Fatalf("cannot serialize CLI output to to target JSON format!")
+			log.Fatalf("cannot serialize CLI output to target JSON format!")
 		}
-		fmt.Println(json)
+		fmt.Println(jsonValue)
 		break
 	case fmtx.YML:
-		yml, err := fmtx.MarshalYML(c.outputResponse)
+		ymlValue, err := fmtx.MarshalYML(value)
 		if err != nil {
-			log.Fatalf("cannot serialize CLI output to to target YML format!")
+			log.Fatalf("cannot serialize CLI output to target YML format!")
 		}
-		fmt.Println(yml)
+		fmt.Println(ymlValue)
 		break
 	default:
 		log.Fatalf("cannot serialize CLI output to unsupported format '%s'", c.outputFormat)
 	}
+}
+
+func (c *OutputResponse) Clone() (*OutputResponse, error) {
+	var clone OutputResponse
+	marshalled, err := json.Marshal(c)
+	if err != nil {
+		return nil, err
+	}
+	if err = json.Unmarshal(marshalled, &clone); err != nil {
+		return nil, err
+	}
+	return &clone, nil
 }
 
 func (c *CLI) Ok(message string) {

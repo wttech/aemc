@@ -29,6 +29,7 @@ func (c *CLI) repoNodeCmd() *cobra.Command {
 	cmd.AddCommand(c.repoNodeCopyCmd())
 	cmd.AddCommand(c.repoNodeMoveCmd())
 	cmd.AddCommand(c.repoNodeChildrenCmd())
+	cmd.AddCommand(c.repoNodeDownloadCmd())
 
 	return cmd
 }
@@ -253,6 +254,49 @@ func (c *CLI) repoNodeMoveCmd() *cobra.Command {
 	cmd.Flags().StringP("target-path", "t", "", "Target path")
 	cmd.MarkFlagRequired("target-path")
 	cmd.Flags().BoolP("replace", "r", false, "Replace target node if it already exists")
+	return cmd
+}
+
+func (c *CLI) repoNodeDownloadCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "download",
+		Short:   "Download node to file",
+		Aliases: []string{"dl"},
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			node := repoNodeByFlags(cmd, *instance)
+			targetFile, _ := cmd.Flags().GetString("target-file")
+			force, _ := cmd.Flags().GetBool("force")
+			changed := false
+			if force {
+				err = node.Download(targetFile)
+				changed = true
+			} else {
+				changed, err = node.DownloadWithChanged(targetFile)
+			}
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			if changed {
+				c.Changed("node downloaded")
+			} else {
+				c.Ok("node not downloaded (up-to-date)")
+			}
+			c.SetOutput("node", node)
+			c.SetOutput("instance", instance)
+			c.SetOutput("file", targetFile)
+			c.Ok("node downloaded")
+		},
+	}
+	repoNodeDefineFlags(cmd)
+	cmd.Flags().StringP("target-file", "t", "", "Target file path")
+	_ = cmd.MarkFlagRequired("target-file")
+	cmd.Flags().BoolP("force", "f", false, "Download even when already downloaded")
 	return cmd
 }
 

@@ -29,6 +29,7 @@ func (c *CLI) pkgCmd() *cobra.Command {
 	cmd.AddCommand(c.pkgDownloadCmd())
 	cmd.AddCommand(c.pkgBuildCmd())
 	cmd.AddCommand(c.pkgFindCmd())
+	cmd.AddCommand(c.pkgCopyCmd())
 	return cmd
 }
 
@@ -95,8 +96,15 @@ func (c *CLI) pkgUploadCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			force, _ := cmd.Flags().GetBool("force")
 			uploaded, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
-				changed, err := instance.PackageManager().UploadWithChanged(path)
+				changed := false
+				if force {
+					_, err = instance.PackageManager().Upload(path)
+					changed = true
+				} else {
+					changed, err = instance.PackageManager().UploadWithChanged(path)
+				}
 				if err != nil {
 					return nil, err
 				}
@@ -127,6 +135,7 @@ func (c *CLI) pkgUploadCmd() *cobra.Command {
 		},
 	}
 	pkgDefineFileAndUrlFlags(cmd)
+	cmd.Flags().BoolP("force", "f", false, "Upload even when already uploaded")
 	return cmd
 }
 
@@ -434,7 +443,11 @@ func (c *CLI) pkgBuildCmd() *cobra.Command {
 			}
 		},
 	}
-	pkgDefineBuildFlags(cmd)
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().String("path", "", "Remote repository path")
+	cmd.MarkFlagsMutuallyExclusive("pid", "path")
+	cmd.Flags().BoolP("force", "f", false, "Build even when already built")
+	cmd.MarkFlagsOneRequired("pid", "path")
 	return cmd
 }
 
@@ -443,41 +456,6 @@ func pkgDefineFlags(cmd *cobra.Command) {
 	cmd.Flags().String("file", "", "Local file path")
 	cmd.Flags().String("path", "", "Remote repository path")
 	cmd.MarkFlagsMutuallyExclusive("pid", "file", "path")
-}
-
-func pkgDefineDownloadFlags(cmd *cobra.Command) {
-	cmd.Flags().String("pid", "", "ID (group:name:version)'")
-	cmd.Flags().String("path", "", "Remote repository path")
-	cmd.Flags().StringP("target-file", "t", "", "Target file path")
-	cmd.Flags().BoolP("force", "f", false, "Download even when already downloaded")
-	_ = cmd.MarkFlagRequired("file")
-	cmd.MarkFlagsOneRequired("pid", "path")
-	cmd.MarkFlagsMutuallyExclusive("pid", "path")
-}
-
-func pkgDefineUpdateFlags(cmd *cobra.Command) {
-	cmd.Flags().String("pid", "", "ID (group:name:version)'")
-	cmd.Flags().String("path", "", "Remote repository path")
-	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
-	cmd.MarkFlagsOneRequired("pid", "path")
-	cmd.MarkFlagsMutuallyExclusive("pid", "path")
-}
-
-func pkgDefineCreateFlags(cmd *cobra.Command) {
-	cmd.Flags().String("pid", "", "ID (group:name:version)'")
-	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
-	cmd.Flags().StringP("filter-file", "F", "", "Vault filter file path")
-	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
-	cmd.Flags().BoolP("force", "f", false, "Create even when already created")
-	_ = cmd.MarkFlagRequired("pid")
-}
-
-func pkgDefineBuildFlags(cmd *cobra.Command) {
-	cmd.Flags().String("pid", "", "ID (group:name:version)'")
-	cmd.Flags().String("path", "", "Remote repository path")
-	cmd.MarkFlagsMutuallyExclusive("pid", "path")
-	cmd.Flags().BoolP("force", "f", false, "Build even when already built")
-	cmd.MarkFlagsOneRequired("pid", "path")
 }
 
 func pkgByFlags(cmd *cobra.Command, instance pkg.Instance) (*pkg.Package, error) {
@@ -595,7 +573,12 @@ func (c *CLI) pkgCreateCmd() *cobra.Command {
 			}
 		},
 	}
-	pkgDefineCreateFlags(cmd)
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
+	cmd.Flags().StringP("filter-file", "F", "", "Vault filter file path")
+	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
+	cmd.Flags().BoolP("force", "f", false, "Create even when already created")
+	_ = cmd.MarkFlagRequired("pid")
 	return cmd
 }
 
@@ -624,14 +607,19 @@ func (c *CLI) pkgUpdateCmd() *cobra.Command {
 			c.Changed("package filters updated") // TODO idempotency?
 		},
 	}
-	pkgDefineUpdateFlags(cmd)
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().String("path", "", "Remote repository path")
+	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
+	cmd.MarkFlagsOneRequired("pid", "path")
+	cmd.MarkFlagsMutuallyExclusive("pid", "path")
 	return cmd
 }
 
 func (c *CLI) pkgDownloadCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "download",
-		Short: "Download package(s)",
+		Use:     "download",
+		Aliases: []string{"dl"},
+		Short:   "Download package",
 		Run: func(cmd *cobra.Command, args []string) {
 			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
@@ -666,6 +654,85 @@ func (c *CLI) pkgDownloadCmd() *cobra.Command {
 			}
 		},
 	}
-	pkgDefineDownloadFlags(cmd)
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().String("path", "", "Remote repository path")
+	cmd.Flags().StringP("target-file", "t", "", "Target file path")
+	cmd.Flags().BoolP("force", "f", false, "Download even when already downloaded")
+	_ = cmd.MarkFlagRequired("file")
+	cmd.MarkFlagsOneRequired("pid", "path")
+	cmd.MarkFlagsMutuallyExclusive("pid", "path")
 	return cmd
+}
+
+func (c *CLI) pkgCopyCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "copy",
+		Aliases: []string{"cp"},
+		Short:   "Copy package to another instance",
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			targetInstance, err := determineTargetInstance(cmd, c.aem.InstanceManager())
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			p, err := pkgPIDByFlags(cmd, *instance)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			force, _ := cmd.Flags().GetBool("force")
+			changed := false
+			if force {
+				err = p.Copy(targetInstance)
+				changed = true
+			} else {
+				changed, err = p.CopyWithChanged(targetInstance)
+			}
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			if err := c.aem.InstanceManager().AwaitStartedOne(*targetInstance); err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("package", p)
+			c.SetOutput("instance", instance)
+			c.SetOutput("targetInstance", targetInstance)
+			if changed {
+				c.Changed("package copied")
+			} else {
+				c.Ok("package already copied (up-to-date)")
+			}
+		},
+	}
+	cmd.Flags().StringP("instance-target-url", "u", "", "Destination instance URL")
+	cmd.Flags().StringP("instance-target-id", "i", "", "Destination instance ID")
+	cmd.MarkFlagsOneRequired("instance-target-url", "instance-target-id")
+	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().String("path", "", "Remote repository path")
+	cmd.MarkFlagsOneRequired("pid", "path")
+	cmd.Flags().BoolP("force", "f", false, "Copy even when already copied")
+	return cmd
+}
+
+func determineTargetInstance(cmd *cobra.Command, instanceManager *pkg.InstanceManager) (*pkg.Instance, error) {
+	var instance *pkg.Instance
+	url, _ := cmd.Flags().GetString("instance-target-url")
+	if url != "" {
+		instance, _ = instanceManager.NewByIDAndURL("remote_adhoc_target", url)
+	}
+	id, _ := cmd.Flags().GetString("instance-target-id")
+	if id != "" {
+		instance = instanceManager.NewByID(id)
+	}
+	if instance == nil {
+		return nil, fmt.Errorf("missing 'instance-target-url' or 'instance-target-id'")
+	}
+	return instance, nil
 }

@@ -10,9 +10,9 @@ env:
   AEM_OUTPUT_VALUE: NONE
 
 dotenv:
-  - '{{.AEM_ENV}}.env'  # VCS-tracked, env-specific
-  - '.env.{{.AEM_ENV}}' # VCS-ignored, env-specific
   - '.env'              # VCS-ignored, user-specific
+  - '.env.{{.AEM_ENV}}' # VCS-ignored, env-specific
+  - '{{.AEM_ENV}}.env'  # VCS-tracked, env-specific
 
 tasks:
   init:

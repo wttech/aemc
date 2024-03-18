@@ -63,7 +63,7 @@ instance:
     # Time to wait for next state checking
     interval: 6s
     # Number of successful check attempts that indicates end of checking
-    done_threshold: 5
+    done_threshold: 4
     # Max time to wait for the instance to be healthy after executing the start script or e.g deploying a package
     await_started:
       timeout: 30m
@@ -72,12 +72,15 @@ instance:
       timeout: 10m
     # Max time in which socket connection to instance should be established
     reachable:
+      skip: false
       timeout: 3s
     # Bundle state tracking
     bundle_stable:
+      skip: false
       symbolic_names_ignored: []
     # OSGi events tracking
     event_stable:
+      skip: false
       # Topics indicating that instance is not stable
       topics_unstable:
         - "org/osgi/framework/ServiceEvent/*"
@@ -89,8 +92,20 @@ instance:
         - "org.osgi.service.component.runtime.ServiceComponentRuntime"
         - "java.util.ResourceBundle"
       received_max_age: 5s
+    # OSGi components state tracking
+    component_stable:
+      skip: false
+      pids:
+        include: ['com.day.crx.packaging.*', 'org.apache.sling.installer.*']
+        exclude: ['org.apache.sling.installer.hc.*', 'org.apache.sling.installer.core.impl.console.*']
+        match:
+          "disabled": []
+          "no config": []
+          "unsatisfied (reference)": []
+          "satisfied": []
     # Sling Installer tracking
     installer:
+      skip: false
       # JMX state checking
       state: true
       # Pause Installation nodes checking
@@ -98,6 +113,11 @@ instance:
     # Specific endpoints / paths (like login page)
     path_ready:
       timeout: 10s
+    login_page:
+      skip: false
+      path: "/libs/granite/core/content/login.html"
+      status_code: 200
+      contained_text: QUICKSTART_HOMEPAGE
 
   # Managed locally (set up automatically)
   local:
@@ -138,6 +158,7 @@ instance:
   package:
     # Force re-uploading/installing of snapshot AEM packages (just built / unreleased)
     snapshot_patterns: [ "**/*-SNAPSHOT.zip" ]
+    snapshot_ignored: false
     # Use checksums to avoid re-deployments when snapshot AEM packages are unchanged
     snapshot_deploy_skipping: true
     # Disable following workflow launchers for a package deployment time only
@@ -151,6 +172,16 @@ instance:
       console: false
       # Fail on case 'installed with errors'
       strict: true
+    # Number of changes after which the commit to the repository is performed
+    install_save_threshold: 1024
+    # Allows to relax dependency handling if needed
+    install_dependency_handling: required
+    # Controls how 'rep:policy' nodes are handled during import
+    install_ac_handling: ''
+
+  # 'SSL By Default'
+  ssl:
+    setup_timeout: 30s
 
   # OSGi Framework
   osgi:
@@ -163,6 +194,10 @@ instance:
   # Crypto Support
   crypto:
     key_bundle_symbolic_name: com.adobe.granite.crypto.file
+
+  # Replication
+  replication:
+    bundle_symbolic_name: com.day.cq.cq-replication
 
   # Workflow Manager
   workflow:

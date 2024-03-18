@@ -10,9 +10,9 @@ env:
   AEM_OUTPUT_VALUE: NONE
 
 dotenv:
-  - '{{.AEM_ENV}}.env'  # VCS-tracked, env-specific
-  - '.env.{{.AEM_ENV}}' # VCS-ignored, env-specific
   - '.env'              # VCS-ignored, user-specific
+  - '.env.{{.AEM_ENV}}' # VCS-ignored, env-specific
+  - '{{.AEM_ENV}}.env'  # VCS-tracked, env-specific
 
 tasks:
   init:
@@ -161,11 +161,11 @@ tasks:
       - core/pom.xml
       - core/src/**/*
       - ui.apps/pom.xml
-      - ui.apps/src/main/content/META-INF
-      - ui.apps/src/main/content/jcr_root/apps/mysite/clientlibs/clientlib-grid/**/*
-      - ui.apps/src/main/content/jcr_root/apps/mysite/clientlibs/clientlib-base/**/*
-      - ui.apps/src/main/content/jcr_root/apps/mysite/components
-      - ui.apps/src/main/content/jcr_root/apps/mysite/i18n
+      - ui.apps/src/**/*
+      - exclude: ui.apps/src/main/content/jcr_root/apps/*/clientlibs/clientlib-site/**/*
+      - exclude: ui.apps/src/main/content/jcr_root/apps/*/clientlibs/clientlib-dependencies/**/*
+      - exclude: ui.apps/src/main/content/jcr_root/apps/*/clientlibs/clientlib-angular/**/*
+      - exclude: ui.apps/src/main/content/jcr_root/apps/*/clientlibs/clientlib-react/**/*
       - ui.apps.structure/pom.xml
       - ui.apps.structure/src/**/*
       - ui.config/pom.xml

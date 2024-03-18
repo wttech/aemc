@@ -10,9 +10,9 @@ env:
   AEM_OUTPUT_VALUE: NONE
 
 dotenv:
-  - '{{.AEM_ENV}}.env'  # VCS-tracked, env-specific
-  - '.env.{{.AEM_ENV}}' # VCS-ignored, env-specific
   - '.env'              # VCS-ignored, user-specific
+  - '.env.{{.AEM_ENV}}' # VCS-ignored, env-specific
+  - '{{.AEM_ENV}}.env'  # VCS-tracked, env-specific
 
 tasks:
   init:
@@ -155,11 +155,11 @@ tasks:
       - core/pom.xml
       - core/src/**/*
       - ui.apps/pom.xml
-      - ui.apps/src/main/content/META-INF
-      - ui.apps/src/main/content/jcr_root/apps/mysite/clientlibs/clientlib-grid/**/*
-      - ui.apps/src/main/content/jcr_root/apps/mysite/clientlibs/clientlib-base/**/*
-      - ui.apps/src/main/content/jcr_root/apps/mysite/components
-      - ui.apps/src/main/content/jcr_root/apps/mysite/i18n
+      - ui.apps/src/**/*
+      - exclude: ui.apps/src/main/content/jcr_root/apps/*/clientlibs/clientlib-site/**/*
+      - exclude: ui.apps/src/main/content/jcr_root/apps/*/clientlibs/clientlib-dependencies/**/*
+      - exclude: ui.apps/src/main/content/jcr_root/apps/*/clientlibs/clientlib-angular/**/*
+      - exclude: ui.apps/src/main/content/jcr_root/apps/*/clientlibs/clientlib-react/**/*
       - ui.apps.structure/pom.xml
       - ui.apps.structure/src/**/*
       - ui.config/pom.xml
@@ -221,7 +221,7 @@ tasks:
       - 'test -d ../aem/home/opt/sdk/dispatcher || { echo "Dispatcher SDK is not available. Try providing AEM SDK ZIP instead of JAR to directory: aem/home/lib"; exit 1; }'
       - test -d home/sdk || (rm -fr home/sdk && mkdir -p home && cp -r ../aem/home/opt/sdk/dispatcher home/sdk)
       # - sh home/sdk/bin/validate.sh src > ../aem/home/var/log/dispatcher-validate.log
-      - docker tag "$(docker load --input "home/sdk/lib/dispatcher-publish-{{ARCH}}.tar.gz" | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"
+      - docker tag "$(docker load --input "home/sdk/lib/dispatcher-publish-{{ARCH}}.tar.gz" | tail -n 1 | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"
       - mkdir -p home/sdk/logs home/sdk/cache
       - docker compose up -d
 

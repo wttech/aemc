@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"bufio"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"github.com/samber/lo"
@@ -15,7 +16,10 @@ import (
 	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/common/tplx"
 	"github.com/wttech/aemc/pkg/pkg"
+	"io"
 	"io/fs"
+	"mime/multipart"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,13 +29,18 @@ import (
 type PackageManager struct {
 	instance *Instance
 
-	SnapshotDeploySkipping bool
-	InstallRecursive       bool
-	InstallHTMLEnabled     bool
-	InstallHTMLConsole     bool
-	InstallHTMLStrict      bool
-	SnapshotPatterns       []string
-	ToggledWorkflows       []string
+	UploadOptimized           bool
+	InstallRecursive          bool
+	InstallSaveThreshold      int
+	InstallACHandling         string
+	InstallDependencyHandling string
+	InstallHTMLEnabled        bool
+	InstallHTMLConsole        bool
+	InstallHTMLStrict         bool
+	SnapshotDeploySkipping    bool
+	SnapshotIgnored           bool
+	SnapshotPatterns          []string
+	ToggledWorkflows          []string
 }
 
 func NewPackageManager(res *Instance) *PackageManager {
@@ -40,13 +49,18 @@ func NewPackageManager(res *Instance) *PackageManager {
 	return &PackageManager{
 		instance: res,
 
-		SnapshotDeploySkipping: cv.GetBool("instance.package.snapshot_deploy_skipping"),
-		InstallHTMLEnabled:     cv.GetBool("instance.package.install_html.enabled"),
-		InstallHTMLConsole:     cv.GetBool("instance.package.install_html.console"),
-		InstallHTMLStrict:      cv.GetBool("instance.package.install_html.strict"),
-		InstallRecursive:       cv.GetBool("instance.package.install_recursive"),
-		SnapshotPatterns:       cv.GetStringSlice("instance.package.snapshot_patterns"),
-		ToggledWorkflows:       cv.GetStringSlice("instance.package.toggled_workflows"),
+		UploadOptimized:           cv.GetBool("instance.package.upload_optimized"),
+		InstallRecursive:          cv.GetBool("instance.package.install_recursive"),
+		InstallSaveThreshold:      cv.GetInt("instance.package.install_save_threshold"),
+		InstallACHandling:         cv.GetString("instance.package.install_ac_handling"),
+		InstallDependencyHandling: cv.GetString("instance.package.install_dependency_handling"),
+		InstallHTMLEnabled:        cv.GetBool("instance.package.install_html.enabled"),
+		InstallHTMLConsole:        cv.GetBool("instance.package.install_html.console"),
+		InstallHTMLStrict:         cv.GetBool("instance.package.install_html.strict"),
+		SnapshotDeploySkipping:    cv.GetBool("instance.package.snapshot_deploy_skipping"),
+		SnapshotIgnored:           cv.GetBool("instance.package.snapshot_ignored"),
+		SnapshotPatterns:          cv.GetStringSlice("instance.package.snapshot_patterns"),
+		ToggledWorkflows:          cv.GetStringSlice("instance.package.toggled_workflows"),
 	}
 }
 
@@ -131,7 +145,7 @@ func (pm *PackageManager) findInternal(pid string) (*pkg.ListItem, error) {
 }
 
 func (pm *PackageManager) IsSnapshot(localPath string) bool {
-	return stringsx.MatchSome(pathx.Normalize(localPath), pm.SnapshotPatterns)
+	return !pm.SnapshotIgnored && stringsx.MatchSome(pathx.Normalize(localPath), pm.SnapshotPatterns)
 }
 
 func copyPackageDefaultFiles(targetTmpDir string, data map[string]any) error {
@@ -207,6 +221,24 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	}
 	log.Infof("%s > created package '%s'", pm.instance.ID(), opts.PID)
 	return status.Path, nil
+}
+
+func (pm *PackageManager) Copy(remotePath string, destInstance *Instance) error {
+	var localPath = pathx.RandomFileName(pm.tmpDir(), "pkg_copy", ".zip")
+	defer func() {
+		_ = pathx.DeleteIfExists(localPath)
+	}()
+	if err := pm.Download(remotePath, localPath); err != nil {
+		return err
+	}
+	destRemotePath, err := destInstance.PackageManager().Upload(localPath)
+	if err != nil {
+		return err
+	}
+	if err := destInstance.PackageManager().Install(destRemotePath); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (pm *PackageManager) tmpDir() string {
@@ -326,6 +358,64 @@ func (pm *PackageManager) UploadWithChanged(localPath string) (bool, error) {
 }
 
 func (pm *PackageManager) Upload(localPath string) (string, error) {
+	if pm.UploadOptimized {
+		return pm.uploadOptimized(localPath)
+	}
+	return pm.uploadBuffered(localPath)
+}
+
+// https://medium.com/@owlwalks/sending-big-file-with-minimal-memory-in-golang-8f3fc280d2c
+// https://github.com/go-resty/resty/issues/309#issuecomment-1750659170
+func (pm *PackageManager) uploadOptimized(localPath string) (string, error) {
+	log.Infof("%s > uploading package '%s'", pm.instance.ID(), localPath)
+	r, w := io.Pipe()
+	m := multipart.NewWriter(w)
+	go func() {
+		defer func(w *io.PipeWriter) { _ = w.Close() }(w)
+		defer func(m *multipart.Writer) { _ = m.Close() }(m)
+		part, err := m.CreateFormFile("package", filepath.Base(localPath))
+		if err != nil {
+			return
+		}
+		file, err := os.Open(localPath)
+		if err != nil {
+			return
+		}
+		defer func(file *os.File) { _ = file.Close() }(file)
+		if _, err = io.Copy(part, file); err != nil {
+			return
+		}
+	}()
+	request, err := http.NewRequest("POST", pm.instance.HTTP().BaseURL()+ServiceJsonPath+"/?cmd=upload&force=true", r)
+	if err != nil {
+		return "", err
+	}
+	request.Header.Set("Content-Type", m.FormDataContentType())
+	request.SetBasicAuth(pm.instance.user, pm.instance.password)
+	cv := pm.instance.manager.aem.config.Values()
+	transport := &http.Transport{}
+	if cv.GetBool("instance.http.ignore_ssl_errors") {
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	}
+	client := &http.Client{Transport: transport}
+	response, err := client.Do(request)
+	if err != nil {
+		return "", fmt.Errorf("%s > cannot upload package '%s': %w", pm.instance.ID(), localPath, err)
+	} else if response.StatusCode > 399 {
+		return "", fmt.Errorf("%s > cannot upload package '%s': %s", pm.instance.ID(), localPath, response.Status)
+	}
+	var status pkg.CommandResult
+	if err = fmtx.UnmarshalJSON(response.Body, &status); err != nil {
+		return "", fmt.Errorf("%s > cannot upload package '%s'; cannot parse response: %w", pm.instance.ID(), localPath, err)
+	}
+	if !status.Success {
+		return "", fmt.Errorf("%s > cannot upload package '%s'; %s", pm.instance.ID(), localPath, pm.interpretFail(status.Message))
+	}
+	log.Infof("%s > uploaded package '%s'", pm.instance.ID(), localPath)
+	return status.Path, nil
+}
+
+func (pm *PackageManager) uploadBuffered(localPath string) (string, error) {
 	log.Infof("%s > uploading package '%s'", pm.instance.ID(), localPath)
 	response, err := pm.instance.http.Request().
 		SetFile("package", localPath).
@@ -341,10 +431,20 @@ func (pm *PackageManager) Upload(localPath string) (string, error) {
 		return "", fmt.Errorf("%s > cannot upload package '%s'; cannot parse response: %w", pm.instance.ID(), localPath, err)
 	}
 	if !status.Success {
-		return "", fmt.Errorf("%s > cannot upload package '%s'; unexpected status: %s", pm.instance.ID(), localPath, status.Message)
+		return "", fmt.Errorf("%s > cannot upload package '%s'; %s", pm.instance.ID(), localPath, pm.interpretFail(status.Message))
 	}
 	log.Infof("%s > uploaded package '%s'", pm.instance.ID(), localPath)
 	return status.Path, nil
+}
+
+func (pm *PackageManager) interpretFail(message string) string {
+	if strings.Contains(strings.ToLower(message), "inaccessible value") {
+		return fmt.Sprintf("probably no disk space left (server respond with '%s')", message) // https://forums.adobe.com/thread/2338290
+	}
+	if strings.Contains(strings.ToLower(message), "package file parameter missing") {
+		return fmt.Sprintf("probably no disk space left (server respond with '%s')", message)
+	}
+	return fmt.Sprintf("unexpected status: %s", message)
 }
 
 func (pm *PackageManager) Install(remotePath string) error {
@@ -356,9 +456,7 @@ func (pm *PackageManager) Install(remotePath string) error {
 
 func (pm *PackageManager) installJSON(remotePath string) error {
 	log.Infof("%s > installing package '%s'", pm.instance.ID(), remotePath)
-	response, err := pm.instance.http.Request().
-		SetFormData(map[string]string{"cmd": "install", "recursive": fmt.Sprintf("%v", pm.InstallRecursive)}).
-		Post(ServiceJsonPath + remotePath)
+	response, err := pm.instance.http.Request().SetFormData(pm.installParams()).Post(ServiceJsonPath + remotePath)
 	if err != nil {
 		return fmt.Errorf("%s > cannot install package '%s': %w", pm.instance.ID(), remotePath, err)
 	} else if response.IsError() {
@@ -378,9 +476,7 @@ func (pm *PackageManager) installJSON(remotePath string) error {
 func (pm *PackageManager) installHTML(remotePath string) error {
 	log.Infof("%s > installing package '%s'", pm.instance.ID(), remotePath)
 
-	response, err := pm.instance.http.Request().
-		SetFormData(map[string]string{"cmd": "install", "recursive": fmt.Sprintf("%v", pm.InstallRecursive)}).
-		Post(ServiceHtmlPath + remotePath)
+	response, err := pm.instance.http.Request().SetFormData(pm.installParams()).Post(ServiceHtmlPath + remotePath)
 	if err != nil {
 		return fmt.Errorf("%s > cannot install package '%s': %w", pm.instance.ID(), remotePath, err)
 	} else if response.IsError() {
@@ -441,6 +537,16 @@ func (pm *PackageManager) installHTML(remotePath string) error {
 	}
 	log.Infof("%s > installed package '%s'", pm.instance.ID(), remotePath)
 	return nil
+}
+
+func (pm *PackageManager) installParams() map[string]string {
+	return map[string]string{
+		"cmd":                "install",
+		"recursive":          fmt.Sprintf("%v", pm.InstallRecursive),
+		"autosave":           fmt.Sprintf("%d", pm.InstallSaveThreshold),
+		"acHandling":         pm.InstallACHandling,
+		"dependencyHandling": pm.InstallDependencyHandling,
+	}
 }
 
 func (pm *PackageManager) DeployWithChanged(localPath string) (bool, error) {

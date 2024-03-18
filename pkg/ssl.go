@@ -1,8 +1,10 @@
 package pkg
 
 import (
+	"context"
 	"encoding/pem"
 	"fmt"
+	"github.com/go-resty/resty/v2"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/certx"
 	"github.com/wttech/aemc/pkg/common/cryptox"
@@ -12,6 +14,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 )
 
 const (
@@ -19,7 +22,8 @@ const (
 )
 
 type SSL struct {
-	instance *Instance
+	instance     *Instance
+	setupTimeout time.Duration
 }
 
 type sslLock struct {
@@ -32,7 +36,12 @@ type sslLock struct {
 }
 
 func NewSSL(instance *Instance) *SSL {
-	return &SSL{instance: instance}
+	configValues := instance.manager.aem.config.Values()
+
+	return &SSL{
+		instance:     instance,
+		setupTimeout: configValues.GetDuration("instance.ssl.setup_timeout"),
+	}
 }
 
 func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privateKeyFile, httpsHostname, httpsPort string) (bool, error) {
@@ -79,14 +88,12 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 		"httpsPort":                 httpsPort,
 	}
 
-	response, err := s.instance.http.
-		RequestFormData(params).
-		SetFiles(map[string]string{
-			"certificateFile": certificateFile,
-			"privatekeyFile":  privateKeyFile,
-		}).
-		SetDoNotParseResponse(true).
-		Post(SSLSetupPath)
+	files := map[string]string{
+		"certificateFile": certificateFile,
+		"privatekeyFile":  privateKeyFile,
+	}
+
+	response, err := s.sendSetupRequest(params, files)
 
 	if err != nil {
 		return false, fmt.Errorf("%s > failed to setup SSL: %w", s.instance.ID(), err)
@@ -112,6 +119,30 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 	}
 
 	return true, nil
+}
+
+func (s SSL) sendSetupRequest(params map[string]any, files map[string]string) (*resty.Response, error) {
+	pause := time.Duration(2) * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), s.setupTimeout)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+			response, err := s.instance.http.
+				RequestFormData(params).
+				SetFiles(files).
+				SetDoNotParseResponse(true).
+				Post(SSLSetupPath)
+			if err == nil {
+				return response, err
+			}
+			log.Warnf("%s > failed to setup SSL: %s, retrying", s.instance.ID(), err)
+			time.Sleep(pause)
+		}
+	}
 }
 
 // From HTML response body, e.g.:

@@ -31,6 +31,7 @@ type Instance struct {
 	ssl             *SSL
 	gtsManager      *GTSManager
 	auth            *Auth
+	replication     *Replication
 	packageManager  *PackageManager
 	workflowManager *WorkflowManager
 	contentManager  *ContentManager
@@ -122,6 +123,10 @@ func (i Instance) GTS() *GTSManager {
 
 func (i Instance) Auth() *Auth {
 	return i.auth
+}
+
+func (i Instance) Replication() *Replication {
+	return i.replication
 }
 
 func (i Instance) IDInfo() IDInfo {
@@ -268,13 +273,17 @@ func (i Instance) HealthChecks() []string {
 			i.manager.CheckOpts.BundleStable,
 			i.manager.CheckOpts.EventStable,
 			i.manager.CheckOpts.Installer,
+			i.manager.CheckOpts.LoginPage,
+			i.manager.CheckOpts.ComponentStable,
 		}
 		for _, check := range checks {
+			if check.Spec().Skip {
+				continue
+			}
 			result := check.Check(i.manager.CheckContext().Value(checkContextKey{}).(CheckContext), i)
-			if result.message != "" {
-				messages = append(messages, result.message)
-			} else if result.err != nil {
-				messages = append(messages, fmt.Sprintf("%s", result.err))
+			resultText := result.Text()
+			if resultText != "" {
+				messages = append(messages, resultText)
 			}
 		}
 	}

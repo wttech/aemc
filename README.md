@@ -14,6 +14,8 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
   - [*CLI*](#cli---overview) - for developer workstations, shell scripting
     - [AEM Project Quickstart](https://github.com/wttech/aemc#cli---aem-project-quickstart) - add development environment automation to the existing AEM projects
     - [Docker Example](examples/docker) - for experiments only
+  - [*Terraform AEM Provider*](https://github.com/wttech/terraform-provider-aem) - set up with ease higher environments (VMs and AEM instances) in the cloud (AWS, Azure, GCP, etc.)
+  - [*Pulumi AEM Provider*](https://github.com/wttech/pulumi-aem-native) - working the same as Terraform AEM Provider but with Pulumi
   - [*Ansible Collection/Modules*](#ansible-collection) - for managing higher AEM environments
     - [Packer Example](https://github.com/wttech/aemc-ansible/tree/main/examples/packer) - starting point for baking AWS EC2 image using Ansible
     - [Local Example](https://github.com/wttech/aemc-ansible/tree/main/examples/local) - development & testing sandbox for AEM Compose project
@@ -23,6 +25,9 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
 # References
 
 * Intro Guide Blog Post - [Get your AEM together with AEM Compose!](https://wttech.blog/blog/2023/get-your-aem-together-with-aem-compose/) by [Krystian Panek](mailto:krystian.panek@wundermanthompson.com)
+* Talk at AdaptTo 2023 Conference - [Get Your AEM Together: AEM Compose, the Ultimate DevEx Tool](https://www.youtube.com/watch?v=EH4ubsxNpbs) by [Tomasz Sobczyk](mailto:tomasz.sobczyk@wundermanthompson.com) & [Krystian Panek](mailto:krystian.panek@wundermanthompson.com)
+
+    [![AdaptTo 2023 Video](docs/adapto-to-video.png)](https://www.youtube.com/watch?v=EH4ubsxNpbs)
 
 # Table of Contents
 
@@ -45,6 +50,7 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
   * [Replication agents](#replication-agents)
   * [SSL by Default](#ssl-by-default)
   * [Global Trust Store](#global-trust-store)
+* [Troubleshooting](#troubleshooting)
 * [Contributing](#contributing)
 * [Authors](#authors)
 * [License](#license)
@@ -113,9 +119,9 @@ Supported project types:
 
 - with structure based on [Adobe AEM Project Archetype](https://github.com/adobe/aem-project-archetype#usage), compatibility:
 
-  | AEM Compose (init) | AEM Project Archetype |
-  |--------------------|-----------------------|
-  | 1.2.0 - 1.4.x      | 41-43                 |
+  | AEM Compose (init) | AEM Project Archetype (tested) |
+  |--------------------|--------------------------------|
+  | >= 1.2.0           | 41, 42, 43, ?, 47              |
 
 - with any type of structure, however afterwards only a little customizations in *Taskfile.yml* need to be done to reflect configuration related to built AEM application artifact path and AEM dispatcher files location
 - empty folder; the project kind will be needed to be specified explicitly during initialization
@@ -292,7 +298,7 @@ instance:
     # Time to wait for next state checking
     interval: 6s
     # Number of successful check attempts that indicates end of checking
-    done_threshold: 5
+    done_threshold: 4
     # Max time to wait for the instance to be healthy after executing the start script or e.g deploying a package
     await_started:
       timeout: 30m
@@ -318,6 +324,17 @@ instance:
         - "org.osgi.service.component.runtime.ServiceComponentRuntime"
         - "java.util.ResourceBundle"
       received_max_age: 5s
+    # OSGi components state tracking
+    component_stable:
+      skip: false
+      pids:
+        include: ['com.day.crx.packaging.*', 'org.apache.sling.installer.*']
+        exclude: ['org.apache.sling.installer.hc.*', 'org.apache.sling.installer.core.impl.console.*']
+        match:
+          "disabled": []
+          "no config": []
+          "unsatisfied (reference)": []
+          "satisfied": []
     # Sling Installer tracking
     installer:
       # JMX state checking
@@ -377,6 +394,12 @@ instance:
       console: false
       # Fail on case 'installed with errors'
       strict: true
+    # Number of changes after which the commit to the repository is performed
+    install_save_threshold: 1024
+    # Allows to relax dependency handling if needed
+    install_dependency_handling: required
+    # Controls how 'rep:policy' nodes are handled during import
+    install_ac_handling: ''
 
   # OSGi Framework
   osgi:
@@ -638,6 +661,25 @@ Command `certificate add` supports certificates in PEM and DER formats.
     ```shell
     sh aemw gts certificate remove --alias <alias> -A
     ```
+
+
+# Troubleshooting
+
+## Migration from Gradle plugins
+
+If you're migrating from [Gradle AEM Plugin](https://github.com/wttech/gradle-aem-plugin) you may run into issue with setting up dispatcher.
+In case of error when running task dispatcher:start or dispatcher:setup:
+
+```
+2024-01-22 16:37:23 dispatcher  | 2024/01/22 15:37:23 Dispatcher configuration validation failed:
+2024-01-22 16:37:23 dispatcher  | 2024/01/22 15:37:23   /mnt/dev/src/conf.d/variables/default.vars: lstat /etc/httpd.extra: no such file or directory
+2024-01-22 16:37:23 dispatcher  |
+2024-01-22 16:37:23 dispatcher  | ERROR Mon Jan 22 15:37:23 UTC 2024 Configuration invalid, please fix and retry,
+2024-01-22 16:37:23 dispatcher  |               Line numbers reported are correct for your configuration files.
+```
+
+Check if there is a broken symlink/file in `dispatcher/src/variables/default.vars`. If the file exists, delete it and
+run the task again.
 
 # Contributing
 

@@ -7,6 +7,7 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/fmtx"
+	"github.com/wttech/aemc/pkg/common/httpx"
 	"github.com/wttech/aemc/pkg/common/mapsx"
 	"github.com/wttech/aemc/pkg/repo"
 	"net/http"
@@ -175,6 +176,20 @@ func NewRepoNodeList(nodes []RepoNode) NodeList {
 type NodeList struct {
 	Total int        `json:"total" yaml:"total"`
 	Nodes []RepoNode `json:"nodes" yaml:"nodes"`
+}
+
+func (r Repo) Download(remotePath string, localFile string) error {
+	log.Infof("%s > downloading node '%s'", r.instance.ID(), remotePath)
+	if err := httpx.DownloadWithOpts(httpx.DownloadOpts{
+		Client:   r.instance.http.Client(),
+		URL:      remotePath,
+		File:     localFile,
+		Override: true,
+	}); err != nil {
+		return fmt.Errorf("%s > cannot download node '%s': %w", r.instance.ID(), remotePath, err)
+	}
+	log.Infof("%s > downloaded node '%s'", r.instance.ID(), remotePath)
+	return nil
 }
 
 func (nl NodeList) MarshalText() string {

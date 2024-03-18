@@ -53,7 +53,7 @@ func NewManager(baseOpts *base.Opts) *Manager {
 	}
 }
 
-func (c Manager) prepare(root string) error {
+func (c Manager) Prepare(root string) error {
 	if c.ParentsBackupEnabled {
 		return c.doParentsBackup(root)
 	}

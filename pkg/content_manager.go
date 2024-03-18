@@ -65,6 +65,9 @@ func (cm *ContentManager) SyncDir(dir string, clean bool, packageOpts PackageCre
 	before, _, _ := strings.Cut(dir, content.JCRRoot)
 	contentManager := cm.instance.manager.aem.contentManager
 	if clean {
+		if err := contentManager.Prepare(dir); err != nil {
+			return err
+		}
 		if err := contentManager.BeforeClean(dir); err != nil {
 			return err
 		}
@@ -97,17 +100,12 @@ func (cm *ContentManager) SyncFile(file string, clean bool, packageOpts PackageC
 	if err := pathx.Ensure(dir); err != nil {
 		return err
 	}
-	before, _, _ := strings.Cut(dir, content.JCRRoot)
-	contentManager := cm.instance.manager.aem.contentManager
-	if clean {
-		if err := contentManager.BeforeClean(dir); err != nil {
-			return err
-		}
-	}
-	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot), before+content.JCRRoot); err != nil {
+	_, after, _ := strings.Cut(file, content.JCRRoot)
+	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot, after), file); err != nil {
 		return err
 	}
 	if clean {
+		contentManager := cm.instance.manager.aem.contentManager
 		if err := contentManager.CleanFile(file); err != nil {
 			return err
 		}

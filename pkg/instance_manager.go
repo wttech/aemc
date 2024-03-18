@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"github.com/fatih/color"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/lox"
@@ -301,11 +302,21 @@ func (im *InstanceManager) Await(instances []Instance) error {
 }
 
 func InstanceIds(instances []Instance) string {
-	return strings.Join(lo.Map(instances, func(i Instance, _ int) string { return i.id }), ",")
+	return strings.Join(lo.Map(instances, func(i Instance, _ int) string { return InstanceId(i) }), ",")
+}
+
+func InstanceId(instance Instance) string {
+	id := instance.ID()
+	if instance.IsAuthor() {
+		id = color.HiMagentaString(id)
+	} else {
+		id = color.HiBlueString(id)
+	}
+	return id
 }
 
 func InstanceMsg(instance Instance, msg any) string {
-	return stringsx.AddPrefix(fmt.Sprintf("%v", msg), fmt.Sprintf("%s > ", instance.ID()))
+	return stringsx.AddPrefix(fmt.Sprintf("%v", msg), fmt.Sprintf("%s > ", InstanceId(instance)))
 }
 
 func InstancesMsg(instances []Instance, msg any) string {

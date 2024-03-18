@@ -113,6 +113,7 @@ func (c *CLI) contentSyncCmd() *cobra.Command {
 				if err = instance.ContentManager().SyncDir(dir, clean, pkg.PackageCreateOpts{
 					FilterRoots: filterRoots,
 					FilterFile:  filterFile,
+					ContentDir:  dir,
 				}); err != nil {
 					c.Error(err)
 					return
@@ -121,11 +122,13 @@ func (c *CLI) contentSyncCmd() *cobra.Command {
 			}
 			file, _ := cmd.Flags().GetString("file")
 			if file != "" {
-				if err = instance.ContentManager().SyncFile(dir, clean); err != nil {
+				if err = instance.ContentManager().SyncFile(file, clean, pkg.PackageCreateOpts{
+					ContentFile: file,
+				}); err != nil {
 					c.Error(err)
 					return
 				}
-				c.SetOutput("file", dir)
+				c.SetOutput("file", file)
 			}
 			c.Changed("content synchronized")
 		},
@@ -158,7 +161,9 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 				return
 			}
 			if dir != "" {
-				if err = instance.ContentManager().PushDir(dir, clean); err != nil {
+				if err = instance.ContentManager().PushDir(dir, clean, pkg.PackageCreateOpts{
+					ContentDir: dir,
+				}); err != nil {
 					c.Error(err)
 					return
 				}
@@ -166,7 +171,9 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 			}
 			file, _ := cmd.Flags().GetString("file")
 			if file != "" {
-				if err = instance.ContentManager().PushFile(file, clean); err != nil {
+				if err = instance.ContentManager().PushFile(file, clean, pkg.PackageCreateOpts{
+					ContentFile: file,
+				}); err != nil {
 					c.Error(err)
 					return
 				}

@@ -15,6 +15,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/common/tplx"
+	"github.com/wttech/aemc/pkg/content"
 	"github.com/wttech/aemc/pkg/pkg"
 	"io"
 	"io/fs"
@@ -165,11 +166,11 @@ func copyPackageDefaultFiles(targetTmpDir string, data map[string]any) error {
 }
 
 type PackageCreateOpts struct {
-	PID          string
-	FilterRoots  []string
-	FilterFile   string
-	ContentDirs  []string
-	ContentFiles []string
+	PID         string
+	FilterRoots []string
+	FilterFile  string
+	ContentDir  string
+	ContentFile string
 }
 
 func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
@@ -185,6 +186,13 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 		_ = pathx.DeleteIfExists(tmpDir)
 		_ = pathx.DeleteIfExists(tmpFile)
 	}()
+	if len(opts.FilterRoots) == 0 && opts.FilterFile == "" {
+		if opts.ContentDir != "" {
+			opts.FilterRoots = []string{strings.Split(opts.ContentDir, content.JCRRoot)[1]}
+		} else if opts.ContentFile != "" {
+			opts.FilterRoots = []string{strings.ReplaceAll(opts.ContentFile, content.JCRContentFile, content.JCRContentNode)}
+		}
+	}
 	data := map[string]any{
 		"Pid":         opts.PID,
 		"Group":       pidConfig.Group,

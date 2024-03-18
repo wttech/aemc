@@ -48,12 +48,6 @@ func (cm *ContentManager) Download(localFile string, opts PackageCreateOpts) err
 
 func (cm *ContentManager) SyncDir(dir string, clean bool, packageOpts PackageCreateOpts) error {
 	pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_sync", ".zip")
-	if len(packageOpts.FilterRoots) == 0 && packageOpts.FilterFile == "" {
-		packageOpts = PackageCreateOpts{
-			FilterRoots: []string{strings.Split(dir, content.JCRRoot)[1]},
-			FilterFile:  "",
-		}
-	}
 	if err := cm.Download(pkgFile, packageOpts); err != nil {
 		return err
 	}
@@ -86,12 +80,8 @@ func (cm *ContentManager) SyncDir(dir string, clean bool, packageOpts PackageCre
 	return nil
 }
 
-func (cm *ContentManager) SyncFile(file string, clean bool) error {
+func (cm *ContentManager) SyncFile(file string, clean bool, packageOpts PackageCreateOpts) error {
 	pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_sync", ".zip")
-	packageOpts := PackageCreateOpts{
-		FilterRoots: []string{strings.ReplaceAll(file, content.JCRContentFile, content.JCRContentNode)},
-		FilterFile:  "",
-	}
 	if err := cm.Download(pkgFile, packageOpts); err != nil {
 		return err
 	}
@@ -125,10 +115,7 @@ func (cm *ContentManager) SyncFile(file string, clean bool) error {
 	return nil
 }
 
-func (cm *ContentManager) PushDir(dir string, clean bool) error {
-	packageOpts := PackageCreateOpts{
-		ContentDirs: []string{dir},
-	}
+func (cm *ContentManager) PushDir(dir string, clean bool, packageOpts PackageCreateOpts) error {
 	if clean {
 		contentManager := cm.instance.manager.aem.contentManager
 		if err := contentManager.CleanDir(dir); err != nil {
@@ -148,10 +135,7 @@ func (cm *ContentManager) PushDir(dir string, clean bool) error {
 	return nil
 }
 
-func (cm *ContentManager) PushFile(file string, clean bool) error {
-	packageOpts := PackageCreateOpts{
-		ContentFiles: []string{file},
-	}
+func (cm *ContentManager) PushFile(file string, clean bool, packageOpts PackageCreateOpts) error {
 	if clean {
 		contentManager := cm.instance.manager.aem.contentManager
 		if err := contentManager.CleanFile(file); err != nil {

@@ -266,7 +266,10 @@ func determineContentDir(cmd *cobra.Command) (string, error) {
 
 func determineContentFile(cmd *cobra.Command) (string, error) {
 	file, _ := cmd.Flags().GetString("file")
-	if file != "" && !strings.HasSuffix(file, content.JCRRoot) {
+	if file != "" && !strings.Contains(file, content.JCRRoot) {
+		return "", fmt.Errorf("content file '%s' does not contain '%s'", file, content.JCRRoot)
+	}
+	if file != "" && !strings.HasSuffix(file, content.JCRContentNode) {
 		return "", fmt.Errorf("content file '%s' does not end '%s'", file, content.JCRContentFile)
 	}
 	return file, nil

@@ -345,13 +345,15 @@ func (c Manager) doRootBackup(root string) error {
 }
 
 func (c Manager) undoParentsBackup(root string) error {
-	return eachFilesInDir(root, func(path string) error {
-		if strings.HasSuffix(path, ParentsBackupSuffix) {
-			origin := strings.TrimSuffix(path, ParentsBackupSuffix)
-			log.Infof("undoing backup of parent file: %s", path)
-			return os.Rename(path, origin)
-		}
-		return nil
+	return eachParentFiles(root, func(parent string) error {
+		return eachFilesInDir(parent, func(path string) error {
+			if strings.HasSuffix(path, ParentsBackupSuffix) {
+				origin := strings.TrimSuffix(path, ParentsBackupSuffix)
+				log.Infof("undoing backup of parent file: %s", path)
+				return os.Rename(path, origin)
+			}
+			return nil
+		})
 	})
 }
 

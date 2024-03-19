@@ -170,7 +170,8 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 			}
 			if dir != "" {
 				if err = instance.ContentManager().PushDir(dir, clean, pkg.PackageCreateOpts{
-					ContentDir: dir,
+					CopyContent: true,
+					ContentDir:  dir,
 				}); err != nil {
 					c.Error(err)
 					return
@@ -184,6 +185,7 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 			}
 			if file != "" {
 				if err = instance.ContentManager().PushFile(file, clean, pkg.PackageCreateOpts{
+					CopyContent: true,
 					ContentFile: file,
 				}); err != nil {
 					c.Error(err)

@@ -169,6 +169,7 @@ type PackageCreateOpts struct {
 	PID         string
 	FilterRoots []string
 	FilterFile  string
+	CopyContent bool
 	ContentDir  string
 	ContentFile string
 }
@@ -208,7 +209,7 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 			return "", err
 		}
 	}
-	if len(opts.FilterRoots) == 0 && opts.FilterFile == "" {
+	if len(opts.FilterRoots) == 0 && opts.FilterFile == "" && opts.CopyContent {
 		if opts.ContentDir != "" {
 			_, after, _ := strings.Cut(opts.ContentDir, content.JCRRoot)
 			if err = pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {

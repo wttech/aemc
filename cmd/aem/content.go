@@ -15,7 +15,8 @@ func (c *CLI) contentCmd() *cobra.Command {
 		Short:   "Manages JCR content",
 	}
 	cmd.AddCommand(c.contentCleanCmd())
-	cmd.AddCommand(c.contentSyncCmd())
+	cmd.AddCommand(c.contentPullCmd())
+	cmd.AddCommand(c.contentPushCmd())
 	cmd.AddCommand(c.contentDownloadCmd())
 	cmd.AddCommand(c.contentCopyCmd())
 	return cmd
@@ -94,11 +95,11 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 	return cmd
 }
 
-func (c *CLI) contentSyncCmd() *cobra.Command {
+func (c *CLI) contentPullCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "sync",
-		Aliases: []string{"pull"},
-		Short:   "Download content from running instance then unpack under JCR root directory",
+		Use:     "pull",
+		Aliases: []string{"pl", "sync"},
+		Short:   "Pull content from running instance then unpack under JCR root directory",
 		Run: func(cmd *cobra.Command, args []string) {
 			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
@@ -271,8 +272,8 @@ func determineContentFile(cmd *cobra.Command) (string, error) {
 	if file != "" && !strings.Contains(file, content.JCRRoot) {
 		return "", fmt.Errorf("content file '%s' does not contain '%s'", file, content.JCRRoot)
 	}
-	if file != "" && !strings.HasSuffix(file, content.JCRContentNode) {
-		return "", fmt.Errorf("content file '%s' does not end '%s'", file, content.JCRContentFile)
+	if file != "" && !strings.HasSuffix(file, content.JCRContentFile) {
+		return "", fmt.Errorf("content file '%s' does not end with '%s'", file, content.JCRContentFile)
 	}
 	return file, nil
 }

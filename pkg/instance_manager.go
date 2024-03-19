@@ -130,6 +130,11 @@ func (im *InstanceManager) newFromConfig(id string) *Instance {
 	cv := im.aem.config.Values()
 
 	httpURL := cv.GetString(fmt.Sprintf("instance.config.%s.http_url", id))
+	if httpURL == "" {
+		log.Fatalf("cannot create instance from config with ID '%s' as URL is blank", id)
+		return nil
+	}
+
 	i, err := im.NewByURL(httpURL)
 	if err != nil {
 		log.Fatalf("cannot create instance from config with ID '%s' using URL '%s': %s", id, httpURL, err)

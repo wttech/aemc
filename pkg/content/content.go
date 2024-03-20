@@ -348,10 +348,9 @@ func (c Manager) doRootBackup(root string) error {
 func (c Manager) undoParentsBackup(root string) error {
 	return eachParentFiles(root, func(parent string) error {
 		if err := eachFilesInDir(parent, func(path string) error {
-			if !strings.HasSuffix(path, ParentsBackupSuffix) {
-				return deleteFile(path, nil)
-			}
-			return nil
+			return deleteFile(path, func() bool {
+				return !strings.HasSuffix(path, ParentsBackupSuffix)
+			})
 		}); err != nil {
 			return err
 		}

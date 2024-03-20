@@ -14,7 +14,7 @@ type GTSManager struct {
 	instance *Instance
 }
 
-func NewGTSMananger(instance *Instance) *GTSManager {
+func NewGTSManager(instance *Instance) *GTSManager {
 	return &GTSManager{instance: instance}
 }
 
@@ -23,28 +23,28 @@ const (
 	GTSPath     = "/libs/granite/security/post/truststore"
 )
 
-func (gtsManager *GTSManager) Status() (*gts.Status, error) {
-	response, err := gtsManager.instance.http.Request().Get(GTSPathJson)
+func (gm *GTSManager) Status() (*gts.Status, error) {
+	response, err := gm.instance.http.Request().Get(GTSPathJson)
 
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot read GTS: %w", gtsManager.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot read GTS: %w", gm.instance.IDColor(), err)
 	}
 
 	if response.IsError() {
-		return nil, fmt.Errorf("%s > cannot read GTS: %s", gtsManager.instance.ID(), response.Status())
+		return nil, fmt.Errorf("%s > cannot read GTS: %s", gm.instance.IDColor(), response.Status())
 	}
 
 	result, err := gts.UnmarshalStatus(response.RawBody())
 
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot parse GTS status response: %w", gtsManager.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot parse GTS status response: %w", gm.instance.IDColor(), err)
 	}
 
 	return result, nil
 }
 
-func (gtsManager *GTSManager) Create(trustStorePassword string) (bool, error) {
-	statusResponse, statusError := gtsManager.Status()
+func (gm *GTSManager) Create(trustStorePassword string) (bool, error) {
+	statusResponse, statusError := gm.Status()
 
 	if statusError != nil {
 		return false, statusError
@@ -60,29 +60,29 @@ func (gtsManager *GTSManager) Create(trustStorePassword string) (bool, error) {
 		":operation":  "createStore",
 	}
 
-	postResponse, postError := gtsManager.instance.http.Request().SetQueryParams(pathParams).Post(GTSPath)
+	postResponse, postError := gm.instance.http.Request().SetQueryParams(pathParams).Post(GTSPath)
 
 	if postError != nil {
-		return false, fmt.Errorf("%s > cannot create GTS: %w", gtsManager.instance.ID(), postError)
+		return false, fmt.Errorf("%s > cannot create GTS: %w", gm.instance.IDColor(), postError)
 	}
 
 	if postResponse.IsError() {
-		return false, fmt.Errorf("%s > cannot create GTS: %s", gtsManager.instance.ID(), postResponse.Status())
+		return false, fmt.Errorf("%s > cannot create GTS: %s", gm.instance.IDColor(), postResponse.Status())
 	}
 
 	return true, nil
 }
 
-func (gtsManager *GTSManager) AddCertificate(certificateFilePath string) (*gts.Certificate, bool, error) {
+func (gm *GTSManager) AddCertificate(certificateFilePath string) (*gts.Certificate, bool, error) {
 
 	if !pathx.Exists(certificateFilePath) {
-		return nil, false, fmt.Errorf("%s > certificate file does not exist: %s", gtsManager.instance.ID(), certificateFilePath)
+		return nil, false, fmt.Errorf("%s > certificate file does not exist: %s", gm.instance.IDColor(), certificateFilePath)
 	}
 
 	cretificateData, err := os.ReadFile(certificateFilePath)
 
 	if err != nil {
-		return nil, false, fmt.Errorf("%s > failed to read certificate file '%s': %w", gtsManager.instance.ID(), certificateFilePath, err)
+		return nil, false, fmt.Errorf("%s > failed to read certificate file '%s': %w", gm.instance.IDColor(), certificateFilePath, err)
 	}
 
 	pemBlock, _ := pem.Decode(cretificateData)
@@ -92,7 +92,7 @@ func (gtsManager *GTSManager) AddCertificate(certificateFilePath string) (*gts.C
 		defer cleanCallback()
 
 		if err != nil {
-			return nil, false, fmt.Errorf("%s > %w", gtsManager.instance.ID(), err)
+			return nil, false, fmt.Errorf("%s > %w", gm.instance.IDColor(), err)
 		}
 		cretificateData, err = os.ReadFile(*tmpDerFileNameBasedOnPemPath)
 	}
@@ -103,7 +103,7 @@ func (gtsManager *GTSManager) AddCertificate(certificateFilePath string) (*gts.C
 		return nil, false, err
 	}
 
-	statusResponse, statusError := gtsManager.Status()
+	statusResponse, statusError := gm.Status()
 
 	if statusError != nil {
 		return nil, false, statusError
@@ -112,7 +112,7 @@ func (gtsManager *GTSManager) AddCertificate(certificateFilePath string) (*gts.C
 	certificateInTrustStore, err := statusResponse.FindCertificate(*certificate)
 
 	if err != nil {
-		return nil, false, fmt.Errorf("%s > failed to compare certificate with certificates in GTS: %w", gtsManager.instance.ID(), err)
+		return nil, false, fmt.Errorf("%s > failed to compare certificate with certificates in GTS: %w", gm.instance.IDColor(), err)
 	}
 
 	if certificateInTrustStore != nil {
@@ -123,17 +123,17 @@ func (gtsManager *GTSManager) AddCertificate(certificateFilePath string) (*gts.C
 		"certificate": certificateFilePath,
 	}
 
-	response, err := gtsManager.instance.http.Request().SetFiles(requestFiles).Post(GTSPath)
+	response, err := gm.instance.http.Request().SetFiles(requestFiles).Post(GTSPath)
 
 	if err != nil {
-		return nil, false, fmt.Errorf("%s > failed to add certificate to GTS: %w", gtsManager.instance.ID(), err)
+		return nil, false, fmt.Errorf("%s > failed to add certificate to GTS: %w", gm.instance.IDColor(), err)
 	}
 
 	if response.IsError() {
-		return nil, false, fmt.Errorf("%s > failed to add certificate to GTS: %s", gtsManager.instance.ID(), response.Status())
+		return nil, false, fmt.Errorf("%s > failed to add certificate to GTS: %s", gm.instance.IDColor(), response.Status())
 	}
 
-	statusResponse, statusError = gtsManager.Status()
+	statusResponse, statusError = gm.Status()
 
 	if statusError != nil {
 		return nil, false, statusError
@@ -142,14 +142,14 @@ func (gtsManager *GTSManager) AddCertificate(certificateFilePath string) (*gts.C
 	certificateInTrustStore, err = statusResponse.FindCertificate(*certificate)
 
 	if err != nil {
-		return nil, false, fmt.Errorf("%s > failed to find added certificate in GTS: %w", gtsManager.instance.ID(), err)
+		return nil, false, fmt.Errorf("%s > failed to find added certificate in GTS: %w", gm.instance.IDColor(), err)
 	}
 
 	return certificateInTrustStore, true, nil
 }
 
-func (gtsManager *GTSManager) RemoveCertificate(certifiacteAlias string) (bool, error) {
-	statusResponse, statusError := gtsManager.Status()
+func (gm *GTSManager) RemoveCertificate(certifiacteAlias string) (bool, error) {
+	statusResponse, statusError := gm.Status()
 
 	if statusError != nil {
 		return false, statusError
@@ -165,21 +165,21 @@ func (gtsManager *GTSManager) RemoveCertificate(certifiacteAlias string) (bool, 
 		"removeAlias": certifiacteAlias,
 	}
 
-	postResponse, postError := gtsManager.instance.http.Request().SetQueryParams(pathParams).Post(GTSPath)
+	postResponse, postError := gm.instance.http.Request().SetQueryParams(pathParams).Post(GTSPath)
 
 	if postError != nil {
-		return false, fmt.Errorf("%s > cannot remove certificate from GTS: %w", gtsManager.instance.ID(), postError)
+		return false, fmt.Errorf("%s > cannot remove certificate from GTS: %w", gm.instance.IDColor(), postError)
 	}
 
 	if postResponse.IsError() {
-		return false, fmt.Errorf("%s > cannot remove certificate from GTS: %s", gtsManager.instance.ID(), postResponse.Status())
+		return false, fmt.Errorf("%s > cannot remove certificate from GTS: %s", gm.instance.IDColor(), postResponse.Status())
 	}
 
 	return true, nil
 }
 
-func (gtsManager *GTSManager) ReadCertificate(certifiacteAlias string) (*gts.Certificate, error) {
-	statusResponse, statusError := gtsManager.Status()
+func (gm *GTSManager) ReadCertificate(certifiacteAlias string) (*gts.Certificate, error) {
+	statusResponse, statusError := gm.Status()
 
 	if statusError != nil {
 		return nil, statusError

@@ -193,7 +193,7 @@ func (im *InstanceManager) Import(instances []Instance) ([]Instance, error) {
 		isRunning, err := i.local.IsRunningStrict()
 
 		if err != nil {
-			return nil, fmt.Errorf("%s > cannot check status of imported instance: %w", i.ID(), err)
+			return nil, fmt.Errorf("%s > cannot check status of imported instance: %w", i.IDColor(), err)
 		}
 
 		if isRunning {
@@ -245,7 +245,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 			if i.local.IsRunning() && i.local.OutOfDate() {
 				outdated = append(outdated, i)
 
-				log.Infof("%s > already started but out-of-date", i.ID())
+				log.Infof("%s > already started but out-of-date", i.IDColor())
 				err := i.local.Stop()
 				if err != nil {
 					return nil, err
@@ -342,7 +342,7 @@ func (im *InstanceManager) Kill(instances []Instance) ([]Instance, error) {
 		if i.local.IsKillable() {
 			err := i.local.Kill()
 			if err != nil {
-				log.Warnf("%s > cannot kill as process not running or is already killed: %s", i.ID(), err)
+				log.Warnf("%s > cannot kill as process not running or is already killed: %s", i.IDColor(), err)
 			} else {
 				killed = append(killed, i)
 			}

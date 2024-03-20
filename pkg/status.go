@@ -46,11 +46,11 @@ func NewStatus(i *Instance) *Status {
 func (sm Status) SystemProps() (map[string]string, error) {
 	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SystemPropPath)
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot read system properties", sm.instance.ID())
+		return nil, fmt.Errorf("%s > cannot read system properties", sm.instance.IDColor())
 	}
 	props, err := sm.parseProperties(response.RawBody())
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot parse system properties: %w", sm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot parse system properties: %w", sm.instance.IDColor(), err)
 	}
 	return props, nil
 }
@@ -58,11 +58,11 @@ func (sm Status) SystemProps() (map[string]string, error) {
 func (sm Status) SlingProps() (map[string]string, error) {
 	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SlingPropPath)
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot read Sling properties", sm.instance.ID())
+		return nil, fmt.Errorf("%s > cannot read Sling properties", sm.instance.IDColor())
 	}
 	props, err := sm.parseProperties(response.RawBody())
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot parse Sling properties: %w", sm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot parse Sling properties: %w", sm.instance.IDColor(), err)
 	}
 	return props, nil
 }
@@ -70,11 +70,11 @@ func (sm Status) SlingProps() (map[string]string, error) {
 func (sm Status) SlingSettings() (map[string]string, error) {
 	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SlingSettingsPath)
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot read Sling settings", sm.instance.ID())
+		return nil, fmt.Errorf("%s > cannot read Sling settings", sm.instance.IDColor())
 	}
 	props, err := sm.parseProperties(response.RawBody())
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot parse Sling settings: %w", sm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot parse Sling settings: %w", sm.instance.IDColor(), err)
 	}
 	return props, nil
 }
@@ -82,12 +82,12 @@ func (sm Status) SlingSettings() (map[string]string, error) {
 func (sm Status) parseProperties(response io.ReadCloser) (map[string]string, error) {
 	responseBytes, err := io.ReadAll(response)
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot parse properties: %w", sm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot parse properties: %w", sm.instance.IDColor(), err)
 	}
 	responseString := strings.ReplaceAll(string(responseBytes), "\\", "\\\\")
 	var results []string
 	if err = fmtx.UnmarshalJSON(io.NopCloser(strings.NewReader(responseString)), &results); err != nil {
-		return nil, fmt.Errorf("%s > cannot parse properties : %w", sm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot parse properties : %w", sm.instance.IDColor(), err)
 	}
 	results = lo.Filter(results, func(r string, _ int) bool {
 		return strings.Count(strings.TrimSpace(r), " = ") == 1
@@ -106,11 +106,11 @@ func (sm Status) TimeLocation() (*time.Location, error) {
 	}
 	locName, ok := systemProps[SystemPropTimezone]
 	if !ok {
-		return nil, fmt.Errorf("%s > system property '%s' does not exist", sm.instance.ID(), SystemPropTimezone)
+		return nil, fmt.Errorf("%s > system property '%s' does not exist", sm.instance.IDColor(), SystemPropTimezone)
 	}
 	timeLocation, err := time.LoadLocation(locName)
 	if err != nil {
-		log.Warnf("%s > cannot load time location '%s': %s", sm.instance.ID(), locName, err)
+		log.Warnf("%s > cannot load time location '%s': %s", sm.instance.IDColor(), locName, err)
 	}
 	return timeLocation, nil
 }
@@ -122,7 +122,7 @@ func (sm Status) RunModes() ([]string, error) {
 	}
 	values, ok := slingSettings[SlingSettingRunModes]
 	if !ok {
-		return []string{}, fmt.Errorf("%s > Sling setting '%s' does not exist", sm.instance.ID(), SlingSettingRunModes)
+		return []string{}, fmt.Errorf("%s > Sling setting '%s' does not exist", sm.instance.IDColor(), SlingSettingRunModes)
 	}
 	return lo.Map(strings.Split(stringsx.Between(values, "[", "]"), ","), func(rm string, _ int) string { return strings.TrimSpace(rm) }), nil
 }
@@ -130,11 +130,11 @@ func (sm Status) RunModes() ([]string, error) {
 func (sm Status) AemVersion() (string, error) {
 	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SystemProductInfoPath)
 	if err != nil {
-		return instance.AemVersionUnknown, fmt.Errorf("%s > cannot read system product info", sm.instance.ID())
+		return instance.AemVersionUnknown, fmt.Errorf("%s > cannot read system product info", sm.instance.IDColor())
 	}
 	bytes, err := io.ReadAll(response.RawBody())
 	if err != nil {
-		return instance.AemVersionUnknown, fmt.Errorf("%s > cannot read system product info: %w", sm.instance.ID(), err)
+		return instance.AemVersionUnknown, fmt.Errorf("%s > cannot read system product info: %w", sm.instance.IDColor(), err)
 	}
 	html := stringsx.AfterLast(string(bytes), SystemProductInfoMarker)
 	matches := aemVersionRegex.FindStringSubmatch(html)

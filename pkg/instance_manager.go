@@ -282,7 +282,7 @@ func (im *InstanceManager) New(id, url, user, password string) *Instance {
 	res.sling = NewSling(res)
 	res.crypto = NewCrypto(res)
 	res.ssl = NewSSL(res)
-	res.gtsManager = NewGTSMananger(res)
+	res.gtsManager = NewGTSManager(res)
 	res.auth = NewAuth(res)
 	res.replication = NewReplication(res)
 
@@ -305,12 +305,12 @@ func (im *InstanceManager) Await(instances []Instance) error {
 	return im.AwaitStarted(instances)
 }
 
-func InstanceIds(instances []Instance) string {
-	return strings.Join(lo.Map(instances, func(i Instance, _ int) string { return i.id }), ",")
+func InstanceIDs(instances []Instance) string {
+	return strings.Join(lo.Map(instances, func(i Instance, _ int) string { return i.IDColor() }), ",")
 }
 
 func InstanceMsg(instance Instance, msg any) string {
-	return stringsx.AddPrefix(fmt.Sprintf("%v", msg), fmt.Sprintf("%s > ", instance.ID()))
+	return stringsx.AddPrefix(fmt.Sprintf("%v", msg), fmt.Sprintf("%s > ", instance.IDColor()))
 }
 
 func InstancesMsg(instances []Instance, msg any) string {
@@ -319,7 +319,7 @@ func InstancesMsg(instances []Instance, msg any) string {
 	case 0:
 		return fmt.Sprintf("[] > %v", msg)
 	default:
-		return fmt.Sprintf("[%s] > %v", InstanceIds(instances), msg)
+		return fmt.Sprintf("[%s] > %v", InstanceIDs(instances), msg)
 	}
 }
 

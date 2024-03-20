@@ -62,16 +62,16 @@ const (
 )
 
 func (o *OSGi) shutdown(shutdownType string) error {
-	log.Infof("%s > triggering OSGi shutdown of type '%s'", o.instance.ID(), shutdownType)
+	log.Infof("%s > triggering OSGi shutdown of type '%s'", o.instance.IDColor(), shutdownType)
 	response, err := o.instance.http.Request().SetFormData(map[string]string{
 		"shutdown_type": shutdownType,
 	}).Post(VMStatPath)
 	if err != nil {
-		return fmt.Errorf("%s > cannot trigger OSGi shutdown of type '%s': %w", o.instance.ID(), shutdownType, err)
+		return fmt.Errorf("%s > cannot trigger OSGi shutdown of type '%s': %w", o.instance.IDColor(), shutdownType, err)
 	} else if response.IsError() {
-		return fmt.Errorf("%s > cannot trigger OSGi shutdown of type '%s': %s", o.instance.ID(), shutdownType, response.Status())
+		return fmt.Errorf("%s > cannot trigger OSGi shutdown of type '%s': %s", o.instance.IDColor(), shutdownType, response.Status())
 	}
 	time.Sleep(o.shutdownDelay)
-	log.Infof("%s > triggered OSGi shutdown of type '%s'", o.instance.ID(), shutdownType)
+	log.Infof("%s > triggered OSGi shutdown of type '%s'", o.instance.IDColor(), shutdownType)
 	return nil
 }

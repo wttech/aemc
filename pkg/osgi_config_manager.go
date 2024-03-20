@@ -40,25 +40,25 @@ func (cm *OSGiConfigManager) SplitFactoryPID(pid string) (string, string) {
 func (cm *OSGiConfigManager) listPIDs() (*osgi.ConfigPIDs, error) {
 	resp, err := cm.instance.http.Request().Get(ConfigMgrPath)
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot request config list: %w", cm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot request config list: %w", cm.instance.IDColor(), err)
 	}
 	if resp.IsError() {
-		return nil, fmt.Errorf("%s > cannot request config list: %w", cm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot request config list: %w", cm.instance.IDColor(), err)
 	}
 
 	htmlBytes, err := io.ReadAll(resp.RawBody())
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot read config list", cm.instance.ID())
+		return nil, fmt.Errorf("%s > cannot read config list", cm.instance.IDColor())
 	}
 	html := string(htmlBytes)
 	r, _ := regexp.Compile("configData = (.*);")
 	pids := strings.TrimSuffix(strings.TrimPrefix(r.FindString(html), "configData = "), ";")
 	if len(pids) == 0 {
-		return nil, fmt.Errorf("%s > cannot find config list in HTML response", cm.instance.ID())
+		return nil, fmt.Errorf("%s > cannot find config list in HTML response", cm.instance.IDColor())
 	}
 	var res osgi.ConfigPIDs
 	if err = fmtx.UnmarshalJSON(io.NopCloser(bytes.NewBufferString(pids)), &res); err != nil {
-		return nil, fmt.Errorf("%s > cannot parse config list JSON found in HTML response: %w", cm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot parse config list JSON found in HTML response: %w", cm.instance.IDColor(), err)
 	}
 	return &res, nil
 }
@@ -82,14 +82,14 @@ func (cm *OSGiConfigManager) Find(pid string) (*osgi.ConfigListItem, error) {
 	}
 	resp, err := cm.instance.http.Request().Get(fmt.Sprintf("%s/%s.json", ConfigMgrPath, pid))
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot find config '%s': %w", cm.instance.ID(), pid, err)
+		return nil, fmt.Errorf("%s > cannot find config '%s': %w", cm.instance.IDColor(), pid, err)
 	}
 	if resp.IsError() {
-		return nil, fmt.Errorf("%s > cannot find config '%s': %s", cm.instance.ID(), pid, resp.Status())
+		return nil, fmt.Errorf("%s > cannot find config '%s': %s", cm.instance.IDColor(), pid, resp.Status())
 	}
 	var res []osgi.ConfigListItem
 	if err = fmtx.UnmarshalJSON(resp.RawBody(), &res); err != nil {
-		return nil, fmt.Errorf("%s > cannot parse config '%s': %w", cm.instance.ID(), pid, err)
+		return nil, fmt.Errorf("%s > cannot parse config '%s': %w", cm.instance.IDColor(), pid, err)
 	}
 	if len(res) > 0 {
 		return &res[0], nil
@@ -140,20 +140,20 @@ func (cm *OSGiConfigManager) FindAll() (*osgi.ConfigList, error) {
 func (cm *OSGiConfigManager) Save(pid string, fpid string, props map[string]any) error {
 	factoring := pid == osgi.ConfigPIDPlaceholder && fpid != ""
 	if factoring {
-		log.Infof("%s > factoring config '%s'", cm.instance.ID(), fpid)
+		log.Infof("%s > factoring config '%s'", cm.instance.IDColor(), fpid)
 	} else {
-		log.Infof("%s > saving config '%s'", cm.instance.ID(), pid)
+		log.Infof("%s > saving config '%s'", cm.instance.IDColor(), pid)
 	}
 	resp, err := cm.instance.http.RequestFormData(saveConfigProps(fpid, props)).Post(fmt.Sprintf("%s/%s", ConfigMgrPath, pid))
 	if err != nil {
-		return fmt.Errorf("%s > cannot save config '%s': %w", cm.instance.ID(), pid, err)
+		return fmt.Errorf("%s > cannot save config '%s': %w", cm.instance.IDColor(), pid, err)
 	} else if resp.IsError() {
-		return fmt.Errorf("%s > cannot save config '%s': %s", cm.instance.ID(), pid, resp.Status())
+		return fmt.Errorf("%s > cannot save config '%s': %s", cm.instance.IDColor(), pid, resp.Status())
 	}
 	if factoring {
-		log.Infof("%s > factored config '%s'", cm.instance.ID(), fpid)
+		log.Infof("%s > factored config '%s'", cm.instance.IDColor(), fpid)
 	} else {
-		log.Infof("%s > saved config '%s'", cm.instance.ID(), pid)
+		log.Infof("%s > saved config '%s'", cm.instance.IDColor(), pid)
 	}
 	return nil
 }
@@ -176,16 +176,16 @@ func saveConfigProps(fpid string, props map[string]any) map[string]any {
 }
 
 func (cm *OSGiConfigManager) Delete(pid string) error {
-	log.Infof("%s > deleting config '%s'", cm.instance.ID(), pid)
+	log.Infof("%s > deleting config '%s'", cm.instance.IDColor(), pid)
 	resp, err := cm.instance.http.Request().
 		SetFormData(map[string]string{"delete": "1", "apply": "1"}).
 		Post(fmt.Sprintf("%s/%s", ConfigMgrPath, pid))
 	if err != nil {
-		return fmt.Errorf("%s > cannot save config '%s': %w", cm.instance.ID(), pid, err)
+		return fmt.Errorf("%s > cannot save config '%s': %w", cm.instance.IDColor(), pid, err)
 	} else if resp.IsError() {
-		return fmt.Errorf("%s > cannot save config '%s': %s", cm.instance.ID(), pid, resp.Status())
+		return fmt.Errorf("%s > cannot save config '%s': %s", cm.instance.IDColor(), pid, resp.Status())
 	}
-	log.Infof("%s > deleted config '%s'", cm.instance.ID(), pid)
+	log.Infof("%s > deleted config '%s'", cm.instance.IDColor(), pid)
 	return nil
 }
 

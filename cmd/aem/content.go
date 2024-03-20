@@ -107,6 +107,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				return
 			}
 			clean, _ := cmd.Flags().GetBool("clean")
+			replace, _ := cmd.Flags().GetBool("replace")
 			dir, err := determineContentDir(cmd)
 			if err != nil {
 				c.Error(err)
@@ -115,7 +116,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 			if dir != "" {
 				filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
 				filterFile, _ := cmd.Flags().GetString("filter-file")
-				if err = instance.ContentManager().SyncDir(dir, clean, pkg.PackageCreateOpts{
+				if err = instance.ContentManager().SyncDir(dir, clean, replace, pkg.PackageCreateOpts{
 					FilterRoots: filterRoots,
 					FilterFile:  filterFile,
 					ContentDir:  dir,
@@ -149,6 +150,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
 	cmd.Flags().Bool("clean", true, "Normalize content after downloading")
+	cmd.Flags().Bool("replace", true, "Replace content after downloading")
 	return cmd
 }
 

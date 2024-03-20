@@ -54,21 +54,18 @@ func NewManager(baseOpts *base.Opts) *Manager {
 }
 
 func (c Manager) Prepare(root string) error {
+	return deleteDir(root)
+}
+
+func (c Manager) BeforeClean(root string) error {
 	if c.ParentsBackupEnabled {
 		return c.doParentsBackup(root)
 	}
 	return nil
 }
 
-func (c Manager) BeforeClean(root string) error {
-	if c.ParentsBackupEnabled {
-		return c.doRootBackup(root)
-	}
-	return nil
-}
-
 func (c Manager) CleanDir(root string) error {
-	if err := c.flattenFiles(root); err != nil {
+	if err := c.cleanDotContents(root); err != nil {
 		return err
 	}
 	if c.ParentsBackupEnabled {
@@ -80,13 +77,10 @@ func (c Manager) CleanDir(root string) error {
 			return err
 		}
 	}
-	if err := c.cleanDotContents(root); err != nil {
+	if err := c.flattenFiles(root); err != nil {
 		return err
 	}
 	if err := c.deleteFiles(root); err != nil {
-		return err
-	}
-	if err := c.deleteBackupFiles(root); err != nil {
 		return err
 	}
 	if err := deleteEmptyDirs(root); err != nil {
@@ -269,12 +263,13 @@ func (c Manager) deleteFiles(root string) error {
 	return nil
 }
 
-func (c Manager) deleteBackupFiles(root string) error {
-	return eachFiles(root, func(path string) error {
-		return deleteFile(path, func() bool {
-			return strings.HasSuffix(path, ParentsBackupSuffix)
-		})
-	})
+func deleteDir(dir string) error {
+	_, err := os.Stat(dir)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	log.Infof("deleting dir %s", dir)
+	return os.Remove(dir)
 }
 
 func deleteFile(path string, allowedFunc func() bool) error {
@@ -325,26 +320,6 @@ func (c Manager) doParentsBackup(root string) error {
 	})
 }
 
-func (c Manager) doRootBackup(root string) error {
-	entry, err := os.Stat(root)
-	if err != nil {
-		return err
-	}
-	if !entry.IsDir() {
-		if err = c.backupFile(root, "doing backup of root file: %s"); err != nil {
-			return err
-		}
-	}
-	return eachFiles(root, func(path string) error {
-		if matchString(path, c.FilesFlattened) {
-			if err = c.backupFile(path, "doing backup of file: %s"); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
-
 func (c Manager) undoParentsBackup(root string) error {
 	return eachParentFiles(root, func(parent string) error {
 		if err := eachFilesInDir(parent, func(path string) error {
@@ -368,13 +343,7 @@ func (c Manager) undoParentsBackup(root string) error {
 func (c Manager) cleanParents(root string) error {
 	return eachParentFiles(root, func(parent string) error {
 		return eachFilesInDir(parent, func(path string) error {
-			if err := deleteFile(path, nil); err != nil {
-				return err
-			}
-			if err := c.cleanDotContentFile(path); err != nil {
-				return err
-			}
-			return nil
+			return c.cleanDotContentFile(path)
 		})
 	})
 }

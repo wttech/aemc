@@ -148,7 +148,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
-	cmd.Flags().Bool("clean", true, "Normalize content after downloading")
+	cmd.Flags().Bool("clean", false, "Normalize content after downloading")
 	return cmd
 }
 
@@ -271,9 +271,6 @@ func determineContentFile(cmd *cobra.Command) (string, error) {
 	file, _ := cmd.Flags().GetString("file")
 	if file != "" && !strings.Contains(file, content.JCRRoot) {
 		return "", fmt.Errorf("content file '%s' does not contain '%s'", file, content.JCRRoot)
-	}
-	if file != "" && !strings.HasSuffix(file, content.JCRContentFile) {
-		return "", fmt.Errorf("content file '%s' does not end with '%s'", file, content.JCRContentFile)
 	}
 	return file, nil
 }

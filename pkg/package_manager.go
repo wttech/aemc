@@ -189,9 +189,17 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	}()
 	if len(opts.FilterRoots) == 0 && opts.FilterFile == "" {
 		if opts.ContentDir != "" {
-			opts.FilterRoots = []string{strings.Split(opts.ContentDir, content.JCRRoot)[1]}
+			contentDir := strings.Split(opts.ContentDir, content.JCRRoot)[1]
+			opts.FilterRoots = []string{contentDir}
 		} else if opts.ContentFile != "" {
-			opts.FilterRoots = []string{strings.ReplaceAll(opts.ContentFile, content.JCRContentFile, content.JCRContentNode)}
+			contentFile := strings.Split(opts.ContentFile, content.JCRRoot)[1]
+			if strings.HasSuffix(contentFile, content.JCRContentFile) {
+				opts.FilterRoots = []string{strings.ReplaceAll(contentFile, content.JCRContentFile, content.JCRContentNode)}
+			} else if strings.HasSuffix(contentFile, content.JCRContentFileSuffix) {
+				opts.FilterRoots = []string{strings.ReplaceAll(contentFile, content.JCRContentFileSuffix, "")}
+			} else {
+				opts.FilterRoots = []string{contentFile}
+			}
 		}
 	}
 	data := map[string]any{

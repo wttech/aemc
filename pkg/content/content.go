@@ -17,14 +17,15 @@ import (
 )
 
 const (
-	JCRRoot             = "jcr_root"
-	JCRContentFile      = ".content.xml"
-	JCRMixinTypesProp   = "jcr:mixinTypes"
-	JCRRootPrefix       = "<jcr:root"
-	PropPattern         = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
-	NamespacePattern    = "^\\w+:(\\w+)=\"[^\"]+\"$"
-	ParentsBackupSuffix = ".bak"
-	JCRContentNode      = "jcr:content"
+	JCRRoot              = "jcr_root"
+	JCRContentFile       = ".content.xml"
+	JCRContentFileSuffix = ".xml"
+	JCRMixinTypesProp    = "jcr:mixinTypes"
+	JCRRootPrefix        = "<jcr:root"
+	PropPattern          = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
+	NamespacePattern     = "^\\w+:(\\w+)=\"[^\"]+\"$"
+	ParentsBackupSuffix  = ".bak"
+	JCRContentNode       = "jcr:content"
 )
 
 type Manager struct {
@@ -99,10 +100,10 @@ func (c Manager) CleanFile(path string) error {
 	if !pathx.Exists(path) {
 		return fmt.Errorf("file does not exist: %s", path)
 	}
-	if err := c.flattenFile(path); err != nil {
+	if err := c.cleanDotContentFile(path); err != nil {
 		return err
 	}
-	if err := c.cleanDotContentFile(path); err != nil {
+	if err := c.flattenFile(path); err != nil {
 		return err
 	}
 	return nil
@@ -139,7 +140,7 @@ func (c Manager) cleanDotContents(root string) error {
 }
 
 func (c Manager) cleanDotContentFile(path string) error {
-	if !strings.HasSuffix(path, JCRContentFile) {
+	if !strings.HasSuffix(path, JCRContentFileSuffix) {
 		return nil
 	}
 

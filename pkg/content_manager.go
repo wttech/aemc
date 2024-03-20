@@ -72,7 +72,7 @@ func (cm *ContentManager) SyncDir(dir string, clean bool, packageOpts PackageCre
 			return err
 		}
 	}
-	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot), before+content.JCRRoot); err != nil {
+	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot), filepath.Join(before, content.JCRRoot)); err != nil {
 		return err
 	}
 	if clean {
@@ -100,8 +100,8 @@ func (cm *ContentManager) SyncFile(file string, clean bool, packageOpts PackageC
 	if err := pathx.Ensure(dir); err != nil {
 		return err
 	}
-	_, after, _ := strings.Cut(file, content.JCRRoot)
-	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot, after), file); err != nil {
+	_, after, _ := strings.Cut(dir, content.JCRRoot)
+	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot, after), dir); err != nil {
 		return err
 	}
 	if clean {

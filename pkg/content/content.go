@@ -251,8 +251,10 @@ func (c Manager) flattenFile(path string) error {
 
 func (c Manager) deleteFiles(root string) error {
 	if err := eachParentFiles(root, func(parent string) error {
-		return deleteFile(parent, func() bool {
-			return matchAnyRule(parent, parent, c.FilesDeleted)
+		return eachFilesInDir(parent, func(path string) error {
+			return deleteFile(path, func() bool {
+				return matchAnyRule(path, path, c.FilesDeleted)
+			})
 		})
 	}); err != nil {
 		return err
@@ -268,10 +270,9 @@ func (c Manager) deleteFiles(root string) error {
 }
 
 func (c Manager) deleteBackupFiles(root string) error {
-	patterns := []string{".*" + ParentsBackupSuffix}
 	return eachFiles(root, func(path string) error {
 		return deleteFile(path, func() bool {
-			return matchString(path, patterns)
+			return strings.HasSuffix(path, ParentsBackupSuffix)
 		})
 	})
 }

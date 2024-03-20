@@ -70,7 +70,7 @@ func (w *WorkflowManager) doLauncherAction(name string, callback func() error) e
 			return nil
 		}
 		if time.Now().After(started.Add(w.LauncherToggleRetryTimeout)) {
-			return fmt.Errorf("%s > awaiting workflow launcher action '%s' timed out after %s: %w", w.instance.idColor(), name, w.LauncherToggleRetryTimeout, err)
+			return fmt.Errorf("%s > awaiting workflow launcher action '%s' timed out after %s: %w", w.instance.IDColor(), name, w.LauncherToggleRetryTimeout, err)
 		}
 		time.Sleep(w.LauncherToggleRetryDelay)
 	}

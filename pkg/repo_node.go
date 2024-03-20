@@ -88,14 +88,14 @@ func (n RepoNode) Child(name string) RepoNode {
 func (n RepoNode) Children() ([]RepoNode, error) {
 	response, err := n.repo.instance.http.Request().Get(fmt.Sprintf("%s.harray.1.json", n.path))
 	if err != nil {
-		return nil, fmt.Errorf("cannot read children of node '%s': %w", n.path, err)
+		return nil, fmt.Errorf("%s > cannot read children of node '%s': %w", n.repo.instance.IDColor(), n.path, err)
 	} else if response.IsError() {
-		return nil, fmt.Errorf("cannot read children of node '%s': %s", n.path, response.Status())
+		return nil, fmt.Errorf("%s > cannot read children of node '%s': %s", n.repo.instance.IDColor(), n.path, response.Status())
 	}
 	var children nodeArrayChildren
 	err = fmtx.UnmarshalJSON(response.RawBody(), &children)
 	if err != nil {
-		return nil, fmt.Errorf("cannot parse children of node '%s': %w", n.path, err)
+		return nil, fmt.Errorf("%s > cannot parse children of node '%s': %w", n.repo.instance.IDColor(), n.path, err)
 	}
 	childrenWithType := lo.Filter(children.Children, func(c nodeArrayChild, _ int) bool { return c.PrimaryType != "" })
 	return lo.Map(childrenWithType, func(child nodeArrayChild, _ int) RepoNode { return n.Child(child.Name) }), nil
@@ -210,7 +210,7 @@ func (n RepoNode) Delete() error {
 		return err
 	}
 	if !exists {
-		return fmt.Errorf("%s > node '%s' cannot be deleted as it does not exist", n.repo.instance.ID(), n.path)
+		return fmt.Errorf("%s > node '%s' cannot be deleted as it does not exist", n.repo.instance.IDColor(), n.path)
 	}
 	return n.repo.Delete(n.path)
 }
@@ -229,7 +229,7 @@ func (n RepoNode) Copy(targetPath string) error {
 		return err
 	}
 	if !exists {
-		return fmt.Errorf("%s > node '%s' cannot be copied as it does not exist", n.repo.instance.ID(), n.path)
+		return fmt.Errorf("%s > node '%s' cannot be copied as it does not exist", n.repo.instance.IDColor(), n.path)
 	}
 	return n.repo.Copy(n.path, targetPath)
 }
@@ -255,7 +255,7 @@ func (n RepoNode) Move(targetPath string, replace bool) error {
 		return err
 	}
 	if !sourceExists {
-		return fmt.Errorf("%s > node '%s' cannot be moved as it does not exist", n.repo.instance.ID(), n.path)
+		return fmt.Errorf("%s > node '%s' cannot be moved as it does not exist", n.repo.instance.IDColor(), n.path)
 	}
 	if !replace {
 		targetExists, err := n.repo.Exists(targetPath)
@@ -263,7 +263,7 @@ func (n RepoNode) Move(targetPath string, replace bool) error {
 			return err
 		}
 		if targetExists {
-			return fmt.Errorf("%s > node '%s' cannot be moved to path '%s' as it already exists", n.repo.instance.ID(), n.path, targetPath)
+			return fmt.Errorf("%s > node '%s' cannot be moved to path '%s' as it already exists", n.repo.instance.IDColor(), n.path, targetPath)
 		}
 	}
 	return n.repo.Move(n.path, targetPath, replace)
@@ -287,7 +287,7 @@ func (n RepoNode) MoveWithChanged(targetPath string, replace bool) (bool, error)
 			return false, err
 		}
 		if targetExists {
-			return false, fmt.Errorf("%s > node '%s' cannot be moved to path '%s' as it already exists", n.repo.instance.ID(), n.path, targetPath)
+			return false, fmt.Errorf("%s > node '%s' cannot be moved to path '%s' as it already exists", n.repo.instance.IDColor(), n.path, targetPath)
 		}
 	}
 	return true, n.repo.Move(n.path, targetPath, replace)
@@ -299,7 +299,7 @@ func (n RepoNode) Download(localFile string) error {
 		return err
 	}
 	if !state.Exists {
-		return fmt.Errorf("%s > node '%s' cannot be downloaded as it does not exist", n.repo.instance.ID(), n.path)
+		return fmt.Errorf("%s > node '%s' cannot be downloaded as it does not exist", n.repo.instance.IDColor(), n.path)
 	}
 	return n.repo.Download(state.Path, localFile)
 }
@@ -310,7 +310,7 @@ func (n RepoNode) DownloadWithChanged(localFile string) (bool, error) {
 		return false, err
 	}
 	if !state.Exists {
-		return false, fmt.Errorf("%s > node '%s' cannot be downloaded as it does not exist", n.repo.instance.ID(), n.path)
+		return false, fmt.Errorf("%s > node '%s' cannot be downloaded as it does not exist", n.repo.instance.IDColor(), n.path)
 	}
 	if !pathx.Exists(localFile) {
 		return true, n.repo.Download(state.Path, localFile)

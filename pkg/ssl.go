@@ -46,15 +46,15 @@ func NewSSL(instance *Instance) *SSL {
 
 func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privateKeyFile, httpsHostname, httpsPort string) (bool, error) {
 	if !pathx.Exists(certificateFile) {
-		return false, fmt.Errorf("%s > SSL certificate file does not exist: %s", s.instance.ID(), certificateFile)
+		return false, fmt.Errorf("%s > SSL certificate file does not exist: %s", s.instance.IDColor(), certificateFile)
 	}
 	if !pathx.Exists(privateKeyFile) {
-		return false, fmt.Errorf("%s > SSL private key file does not exist: %s", s.instance.ID(), privateKeyFile)
+		return false, fmt.Errorf("%s > SSL private key file does not exist: %s", s.instance.IDColor(), privateKeyFile)
 	}
 
 	privateKeyData, err := os.ReadFile(privateKeyFile)
 	if err != nil {
-		return false, fmt.Errorf("%s > failed to read SSL private key file: %w", s.instance.ID(), err)
+		return false, fmt.Errorf("%s > failed to read SSL private key file: %w", s.instance.IDColor(), err)
 	}
 	pemBlock, _ := pem.Decode(privateKeyData)
 	if pemBlock != nil {
@@ -63,7 +63,7 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 		defer cleanCallback()
 
 		if err != nil {
-			return false, fmt.Errorf("%s > failed to create temp file for storing DER SSL certificate: %w", s.instance.ID(), err)
+			return false, fmt.Errorf("%s > failed to create temp file for storing DER SSL certificate: %w", s.instance.IDColor(), err)
 		}
 
 		privateKeyFile = *tmpDerFileNameBasedOnPemPath
@@ -75,7 +75,7 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 		return false, err
 	}
 	if check.UpToDate {
-		log.Debugf("%s > SSL already set up (up-to-date)", s.instance.ID())
+		log.Debugf("%s > SSL already set up (up-to-date)", s.instance.IDColor())
 		return false, nil
 	}
 
@@ -96,26 +96,26 @@ func (s SSL) Setup(keyStorePassword, trustStorePassword, certificateFile, privat
 	response, err := s.sendSetupRequest(params, files)
 
 	if err != nil {
-		return false, fmt.Errorf("%s > failed to setup SSL: %w", s.instance.ID(), err)
+		return false, fmt.Errorf("%s > failed to setup SSL: %w", s.instance.IDColor(), err)
 	} else if response.IsError() {
 		rawBody := response.RawBody()
 		if rawBody == nil {
-			return false, fmt.Errorf("%s > failed to setup SSL: %s", s.instance.ID(), response.Status())
+			return false, fmt.Errorf("%s > failed to setup SSL: %s", s.instance.IDColor(), response.Status())
 		}
 		defer rawBody.Close()
 		body, err := io.ReadAll(rawBody)
 		if err != nil {
-			return false, fmt.Errorf("%s > failed to setup SSL: %s, %w", s.instance.ID(), response.Status(), err)
+			return false, fmt.Errorf("%s > failed to setup SSL: %s, %w", s.instance.IDColor(), response.Status(), err)
 		}
 		errorMessage, err := s.extractErrorMessage(string(body[:]))
 		if err != nil {
-			return false, fmt.Errorf("%s > failed to setup SSL: %s, %w", s.instance.ID(), response.Status(), err)
+			return false, fmt.Errorf("%s > failed to setup SSL: %s, %w", s.instance.IDColor(), response.Status(), err)
 		}
-		return false, fmt.Errorf("%s > failed to setup SSL: %s, %s", s.instance.ID(), response.Status(), errorMessage)
+		return false, fmt.Errorf("%s > failed to setup SSL: %s, %s", s.instance.IDColor(), response.Status(), errorMessage)
 	}
 
 	if err := lock.Lock(); err != nil {
-		return true, fmt.Errorf("%s > failed to lock SSL setup: %w", s.instance.ID(), err)
+		return true, fmt.Errorf("%s > failed to lock SSL setup: %w", s.instance.IDColor(), err)
 	}
 
 	return true, nil
@@ -139,7 +139,7 @@ func (s SSL) sendSetupRequest(params map[string]any, files map[string]string) (*
 			if err == nil {
 				return response, err
 			}
-			log.Warnf("%s > failed to setup SSL: %s, retrying", s.instance.ID(), err)
+			log.Warnf("%s > failed to setup SSL: %s, retrying", s.instance.IDColor(), err)
 			time.Sleep(pause)
 		}
 	}
@@ -184,7 +184,7 @@ func (s SSL) extractErrorMessage(body string) (errorMessage string, err error) {
 		}
 	}
 	if errorMessage == "" {
-		return "", fmt.Errorf("error message not found")
+		return "", fmt.Errorf("%s > SSL error message not found", s.instance.IDColor())
 	}
 	return errorMessage, nil
 }
@@ -193,11 +193,11 @@ func (s SSL) lock(keyStorePassword, trustStorePassword, certificateFile, private
 	return osx.NewLock(fmt.Sprintf("%s/ssl.yml", s.instance.LockDir()), func() (sslLock, error) {
 		certificateChecksum, err := filex.ChecksumFile(certificateFile)
 		if err != nil {
-			return sslLock{}, fmt.Errorf("%s > failed to calculate checksum for SSL certificate file: %w", s.instance.ID(), err)
+			return sslLock{}, fmt.Errorf("%s > failed to calculate checksum for SSL certificate file: %w", s.instance.IDColor(), err)
 		}
 		privateKeyChecksum, err := filex.ChecksumFile(privateKeyFile)
 		if err != nil {
-			return sslLock{}, fmt.Errorf("%s > failed to calculate checksum for SSL private key file: %w", s.instance.ID(), err)
+			return sslLock{}, fmt.Errorf("%s > failed to calculate checksum for SSL private key file: %w", s.instance.IDColor(), err)
 		}
 
 		return sslLock{

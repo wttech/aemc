@@ -145,6 +145,16 @@ func (i Instance) IDInfo() IDInfo {
 	}
 }
 
+func (i Instance) IDColor() string {
+	id := i.ID()
+	if i.IsAuthor() {
+		id = color.HiMagentaString(id)
+	} else {
+		id = color.HiBlueString(id)
+	}
+	return id
+}
+
 type IDInfo struct {
 	Location   string
 	Role       instance.Role
@@ -209,7 +219,7 @@ func localHosts() []string {
 func (i Instance) TimeLocation() *time.Location {
 	loc, err := i.status.TimeLocation()
 	if err != nil {
-		log.Debugf("%s > cannot determine time location: %s", i.ID(), err)
+		log.Debugf("%s > cannot determine time location: %s", i.IDColor(), err)
 		return time.Now().Location()
 	}
 	return loc
@@ -219,7 +229,7 @@ func (i Instance) AemVersion() string {
 	// TODO try to retrieve version from filename 'aem/home/instance/[author|publish]/crx-quickstart/app/cq-quickstart-6.5.0-standalone-quickstart.jar'
 	version, err := i.status.AemVersion()
 	if err != nil {
-		log.Debugf("%s > cannot determine AEM version: %s", i.ID(), err)
+		log.Debugf("%s > cannot determine AEM version: %s", i.IDColor(), err)
 		return instance.AemVersionUnknown
 	}
 	return version
@@ -228,7 +238,7 @@ func (i Instance) AemVersion() string {
 func (i Instance) RunModes() []string {
 	runModes, err := i.status.RunModes()
 	if err != nil {
-		log.Debugf("%s > cannot determine run modes: %s", i.ID(), err)
+		log.Debugf("%s > cannot determine run modes: %s", i.IDColor(), err)
 		return []string{}
 	}
 	return runModes
@@ -339,14 +349,4 @@ func (i Instance) LockDir() string {
 		return i.local.LockDir()
 	}
 	return i.CacheDir()
-}
-
-func (i Instance) idColor() string {
-	id := i.ID()
-	if i.IsAuthor() {
-		id = color.HiMagentaString(id)
-	} else {
-		id = color.HiBlueString(id)
-	}
-	return id
 }

@@ -71,42 +71,42 @@ func (r Repo) Read(path string) (map[string]any, error) {
 }
 
 func (r Repo) Save(path string, props map[string]any) error {
-	log.Infof("%s > saving node '%s'", r.instance.idColor(), path)
+	log.Infof("%s > saving node '%s'", r.instance.IDColor(), path)
 	resp, err := r.requestFormData("", props).Post(path)
-	if err := r.handleResponse(fmt.Sprintf("%s > cannot save node '%s'", r.instance.idColor(), path), resp, err); err != nil {
+	if err := r.handleResponse(fmt.Sprintf("%s > cannot save node '%s'", r.instance.IDColor(), path), resp, err); err != nil {
 		return err
 	}
-	log.Infof("%s > saved node '%s'", r.instance.idColor(), path)
+	log.Infof("%s > saved node '%s'", r.instance.IDColor(), path)
 	return nil
 }
 
 func (r Repo) Delete(path string) error {
-	log.Infof("%s > deleting node '%s'", r.instance.idColor(), path)
+	log.Infof("%s > deleting node '%s'", r.instance.IDColor(), path)
 	resp, err := r.requestFormData("delete", map[string]any{}).Post(path)
-	if err = r.handleResponse(fmt.Sprintf("%s > cannot delete node '%s'", r.instance.idColor(), path), resp, err); err != nil {
+	if err = r.handleResponse(fmt.Sprintf("%s > cannot delete node '%s'", r.instance.IDColor(), path), resp, err); err != nil {
 		return err
 	}
-	log.Infof("%s > deleted node '%s'", r.instance.idColor(), path)
+	log.Infof("%s > deleted node '%s'", r.instance.IDColor(), path)
 	return nil
 }
 
 func (r Repo) Copy(sourcePath string, targetPath string) error {
-	log.Infof("%s > copying node from '%s' to '%s'", r.instance.idColor(), sourcePath, targetPath)
+	log.Infof("%s > copying node from '%s' to '%s'", r.instance.IDColor(), sourcePath, targetPath)
 	resp, err := r.requestFormData("copy", map[string]any{":dest": targetPath}).Post(sourcePath)
-	if err = r.handleResponse(fmt.Sprintf("%s > cannot copy node from '%s' to '%s'", r.instance.idColor(), sourcePath, targetPath), resp, err); err != nil {
+	if err = r.handleResponse(fmt.Sprintf("%s > cannot copy node from '%s' to '%s'", r.instance.IDColor(), sourcePath, targetPath), resp, err); err != nil {
 		return err
 	}
-	log.Infof("%s > copied node from '%s' to '%s'", r.instance.idColor(), sourcePath, targetPath)
+	log.Infof("%s > copied node from '%s' to '%s'", r.instance.IDColor(), sourcePath, targetPath)
 	return nil
 }
 
 func (r Repo) Move(sourcePath string, targetPath string, replace bool) error {
-	log.Infof("%s > moving node from '%s' to '%s'", r.instance.idColor(), sourcePath, targetPath)
+	log.Infof("%s > moving node from '%s' to '%s'", r.instance.IDColor(), sourcePath, targetPath)
 	resp, err := r.requestFormData("move", map[string]any{":dest": targetPath, ":replace": replace}).Post(sourcePath)
-	if err = r.handleResponse(fmt.Sprintf("%s > cannot move node from '%s' to '%s'", r.instance.idColor(), sourcePath, targetPath), resp, err); err != nil {
+	if err = r.handleResponse(fmt.Sprintf("%s > cannot move node from '%s' to '%s'", r.instance.IDColor(), sourcePath, targetPath), resp, err); err != nil {
 		return err
 	}
-	log.Infof("%s > moved node from '%s' to '%s'", r.instance.idColor(), sourcePath, targetPath)
+	log.Infof("%s > moved node from '%s' to '%s'", r.instance.IDColor(), sourcePath, targetPath)
 	return nil
 }
 
@@ -179,16 +179,16 @@ type NodeList struct {
 }
 
 func (r Repo) Download(remotePath string, localFile string) error {
-	log.Infof("%s > downloading node '%s'", r.instance.idColor(), remotePath)
+	log.Infof("%s > downloading node '%s'", r.instance.IDColor(), remotePath)
 	if err := httpx.DownloadWithOpts(httpx.DownloadOpts{
 		Client:   r.instance.http.Client(),
 		URL:      remotePath,
 		File:     localFile,
 		Override: true,
 	}); err != nil {
-		return fmt.Errorf("%s > cannot download node '%s': %w", r.instance.idColor(), remotePath, err)
+		return fmt.Errorf("%s > cannot download node '%s': %w", r.instance.IDColor(), remotePath, err)
 	}
-	log.Infof("%s > downloaded node '%s'", r.instance.idColor(), remotePath)
+	log.Infof("%s > downloaded node '%s'", r.instance.IDColor(), remotePath)
 	return nil
 }
 

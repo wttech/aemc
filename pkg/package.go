@@ -55,7 +55,7 @@ func (p Package) Build() error {
 		return err
 	}
 	if !state.Exists {
-		return fmt.Errorf("%s > package '%s' cannot be built as it does not exist", p.manager.instance.ID(), p.PID.String())
+		return fmt.Errorf("%s > package '%s' cannot be built as it does not exist", p.manager.instance.IDColor(), p.PID.String())
 	}
 	return p.manager.Build(state.Data.Path)
 }
@@ -66,7 +66,7 @@ func (p Package) BuildWithChanged() (bool, error) {
 		return false, err
 	}
 	if !state.Exists {
-		return false, fmt.Errorf("%s > package '%s' cannot be built as it does not exist", p.manager.instance.ID(), p.PID.String())
+		return false, fmt.Errorf("%s > package '%s' cannot be built as it does not exist", p.manager.instance.IDColor(), p.PID.String())
 	}
 	if !state.Data.Built() {
 		return true, p.manager.Build(state.Data.Path)
@@ -80,7 +80,7 @@ func (p Package) Install() error {
 		return err
 	}
 	if !state.Exists {
-		return fmt.Errorf("%s > package '%s' cannot be installed as it does not exist", p.manager.instance.ID(), p.PID.String())
+		return fmt.Errorf("%s > package '%s' cannot be installed as it does not exist", p.manager.instance.IDColor(), p.PID.String())
 	}
 	return p.manager.Install(state.Data.Path)
 }
@@ -91,7 +91,7 @@ func (p Package) InstallWithChanged() (bool, error) {
 		return false, err
 	}
 	if !state.Exists {
-		return false, fmt.Errorf("%s > package '%s' cannot be installed as it does not exist", p.manager.instance.ID(), p.PID.String())
+		return false, fmt.Errorf("%s > package '%s' cannot be installed as it does not exist", p.manager.instance.IDColor(), p.PID.String())
 	}
 	if !state.Data.Installed() {
 		return true, p.manager.Install(state.Data.Path)
@@ -105,7 +105,7 @@ func (p Package) Uninstall() error {
 		return err
 	}
 	if !state.Exists {
-		return fmt.Errorf("%s > package '%s' cannot be uninstalled as it does not exist", p.manager.instance.ID(), p.PID.String())
+		return fmt.Errorf("%s > package '%s' cannot be uninstalled as it does not exist", p.manager.instance.IDColor(), p.PID.String())
 	}
 	return p.manager.Uninstall(state.Data.Path)
 }
@@ -116,7 +116,7 @@ func (p Package) UninstallWithChanged() (bool, error) {
 		return false, err
 	}
 	if !state.Exists {
-		return false, fmt.Errorf("%s > package '%s' cannot be uninstalled as it does not exist", p.manager.instance.ID(), p.PID.String())
+		return false, fmt.Errorf("%s > package '%s' cannot be uninstalled as it does not exist", p.manager.instance.IDColor(), p.PID.String())
 	}
 	if state.Data.Installed() {
 		return true, p.manager.Uninstall(state.Data.Path)
@@ -130,7 +130,7 @@ func (p Package) Delete() error {
 		return err
 	}
 	if !state.Exists {
-		return fmt.Errorf("%s > package '%s' cannot be deleted as it does not exist", p.manager.instance.ID(), p.PID.String())
+		return fmt.Errorf("%s > package '%s' cannot be deleted as it does not exist", p.manager.instance.IDColor(), p.PID.String())
 	}
 	return p.manager.Delete(state.Data.Path)
 }
@@ -206,7 +206,7 @@ func (p Package) UpdateFilters(filters []PackageFilter) error {
 		return err
 	}
 	if !state.Exists {
-		return fmt.Errorf("%s > filters of package '%s' cannot be updated as it does not exist", p.manager.instance.ID(), p.PID.String())
+		return fmt.Errorf("%s > filters of package '%s' cannot be updated as it does not exist", p.manager.instance.IDColor(), p.PID.String())
 	}
 	return p.manager.UpdateFilters(state.Data.Path, state.PID, filters)
 }
@@ -217,7 +217,7 @@ func (p Package) Download(localFile string) error {
 		return err
 	}
 	if !state.Exists {
-		return fmt.Errorf("%s > package '%s' cannot be downloaded as it does not exist", p.manager.instance.ID(), p.PID.String())
+		return fmt.Errorf("%s > package '%s' cannot be downloaded as it does not exist", p.manager.instance.IDColor(), p.PID.String())
 	}
 	return p.manager.Download(state.Data.Path, localFile)
 }
@@ -228,7 +228,7 @@ func (p Package) DownloadWithChanged(localFile string) (bool, error) {
 		return false, err
 	}
 	if !state.Exists {
-		return false, fmt.Errorf("%s > package '%s' cannot be downloaded as it does not exist", p.manager.instance.ID(), p.PID.String())
+		return false, fmt.Errorf("%s > package '%s' cannot be downloaded as it does not exist", p.manager.instance.IDColor(), p.PID.String())
 	}
 	if !pathx.Exists(localFile) {
 		return true, p.manager.Download(state.Data.Path, localFile)
@@ -242,7 +242,7 @@ func (p Package) Copy(destInstance *Instance) error {
 		return err
 	}
 	if !state.Exists {
-		return fmt.Errorf("%s > package '%s' cannot be copied as it does not exist", p.manager.instance.ID(), p.PID.String())
+		return fmt.Errorf("%s > package '%s' cannot be copied as it does not exist", p.manager.instance.IDColor(), p.PID.String())
 	}
 	return p.manager.Copy(state.Data.Path, destInstance)
 }
@@ -253,7 +253,7 @@ func (p Package) CopyWithChanged(destInstance *Instance) (bool, error) {
 		return false, err
 	}
 	if !state.Exists {
-		return false, fmt.Errorf("%s > package '%s' cannot be copied as it does not exist", p.manager.instance.ID(), p.PID.String())
+		return false, fmt.Errorf("%s > package '%s' cannot be copied as it does not exist", p.manager.instance.IDColor(), p.PID.String())
 	}
 	destItem, err := destInstance.PackageManager().Find(state.PID)
 	if err != nil {

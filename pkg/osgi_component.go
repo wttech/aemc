@@ -84,7 +84,7 @@ func (c OSGiComponent) Enable() error {
 	}
 	err = c.manager.Enable(state.data.UID())
 	if err != nil {
-		return fmt.Errorf("cannot enable component '%s': %w", c.pid, err)
+		return fmt.Errorf("%s > cannot enable component '%s': %w", c.manager.instance.IDColor(), c.pid, err)
 	}
 	return nil
 }
@@ -107,7 +107,7 @@ func (c OSGiComponent) Disable() error {
 	}
 	err = c.manager.Disable(state.data.UID())
 	if err != nil {
-		return fmt.Errorf("cannot disable component '%s': %w", c.pid, err)
+		return fmt.Errorf("%s > cannot disable component '%s': %w", c.manager.instance.IDColor(), c.pid, err)
 	}
 	return nil
 }
@@ -134,7 +134,7 @@ func (c OSGiComponent) assumeExists() (*OSGiComponentState, error) {
 		return state, err
 	}
 	if !state.Exists {
-		return state, fmt.Errorf("%s > component '%s' does not exist", c.manager.instance.ID(), c.pid)
+		return state, fmt.Errorf("%s > component '%s' does not exist", c.manager.instance.IDColor(), c.pid)
 	}
 	return state, nil
 }
@@ -168,9 +168,9 @@ func (c OSGiComponent) Await(state string, condition func() bool, timeout time.D
 			break
 		}
 		if time.Now().After(started.Add(timeout)) {
-			return fmt.Errorf("%s > awaiting component '%s' state '%s' reached timeout after %s", c.manager.instance.ID(), c.pid, state, timeout)
+			return fmt.Errorf("%s > awaiting component '%s' state '%s' reached timeout after %s", c.manager.instance.IDColor(), c.pid, state, timeout)
 		}
-		log.Infof("%s > awaiting component '%s' state '%s'", c.manager.instance.ID(), c.pid, state)
+		log.Infof("%s > awaiting component '%s' state '%s'", c.manager.instance.IDColor(), c.pid, state)
 		time.Sleep(time.Second * 5)
 	}
 	return nil

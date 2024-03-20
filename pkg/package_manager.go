@@ -87,7 +87,7 @@ func (pm *PackageManager) ByPath(remotePath string) (*Package, error) {
 	}
 	item, ok := lo.Find(list.List, func(item pkg.ListItem) bool { return item.Path == remotePath })
 	if !ok {
-		return nil, fmt.Errorf("%s > package at path '%s' does not exist", pm.instance.idColor(), remotePath)
+		return nil, fmt.Errorf("%s > package at path '%s' does not exist", pm.instance.IDColor(), remotePath)
 	}
 	pid, err := pkg.ParsePID(item.PID)
 	if err != nil {
@@ -103,13 +103,13 @@ func (pm *PackageManager) byPID(pidConfig pkg.PID) (*Package, error) {
 func (pm *PackageManager) List() (*pkg.List, error) {
 	resp, err := pm.instance.http.Request().Get(ListJson)
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot request package list: %w", pm.instance.idColor(), err)
+		return nil, fmt.Errorf("%s > cannot request package list: %w", pm.instance.IDColor(), err)
 	} else if resp.IsError() {
-		return nil, fmt.Errorf("%s > cannot request package list: %s", pm.instance.idColor(), resp.Status())
+		return nil, fmt.Errorf("%s > cannot request package list: %s", pm.instance.IDColor(), resp.Status())
 	}
 	res := new(pkg.List)
 	if err = fmtx.UnmarshalJSON(resp.RawBody(), res); err != nil {
-		return nil, fmt.Errorf("%s > cannot parse package list response: %w", pm.instance.idColor(), err)
+		return nil, fmt.Errorf("%s > cannot parse package list response: %w", pm.instance.IDColor(), err)
 	}
 	return res, nil
 }
@@ -117,7 +117,7 @@ func (pm *PackageManager) List() (*pkg.List, error) {
 func (pm *PackageManager) Find(pid string) (*pkg.ListItem, error) {
 	item, err := pm.findInternal(pid)
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot find package '%s': %w", pm.instance.idColor(), pid, err)
+		return nil, fmt.Errorf("%s > cannot find package '%s': %w", pm.instance.IDColor(), pid, err)
 	}
 	return item, nil
 }
@@ -129,13 +129,13 @@ func (pm *PackageManager) findInternal(pid string) (*pkg.ListItem, error) {
 	}
 	resp, err := pm.instance.http.Request().SetQueryParam("name", pidConfig.Name).Get(ListJson)
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot request package list: %w", pm.instance.idColor(), err)
+		return nil, fmt.Errorf("%s > cannot request package list: %w", pm.instance.IDColor(), err)
 	} else if resp.IsError() {
-		return nil, fmt.Errorf("%s > cannot request package list: %s", pm.instance.idColor(), resp.Status())
+		return nil, fmt.Errorf("%s > cannot request package list: %s", pm.instance.IDColor(), resp.Status())
 	}
 	res := new(pkg.List)
 	if err = fmtx.UnmarshalJSON(resp.RawBody(), res); err != nil {
-		return nil, fmt.Errorf("%s > cannot parse package list response: %w", pm.instance.idColor(), err)
+		return nil, fmt.Errorf("%s > cannot parse package list response: %w", pm.instance.IDColor(), err)
 	}
 	item, ok := lo.Find(res.List, func(p pkg.ListItem) bool { return p.PID == pid })
 	if ok {
@@ -171,7 +171,7 @@ type PackageCreateOpts struct {
 }
 
 func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
-	log.Infof("%s > creating package '%s'", pm.instance.idColor(), opts.PID)
+	log.Infof("%s > creating package '%s'", pm.instance.IDColor(), opts.PID)
 	pidConfig, err := pkg.ParsePID(opts.PID)
 	if err != nil {
 		return "", err
@@ -206,18 +206,18 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 		SetMultipartFormData(map[string]string{"force": "true"}).
 		Post(ServiceJsonPath + "/?cmd=upload")
 	if err != nil {
-		return "", fmt.Errorf("%s > cannot create package '%s': %w", pm.instance.idColor(), opts.PID, err)
+		return "", fmt.Errorf("%s > cannot create package '%s': %w", pm.instance.IDColor(), opts.PID, err)
 	} else if response.IsError() {
-		return "", fmt.Errorf("%s > cannot create package '%s': %s", pm.instance.idColor(), opts.PID, response.Status())
+		return "", fmt.Errorf("%s > cannot create package '%s': %s", pm.instance.IDColor(), opts.PID, response.Status())
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return "", fmt.Errorf("%s > cannot create package '%s'; cannot parse response: %w", pm.instance.idColor(), opts.PID, err)
+		return "", fmt.Errorf("%s > cannot create package '%s'; cannot parse response: %w", pm.instance.IDColor(), opts.PID, err)
 	}
 	if !status.Success {
-		return "", fmt.Errorf("%s > cannot create package '%s'; unexpected status: %s", pm.instance.idColor(), opts.PID, status.Message)
+		return "", fmt.Errorf("%s > cannot create package '%s'; unexpected status: %s", pm.instance.IDColor(), opts.PID, status.Message)
 	}
-	log.Infof("%s > created package '%s'", pm.instance.idColor(), opts.PID)
+	log.Infof("%s > created package '%s'", pm.instance.IDColor(), opts.PID)
 	return status.Path, nil
 }
 
@@ -262,7 +262,7 @@ type PackageFilterRule struct {
 }
 
 func (pm *PackageManager) UpdateFilters(remotePath string, pid string, filters []PackageFilter) error {
-	log.Infof("%s > updating filters of package '%s'", pm.instance.idColor(), pid)
+	log.Infof("%s > updating filters of package '%s'", pm.instance.IDColor(), pid)
 	pidConfig, err := pkg.ParsePID(pid)
 	if err != nil {
 		return err
@@ -281,51 +281,51 @@ func (pm *PackageManager) UpdateFilters(remotePath string, pid string, filters [
 		}).
 		Post(UpdatePath)
 	if err != nil {
-		return fmt.Errorf("%s > cannot update filters of package '%s': %w", pm.instance.idColor(), pid, err)
+		return fmt.Errorf("%s > cannot update filters of package '%s': %w", pm.instance.IDColor(), pid, err)
 	} else if response.IsError() {
-		return fmt.Errorf("%s > cannot update filters of package '%s': %s", pm.instance.idColor(), pid, response.Status())
+		return fmt.Errorf("%s > cannot update filters of package '%s': %s", pm.instance.IDColor(), pid, response.Status())
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return fmt.Errorf("%s > cannot update filters of package '%s'; cannot parse response: %w", pm.instance.idColor(), pid, err)
+		return fmt.Errorf("%s > cannot update filters of package '%s'; cannot parse response: %w", pm.instance.IDColor(), pid, err)
 	}
 	if !status.Success {
-		return fmt.Errorf("%s > cannot update filters of package '%s'; unexpected status: %s", pm.instance.idColor(), pid, status.Message)
+		return fmt.Errorf("%s > cannot update filters of package '%s'; unexpected status: %s", pm.instance.IDColor(), pid, status.Message)
 	}
-	log.Infof("%s > updated filters of package '%s'", pm.instance.idColor(), pid)
+	log.Infof("%s > updated filters of package '%s'", pm.instance.IDColor(), pid)
 	return nil
 }
 
 func (pm *PackageManager) Download(remotePath string, localFile string) error {
-	log.Infof("%s > downloading package '%s'", pm.instance.idColor(), remotePath)
+	log.Infof("%s > downloading package '%s'", pm.instance.IDColor(), remotePath)
 	if err := httpx.DownloadWithOpts(httpx.DownloadOpts{
 		Client:   pm.instance.http.Client(),
 		URL:      remotePath,
 		File:     localFile,
 		Override: true,
 	}); err != nil {
-		return fmt.Errorf("%s > cannot download package '%s': %w", pm.instance.idColor(), remotePath, err)
+		return fmt.Errorf("%s > cannot download package '%s': %w", pm.instance.IDColor(), remotePath, err)
 	}
-	log.Infof("%s > downloaded package '%s'", pm.instance.idColor(), remotePath)
+	log.Infof("%s > downloaded package '%s'", pm.instance.IDColor(), remotePath)
 	return nil
 }
 
 func (pm *PackageManager) Build(remotePath string) error {
-	log.Infof("%s > building package '%s'", pm.instance.idColor(), remotePath)
+	log.Infof("%s > building package '%s'", pm.instance.IDColor(), remotePath)
 	response, err := pm.instance.http.Request().Post(ServiceJsonPath + remotePath + "?cmd=build")
 	if err != nil {
-		return fmt.Errorf("%s > cannot build package '%s': %w", pm.instance.idColor(), remotePath, err)
+		return fmt.Errorf("%s > cannot build package '%s': %w", pm.instance.IDColor(), remotePath, err)
 	} else if response.IsError() {
-		return fmt.Errorf("%s > cannot build package '%s': %s", pm.instance.idColor(), remotePath, response.Status())
+		return fmt.Errorf("%s > cannot build package '%s': %s", pm.instance.IDColor(), remotePath, response.Status())
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return fmt.Errorf("%s > cannot build package '%s'; cannot parse response: %w", pm.instance.idColor(), remotePath, err)
+		return fmt.Errorf("%s > cannot build package '%s'; cannot parse response: %w", pm.instance.IDColor(), remotePath, err)
 	}
 	if !status.Success {
-		return fmt.Errorf("%s > cannot build package '%s'; unexpected status: %s", pm.instance.idColor(), remotePath, status.Message)
+		return fmt.Errorf("%s > cannot build package '%s'; unexpected status: %s", pm.instance.IDColor(), remotePath, status.Message)
 	}
-	log.Infof("%s > built package '%s'", pm.instance.idColor(), remotePath)
+	log.Infof("%s > built package '%s'", pm.instance.IDColor(), remotePath)
 	return nil
 }
 
@@ -365,7 +365,7 @@ func (pm *PackageManager) Upload(localPath string) (string, error) {
 // https://medium.com/@owlwalks/sending-big-file-with-minimal-memory-in-golang-8f3fc280d2c
 // https://github.com/go-resty/resty/issues/309#issuecomment-1750659170
 func (pm *PackageManager) uploadOptimized(localPath string) (string, error) {
-	log.Infof("%s > uploading package '%s'", pm.instance.idColor(), localPath)
+	log.Infof("%s > uploading package '%s'", pm.instance.IDColor(), localPath)
 	r, w := io.Pipe()
 	m := multipart.NewWriter(w)
 	go func() {
@@ -398,40 +398,40 @@ func (pm *PackageManager) uploadOptimized(localPath string) (string, error) {
 	client := &http.Client{Transport: transport}
 	response, err := client.Do(request)
 	if err != nil {
-		return "", fmt.Errorf("%s > cannot upload package '%s': %w", pm.instance.idColor(), localPath, err)
+		return "", fmt.Errorf("%s > cannot upload package '%s': %w", pm.instance.IDColor(), localPath, err)
 	} else if response.StatusCode > 399 {
-		return "", fmt.Errorf("%s > cannot upload package '%s': %s", pm.instance.idColor(), localPath, response.Status)
+		return "", fmt.Errorf("%s > cannot upload package '%s': %s", pm.instance.IDColor(), localPath, response.Status)
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.Body, &status); err != nil {
-		return "", fmt.Errorf("%s > cannot upload package '%s'; cannot parse response: %w", pm.instance.idColor(), localPath, err)
+		return "", fmt.Errorf("%s > cannot upload package '%s'; cannot parse response: %w", pm.instance.IDColor(), localPath, err)
 	}
 	if !status.Success {
-		return "", fmt.Errorf("%s > cannot upload package '%s'; %s", pm.instance.idColor(), localPath, pm.interpretFail(status.Message))
+		return "", fmt.Errorf("%s > cannot upload package '%s'; %s", pm.instance.IDColor(), localPath, pm.interpretFail(status.Message))
 	}
-	log.Infof("%s > uploaded package '%s'", pm.instance.idColor(), localPath)
+	log.Infof("%s > uploaded package '%s'", pm.instance.IDColor(), localPath)
 	return status.Path, nil
 }
 
 func (pm *PackageManager) uploadBuffered(localPath string) (string, error) {
-	log.Infof("%s > uploading package '%s'", pm.instance.idColor(), localPath)
+	log.Infof("%s > uploading package '%s'", pm.instance.IDColor(), localPath)
 	response, err := pm.instance.http.Request().
 		SetFile("package", localPath).
 		SetMultipartFormData(map[string]string{"force": "true"}).
 		Post(ServiceJsonPath + "/?cmd=upload")
 	if err != nil {
-		return "", fmt.Errorf("%s > cannot upload package '%s': %w", pm.instance.idColor(), localPath, err)
+		return "", fmt.Errorf("%s > cannot upload package '%s': %w", pm.instance.IDColor(), localPath, err)
 	} else if response.IsError() {
-		return "", fmt.Errorf("%s > cannot upload package '%s': %s", pm.instance.idColor(), localPath, response.Status())
+		return "", fmt.Errorf("%s > cannot upload package '%s': %s", pm.instance.IDColor(), localPath, response.Status())
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return "", fmt.Errorf("%s > cannot upload package '%s'; cannot parse response: %w", pm.instance.idColor(), localPath, err)
+		return "", fmt.Errorf("%s > cannot upload package '%s'; cannot parse response: %w", pm.instance.IDColor(), localPath, err)
 	}
 	if !status.Success {
-		return "", fmt.Errorf("%s > cannot upload package '%s'; %s", pm.instance.idColor(), localPath, pm.interpretFail(status.Message))
+		return "", fmt.Errorf("%s > cannot upload package '%s'; %s", pm.instance.IDColor(), localPath, pm.interpretFail(status.Message))
 	}
-	log.Infof("%s > uploaded package '%s'", pm.instance.idColor(), localPath)
+	log.Infof("%s > uploaded package '%s'", pm.instance.IDColor(), localPath)
 	return status.Path, nil
 }
 
@@ -453,32 +453,32 @@ func (pm *PackageManager) Install(remotePath string) error {
 }
 
 func (pm *PackageManager) installJSON(remotePath string) error {
-	log.Infof("%s > installing package '%s'", pm.instance.idColor(), remotePath)
+	log.Infof("%s > installing package '%s'", pm.instance.IDColor(), remotePath)
 	response, err := pm.instance.http.Request().SetFormData(pm.installParams()).Post(ServiceJsonPath + remotePath)
 	if err != nil {
-		return fmt.Errorf("%s > cannot install package '%s': %w", pm.instance.idColor(), remotePath, err)
+		return fmt.Errorf("%s > cannot install package '%s': %w", pm.instance.IDColor(), remotePath, err)
 	} else if response.IsError() {
-		return fmt.Errorf("%s > cannot install package '%s': '%s'", pm.instance.idColor(), remotePath, response.Status())
+		return fmt.Errorf("%s > cannot install package '%s': '%s'", pm.instance.IDColor(), remotePath, response.Status())
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return fmt.Errorf("%s > cannot install package '%s'; cannot parse JSON response: %w", pm.instance.idColor(), remotePath, err)
+		return fmt.Errorf("%s > cannot install package '%s'; cannot parse JSON response: %w", pm.instance.IDColor(), remotePath, err)
 	}
 	if !status.Success {
-		return fmt.Errorf("%s > cannot install package '%s'; unexpected status: %s", pm.instance.idColor(), remotePath, status.Message)
+		return fmt.Errorf("%s > cannot install package '%s'; unexpected status: %s", pm.instance.IDColor(), remotePath, status.Message)
 	}
-	log.Infof("%s > installed package '%s'", pm.instance.idColor(), remotePath)
+	log.Infof("%s > installed package '%s'", pm.instance.IDColor(), remotePath)
 	return nil
 }
 
 func (pm *PackageManager) installHTML(remotePath string) error {
-	log.Infof("%s > installing package '%s'", pm.instance.idColor(), remotePath)
+	log.Infof("%s > installing package '%s'", pm.instance.IDColor(), remotePath)
 
 	response, err := pm.instance.http.Request().SetFormData(pm.installParams()).Post(ServiceHtmlPath + remotePath)
 	if err != nil {
-		return fmt.Errorf("%s > cannot install package '%s': %w", pm.instance.idColor(), remotePath, err)
+		return fmt.Errorf("%s > cannot install package '%s': %w", pm.instance.IDColor(), remotePath, err)
 	} else if response.IsError() {
-		return fmt.Errorf("%s > cannot install package '%s': '%s'", pm.instance.idColor(), remotePath, response.Status())
+		return fmt.Errorf("%s > cannot install package '%s': '%s'", pm.instance.IDColor(), remotePath, response.Status())
 	}
 
 	success := false
@@ -493,7 +493,7 @@ func (pm *PackageManager) installHTML(remotePath string) error {
 		}
 		htmlFile, err := os.OpenFile(htmlFilePath, os.O_RDWR|os.O_CREATE, 0666)
 		if err != nil {
-			return fmt.Errorf("%s > cannot install package '%s': cannot open HTML report file '%s'", pm.instance.idColor(), remotePath, htmlFilePath)
+			return fmt.Errorf("%s > cannot install package '%s': cannot open HTML report file '%s'", pm.instance.IDColor(), remotePath, htmlFilePath)
 		}
 		defer func() { _ = htmlFile.Close() }()
 		htmlWriter = bufio.NewWriter(htmlFile)
@@ -512,28 +512,28 @@ func (pm *PackageManager) installHTML(remotePath string) error {
 		if !pm.InstallHTMLConsole {
 			_, err := htmlWriter.WriteString(htmlLine + osx.LineSep())
 			if err != nil {
-				return fmt.Errorf("%s > cannot install package '%s': cannot write to HTML report file '%s'", pm.instance.idColor(), remotePath, htmlFilePath)
+				return fmt.Errorf("%s > cannot install package '%s': cannot write to HTML report file '%s'", pm.instance.IDColor(), remotePath, htmlFilePath)
 			}
 		} else {
 			fmt.Println(htmlLine)
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("%s > cannot install package '%s': cannot parse HTML response: %w", pm.instance.idColor(), remotePath, err)
+		return fmt.Errorf("%s > cannot install package '%s': cannot parse HTML response: %w", pm.instance.IDColor(), remotePath, err)
 	}
 
 	failure := !success && !successWithErrors
 	if failure || (successWithErrors && pm.InstallHTMLStrict) {
 		if pm.InstallHTMLConsole {
-			return fmt.Errorf("%s > cannot install package '%s': HTML output contains errors", pm.instance.idColor(), remotePath)
+			return fmt.Errorf("%s > cannot install package '%s': HTML output contains errors", pm.instance.IDColor(), remotePath)
 		}
-		return fmt.Errorf("%s > cannot install package '%s': HTML report contains errors '%s'", pm.instance.idColor(), remotePath, htmlFilePath)
+		return fmt.Errorf("%s > cannot install package '%s': HTML report contains errors '%s'", pm.instance.IDColor(), remotePath, htmlFilePath)
 	}
 	if successWithErrors {
-		log.Warnf("%s > installed package '%s': HTML response contains errors: %s", pm.instance.idColor(), remotePath, err)
+		log.Warnf("%s > installed package '%s': HTML response contains errors: %s", pm.instance.IDColor(), remotePath, err)
 		return nil
 	}
-	log.Infof("%s > installed package '%s'", pm.instance.idColor(), remotePath)
+	log.Infof("%s > installed package '%s'", pm.instance.IDColor(), remotePath)
 	return nil
 }
 
@@ -581,7 +581,7 @@ func (pm *PackageManager) deploySnapshot(localPath string) (bool, error) {
 			return false, err
 		}
 		if checksum == lockData.Checksum {
-			log.Infof("%s > skipped deploying package '%s'", pm.instance.idColor(), localPath)
+			log.Infof("%s > skipped deploying package '%s'", pm.instance.IDColor(), localPath)
 			return false, nil
 		}
 	}
@@ -629,44 +629,44 @@ type packageDeployLock struct {
 }
 
 func (pm *PackageManager) Uninstall(remotePath string) error {
-	log.Infof("%s > uninstalling package '%s'", pm.instance.idColor(), remotePath)
+	log.Infof("%s > uninstalling package '%s'", pm.instance.IDColor(), remotePath)
 	response, err := pm.instance.http.Request().
 		SetFormData(map[string]string{"cmd": "uninstall"}).
 		Post(ServiceJsonPath + remotePath)
 	if err != nil {
-		return fmt.Errorf("%s > cannot uninstall package '%s': %w", pm.instance.idColor(), remotePath, err)
+		return fmt.Errorf("%s > cannot uninstall package '%s': %w", pm.instance.IDColor(), remotePath, err)
 	} else if response.IsError() {
-		return fmt.Errorf("%s > cannot uninstall package '%s': %s", pm.instance.idColor(), remotePath, response.Status())
+		return fmt.Errorf("%s > cannot uninstall package '%s': %s", pm.instance.IDColor(), remotePath, response.Status())
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return fmt.Errorf("%s > cannot uninstall package '%s'; cannot parse response: %w", pm.instance.idColor(), remotePath, err)
+		return fmt.Errorf("%s > cannot uninstall package '%s'; cannot parse response: %w", pm.instance.IDColor(), remotePath, err)
 	}
 	if !status.Success {
-		return fmt.Errorf("%s > cannot uninstall package '%s'; unexpected status: %s", pm.instance.idColor(), remotePath, status.Message)
+		return fmt.Errorf("%s > cannot uninstall package '%s'; unexpected status: %s", pm.instance.IDColor(), remotePath, status.Message)
 	}
-	log.Infof("%s > uninstalled package '%s'", pm.instance.idColor(), remotePath)
+	log.Infof("%s > uninstalled package '%s'", pm.instance.IDColor(), remotePath)
 	return nil
 }
 
 func (pm *PackageManager) Delete(remotePath string) error {
-	log.Infof("%s > deleting package '%s'", pm.instance.idColor(), remotePath)
+	log.Infof("%s > deleting package '%s'", pm.instance.IDColor(), remotePath)
 	response, err := pm.instance.http.Request().
 		SetFormData(map[string]string{"cmd": "delete"}).
 		Post(ServiceJsonPath + remotePath)
 	if err != nil {
-		return fmt.Errorf("%s > cannot delete package '%s': %w", pm.instance.idColor(), remotePath, err)
+		return fmt.Errorf("%s > cannot delete package '%s': %w", pm.instance.IDColor(), remotePath, err)
 	} else if response.IsError() {
-		return fmt.Errorf("%s > cannot delete package '%s': %s", pm.instance.idColor(), remotePath, response.Status())
+		return fmt.Errorf("%s > cannot delete package '%s': %s", pm.instance.IDColor(), remotePath, response.Status())
 	}
 	var status pkg.CommandResult
 	if err = fmtx.UnmarshalJSON(response.RawBody(), &status); err != nil {
-		return fmt.Errorf("%s > cannot delete package '%s'; cannot parse response: %w", pm.instance.idColor(), remotePath, err)
+		return fmt.Errorf("%s > cannot delete package '%s'; cannot parse response: %w", pm.instance.IDColor(), remotePath, err)
 	}
 	if !status.Success {
-		return fmt.Errorf("%s > cannot delete package '%s'; unexpected status: %s", pm.instance.idColor(), remotePath, status.Message)
+		return fmt.Errorf("%s > cannot delete package '%s'; unexpected status: %s", pm.instance.IDColor(), remotePath, status.Message)
 	}
-	log.Infof("%s > deleted package '%s'", pm.instance.idColor(), remotePath)
+	log.Infof("%s > deleted package '%s'", pm.instance.IDColor(), remotePath)
 	return nil
 }
 

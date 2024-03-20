@@ -74,17 +74,20 @@ Main features:
   - JDK (isolated, version tied to project)
   - AEM instances (run modes, JVM & start opts, env & secret vars, Sling props, custom admin password)
   - OSGi (configurations, bundles, components)
+  - Crypto Support, Trust Store, SSL by Default
   - replication agents 
   - any repository nodes
 - deploying AEM packages with:
+  - efficiently upload with optimized memory usage (constant and independent of package size)
   - automatic workflow toggling - avoiding DAM asset renditions regeneration
   - advanced snapshot handling - avoiding redeploying the same package by checksum verification
   - customizable instance health checking
 - building AEM packages with:
-  - source code change detection - avoiding rebuilding application when it is not needed 
+  - source code change detection - avoiding rebuilding application when it is not needed (handled by [Taskfile](https://taskfile.dev/usage/#prevent-unnecessary-work))
 - making AEM instance backups (with restoring)
   - advanced archive format to speed up performance and storage efficiency ([ZSTD](https://github.com/facebook/zstd) used by default)
   - instance state aware - stopping, archiving then starting again AEM instances automatically (if needed)
+- content synchronization between running instance and local file system
 
 Worth knowing:
 

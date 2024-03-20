@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/fatih/color"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/fmtx"
@@ -338,4 +339,14 @@ func (i Instance) LockDir() string {
 		return i.local.LockDir()
 	}
 	return i.CacheDir()
+}
+
+func (i Instance) idColor() string {
+	id := i.ID()
+	if i.IsAuthor() {
+		id = color.HiMagentaString(id)
+	} else {
+		id = color.HiBlueString(id)
+	}
+	return id
 }

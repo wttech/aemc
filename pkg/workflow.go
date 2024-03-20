@@ -26,11 +26,11 @@ func (l WorkflowLauncher) Prepare() error {
 	libNode := l.LibNode()
 	configExists, err := configNode.Exists()
 	if err != nil {
-		return fmt.Errorf("%s > cannot read workflow launcher config '%s': %w", l.manager.instance.ID(), configNode.path, err)
+		return fmt.Errorf("%s > cannot read workflow launcher config '%s': %w", l.manager.instance.idColor(), configNode.path, err)
 	}
 	if !configExists {
 		if err := libNode.Copy(configNode.Path()); err != nil {
-			return fmt.Errorf("%s > workflow launcher config node '%s' cannot be copied from lib node '%s': %s", l.manager.instance.ID(), configNode.path, libNode.path, err)
+			return fmt.Errorf("%s > workflow launcher config node '%s' cannot be copied from lib node '%s': %s", l.manager.instance.idColor(), configNode.path, libNode.path, err)
 		}
 	}
 	return nil
@@ -42,9 +42,9 @@ func (l WorkflowLauncher) Disable() error {
 		WorkflowLauncherEnabledProp: false,
 		WorkflowLauncherToggledProp: true,
 	}); err != nil {
-		return fmt.Errorf("%s > cannot disable workflow launcher '%s': %w", l.manager.instance.ID(), node.path, err)
+		return fmt.Errorf("%s > cannot disable workflow launcher '%s': %w", l.manager.instance.idColor(), node.path, err)
 	}
-	log.Infof("%s > disabled workflow launcher '%s'", l.manager.instance.ID(), node.path)
+	log.Infof("%s > disabled workflow launcher '%s'", l.manager.instance.idColor(), node.path)
 	return nil
 }
 
@@ -54,9 +54,9 @@ func (l WorkflowLauncher) Enable() error {
 		WorkflowLauncherEnabledProp: true,
 		WorkflowLauncherToggledProp: nil,
 	}); err != nil {
-		return fmt.Errorf("%s > cannot enable workflow launcher '%s': %w", l.manager.instance.ID(), node.path, err)
+		return fmt.Errorf("%s > cannot enable workflow launcher '%s': %w", l.manager.instance.idColor(), node.path, err)
 	}
-	log.Infof("%s > enabled workflow launcher '%s'", l.manager.instance.ID(), node.path)
+	log.Infof("%s > enabled workflow launcher '%s'", l.manager.instance.idColor(), node.path)
 	return nil
 }
 
@@ -64,7 +64,7 @@ func (l WorkflowLauncher) IsEnabled() (bool, error) {
 	configNode := l.ConfigNode()
 	configState, err := configNode.State()
 	if err != nil {
-		return false, fmt.Errorf("%s > cannot read workflow launcher config just copied '%s': %w", l.manager.instance.ID(), configNode.path, err)
+		return false, fmt.Errorf("%s > cannot read workflow launcher config just copied '%s': %w", l.manager.instance.idColor(), configNode.path, err)
 	}
 	enabledAny, enabledFound := configState.Properties[WorkflowLauncherEnabledProp]
 	enabled := enabledFound && cast.ToBool(enabledAny)
@@ -75,10 +75,10 @@ func (l WorkflowLauncher) IsToggled() (bool, error) {
 	configNode := l.ConfigNode()
 	configState, err := configNode.State()
 	if err != nil {
-		return false, fmt.Errorf("%s > cannot read config of workflow launcher '%s': %w", l.manager.instance.ID(), configNode.path, err)
+		return false, fmt.Errorf("%s > cannot read config of workflow launcher '%s': %w", l.manager.instance.idColor(), configNode.path, err)
 	}
 	if !configState.Exists {
-		return false, fmt.Errorf("%s > config node of workflow launcher does not exist '%s': %w", l.manager.instance.ID(), configNode.path, err)
+		return false, fmt.Errorf("%s > config node of workflow launcher does not exist '%s': %w", l.manager.instance.idColor(), configNode.path, err)
 	}
 	toggledAny, toggledFound := configState.Properties[WorkflowLauncherToggledProp]
 	toggled := toggledFound && cast.ToBool(toggledAny)

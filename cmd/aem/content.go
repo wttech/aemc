@@ -34,22 +34,23 @@ func (c *CLI) contentCleanCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			if dir != "" {
-				if err = c.aem.ContentManager().CleanDir(dir); err != nil {
-					c.Error(err)
-					return
-				}
-			}
 			file, err := determineContentFile(cmd)
 			if err != nil {
 				c.Error(err)
 				return
 			}
-			if file != "" {
+			if dir != "" {
+				if err = c.aem.ContentManager().CleanDir(dir); err != nil {
+					c.Error(err)
+					return
+				}
+				c.SetOutput("dir", dir)
+			} else if file != "" {
 				if err = c.aem.ContentManager().CleanFile(file); err != nil {
 					c.Error(err)
 					return
 				}
+				c.SetOutput("file", file)
 			}
 			c.Changed("content cleaned")
 		},
@@ -115,6 +116,11 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			file, err := determineContentFile(cmd)
+			if err != nil {
+				c.Error(err)
+				return
+			}
 			if dir != "" {
 				filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
 				filterFile, _ := cmd.Flags().GetString("filter-file")
@@ -127,13 +133,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 					return
 				}
 				c.SetOutput("dir", dir)
-			}
-			file, err := determineContentFile(cmd)
-			if err != nil {
-				c.Error(err)
-				return
-			}
-			if file != "" {
+			} else if file != "" {
 				if err = instance.ContentManager().SyncFile(file, clean, pkg.PackageCreateOpts{
 					ContentFile: file,
 				}); err != nil {

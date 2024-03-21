@@ -7,6 +7,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/content"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -74,7 +75,7 @@ func (cm *ContentManager) SyncDir(dir string, clean bool, replace bool, packageO
 			return err
 		}
 	}
-	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot), before+content.JCRRoot); err != nil {
+	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot), filepath.Join(before, content.JCRRoot)); err != nil {
 		return err
 	}
 	if clean {
@@ -102,17 +103,31 @@ func (cm *ContentManager) SyncFile(file string, clean bool, packageOpts PackageC
 	if err := pathx.Ensure(dir); err != nil {
 		return err
 	}
-	_, after, _ := strings.Cut(file, content.JCRRoot)
-	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot, after), file); err != nil {
+	_, after, _ := strings.Cut(dir, content.JCRRoot)
+	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot, after), dir); err != nil {
 		return err
 	}
 	if clean {
 		contentManager := cm.instance.manager.aem.contentManager
-		if err := contentManager.CleanFile(file); err != nil {
+		cleanFile := determineCleanFile(file)
+		if err := contentManager.CleanFile(cleanFile); err != nil {
 			return err
+		}
+		if strings.HasSuffix(file, content.JCRContentFile) {
+			if err := contentManager.CleanDir(filepath.Join(dir, content.JCRContentDirName)); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
+}
+
+func determineCleanFile(file string) string {
+	re := regexp.MustCompile("_([a-z]+)_")
+	if re.MatchString(file) && !strings.HasSuffix(file, content.JCRContentFile) {
+		return filepath.Join(strings.ReplaceAll(file, content.JCRContentFileSuffix, ""), content.JCRContentFile)
+	}
+	return file
 }
 
 func (cm *ContentManager) PushDir(dir string, clean bool, packageOpts PackageCreateOpts) error {

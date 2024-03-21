@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -188,11 +189,7 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 		_ = pathx.DeleteIfExists(tmpFile)
 	}()
 	if len(opts.FilterRoots) == 0 && opts.FilterFile == "" {
-		if opts.ContentDir != "" {
-			opts.FilterRoots = []string{strings.Split(opts.ContentDir, content.JCRRoot)[1]}
-		} else if opts.ContentFile != "" {
-			opts.FilterRoots = []string{strings.ReplaceAll(opts.ContentFile, content.JCRContentFile, content.JCRContentNode)}
-		}
+		opts.FilterRoots = []string{determineFilterRoot(opts)}
 	}
 	data := map[string]any{
 		"Pid":         opts.PID,
@@ -215,17 +212,27 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 			if err = pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
 				return "", err
 			}
-			if err := filex.CopyDir(opts.ContentDir, filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
+			if err = filex.CopyDir(opts.ContentDir, filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
 				return "", err
 			}
 		} else if opts.ContentFile != "" {
 			dir := filepath.Dir(opts.ContentFile)
 			_, after, _ := strings.Cut(dir, content.JCRRoot)
-			if err := pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
+			if err = pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
 				return "", err
 			}
-			if err := filex.Copy(opts.ContentFile, filepath.Join(tmpDir, content.JCRRoot, after, content.JCRContentFile), true); err != nil {
+			_, after, _ = strings.Cut(opts.ContentFile, content.JCRRoot)
+			if err = filex.Copy(opts.ContentFile, filepath.Join(tmpDir, content.JCRRoot, after), true); err != nil {
 				return "", err
+			}
+			if strings.HasSuffix(opts.ContentFile, content.JCRContentFile) {
+				dir = strings.ReplaceAll(opts.ContentFile, content.JCRContentNode, content.JCRContentDirName)
+				_, after, _ = strings.Cut(dir, content.JCRRoot)
+				if pathx.Exists(dir) {
+					if err = filex.CopyDir(dir, filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
+						return "", err
+					}
+				}
 			}
 		}
 	}
@@ -250,6 +257,30 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	}
 	log.Infof("%s > created package '%s'", pm.instance.ID(), opts.PID)
 	return status.Path, nil
+}
+
+func determineFilterRoot(opts PackageCreateOpts) string {
+	if opts.ContentDir != "" {
+		return strings.Split(opts.ContentDir, content.JCRRoot)[1]
+	}
+
+	if opts.ContentFile != "" {
+		contentFile := strings.Split(opts.ContentFile, content.JCRRoot)[1]
+		if content.IsContentFile(opts.ContentFile) {
+			return strings.ReplaceAll(contentFile, content.JCRContentFile, content.JCRContentNode)
+		} else if strings.HasSuffix(contentFile, content.JCRContentFile) {
+			re := regexp.MustCompile("_([a-z]+)_")
+			contentFile = re.ReplaceAllString(contentFile, "$1:")
+			return filepath.Dir(contentFile)
+		} else if strings.HasSuffix(contentFile, content.JCRContentFileSuffix) {
+			re := regexp.MustCompile("_([a-z]+)_")
+			contentFile = re.ReplaceAllString(contentFile, "$1:")
+			return strings.ReplaceAll(contentFile, content.JCRContentFileSuffix, "")
+		}
+		return contentFile
+	}
+
+	return ""
 }
 
 func (pm *PackageManager) Copy(remotePath string, destInstance *Instance) error {

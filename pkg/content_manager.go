@@ -7,6 +7,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/content"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -106,11 +107,25 @@ func (cm *ContentManager) SyncFile(file string, clean bool, packageOpts PackageC
 	}
 	if clean {
 		contentManager := cm.instance.manager.aem.contentManager
-		if err := contentManager.CleanFile(file); err != nil {
+		cleanFile := determineCleanFile(file)
+		if err := contentManager.CleanFile(cleanFile); err != nil {
 			return err
+		}
+		if strings.HasSuffix(file, content.JCRContentFile) {
+			if err := contentManager.CleanDir(filepath.Join(dir, content.JCRContentDirName)); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
+}
+
+func determineCleanFile(file string) string {
+	re := regexp.MustCompile("_([a-z]+)_")
+	if re.MatchString(file) && !strings.HasSuffix(file, content.JCRContentFile) {
+		return filepath.Join(strings.ReplaceAll(file, content.JCRContentFileSuffix, ""), content.JCRContentFile)
+	}
+	return file
 }
 
 func (cm *ContentManager) PushDir(dir string, clean bool, packageOpts PackageCreateOpts) error {

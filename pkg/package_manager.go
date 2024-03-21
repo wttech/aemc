@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -188,19 +189,7 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 		_ = pathx.DeleteIfExists(tmpFile)
 	}()
 	if len(opts.FilterRoots) == 0 && opts.FilterFile == "" {
-		if opts.ContentDir != "" {
-			contentDir := strings.Split(opts.ContentDir, content.JCRRoot)[1]
-			opts.FilterRoots = []string{contentDir}
-		} else if opts.ContentFile != "" {
-			contentFile := strings.Split(opts.ContentFile, content.JCRRoot)[1]
-			if strings.HasSuffix(contentFile, content.JCRContentFile) {
-				opts.FilterRoots = []string{strings.ReplaceAll(contentFile, content.JCRContentFile, content.JCRContentNode)}
-			} else if strings.HasSuffix(contentFile, content.JCRContentFileSuffix) {
-				opts.FilterRoots = []string{strings.ReplaceAll(contentFile, content.JCRContentFileSuffix, "")}
-			} else {
-				opts.FilterRoots = []string{contentFile}
-			}
-		}
+		opts.FilterRoots = []string{determineFilterRoot(opts)}
 	}
 	data := map[string]any{
 		"Pid":         opts.PID,
@@ -258,6 +247,30 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	}
 	log.Infof("%s > created package '%s'", pm.instance.ID(), opts.PID)
 	return status.Path, nil
+}
+
+func determineFilterRoot(opts PackageCreateOpts) string {
+	if opts.ContentDir != "" {
+		return strings.Split(opts.ContentDir, content.JCRRoot)[1]
+	} else if opts.ContentFile != "" {
+		contentFile := strings.Split(opts.ContentFile, content.JCRRoot)[1]
+		if strings.HasSuffix(contentFile, content.JCRContentFile) {
+			if content.IsContentFile(opts.ContentFile) {
+				return strings.ReplaceAll(contentFile, content.JCRContentFile, content.JCRContentNode)
+			} else {
+				re := regexp.MustCompile("_([a-z]+)_")
+				contentFile = re.ReplaceAllString(contentFile, "$1:")
+				return filepath.Dir(contentFile)
+			}
+		} else if strings.HasSuffix(contentFile, content.JCRContentFileSuffix) {
+			re := regexp.MustCompile("_([a-z]+)_")
+			contentFile = re.ReplaceAllString(contentFile, "$1:")
+			return strings.ReplaceAll(contentFile, content.JCRContentFileSuffix, "")
+		} else {
+			return contentFile
+		}
+	}
+	return ""
 }
 
 func (pm *PackageManager) Copy(remotePath string, destInstance *Instance) error {

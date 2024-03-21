@@ -262,24 +262,24 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 func determineFilterRoot(opts PackageCreateOpts) string {
 	if opts.ContentDir != "" {
 		return strings.Split(opts.ContentDir, content.JCRRoot)[1]
-	} else if opts.ContentFile != "" {
+	}
+
+	if opts.ContentFile != "" {
 		contentFile := strings.Split(opts.ContentFile, content.JCRRoot)[1]
-		if strings.HasSuffix(contentFile, content.JCRContentFile) {
-			if content.IsContentFile(opts.ContentFile) {
-				return strings.ReplaceAll(contentFile, content.JCRContentFile, content.JCRContentNode)
-			} else {
-				re := regexp.MustCompile("_([a-z]+)_")
-				contentFile = re.ReplaceAllString(contentFile, "$1:")
-				return filepath.Dir(contentFile)
-			}
+		if content.IsContentFile(opts.ContentFile) {
+			return strings.ReplaceAll(contentFile, content.JCRContentFile, content.JCRContentNode)
+		} else if strings.HasSuffix(contentFile, content.JCRContentFile) {
+			re := regexp.MustCompile("_([a-z]+)_")
+			contentFile = re.ReplaceAllString(contentFile, "$1:")
+			return filepath.Dir(contentFile)
 		} else if strings.HasSuffix(contentFile, content.JCRContentFileSuffix) {
 			re := regexp.MustCompile("_([a-z]+)_")
 			contentFile = re.ReplaceAllString(contentFile, "$1:")
 			return strings.ReplaceAll(contentFile, content.JCRContentFileSuffix, "")
-		} else {
-			return contentFile
 		}
+		return contentFile
 	}
+
 	return ""
 }
 

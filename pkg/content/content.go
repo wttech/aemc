@@ -506,6 +506,10 @@ func determineStringSlice(values any, key string) []string {
 }
 
 func IsContentFile(path string) bool {
+	if !strings.HasSuffix(path, JCRContentFile) {
+		return false
+	}
+
 	inputLines, err := readLines(path)
 	if err != nil {
 		return false

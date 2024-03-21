@@ -212,17 +212,27 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 			if err = pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
 				return "", err
 			}
-			if err := filex.CopyDir(opts.ContentDir, filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
+			if err = filex.CopyDir(opts.ContentDir, filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
 				return "", err
 			}
 		} else if opts.ContentFile != "" {
 			dir := filepath.Dir(opts.ContentFile)
 			_, after, _ := strings.Cut(dir, content.JCRRoot)
-			if err := pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
+			if err = pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
 				return "", err
 			}
-			if err := filex.Copy(opts.ContentFile, filepath.Join(tmpDir, content.JCRRoot, after, content.JCRContentFile), true); err != nil {
+			_, after, _ = strings.Cut(opts.ContentFile, content.JCRRoot)
+			if err = filex.Copy(opts.ContentFile, filepath.Join(tmpDir, content.JCRRoot, after), true); err != nil {
 				return "", err
+			}
+			if strings.HasSuffix(opts.ContentFile, content.JCRContentFile) {
+				dir = strings.ReplaceAll(opts.ContentFile, content.JCRContentNode, content.JCRContentDirName)
+				_, after, _ = strings.Cut(dir, content.JCRRoot)
+				if pathx.Exists(dir) {
+					if err = filex.CopyDir(dir, filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
+						return "", err
+					}
+				}
 			}
 		}
 	}

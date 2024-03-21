@@ -271,8 +271,7 @@ func (c Manager) deleteFiles(root string) error {
 }
 
 func deleteDir(dir string) error {
-	_, err := os.Stat(dir)
-	if os.IsNotExist(err) {
+	if !pathx.Exists(dir) {
 		return nil
 	}
 	log.Infof("deleting dir %s", dir)
@@ -280,8 +279,7 @@ func deleteDir(dir string) error {
 }
 
 func deleteFile(path string, allowedFunc func() bool) error {
-	_, err := os.Stat(path)
-	if os.IsNotExist(err) || allowedFunc != nil && !allowedFunc() {
+	if !pathx.Exists(path) || allowedFunc != nil && !allowedFunc() {
 		return nil
 	}
 	log.Infof("deleting file %s", path)

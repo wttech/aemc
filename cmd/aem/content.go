@@ -161,7 +161,7 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "push",
 		Aliases: []string{"ps"},
-		Short:   "Push content from JCR root directory to running instance",
+		Short:   "Push content from JCR root directory or local file to running instance",
 		Run: func(cmd *cobra.Command, args []string) {
 			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
@@ -176,7 +176,7 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 			}
 			if dir != "" {
 				if err = instance.ContentManager().PushDir(dir, clean, pkg.PackageCreateOpts{
-					CopyContent: true,
+					PushContent: true,
 					ContentDir:  dir,
 				}); err != nil {
 					c.Error(err)
@@ -191,7 +191,7 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 			}
 			if file != "" {
 				if err = instance.ContentManager().PushFile(file, clean, pkg.PackageCreateOpts{
-					CopyContent: true,
+					PushContent: true,
 					ContentFile: file,
 				}); err != nil {
 					c.Error(err)

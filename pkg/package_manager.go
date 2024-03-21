@@ -170,7 +170,7 @@ type PackageCreateOpts struct {
 	PID         string
 	FilterRoots []string
 	FilterFile  string
-	CopyContent bool
+	PushContent bool
 	ContentDir  string
 	ContentFile string
 }
@@ -206,7 +206,7 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 			return "", err
 		}
 	}
-	if len(opts.FilterRoots) == 0 && opts.FilterFile == "" && opts.CopyContent {
+	if len(opts.FilterRoots) == 0 && opts.FilterFile == "" && opts.PushContent {
 		if opts.ContentDir != "" {
 			_, after, _ := strings.Cut(opts.ContentDir, content.JCRRoot)
 			if err = pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
@@ -269,11 +269,11 @@ func determineFilterRoot(opts PackageCreateOpts) string {
 		if content.IsContentFile(opts.ContentFile) {
 			return strings.ReplaceAll(contentFile, content.JCRContentFile, content.JCRContentNode)
 		} else if strings.HasSuffix(contentFile, content.JCRContentFile) {
-			re := regexp.MustCompile("_([a-z]+)_")
+			re := regexp.MustCompile(NamespacePattern)
 			contentFile = re.ReplaceAllString(contentFile, "$1:")
 			return filepath.Dir(contentFile)
 		} else if strings.HasSuffix(contentFile, content.JCRContentFileSuffix) {
-			re := regexp.MustCompile("_([a-z]+)_")
+			re := regexp.MustCompile(NamespacePattern)
 			contentFile = re.ReplaceAllString(contentFile, "$1:")
 			return strings.ReplaceAll(contentFile, content.JCRContentFileSuffix, "")
 		}

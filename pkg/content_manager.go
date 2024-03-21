@@ -11,6 +11,10 @@ import (
 	"strings"
 )
 
+const (
+	NamespacePattern = "_([a-z]+)_"
+)
+
 type ContentManager struct {
 	instance *Instance
 }
@@ -123,7 +127,7 @@ func (cm *ContentManager) SyncFile(file string, clean bool, packageOpts PackageC
 }
 
 func determineCleanFile(file string) string {
-	re := regexp.MustCompile("_([a-z]+)_")
+	re := regexp.MustCompile(NamespacePattern)
 	if re.MatchString(file) && !strings.HasSuffix(file, content.JCRContentFile) {
 		return filepath.Join(strings.ReplaceAll(file, content.JCRContentFileSuffix, ""), content.JCRContentFile)
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg"
+	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/content"
 	"strings"
 )
@@ -55,7 +56,8 @@ func (c *CLI) contentCleanCmd() *cobra.Command {
 	}
 	cmd.Flags().StringP("dir", "d", "", "JCR root path")
 	cmd.Flags().StringP("file", "f", "", "Local file path")
-	cmd.MarkFlagsOneRequired("dir", "file")
+	cmd.Flags().String("path", "", "JCR root path or local file path")
+	cmd.MarkFlagsOneRequired("dir", "file", "path")
 	return cmd
 }
 
@@ -144,7 +146,8 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 	}
 	cmd.Flags().StringP("dir", "d", "", "JCR root path")
 	cmd.Flags().String("file", "", "Local file path")
-	cmd.MarkFlagsMutuallyExclusive("dir", "file")
+	cmd.Flags().String("path", "", "JCR root path or local file path")
+	cmd.MarkFlagsMutuallyExclusive("dir", "file", "path")
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
@@ -199,7 +202,8 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 	}
 	cmd.Flags().StringP("dir", "d", "", "JCR root path")
 	cmd.Flags().StringP("file", "f", "", "Local file path")
-	cmd.MarkFlagsOneRequired("dir", "file")
+	cmd.Flags().String("path", "", "JCR root path or local file path")
+	cmd.MarkFlagsOneRequired("dir", "file", "path")
 	cmd.Flags().Bool("clean", false, "Normalize content while pushing")
 	return cmd
 }
@@ -264,6 +268,16 @@ func determineContentDir(cmd *cobra.Command) (string, error) {
 	if dir != "" && !strings.Contains(dir, content.JCRRoot) {
 		return "", fmt.Errorf("content dir '%s' does not contain '%s'", dir, content.JCRRoot)
 	}
+	path, _ := cmd.Flags().GetString("path")
+	if path != "" && !strings.Contains(path, content.JCRRoot) {
+		return "", fmt.Errorf("content path '%s' does not contain '%s'", path, content.JCRRoot)
+	}
+	if path != "" && !pathx.Exists(path) {
+		return "", fmt.Errorf("content path does not exist: %s", path)
+	}
+	if path != "" && pathx.IsDir(path) {
+		return path, nil
+	}
 	return dir, nil
 }
 
@@ -271,6 +285,16 @@ func determineContentFile(cmd *cobra.Command) (string, error) {
 	file, _ := cmd.Flags().GetString("file")
 	if file != "" && !strings.Contains(file, content.JCRRoot) {
 		return "", fmt.Errorf("content file '%s' does not contain '%s'", file, content.JCRRoot)
+	}
+	path, _ := cmd.Flags().GetString("path")
+	if path != "" && !strings.Contains(path, content.JCRRoot) {
+		return "", fmt.Errorf("content path '%s' does not contain '%s'", path, content.JCRRoot)
+	}
+	if path != "" && !pathx.Exists(path) {
+		return "", fmt.Errorf("content path does not exist: %s", path)
+	}
+	if path != "" && pathx.IsFile(path) {
+		return path, nil
 	}
 	return file, nil
 }

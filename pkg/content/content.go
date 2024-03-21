@@ -342,7 +342,7 @@ func (c Manager) undoParentsBackup(root string) error {
 
 		if err := eachFilesInDir(parent, func(path string) error {
 			return deleteFile(path, func() bool {
-				return !strings.HasSuffix(path, ParentsBackupSuffix) || !strings.HasSuffix(path, ParentsBackupDirIndicator)
+				return !strings.HasSuffix(path, ParentsBackupSuffix)
 			})
 		}); err != nil {
 			return err

@@ -168,35 +168,27 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			clean, _ := cmd.Flags().GetBool("clean")
 			dir, err := determineContentDir(cmd)
 			if err != nil {
 				c.Error(err)
 				return
-			}
-			if dir != "" {
-				if err = instance.ContentManager().PushDir(dir, clean, pkg.PackageCreateOpts{
-					PushContent: true,
-					ContentDir:  dir,
-				}); err != nil {
-					c.Error(err)
-					return
-				}
-				c.SetOutput("dir", dir)
 			}
 			file, err := determineContentFile(cmd)
 			if err != nil {
 				c.Error(err)
 				return
 			}
-			if file != "" {
-				if err = instance.ContentManager().PushFile(file, clean, pkg.PackageCreateOpts{
-					PushContent: true,
-					ContentFile: file,
-				}); err != nil {
-					c.Error(err)
-					return
-				}
+			if err = instance.ContentManager().Push(pkg.PackageCreateOpts{
+				PushContent: true,
+				ContentDir:  dir,
+				ContentFile: file,
+			}); err != nil {
+				c.Error(err)
+				return
+			}
+			if dir != "" {
+				c.SetOutput("dir", dir)
+			} else if file != "" {
 				c.SetOutput("file", file)
 			}
 			c.Changed("content pushed")
@@ -206,7 +198,6 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 	cmd.Flags().StringP("file", "f", "", "Local file path")
 	cmd.Flags().StringP("path", "p", "", "JCR root path or local file path")
 	cmd.MarkFlagsOneRequired("dir", "file", "path")
-	cmd.Flags().Bool("clean", false, "Normalize content while pushing")
 	return cmd
 }
 

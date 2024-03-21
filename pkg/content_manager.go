@@ -134,33 +134,7 @@ func determineCleanFile(file string) string {
 	return file
 }
 
-func (cm *ContentManager) PushDir(dir string, clean bool, packageOpts PackageCreateOpts) error {
-	if clean {
-		contentManager := cm.instance.manager.aem.contentManager
-		if err := contentManager.CleanDir(dir); err != nil {
-			return err
-		}
-	}
-	remotePath, err := cm.pkgMgr().Create(packageOpts)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = cm.pkgMgr().Delete(remotePath)
-	}()
-	if err = cm.pkgMgr().Install(remotePath); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (cm *ContentManager) PushFile(file string, clean bool, packageOpts PackageCreateOpts) error {
-	if clean {
-		contentManager := cm.instance.manager.aem.contentManager
-		if err := contentManager.CleanFile(file); err != nil {
-			return err
-		}
-	}
+func (cm *ContentManager) Push(packageOpts PackageCreateOpts) error {
 	remotePath, err := cm.pkgMgr().Create(packageOpts)
 	if err != nil {
 		return err

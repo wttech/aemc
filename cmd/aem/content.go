@@ -56,7 +56,7 @@ func (c *CLI) contentCleanCmd() *cobra.Command {
 	}
 	cmd.Flags().StringP("dir", "d", "", "JCR root path")
 	cmd.Flags().StringP("file", "f", "", "Local file path")
-	cmd.Flags().String("path", "", "JCR root path or local file path")
+	cmd.Flags().StringP("path", "p", "", "JCR root path or local file path")
 	cmd.MarkFlagsOneRequired("dir", "file", "path")
 	return cmd
 }
@@ -147,7 +147,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 	}
 	cmd.Flags().StringP("dir", "d", "", "JCR root path")
 	cmd.Flags().String("file", "", "Local file path")
-	cmd.Flags().String("path", "", "JCR root path or local file path")
+	cmd.Flags().StringP("path", "p", "", "JCR root path or local file path")
 	cmd.MarkFlagsMutuallyExclusive("dir", "file", "path")
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
@@ -204,7 +204,7 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 	}
 	cmd.Flags().StringP("dir", "d", "", "JCR root path")
 	cmd.Flags().StringP("file", "f", "", "Local file path")
-	cmd.Flags().String("path", "", "JCR root path or local file path")
+	cmd.Flags().StringP("path", "p", "", "JCR root path or local file path")
 	cmd.MarkFlagsOneRequired("dir", "file", "path")
 	cmd.Flags().Bool("clean", false, "Normalize content while pushing")
 	return cmd

@@ -276,7 +276,7 @@ func deleteDir(dir string) error {
 		return nil
 	}
 	log.Infof("deleting dir %s", dir)
-	return os.Remove(dir)
+	return os.RemoveAll(dir)
 }
 
 func deleteFile(path string, allowedFunc func() bool) error {

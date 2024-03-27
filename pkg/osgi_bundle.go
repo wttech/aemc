@@ -81,7 +81,7 @@ func (b OSGiBundle) Start() error {
 	}
 	err = b.manager.Start(state.data.ID)
 	if err != nil {
-		return fmt.Errorf("cannot start bundle '%s': %w", b.symbolicName, err)
+		return fmt.Errorf("%s > cannot start bundle '%s': %w", b.manager.instance.IDColor(), b.symbolicName, err)
 	}
 	return nil
 }
@@ -104,7 +104,7 @@ func (b OSGiBundle) Stop() error {
 	}
 	err = b.manager.Stop(state.data.ID)
 	if err != nil {
-		return fmt.Errorf("cannot stop bundle '%s': %w", b.symbolicName, err)
+		return fmt.Errorf("%s > cannot stop bundle '%s': %w", b.manager.instance.IDColor(), b.symbolicName, err)
 	}
 	return nil
 }
@@ -154,7 +154,7 @@ func (b OSGiBundle) assumeExists() (*OSGiBundleState, error) {
 		return state, err
 	}
 	if !state.Exists {
-		return state, fmt.Errorf("%s > bundle '%s' does not exist", b.manager.instance.ID(), b.symbolicName)
+		return state, fmt.Errorf("%s > bundle '%s' does not exist", b.manager.instance.IDColor(), b.symbolicName)
 	}
 	return state, nil
 }
@@ -188,9 +188,9 @@ func (b OSGiBundle) Await(state string, condition func() bool, timeout time.Dura
 			break
 		}
 		if time.Now().After(started.Add(timeout)) {
-			return fmt.Errorf("%s > awaiting bundle '%s' state '%s' reached timeout after %s", b.manager.instance.ID(), b.symbolicName, state, timeout)
+			return fmt.Errorf("%s > awaiting bundle '%s' state '%s' reached timeout after %s", b.manager.instance.IDColor(), b.symbolicName, state, timeout)
 		}
-		log.Infof("%s > awaiting bundle '%s' state '%s'", b.manager.instance.ID(), b.symbolicName, state)
+		log.Infof("%s > awaiting bundle '%s' state '%s'", b.manager.instance.IDColor(), b.symbolicName, state)
 		time.Sleep(time.Second * 5)
 	}
 	return nil

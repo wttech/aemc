@@ -183,7 +183,7 @@ func (li LocalInstance) CheckRecreationNeeded() error {
 			return err
 		}
 		if !state.UpToDate {
-			return fmt.Errorf("%s > outdated and need to be recreated as distribution JAR changed from '%s' to '%s'", li.instance.ID(), state.Locked.JarName, state.Current.JarName)
+			return fmt.Errorf("%s > outdated and need to be recreated as distribution JAR changed from '%s' to '%s'", li.instance.IDColor(), state.Locked.JarName, state.Current.JarName)
 		}
 	}
 	return nil
@@ -191,7 +191,7 @@ func (li LocalInstance) CheckRecreationNeeded() error {
 
 func (li LocalInstance) CheckPassword() error {
 	if !LocalInstancePasswordRegex.MatchString(li.instance.password) {
-		return fmt.Errorf("%s > password does not match regex '%s'", li.instance.ID(), LocalInstancePasswordRegex)
+		return fmt.Errorf("%s > password does not match regex '%s'", li.instance.IDColor(), LocalInstancePasswordRegex)
 	}
 	return nil
 }
@@ -211,12 +211,12 @@ func (li LocalInstance) adapt() error {
 }
 
 func (li LocalInstance) Create() error {
-	log.Infof("%s > creating", li.instance.ID())
+	log.Infof("%s > creating", li.instance.IDColor())
 	if err := pathx.DeleteIfExists(li.Dir()); err != nil {
-		return fmt.Errorf("%s > cannot delete its dir: %w", li.instance.ID(), err)
+		return fmt.Errorf("%s > cannot delete its dir: %w", li.instance.IDColor(), err)
 	}
 	if err := pathx.Ensure(li.Dir()); err != nil {
-		return fmt.Errorf("%s > cannot create its dir: %w", li.instance.ID(), err)
+		return fmt.Errorf("%s > cannot create its dir: %w", li.instance.IDColor(), err)
 	}
 	if err := li.unpackJarFile(); err != nil {
 		return err
@@ -227,22 +227,22 @@ func (li LocalInstance) Create() error {
 	if err := li.adapt(); err != nil {
 		return err
 	}
-	log.Infof("%s > created", li.instance.ID())
+	log.Infof("%s > created", li.instance.IDColor())
 	return nil
 }
 
 func (li LocalInstance) Import() error {
-	log.Infof("%s > importing", li.instance.ID())
+	log.Infof("%s > importing", li.instance.IDColor())
 
 	if !pathx.Exists(li.QuickstartDir()) {
-		return fmt.Errorf("%s > quickstart dir to be imported does not exist at path '%s'", li.instance.ID(), li.QuickstartDir())
+		return fmt.Errorf("%s > quickstart dir to be imported does not exist at path '%s'", li.instance.IDColor(), li.QuickstartDir())
 	}
 
 	if err := li.adapt(); err != nil {
 		return err
 	}
 
-	log.Infof("%s > imported", li.instance.ID())
+	log.Infof("%s > imported", li.instance.IDColor())
 
 	return nil
 }
@@ -263,7 +263,7 @@ type localInstanceCreateLock struct {
 }
 
 func (li LocalInstance) unpackJarFile() error {
-	log.Infof("%s > unpacking files", li.instance.ID())
+	log.Infof("%s > unpacking files", li.instance.IDColor())
 	jar, err := li.LocalOpts().Jar()
 	if err != nil {
 		return err
@@ -278,11 +278,11 @@ func (li LocalInstance) unpackJarFile() error {
 	cmd.Dir = li.Dir()
 	li.instance.manager.aem.CommandOutput(cmd)
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s > cannot unpack files: %w", li.instance.ID(), err)
+		return fmt.Errorf("%s > cannot unpack files: %w", li.instance.IDColor(), err)
 	}
 	startScript := li.binScriptUnix("start")
 	if !pathx.Exists(startScript) {
-		return fmt.Errorf("%s > unpacking files went wrong as e.g start script does not exist '%s'", li.instance.ID(), startScript)
+		return fmt.Errorf("%s > unpacking files went wrong as e.g start script does not exist '%s'", li.instance.IDColor(), startScript)
 	}
 	return nil
 }
@@ -297,18 +297,18 @@ func (li LocalInstance) copyLicenseFile() error {
 	}
 	source := pathx.Canonical(li.LocalOpts().Quickstart.LicenseFile)
 	dest := pathx.Canonical(li.LicenseFile())
-	log.Infof("%s > copying license file from '%s' to '%s'", li.instance.ID(), source, dest)
+	log.Infof("%s > copying license file from '%s' to '%s'", li.instance.IDColor(), source, dest)
 	if err := filex.Copy(source, dest, true); err != nil {
-		return fmt.Errorf("%s > cannot copy license file from '%s' to '%s': %s", li.instance.ID(), source, dest, err)
+		return fmt.Errorf("%s > cannot copy license file from '%s' to '%s': %s", li.instance.IDColor(), source, dest, err)
 	}
 	return nil
 }
 
 func (li LocalInstance) copyCbpExecutable() error {
 	dest := li.binCbpExecutable()
-	log.Infof("%s > copying CBP executable to '%s'", li.instance.ID(), dest)
+	log.Infof("%s > copying CBP executable to '%s'", li.instance.IDColor(), dest)
 	if err := filex.Write(dest, instance.CbpExecutable); err != nil {
-		return fmt.Errorf("%s > cannot copy CBP executable to '%s': %s", li.instance.ID(), dest, err)
+		return fmt.Errorf("%s > cannot copy CBP executable to '%s': %s", li.instance.IDColor(), dest, err)
 	}
 	return nil
 }
@@ -359,14 +359,14 @@ func (li LocalInstance) IsInitialized() bool {
 
 func (li LocalInstance) Start() error {
 	if !li.IsCreated() {
-		return fmt.Errorf("%s > cannot start as it is not created", li.instance.ID())
+		return fmt.Errorf("%s > cannot start as it is not created", li.instance.IDColor())
 	}
 	if !li.LocalOpts().ServiceMode {
 		if err := li.update(); err != nil {
 			return err
 		}
 	}
-	log.Infof("%s > starting", li.instance.ID())
+	log.Infof("%s > starting", li.instance.IDColor())
 	if err := li.CheckPortsOpen(); err != nil {
 		return err
 	}
@@ -379,7 +379,7 @@ func (li LocalInstance) Start() error {
 		return err
 	}
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s > cannot execute start script: %w", li.instance.ID(), err)
+		return fmt.Errorf("%s > cannot execute start script: %w", li.instance.IDColor(), err)
 	}
 	if !li.LocalOpts().ServiceMode {
 		if err := li.awaitAuth(); err != nil {
@@ -394,7 +394,7 @@ func (li LocalInstance) Start() error {
 			return err
 		}
 	}
-	log.Infof("%s > started", li.instance.ID())
+	log.Infof("%s > started", li.instance.IDColor())
 	return nil
 }
 
@@ -454,11 +454,11 @@ func (li LocalInstance) setPassword() error {
 
 func (li LocalInstance) copyOverrideDirs() error {
 	for _, src := range lo.Filter(li.OverrideDirs(), func(s string, _ int) bool { return pathx.Exists(s) }) {
-		log.Infof("%s > copying instance override files from dir '%s' to '%s'", li.instance.ID(), src, li.Dir())
+		log.Infof("%s > copying instance override files from dir '%s' to '%s'", li.instance.IDColor(), src, li.Dir())
 		if err := filex.CopyDir(src, li.Dir()); err != nil {
 			return err
 		}
-		log.Infof("%s > copied instance override files from dir '%s' to '%s'", li.instance.ID(), src, li.Dir())
+		log.Infof("%s > copied instance override files from dir '%s' to '%s'", li.instance.IDColor(), src, li.Dir())
 	}
 	return nil
 }
@@ -469,19 +469,19 @@ func (li LocalInstance) secretsDir() string {
 
 func (li LocalInstance) recreateSlingPropsFile() error {
 	filePath := fmt.Sprintf("%s/conf/sling.properties", li.QuickstartDir())
-	log.Infof("%s > configuring instance Sling properties in file '%s'", li.Instance().ID(), filePath)
+	log.Infof("%s > configuring instance Sling properties in file '%s'", li.Instance().IDColor(), filePath)
 	propsCombined := append(li.SlingProps, "org.apache.felix.configadmin.plugin.interpolation.secretsdir=${sling.home}/"+LocalInstanceSecretsDir)
 	propsLoaded, err := properties.LoadString(strings.Join(propsCombined, osx.LineSep()))
 	if err != nil {
-		return fmt.Errorf("%s > cannot parse Sling properties file '%s': %w", li.instance.ID(), filePath, err)
+		return fmt.Errorf("%s > cannot parse Sling properties file '%s': %w", li.instance.IDColor(), filePath, err)
 	}
 	file, err := os.Create(filePath)
 	defer file.Close()
 	_, err = propsLoaded.Write(file, properties.ISO_8859_1)
 	if err != nil {
-		return fmt.Errorf("%s > cannot save Sling properties file '%s': %w", li.instance.ID(), filePath, err)
+		return fmt.Errorf("%s > cannot save Sling properties file '%s': %w", li.instance.IDColor(), filePath, err)
 	}
-	log.Infof("%s > configured instance Sling properties in file '%s'", li.instance.ID(), filePath)
+	log.Infof("%s > configured instance Sling properties in file '%s'", li.instance.IDColor(), filePath)
 	return nil
 }
 
@@ -491,7 +491,7 @@ func (li LocalInstance) recreateSecretsDir() error {
 		return err
 	}
 	if len(li.SecretVars) > 0 {
-		log.Infof("%s > configuring instance secret vars in dir '%s'", li.instance.ID(), dir)
+		log.Infof("%s > configuring instance secret vars in dir '%s'", li.instance.IDColor(), dir)
 		for _, secretVar := range li.SecretVars {
 			k := stringsx.Before(secretVar, "=")
 			v := stringsx.After(secretVar, "=")
@@ -499,7 +499,7 @@ func (li LocalInstance) recreateSecretsDir() error {
 				return err
 			}
 		}
-		log.Infof("%s > configured instance secret vars in dir '%s'", li.instance.ID(), dir)
+		log.Infof("%s > configured instance secret vars in dir '%s'", li.instance.IDColor(), dir)
 	}
 	return nil
 }
@@ -510,7 +510,7 @@ func (li LocalInstance) CheckPortsOpen() error {
 	for _, port := range ports {
 		reachable, _ := netx.IsReachable(host, port, time.Second*3)
 		if reachable {
-			return fmt.Errorf("%s > some process is already running on address '%s:%s'", li.instance.ID(), host, port)
+			return fmt.Errorf("%s > some process is already running on address '%s:%s'", li.instance.IDColor(), host, port)
 		}
 	}
 	return nil
@@ -551,17 +551,17 @@ type localInstanceUpdateLock struct {
 
 func (li LocalInstance) Stop() error {
 	if !li.IsCreated() {
-		return fmt.Errorf("%s > cannot stop as it is not created", li.instance.ID())
+		return fmt.Errorf("%s > cannot stop as it is not created", li.instance.IDColor())
 	}
-	log.Infof("%s > stopping", li.instance.ID())
+	log.Infof("%s > stopping", li.instance.IDColor())
 	cmd, err := li.binScriptCommand(LocalInstanceScriptStop, true)
 	if err != nil {
 		return err
 	}
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s > cannot execute stop script : %w", li.instance.ID(), err)
+		return fmt.Errorf("%s > cannot execute stop script : %w", li.instance.IDColor(), err)
 	}
-	log.Infof("%s > stopped", li.instance.ID())
+	log.Infof("%s > stopped", li.instance.IDColor())
 	return nil
 }
 
@@ -576,12 +576,12 @@ func (li LocalInstance) StopAndAwait() error {
 }
 
 func (li LocalInstance) Clean() error {
-	log.Infof("%s > cleaning", li.instance.ID())
+	log.Infof("%s > cleaning", li.instance.IDColor())
 	err := pathx.DeleteIfExists(li.pidFile())
 	if err != nil {
 		return err
 	}
-	log.Infof("%s > cleaned", li.instance.ID())
+	log.Infof("%s > cleaned", li.instance.IDColor())
 	return nil
 }
 
@@ -613,7 +613,7 @@ func (li LocalInstance) IsKillable() bool {
 }
 
 func (li LocalInstance) Kill() error {
-	log.Infof("%s > killing", li.instance.ID())
+	log.Infof("%s > killing", li.instance.IDColor())
 	pid, err := li.PID()
 	if err != nil {
 		return err
@@ -628,13 +628,13 @@ func (li LocalInstance) Kill() error {
 	li.instance.manager.aem.CommandOutput(cmd)
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s > cannot execute kill command with PID '%d': %w", li.instance.ID(), pid, err)
+		return fmt.Errorf("%s > cannot execute kill command with PID '%d': %w", li.instance.IDColor(), pid, err)
 	}
 	file := li.pidFile()
 	if err := pathx.DeleteIfExists(file); err != nil {
-		return fmt.Errorf("%s > cannot delete PID file '%s': %w", li.instance.ID(), file, err)
+		return fmt.Errorf("%s > cannot delete PID file '%s': %w", li.instance.IDColor(), file, err)
 	}
-	log.Infof("%s > killed", li.instance.ID())
+	log.Infof("%s > killed", li.instance.IDColor())
 	return nil
 }
 
@@ -646,9 +646,9 @@ func (li LocalInstance) Await(stateChecker func() error, timeout time.Duration) 
 			break
 		}
 		if time.Now().After(started.Add(timeout)) {
-			return fmt.Errorf("%s > awaiting reached timeout after %s", li.Instance().ID(), timeout)
+			return fmt.Errorf("%s > awaiting reached timeout after %s", li.Instance().IDColor(), timeout)
 		}
-		log.Infof("%s > %s", li.instance.ID(), err)
+		log.Infof("%s > %s", li.instance.IDColor(), err)
 		time.Sleep(time.Second * 5)
 	}
 	return nil
@@ -678,7 +678,7 @@ func (li LocalInstance) awaitAuth() error {
 		return nil
 	}
 
-	log.Infof("%s > awaiting auth", li.instance.ID())
+	log.Infof("%s > awaiting auth", li.instance.IDColor())
 	err := li.Await(func() error {
 		address := fmt.Sprintf("%s:%s", li.instance.http.Hostname(), li.instance.http.Port())
 		reachable, _ := netx.IsReachable(li.instance.http.Hostname(), li.instance.http.Port(), time.Second*3)
@@ -702,7 +702,7 @@ func (li LocalInstance) awaitAuth() error {
 	if err != nil {
 		return err
 	}
-	log.Infof("%s > awaited auth", li.instance.ID())
+	log.Infof("%s > awaited auth", li.instance.IDColor())
 	return nil
 }
 
@@ -747,7 +747,7 @@ func (s LocalStatus) String() string {
 
 func (li LocalInstance) Status() (LocalStatus, error) {
 	if !li.IsCreated() {
-		return LocalStatusUnknown, fmt.Errorf("%s > cannot check status as it is not created", li.instance.ID())
+		return LocalStatusUnknown, fmt.Errorf("%s > cannot check status as it is not created", li.instance.IDColor())
 	}
 	cmd, err := li.binScriptCommand(LocalInstanceScriptStatus, false)
 	if err != nil {
@@ -786,14 +786,14 @@ func (li LocalInstance) IsRunningStrict() (bool, error) {
 
 func (li LocalInstance) Delete() error {
 	if li.IsRunning() {
-		return fmt.Errorf("%s > cannot delete as it is running", li.instance.ID())
+		return fmt.Errorf("%s > cannot delete as it is running", li.instance.IDColor())
 	}
-	log.Infof("%s > deleting", li.instance.ID())
+	log.Infof("%s > deleting", li.instance.IDColor())
 	if err := pathx.Delete(li.Dir()); err != nil {
-		return fmt.Errorf("%s > cannot delete its dir properly: %w", li.instance.ID(), err)
+		return fmt.Errorf("%s > cannot delete its dir properly: %w", li.instance.IDColor(), err)
 
 	}
-	log.Infof("%s > deleted", li.instance.ID())
+	log.Infof("%s > deleted", li.instance.IDColor())
 	return nil
 }
 
@@ -854,7 +854,7 @@ func (li LocalInstance) JVMOptsString() string {
 		if pathx.Exists(li.passwordFile()) {
 			result = append(result, fmt.Sprintf("-Dadmin.password.file=%s", li.passwordFile()))
 		} else {
-			log.Debugf("%s > required password file '%s' does not exist but instance is being initialized", li.instance.ID(), li.passwordFile())
+			log.Debugf("%s > required password file '%s' does not exist but instance is being initialized", li.instance.IDColor(), li.passwordFile())
 		}
 	}
 	sort.Strings(result)
@@ -872,7 +872,7 @@ func (li LocalInstance) OutOfDate() bool {
 func (li LocalInstance) UpToDate() bool {
 	check, err := li.updateLock().State()
 	if err != nil {
-		log.Debugf("%s > cannot check if is up-to-date: %s", li.instance.ID(), err)
+		log.Debugf("%s > cannot check if is up-to-date: %s", li.instance.IDColor(), err)
 		return false
 	}
 	return check.UpToDate
@@ -886,12 +886,12 @@ func (li LocalInstance) PID() (int, error) {
 	file := li.pidFile()
 	str, err := filex.ReadString(file)
 	if err != nil {
-		return 0, fmt.Errorf("%s > cannot read PID file '%s'", li.instance.ID(), file)
+		return 0, fmt.Errorf("%s > cannot read PID file '%s'", li.instance.IDColor(), file)
 	}
 	strTrimmed := strings.TrimSpace(str)
 	num, err := strconv.Atoi(strTrimmed)
 	if err != nil {
-		return 0, fmt.Errorf("%s > cannot convert value '%s' to integer read from PID file '%s'", li.instance.ID(), strTrimmed, file)
+		return 0, fmt.Errorf("%s > cannot convert value '%s' to integer read from PID file '%s'", li.instance.IDColor(), strTrimmed, file)
 	}
 	return num, nil
 }
@@ -907,17 +907,17 @@ func (li LocalInstance) ProposeBackupFileToMake() string {
 
 func (li LocalInstance) MakeBackup(file string) error {
 	if !li.IsCreated() {
-		return fmt.Errorf("%s > cannot make backup to file '%s' as instance not created", li.instance.ID(), file)
+		return fmt.Errorf("%s > cannot make backup to file '%s' as instance not created", li.instance.IDColor(), file)
 	}
 	if li.IsRunning() {
-		return fmt.Errorf("%s > cannot make a backup to file '%s' as instance cannot be running", li.instance.ID(), file)
+		return fmt.Errorf("%s > cannot make a backup to file '%s' as instance cannot be running", li.instance.IDColor(), file)
 	}
-	log.Infof("%s > making backup to file '%s'", li.instance.ID(), file)
+	log.Infof("%s > making backup to file '%s'", li.instance.IDColor(), file)
 	_, err := filex.ArchiveWithChanged(li.Dir(), file)
 	if err != nil {
-		return fmt.Errorf("%s > cannot make a backup to file '%s': %w", li.instance.ID(), file, err)
+		return fmt.Errorf("%s > cannot make a backup to file '%s': %w", li.instance.IDColor(), file, err)
 	}
-	log.Infof("%s > made backup to file '%s'", li.instance.ID(), file)
+	log.Infof("%s > made backup to file '%s'", li.instance.IDColor(), file)
 	return nil
 }
 
@@ -934,28 +934,28 @@ func (li LocalInstance) ProposeBackupFileToUse() (string, error) {
 	}
 	file, err := pathx.GlobSome(pathPattern)
 	if err != nil {
-		return "", fmt.Errorf("%s > no backup file found to use: %w", li.instance.ID(), err)
+		return "", fmt.Errorf("%s > no backup file found to use: %w", li.instance.IDColor(), err)
 	}
 	return file, nil
 }
 
 func (li LocalInstance) UseBackup(file string, deleteCreated bool) error {
 	if li.IsRunning() {
-		return fmt.Errorf("%s > cannot use backup from file '%s' as instance cannot be running", li.instance.ID(), file)
+		return fmt.Errorf("%s > cannot use backup from file '%s' as instance cannot be running", li.instance.IDColor(), file)
 	}
 	if li.IsCreated() {
 		if !deleteCreated {
-			return fmt.Errorf("%s > cannot use backup from file '%s' as instance is already created", li.instance.ID(), file)
+			return fmt.Errorf("%s > cannot use backup from file '%s' as instance is already created", li.instance.IDColor(), file)
 		}
 		if err := li.Delete(); err != nil {
 			return err
 		}
 	}
-	log.Infof("%s > using backup from file '%s'", li.instance.ID(), file)
+	log.Infof("%s > using backup from file '%s'", li.instance.IDColor(), file)
 	_, err := filex.UnarchiveWithChanged(file, li.Dir())
 	if err != nil {
-		return fmt.Errorf("%s > cannot use a backup from file '%s': %w", li.instance.ID(), file, err)
+		return fmt.Errorf("%s > cannot use a backup from file '%s': %w", li.instance.IDColor(), file, err)
 	}
-	log.Infof("%s > used backup from file '%s'", li.instance.ID(), file)
+	log.Infof("%s > used backup from file '%s'", li.instance.IDColor(), file)
 	return nil
 }

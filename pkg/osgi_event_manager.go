@@ -18,13 +18,13 @@ type OSGiEventManager struct {
 func (em *OSGiEventManager) List() (*osgi.EventList, error) {
 	resp, err := em.instance.http.Request().Get(EventsPathJson)
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot request event list: %w", em.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot request event list: %w", em.instance.IDColor(), err)
 	} else if resp.IsError() {
-		return nil, fmt.Errorf("%s > cannot request event list: %s", em.instance.ID(), resp.Status())
+		return nil, fmt.Errorf("%s > cannot request event list: %s", em.instance.IDColor(), resp.Status())
 	}
 	var res = new(osgi.EventList)
 	if err = fmtx.UnmarshalJSON(resp.RawBody(), res); err != nil {
-		return nil, fmt.Errorf("%s > cannot parse event list response: %w", em.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot parse event list response: %w", em.instance.IDColor(), err)
 	}
 	return res, nil
 }

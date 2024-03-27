@@ -23,7 +23,7 @@ func (cm *OSGiComponentManager) ByPID(pid string) OSGiComponent {
 func (cm *OSGiComponentManager) Find(pid string) (*osgi.ComponentListItem, error) {
 	components, err := cm.List()
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot find component '%s'", cm.instance.ID(), pid)
+		return nil, fmt.Errorf("%s > cannot find component '%s'", cm.instance.IDColor(), pid)
 	}
 	item, found := lo.Find(components.List, func(c osgi.ComponentListItem) bool { return pid == c.UID() })
 	if found {
@@ -35,43 +35,43 @@ func (cm *OSGiComponentManager) Find(pid string) (*osgi.ComponentListItem, error
 func (cm *OSGiComponentManager) List() (*osgi.ComponentList, error) {
 	resp, err := cm.instance.http.Request().Get(ComponentsPathJson)
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot request component list: %w", cm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot request component list: %w", cm.instance.IDColor(), err)
 	}
 	if resp.IsError() {
-		return nil, fmt.Errorf("%s > cannot request component list: %s", cm.instance.ID(), resp.Status())
+		return nil, fmt.Errorf("%s > cannot request component list: %s", cm.instance.IDColor(), resp.Status())
 	}
 	var res osgi.ComponentList
 	if err = fmtx.UnmarshalJSON(resp.RawBody(), &res); err != nil {
-		return nil, fmt.Errorf("%s > cannot parse component list: %w", cm.instance.ID(), err)
+		return nil, fmt.Errorf("%s > cannot parse component list: %w", cm.instance.IDColor(), err)
 	}
 	return &res, nil
 }
 
 func (cm *OSGiComponentManager) Enable(pid string) error {
-	log.Infof("%s > enabling component '%s'", cm.instance.ID(), pid)
+	log.Infof("%s > enabling component '%s'", cm.instance.IDColor(), pid)
 	response, err := cm.instance.http.Request().
 		SetFormData(map[string]string{"action": "enable"}).
 		Post(fmt.Sprintf("%s/%s", ComponentsPath, pid))
 	if err != nil {
-		return fmt.Errorf("%s > cannot enable component '%s': %w", cm.instance.ID(), pid, err)
+		return fmt.Errorf("%s > cannot enable component '%s': %w", cm.instance.IDColor(), pid, err)
 	} else if response.IsError() {
-		return fmt.Errorf("%s > cannot enable component '%s': %s", cm.instance.ID(), pid, response.Status())
+		return fmt.Errorf("%s > cannot enable component '%s': %s", cm.instance.IDColor(), pid, response.Status())
 	}
-	log.Infof("%s > enabled component '%s'", cm.instance.ID(), pid)
+	log.Infof("%s > enabled component '%s'", cm.instance.IDColor(), pid)
 	return nil
 }
 
 func (cm *OSGiComponentManager) Disable(pid string) error {
-	log.Infof("%s > disabling component '%s'", cm.instance.ID(), pid)
+	log.Infof("%s > disabling component '%s'", cm.instance.IDColor(), pid)
 	response, err := cm.instance.http.Request().
 		SetFormData(map[string]string{"action": "disable"}).
 		Post(fmt.Sprintf("%s/%s", ComponentsPath, pid))
 	if err != nil {
-		return fmt.Errorf("%s > cannot disable component '%s': %w", cm.instance.ID(), pid, err)
+		return fmt.Errorf("%s > cannot disable component '%s': %w", cm.instance.IDColor(), pid, err)
 	} else if response.IsError() {
-		return fmt.Errorf("%s > cannot disable component '%s': %s", cm.instance.ID(), pid, response.Status())
+		return fmt.Errorf("%s > cannot disable component '%s': %s", cm.instance.IDColor(), pid, response.Status())
 	}
-	log.Infof("%s > disabled component '%s'", cm.instance.ID(), pid)
+	log.Infof("%s > disabled component '%s'", cm.instance.IDColor(), pid)
 	return nil
 }
 

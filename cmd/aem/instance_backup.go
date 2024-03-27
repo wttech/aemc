@@ -152,13 +152,13 @@ func (c *CLI) instanceBackupPerformCmd() *cobra.Command {
 			for _, instance := range instances {
 				local := instance.Local()
 				if !local.IsCreated() {
-					log.Infof("%s > skipping making backup as it is not created", instance.ID())
+					log.Infof("%s > skipping making backup as it is not created", instance.IDColor())
 					continue
 				}
 				file := local.ProposeBackupFileToMake()
 				running := local.IsRunning()
 				if running {
-					if local.StopAndAwait(); err != nil {
+					if err := local.StopAndAwait(); err != nil {
 						c.Error(err)
 						return
 					}
@@ -204,17 +204,17 @@ func (c *CLI) instanceBackupRestoreCmd() *cobra.Command {
 			for _, instance := range instances {
 				local := instance.Local()
 				if local.IsCreated() {
-					log.Infof("%s > skipping using backup as it is already created", instance.ID())
+					log.Infof("%s > skipping using backup as it is already created", instance.IDColor())
 					continue
 				}
 				file, err := local.ProposeBackupFileToUse()
 				if err != nil {
-					log.Warnf("%s > skipping using backup as cannot find any: %s", instance.ID(), err)
+					log.Warnf("%s > skipping using backup as cannot find any: %s", instance.IDColor(), err)
 					continue
 				}
 				running := local.IsRunning()
 				if running {
-					if local.StopAndAwait(); err != nil {
+					if err := local.StopAndAwait(); err != nil {
 						c.Error(err)
 						return
 					}

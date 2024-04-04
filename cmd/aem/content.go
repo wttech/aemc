@@ -153,7 +153,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
 	cmd.Flags().Bool("clean", false, "Normalize content after downloading")
-	cmd.Flags().Bool("replace", true, "Replace content after downloading")
+	cmd.Flags().Bool("replace", false, "Replace content after downloading")
 	return cmd
 }
 

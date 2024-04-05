@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg"
+	"github.com/wttech/aemc/pkg/replication"
 )
 
 func (c *CLI) replCmd() *cobra.Command {
@@ -13,8 +14,118 @@ func (c *CLI) replCmd() *cobra.Command {
 		Aliases: []string{"repl"},
 	}
 	cmd.AddCommand(c.replAgentCmd())
+	cmd.AddCommand(c.replActivateCmd())
+	cmd.AddCommand(c.replDeactivateCmd())
+	cmd.AddCommand(c.replActivateTreeCmd())
 
 	return cmd
+}
+
+func (c *CLI) replActivateCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "activate",
+		Short:   "Activate single node",
+		Aliases: []string{"act", "replicate", "repl"},
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+
+			path := replActivationPathByFlags(cmd)
+			if err := instance.Replication().Activate(path); err != nil {
+				c.Error(err)
+				return
+			}
+
+			c.SetOutput("path", path)
+			c.Ok("path activated")
+		},
+	}
+	replActivationFlags(cmd)
+
+	return cmd
+}
+
+func (c *CLI) replDeactivateCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "deactivate",
+		Short:   "Deactivate single node",
+		Aliases: []string{"deact", "unreplicate", "unrepl"},
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+
+			path := replActivationPathByFlags(cmd)
+			if err := instance.Replication().Deactivate(path); err != nil {
+				c.Error(err)
+				return
+			}
+
+			c.SetOutput("path", path)
+			c.Ok("path deactivated")
+		},
+	}
+	replActivationFlags(cmd)
+	return cmd
+}
+
+func (c *CLI) replActivateTreeCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "activate-tree",
+		Short:   "Activate node and all its children",
+		Aliases: []string{"atr", "replicate-tree", "rtr"},
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+
+			startPath, _ := cmd.Flags().GetString("path")
+			onlyModified, _ := cmd.Flags().GetBool("only-modified")
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
+			onlyActivated, _ := cmd.Flags().GetBool("only-activated")
+			ignoreDeactivated, _ := cmd.Flags().GetBool("ignore-deactivated")
+			opts := replication.ActivateTreeOpts{
+				StartPath:         startPath,
+				OnlyModified:      onlyModified,
+				DryRun:            dryRun,
+				OnlyActivated:     onlyActivated,
+				IgnoreDeactivated: ignoreDeactivated,
+			}
+
+			if err := instance.Replication().ActivateTree(opts); err != nil {
+				c.Error(err)
+				return
+			}
+
+			c.SetOutput("path", startPath)
+			c.Ok("path activated")
+		},
+	}
+	cmd.Flags().StringP("path", "p", "", "Path to node")
+	_ = cmd.MarkFlagRequired("path")
+	cmd.Flags().Bool("only-modified", false, "Only activate modified nodes")
+	cmd.Flags().Bool("dry-run", false, "Only simulate activation")
+	cmd.Flags().Bool("only-activated", false, "Only activate nodes that are not activated")
+	cmd.Flags().Bool("ignore-deactivated", false, "Ignore deactivated nodes")
+
+	return cmd
+}
+
+func replActivationFlags(cmd *cobra.Command) {
+	cmd.Flags().StringP("path", "p", "", "Path to node")
+	_ = cmd.MarkFlagRequired("path")
+}
+
+func replActivationPathByFlags(cmd *cobra.Command) string {
+	path, _ := cmd.Flags().GetString("path")
+	return path
 }
 
 func (c *CLI) replAgentCmd() *cobra.Command {

@@ -687,7 +687,7 @@ func (li LocalInstance) awaitAuth() error {
 		}
 		_, err := li.instance.osgi.bundleManager.List()
 		if err != nil {
-			defaultInstance, err := li.instance.manager.NewByURL(li.instance.http.BaseURL())
+			defaultInstance, err := li.instance.manager.NewByIDAndURL(li.instance.id, li.instance.http.BaseURL())
 			if err != nil {
 				return err
 			}

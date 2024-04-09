@@ -187,5 +187,4 @@ func (c *Config) setDefaults() {
 		},
 	})
 	v.SetDefault("content.clean.namespaces_skipped", true)
-	v.SetDefault("content.clean.parents_backup_enabled", true)
 }

@@ -74,12 +74,13 @@ func (cm *ContentManager) PullDir(dir string, clean bool, replace bool, packageO
 			return err
 		}
 	}
-	if clean {
-		if err := contentManager.BeforeClean(dir); err != nil {
-			return err
-		}
+	if err := contentManager.BeforePullDir(dir); err != nil {
+		return err
 	}
 	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot), filepath.Join(before, content.JCRRoot)); err != nil {
+		return err
+	}
+	if err := contentManager.AfterPullDir(dir); err != nil {
 		return err
 	}
 	if clean {
@@ -109,12 +110,13 @@ func (cm *ContentManager) PullFile(file string, clean bool, packageOpts PackageC
 	}
 	_, after, _ := strings.Cut(dir, content.JCRRoot)
 	contentManager := cm.instance.manager.aem.contentManager
-	if clean {
-		if err := contentManager.BeforeCleanFile(file); err != nil {
-			return err
-		}
+	if err := contentManager.BeforePullFile(file); err != nil {
+		return err
 	}
 	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot, after), dir); err != nil {
+		return err
+	}
+	if err := contentManager.AfterPullFile(file); err != nil {
 		return err
 	}
 	if clean {

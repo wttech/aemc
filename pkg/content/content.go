@@ -34,12 +34,11 @@ const (
 type Manager struct {
 	baseOpts *base.Opts
 
-	FilesDeleted         []PathRule
-	FilesFlattened       []string
-	PropertiesSkipped    []PathRule
-	MixinTypesSkipped    []PathRule
-	NamespacesSkipped    bool
-	ParentsBackupEnabled bool
+	FilesDeleted      []PathRule
+	FilesFlattened    []string
+	PropertiesSkipped []PathRule
+	MixinTypesSkipped []PathRule
+	NamespacesSkipped bool
 }
 
 func NewManager(baseOpts *base.Opts) *Manager {
@@ -48,12 +47,11 @@ func NewManager(baseOpts *base.Opts) *Manager {
 	return &Manager{
 		baseOpts: baseOpts,
 
-		FilesDeleted:         determinePathRules(cv.Get("content.clean.files_deleted")),
-		FilesFlattened:       cv.GetStringSlice("content.clean.files_flattened"),
-		PropertiesSkipped:    determinePathRules(cv.Get("content.clean.properties_skipped")),
-		MixinTypesSkipped:    determinePathRules(cv.Get("content.clean.mixin_types_skipped")),
-		NamespacesSkipped:    cv.GetBool("content.clean.namespaces_skipped"),
-		ParentsBackupEnabled: cv.GetBool("content.clean.parents_backup_enabled"),
+		FilesDeleted:      determinePathRules(cv.Get("content.clean.files_deleted")),
+		FilesFlattened:    cv.GetStringSlice("content.clean.files_flattened"),
+		PropertiesSkipped: determinePathRules(cv.Get("content.clean.properties_skipped")),
+		MixinTypesSkipped: determinePathRules(cv.Get("content.clean.mixin_types_skipped")),
+		NamespacesSkipped: cv.GetBool("content.clean.namespaces_skipped"),
 	}
 }
 
@@ -61,29 +59,25 @@ func (c Manager) Prepare(root string) error {
 	return deleteDir(root)
 }
 
-func (c Manager) BeforeClean(root string) error {
-	if c.ParentsBackupEnabled {
-		return c.doParentsBackup(root)
-	}
-	return nil
+func (c Manager) BeforePullDir(root string) error {
+	return c.doParentsBackup(root)
 }
 
-func (c Manager) BeforeCleanFile(path string) error {
+func (c Manager) BeforePullFile(path string) error {
 	return c.doSiblingsBackup(path)
+}
+
+func (c Manager) AfterPullDir(root string) error {
+	return c.undoParentsBackup(root)
+}
+
+func (c Manager) AfterPullFile(path string) error {
+	return c.undoSiblingBackup(path)
 }
 
 func (c Manager) CleanDir(root string) error {
 	if err := c.cleanDotContents(root); err != nil {
 		return err
-	}
-	if c.ParentsBackupEnabled {
-		if err := c.undoParentsBackup(root); err != nil {
-			return err
-		}
-	} else {
-		if err := c.cleanParents(root); err != nil {
-			return err
-		}
 	}
 	if err := c.flattenFiles(root); err != nil {
 		return err
@@ -98,9 +92,6 @@ func (c Manager) CleanDir(root string) error {
 }
 
 func (c Manager) CleanFile(path string) error {
-	if err := c.undoSiblingBackup(path); err != nil {
-		return err
-	}
 	if !pathx.Exists(path) {
 		return fmt.Errorf("file does not exist: %s", path)
 	}
@@ -387,14 +378,6 @@ func (c Manager) undoSiblingBackup(path string) error {
 			return deleteFile(path, nil)
 		}
 		return nil
-	})
-}
-
-func (c Manager) cleanParents(root string) error {
-	return eachParentFiles(root, func(parent string) error {
-		return eachFilesInDir(parent, func(path string) error {
-			return c.cleanDotContentFile(path)
-		})
 	})
 }
 

@@ -124,7 +124,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 			if dir != "" {
 				filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
 				filterFile, _ := cmd.Flags().GetString("filter-file")
-				if err = instance.ContentManager().SyncDir(dir, clean, replace, pkg.PackageCreateOpts{
+				if err = instance.ContentManager().PullDir(dir, clean, replace, pkg.PackageCreateOpts{
 					FilterRoots: filterRoots,
 					FilterFile:  filterFile,
 					ContentDir:  dir,
@@ -134,7 +134,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				}
 				c.SetOutput("dir", dir)
 			} else if file != "" {
-				if err = instance.ContentManager().SyncFile(file, clean, pkg.PackageCreateOpts{
+				if err = instance.ContentManager().PullFile(file, clean, pkg.PackageCreateOpts{
 					ContentFile: file,
 				}); err != nil {
 					c.Error(err)

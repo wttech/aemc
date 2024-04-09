@@ -51,12 +51,12 @@ func (cm *ContentManager) Download(localFile string, opts PackageCreateOpts) err
 	return nil
 }
 
-func (cm *ContentManager) SyncDir(dir string, clean bool, replace bool, packageOpts PackageCreateOpts) error {
-	pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_sync", ".zip")
+func (cm *ContentManager) PullDir(dir string, clean bool, replace bool, packageOpts PackageCreateOpts) error {
+	pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_pull", ".zip")
 	if err := cm.Download(pkgFile, packageOpts); err != nil {
 		return err
 	}
-	workDir := pathx.RandomDir(cm.tmpDir(), "content_sync")
+	workDir := pathx.RandomDir(cm.tmpDir(), "content_pull")
 	defer func() {
 		_ = pathx.DeleteIfExists(pkgFile)
 		_ = pathx.DeleteIfExists(workDir)
@@ -90,12 +90,12 @@ func (cm *ContentManager) SyncDir(dir string, clean bool, replace bool, packageO
 	return nil
 }
 
-func (cm *ContentManager) SyncFile(file string, clean bool, packageOpts PackageCreateOpts) error {
-	pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_sync", ".zip")
+func (cm *ContentManager) PullFile(file string, clean bool, packageOpts PackageCreateOpts) error {
+	pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_pull", ".zip")
 	if err := cm.Download(pkgFile, packageOpts); err != nil {
 		return err
 	}
-	workDir := pathx.RandomDir(cm.tmpDir(), "content_sync")
+	workDir := pathx.RandomDir(cm.tmpDir(), "content_pull")
 	defer func() {
 		_ = pathx.DeleteIfExists(pkgFile)
 		_ = pathx.DeleteIfExists(workDir)
@@ -154,7 +154,7 @@ func (cm *ContentManager) Copy(destInstance *Instance, clean bool, pkgOpts Packa
 	if clean {
 		workDir := pathx.RandomDir(cm.tmpDir(), "content_copy")
 		defer func() { _ = pathx.DeleteIfExists(workDir) }()
-		if err := cm.SyncDir(filepath.Join(workDir, content.JCRRoot), clean, false, pkgOpts); err != nil {
+		if err := cm.PullDir(filepath.Join(workDir, content.JCRRoot), clean, false, pkgOpts); err != nil {
 			return err
 		}
 		if err := filex.Archive(workDir, pkgFile); err != nil {

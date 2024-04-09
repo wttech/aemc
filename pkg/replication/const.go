@@ -2,6 +2,7 @@ package replication
 
 const (
 	ReplicateJsonPath = "/bin/replicate.json"
+	ActivateTreePath  = "/libs/replication/treeactivation.html"
 )
 
 type ActivateTreeOpts struct {

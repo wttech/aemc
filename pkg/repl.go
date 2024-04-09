@@ -3,6 +3,7 @@ package pkg
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cast"
 	"github.com/wttech/aemc/pkg/replication"
 	"github.com/wttech/aemc/pkg/sling"
 	"io"
@@ -43,7 +44,7 @@ func (r Replication) Activate(path string) error {
 
 func (r Replication) Deactivate(path string) error {
 	log.Infof("%s > deactivating path '%s'", r.instance.IDColor(), path)
-	if err := r.replicate("activate", path); err != nil {
+	if err := r.replicate("deactivate", path); err != nil {
 		return err
 	}
 	log.Infof("%s > deactivated path '%s'", r.instance.IDColor(), path)
@@ -79,8 +80,25 @@ func (r Replication) replicate(cmd string, path string) error {
 func (r Replication) ActivateTree(opts replication.ActivateTreeOpts) error {
 	log.Infof("%s > activating tree at path '%s'", r.instance.IDColor(), opts.StartPath)
 
-	// TODO implement it; handle flags 'only-modified', 'only-activated', 'dry-run', 'ignore-deactivated'
-
+	cmd := "activate"
+	if opts.DryRun {
+		cmd = "dryrun"
+	}
+	response, err := r.instance.http.Request().
+		SetFormData(map[string]string{
+			"cmd":               cmd,
+			"path":              opts.StartPath,
+			"onlymodified":      cast.ToString(opts.OnlyModified),
+			"reactivate":        cast.ToString(opts.OnlyActivated),
+			"ignoredeactivated": cast.ToString(opts.IgnoreDeactivated),
+			"__charset__":       "UTF-8",
+		}).
+		Post(replication.ActivateTreePath)
+	if err != nil {
+		return fmt.Errorf("%s > cannot activate tree at path '%s': %w", r.instance.IDColor(), opts.StartPath, err)
+	} else if response.IsError() {
+		return fmt.Errorf("%s > cannot activate tree at path: %s: %s", r.instance.IDColor(), opts.StartPath, response.Status())
+	}
 	log.Infof("%s > activated tree at path '%s'", r.instance.IDColor(), opts.StartPath)
 	return nil
 }

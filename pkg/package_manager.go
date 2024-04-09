@@ -170,7 +170,6 @@ type PackageCreateOpts struct {
 	PID         string
 	FilterRoots []string
 	FilterFile  string
-	PushContent bool
 	ContentDir  string
 	ContentFile string
 }
@@ -204,36 +203,6 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	if opts.FilterFile != "" {
 		if err = filex.Copy(opts.FilterFile, filepath.Join(tmpDir, "META-INF", "vault", FilterXML), true); err != nil {
 			return "", err
-		}
-	}
-	if len(opts.FilterRoots) == 0 && opts.FilterFile == "" && opts.PushContent {
-		if opts.ContentDir != "" {
-			_, after, _ := strings.Cut(opts.ContentDir, content.JCRRoot)
-			if err = pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
-				return "", err
-			}
-			if err = filex.CopyDir(opts.ContentDir, filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
-				return "", err
-			}
-		} else if opts.ContentFile != "" {
-			dir := filepath.Dir(opts.ContentFile)
-			_, after, _ := strings.Cut(dir, content.JCRRoot)
-			if err = pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
-				return "", err
-			}
-			_, after, _ = strings.Cut(opts.ContentFile, content.JCRRoot)
-			if err = filex.Copy(opts.ContentFile, filepath.Join(tmpDir, content.JCRRoot, after), true); err != nil {
-				return "", err
-			}
-			if strings.HasSuffix(opts.ContentFile, content.JCRContentFile) {
-				dir = strings.ReplaceAll(opts.ContentFile, content.JCRContentNode, content.JCRContentDirName)
-				_, after, _ = strings.Cut(dir, content.JCRRoot)
-				if pathx.Exists(dir) {
-					if err = filex.CopyDir(dir, filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
-						return "", err
-					}
-				}
-			}
 		}
 	}
 	if err = filex.Archive(tmpDir, tmpFile); err != nil {

@@ -141,20 +141,6 @@ func determineCleanFile(file string) string {
 	return file
 }
 
-func (cm *ContentManager) Push(packageOpts PackageCreateOpts) error {
-	remotePath, err := cm.pkgMgr().Create(packageOpts)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = cm.pkgMgr().Delete(remotePath)
-	}()
-	if err = cm.pkgMgr().Install(remotePath); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (cm *ContentManager) Copy(destInstance *Instance, clean bool, pkgOpts PackageCreateOpts) error {
 	var pkgFile = pathx.RandomFileName(cm.tmpDir(), "content_copy", ".zip")
 	defer func() { _ = pathx.DeleteIfExists(pkgFile) }()

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/replication"
+	"github.com/wttech/aemc/pkg/sling"
+	"io"
 )
 
 type Replication struct {
@@ -60,7 +62,17 @@ func (r Replication) replicate(cmd string, path string) error {
 	} else if response.IsError() {
 		return fmt.Errorf("%s > cannot do replication command '%s' for path '%s': %s", r.instance.IDColor(), cmd, path, response.Status())
 	}
-	// TODO parse HTML response
+	htmlBytes, err := io.ReadAll(response.RawBody())
+	if err != nil {
+		return fmt.Errorf("%s > cannot read replication command '%s' response for path '%s': %w", r.instance.IDColor(), cmd, path, err)
+	}
+	htmlData, err := sling.HtmlData(string(htmlBytes))
+	if err != nil {
+		return fmt.Errorf("%s > cannot parse replication command '%s' response for path '%s': %w", r.instance.IDColor(), cmd, path, err)
+	}
+	if htmlData.IsError() {
+		return fmt.Errorf("%s > cannot do replication command '%s' for path '%s': %s", r.instance.IDColor(), cmd, path, htmlData.Message)
+	}
 	return nil
 }
 

@@ -17,6 +17,7 @@ func (c *CLI) contentCmd() *cobra.Command {
 	}
 	cmd.AddCommand(c.contentCleanCmd())
 	cmd.AddCommand(c.contentPullCmd())
+	cmd.AddCommand(c.contentPushCmd())
 	cmd.AddCommand(c.contentDownloadCmd())
 	cmd.AddCommand(c.contentCopyCmd())
 	return cmd
@@ -153,6 +154,50 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
 	cmd.Flags().Bool("clean", false, "Normalize content after downloading")
 	cmd.Flags().Bool("replace", false, "Replace content after downloading")
+	return cmd
+}
+
+func (c *CLI) contentPushCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "push",
+		Aliases: []string{"ps"},
+		Short:   "Push content from JCR root directory or local file to running instance",
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			dir, err := determineContentDir(cmd)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			file, err := determineContentFile(cmd)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			if err = instance.ContentManager().Push(pkg.PackageCreateOpts{
+				PushContent: true,
+				ContentDir:  dir,
+				ContentFile: file,
+			}); err != nil {
+				c.Error(err)
+				return
+			}
+			if dir != "" {
+				c.SetOutput("dir", dir)
+			} else if file != "" {
+				c.SetOutput("file", file)
+			}
+			c.Changed("content pushed")
+		},
+	}
+	cmd.Flags().StringP("dir", "d", "", "JCR root path")
+	cmd.Flags().StringP("file", "f", "", "Local file path")
+	cmd.Flags().StringP("path", "p", "", "JCR root path or local file path")
+	cmd.MarkFlagsOneRequired("dir", "file", "path")
 	return cmd
 }
 

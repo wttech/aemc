@@ -108,11 +108,16 @@ func (cm *ContentManager) PullFile(file string, clean bool, packageOpts PackageC
 		return err
 	}
 	_, after, _ := strings.Cut(dir, content.JCRRoot)
+	contentManager := cm.instance.manager.aem.contentManager
+	if clean {
+		if err := contentManager.BeforeCleanFile(file); err != nil {
+			return err
+		}
+	}
 	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot, after), dir); err != nil {
 		return err
 	}
 	if clean {
-		contentManager := cm.instance.manager.aem.contentManager
 		cleanFile := determineCleanFile(file)
 		if err := contentManager.CleanFile(cleanFile); err != nil {
 			return err

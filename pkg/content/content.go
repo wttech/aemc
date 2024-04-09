@@ -68,6 +68,10 @@ func (c Manager) BeforeClean(root string) error {
 	return nil
 }
 
+func (c Manager) BeforeCleanFile(path string) error {
+	return c.doSiblingsBackup(path)
+}
+
 func (c Manager) CleanDir(root string) error {
 	if err := c.cleanDotContents(root); err != nil {
 		return err
@@ -94,6 +98,9 @@ func (c Manager) CleanDir(root string) error {
 }
 
 func (c Manager) CleanFile(path string) error {
+	if err := c.undoSiblingBackup(path); err != nil {
+		return err
+	}
 	if !pathx.Exists(path) {
 		return fmt.Errorf("file does not exist: %s", path)
 	}
@@ -325,6 +332,18 @@ func (c Manager) doParentsBackup(root string) error {
 	})
 }
 
+func (c Manager) doSiblingsBackup(file string) error {
+	dir := filepath.Dir(file)
+	return eachFilesInDir(dir, func(path string) error {
+		if path != file && !strings.HasSuffix(path, ParentsBackupSuffix) {
+			if err := c.backupFile(path, "doing backup of file: %s"); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 func (c Manager) undoParentsBackup(root string) error {
 	return eachParentFiles(root, func(parent string) error {
 		indicator := false
@@ -354,6 +373,20 @@ func (c Manager) undoParentsBackup(root string) error {
 			}
 			return nil
 		})
+	})
+}
+
+func (c Manager) undoSiblingBackup(path string) error {
+	dir := filepath.Dir(path)
+	return eachFilesInDir(dir, func(path string) error {
+		if strings.HasSuffix(path, ParentsBackupSuffix) {
+			origin := strings.TrimSuffix(path, ParentsBackupSuffix)
+			log.Infof("undoing backup of file: %s", path)
+			return os.Rename(path, origin)
+		} else if strings.HasSuffix(path, ParentsBackupDirIndicator) {
+			return deleteFile(path, nil)
+		}
+		return nil
 	})
 }
 

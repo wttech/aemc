@@ -285,4 +285,3 @@ content:
           - "cq:ReplicationStatus"
           - "mix:versionable"
     namespaces_skipped: true
-    parents_backup_enabled: true

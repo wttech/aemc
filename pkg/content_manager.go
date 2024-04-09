@@ -7,7 +7,12 @@ import (
 	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/content"
 	"path/filepath"
+	"regexp"
 	"strings"
+)
+
+const (
+	NamespacePattern = "_([a-z]+)_"
 )
 
 type ContentManager struct {
@@ -46,12 +51,12 @@ func (cm *ContentManager) Download(localFile string, opts PackageCreateOpts) err
 	return nil
 }
 
-func (cm *ContentManager) Sync(dir string, clean bool, packageOpts PackageCreateOpts) error {
-	pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_sync", ".zip")
+func (cm *ContentManager) PullDir(dir string, clean bool, replace bool, packageOpts PackageCreateOpts) error {
+	pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_pull", ".zip")
 	if err := cm.Download(pkgFile, packageOpts); err != nil {
 		return err
 	}
-	workDir := pathx.RandomDir(cm.tmpDir(), "content_sync")
+	workDir := pathx.RandomDir(cm.tmpDir(), "content_pull")
 	defer func() {
 		_ = pathx.DeleteIfExists(pkgFile)
 		_ = pathx.DeleteIfExists(workDir)
@@ -64,12 +69,18 @@ func (cm *ContentManager) Sync(dir string, clean bool, packageOpts PackageCreate
 	}
 	before, _, _ := strings.Cut(dir, content.JCRRoot)
 	contentManager := cm.instance.manager.aem.contentManager
-	if clean {
-		if err := contentManager.BeforeClean(dir); err != nil {
+	if replace {
+		if err := contentManager.Prepare(dir); err != nil {
 			return err
 		}
 	}
-	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot), before+content.JCRRoot); err != nil {
+	if err := contentManager.BeforePullDir(dir); err != nil {
+		return err
+	}
+	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot), filepath.Join(before, content.JCRRoot)); err != nil {
+		return err
+	}
+	if err := contentManager.AfterPullDir(dir); err != nil {
 		return err
 	}
 	if clean {
@@ -80,13 +91,63 @@ func (cm *ContentManager) Sync(dir string, clean bool, packageOpts PackageCreate
 	return nil
 }
 
+func (cm *ContentManager) PullFile(file string, clean bool, packageOpts PackageCreateOpts) error {
+	pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_pull", ".zip")
+	if err := cm.Download(pkgFile, packageOpts); err != nil {
+		return err
+	}
+	workDir := pathx.RandomDir(cm.tmpDir(), "content_pull")
+	defer func() {
+		_ = pathx.DeleteIfExists(pkgFile)
+		_ = pathx.DeleteIfExists(workDir)
+	}()
+	if err := filex.Unarchive(pkgFile, workDir); err != nil {
+		return err
+	}
+	dir := filepath.Dir(file)
+	if err := pathx.Ensure(dir); err != nil {
+		return err
+	}
+	_, after, _ := strings.Cut(dir, content.JCRRoot)
+	contentManager := cm.instance.manager.aem.contentManager
+	if err := contentManager.BeforePullFile(file); err != nil {
+		return err
+	}
+	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot, after), dir); err != nil {
+		return err
+	}
+	if err := contentManager.AfterPullFile(file); err != nil {
+		return err
+	}
+	if clean {
+		cleanFile := determineCleanFile(file)
+		if err := contentManager.CleanFile(cleanFile); err != nil {
+			return err
+		}
+		if strings.HasSuffix(file, content.JCRContentFile) {
+			if err := contentManager.CleanDir(filepath.Join(dir, content.JCRContentDirName)); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func determineCleanFile(file string) string {
+	re := regexp.MustCompile(NamespacePattern)
+	if re.MatchString(file) && !strings.HasSuffix(file, content.JCRContentFile) {
+		return filepath.Join(strings.ReplaceAll(file, content.JCRContentFileSuffix, ""), content.JCRContentFile)
+	}
+	return file
+}
+
 func (cm *ContentManager) Copy(destInstance *Instance, clean bool, pkgOpts PackageCreateOpts) error {
 	var pkgFile = pathx.RandomFileName(cm.tmpDir(), "content_copy", ".zip")
 	defer func() { _ = pathx.DeleteIfExists(pkgFile) }()
 	if clean {
 		workDir := pathx.RandomDir(cm.tmpDir(), "content_copy")
 		defer func() { _ = pathx.DeleteIfExists(workDir) }()
-		if err := cm.Sync(filepath.Join(workDir, content.JCRRoot), clean, pkgOpts); err != nil {
+		if err := cm.PullDir(filepath.Join(workDir, content.JCRRoot), clean, false, pkgOpts); err != nil {
 			return err
 		}
 		if err := filex.Archive(workDir, pkgFile); err != nil {

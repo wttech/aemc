@@ -367,7 +367,7 @@ func (c Manager) undoParentsBackup(root string) error {
 		return eachFilesInDir(parent, func(path string) error {
 			if strings.HasSuffix(path, ParentsBackupSuffix) {
 				origin := strings.TrimSuffix(path, ParentsBackupSuffix)
-				log.Infof("undoing backup of parent file  '%s'", path)
+				log.Infof("undoing backup of parent file '%s'", path)
 				return os.Rename(path, origin)
 			}
 			return nil

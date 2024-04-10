@@ -136,10 +136,10 @@ func (im *InstanceManager) checkOne(ctx context.Context, i Instance, checks []Ch
 		}
 		result := check.Check(ctx.Value(checkContextKey{}).(CheckContext), i)
 		results = append(results, result)
-		if result.abort {
-			log.Fatal(InstanceMsg(i, result.message))
-		}
 		resultText := result.Text()
+		if result.abort {
+			log.Fatal(InstanceMsg(i, resultText))
+		}
 		if resultText != "" {
 			if result.ok {
 				log.Info(InstanceMsg(i, resultText))

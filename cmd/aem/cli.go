@@ -123,11 +123,13 @@ func (c *CLI) onStart() {
 	c.outputNoColor = noColor
 	color.NoColor = noColor
 
-	log.SetFormatter(&log.TextFormatter{
-		ForceColors:     !c.outputNoColor,
-		DisableColors:   c.outputNoColor,
-		TimestampFormat: cv.GetString("log.timestamp_format"),
-		FullTimestamp:   cv.GetBool("log.full_timestamp"),
+	log.SetFormatter(&LogCustomFormatter{
+		&log.TextFormatter{
+			ForceColors:     !c.outputNoColor,
+			DisableColors:   c.outputNoColor,
+			TimestampFormat: cv.GetString("log.timestamp_format"),
+			FullTimestamp:   cv.GetBool("log.full_timestamp"),
+		},
 	})
 	levelName := cv.GetString("log.level")
 	level, err := log.ParseLevel(levelName)

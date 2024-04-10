@@ -98,7 +98,7 @@ func (c Manager) CleanDir(root string) error {
 
 func (c Manager) CleanFile(path string) error {
 	if !pathx.Exists(path) {
-		return fmt.Errorf("cannot clean file as it does not exist: %s", path)
+		return fmt.Errorf("cannot clean file as it does not exist '%s'", path)
 	}
 	log.Infof("cleaning file '%s'", path)
 	if err := c.cleanDotContentFile(path); err != nil {

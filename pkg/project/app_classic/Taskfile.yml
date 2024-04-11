@@ -95,6 +95,18 @@ tasks:
       AEM_OUTPUT_VALUE: ALL
     cmd: sh aemw instance status
 
+  aem:tail:
+    desc: tail logs of AEM instances
+    cmd: tail -f aem/home/var/instance/*/crx-quickstart/logs/{stdout,error}.log
+
+  aem:tail:author:
+    desc: tail logs of AEM author instance
+    cmd: tail -f aem/home/var/instance/author/crx-quickstart/logs/{stdout,error}.log
+
+  aem:tail:publish:
+    desc: tail logs of AEM publish instance
+    cmd: tail -f aem/home/var/instance/publish/crx-quickstart/logs/{stdout,error}.log
+
   aem:provision:
     desc: provision AEM instances by installing packages and applying configurations
     aliases: [ aem:configure ]

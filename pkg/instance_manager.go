@@ -224,16 +224,12 @@ func (im *InstanceManager) Publishes() []Instance {
 }
 
 func (im *InstanceManager) NewLocalAuthor() Instance {
-	parts := []string{instance.LocationLocal, string(instance.RoleAuthor)}
-	id := strings.Join(parts, instance.IDDelimiter)
-	i, _ := im.NewByIDAndURL(id, instance.URLLocalAuthor)
+	i, _ := im.NewByIDAndURL(instance.LocationLocal+instance.IDDelimiter+string(instance.RoleAuthor), instance.URLLocalAuthor)
 	return *i
 }
 
 func (im *InstanceManager) NewLocalPublish() Instance {
-	parts := []string{instance.LocationLocal, string(instance.RoleAuthor)}
-	id := strings.Join(parts, instance.IDDelimiter)
-	i, _ := im.NewByIDAndURL(id, instance.URLLocalPublish)
+	i, _ := im.NewByIDAndURL(instance.LocationLocal+instance.IDDelimiter+string(instance.RolePublish), instance.URLLocalPublish)
 	return *i
 }
 

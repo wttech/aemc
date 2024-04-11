@@ -235,11 +235,11 @@ func (p Project) Prop(name string) (string, error) {
 func (p Project) KindInfer() (Kind, error) {
 	if pathx.Exists(PropFile) {
 		log.Infof("inferring project kind basing on file '%s' and property '%s'", PropFile, KindPropName)
-		var kind Kind
 		propValue, err := p.Prop(KindPropName)
 		if err != nil {
-			return kind, err
+			return "", err
 		}
+		var kind Kind
 		if propValue == KindPropCloudValue {
 			kind = KindAppCloud
 		} else if strings.HasPrefix(propValue, KindPropClassicPrefix) {

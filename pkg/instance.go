@@ -284,9 +284,12 @@ func (i Instance) HealthChecks() []string {
 				continue
 			}
 			result := check.Check(i.manager.CheckContext().Value(checkContextKey{}).(CheckContext), i)
-			resultText := result.Text()
+			resultText := InstanceTrim(i, result.Text())
 			if resultText != "" {
 				messages = append(messages, resultText)
+			}
+			if !result.ok && check.Spec().Mandatory {
+				break
 			}
 		}
 	}

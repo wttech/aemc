@@ -292,12 +292,19 @@ func (im *InstanceManager) Await(instances []Instance) error {
 	return im.AwaitStarted(instances)
 }
 
+func InstanceTrim(instance Instance, msgStr string) string {
+	return strings.Replace(msgStr, InstancePrefix(instance), "", -1)
+}
+
 func InstanceMsg(instance Instance, msg any) string {
 	msgStr := fmt.Sprintf("%v", msg)
-	instanceIDPrefix := fmt.Sprintf("%s > ", instance.IDColor())
-	msgStr = strings.Replace(msgStr, instanceIDPrefix, "", -1)
-	msgStr = instanceIDPrefix + msgStr
+	msgStr = InstanceTrim(instance, msgStr)
+	msgStr = InstancePrefix(instance) + msgStr
 	return msgStr
+}
+
+func InstancePrefix(instance Instance) string {
+	return fmt.Sprintf("%s > ", instance.IDColor())
 }
 
 func InstancesMsg(instances []Instance, msg any) string {

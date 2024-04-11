@@ -12,9 +12,10 @@ import (
 )
 
 var (
-	EnvFileExt = "env"
-	EnvVar     = "AEM_ENV"
-	EnvLocal   = "local"
+	EnvFileExt   = "env"
+	EnvVar       = "AEM_ENV"
+	EnvLocal     = "local"
+	EnvLocalFile = EnvLocal + "." + EnvFileExt
 )
 
 func IsWindows() bool {

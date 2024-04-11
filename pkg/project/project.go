@@ -85,6 +85,9 @@ func (p Project) initialize(kind Kind) error {
 	if err := p.prepareGitIgnore(kind); err != nil {
 		return err
 	}
+	if err := p.prepareLocalEnvFile(kind); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -161,6 +164,23 @@ func (p Project) prepareGitIgnore(kind Kind) error {
 	}
 }
 
+func (p Project) prepareLocalEnvFile(kind Kind) error {
+	if !(kind == KindAppClassic || kind == KindAppCloud) {
+		return nil
+	}
+
+	prop, err := p.Prop(PackagePropName)
+	if err != nil {
+		return err
+	}
+
+	return filex.AppendString(osx.EnvLocalFile, osx.LineSep()+strings.Join([]string{
+		"",
+		"AEM_PACKAGE=" + prop,
+		"",
+	}, osx.LineSep()))
+}
+
 func (p Project) KindDetermine(name string) (Kind, error) {
 	var kind Kind = KindAuto
 	if name != "" {
@@ -181,7 +201,8 @@ func (p Project) KindDetermine(name string) (Kind, error) {
 }
 
 const (
-	KindPropFile          = "archetype.properties"
+	PropFile              = "archetype.properties"
+	PackagePropName       = "package"
 	KindPropName          = "aemVersion"
 	KindPropCloudValue    = "cloud"
 	KindPropClassicPrefix = "6."
@@ -198,28 +219,35 @@ func (p Project) EnsureDirs() error {
 	return nil
 }
 
-func (p Project) KindInfer() (Kind, error) {
-	if pathx.Exists(KindPropFile) {
-		log.Infof("inferring project kind basing on file '%s' and property '%s'", KindPropFile, KindPropName)
-		propLoader := properties.Loader{
-			Encoding:         properties.ISO_8859_1,
-			DisableExpansion: true,
-		}
-		props, err := propLoader.LoadFile(KindPropFile)
-		if err != nil {
-			return "", fmt.Errorf("cannot infer project kind: %w", err)
-		}
-		propValue := props.GetString(KindPropName, "")
+func (p Project) Prop(name string) (string, error) {
+	propLoader := properties.Loader{
+		Encoding:         properties.ISO_8859_1,
+		DisableExpansion: true,
+	}
+	props, err := propLoader.LoadFile(PropFile)
+	if err != nil {
+		return "", fmt.Errorf("cannot read project property '%s' from file '%s': %w", name, PropFile, err)
+	}
+	propValue := props.GetString(name, "")
+	return propValue, nil
+}
 
+func (p Project) KindInfer() (Kind, error) {
+	if pathx.Exists(PropFile) {
+		log.Infof("inferring project kind basing on file '%s' and property '%s'", PropFile, KindPropName)
 		var kind Kind
+		propValue, err := p.Prop(KindPropName)
+		if err != nil {
+			return kind, err
+		}
 		if propValue == KindPropCloudValue {
 			kind = KindAppCloud
 		} else if strings.HasPrefix(propValue, KindPropClassicPrefix) {
 			kind = KindAppClassic
 		} else {
-			return "", fmt.Errorf("cannot infer project kind as value '%s' of property '%s' in file '%s' is not recognized", propValue, KindPropName, KindPropFile)
+			return "", fmt.Errorf("cannot infer project kind as value '%s' of property '%s' in file '%s' is not recognized", propValue, KindPropName, PropFile)
 		}
-		log.Infof("inferred project kind basing on file '%s' and property '%s' is '%s'", KindPropFile, KindPropName, kind)
+		log.Infof("inferred project kind basing on file '%s' and property '%s' is '%s'", PropFile, KindPropName, kind)
 		return kind, nil
 	}
 	return KindUnknown, nil

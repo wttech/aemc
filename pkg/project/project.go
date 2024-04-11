@@ -173,12 +173,15 @@ func (p Project) prepareLocalEnvFile(kind Kind) error {
 	if err != nil {
 		return err
 	}
-
-	return filex.AppendString(osx.EnvLocalFile, osx.LineSep()+strings.Join([]string{
-		"",
-		"AEM_PACKAGE=" + prop,
-		"",
-	}, osx.LineSep()))
+	propTrimmed := strings.TrimSpace(prop)
+	if propTrimmed != "" {
+		return filex.AppendString(osx.EnvLocalFile, osx.LineSep()+strings.Join([]string{
+			"",
+			"AEM_PACKAGE=" + prop,
+			"",
+		}, osx.LineSep()))
+	}
+	return nil
 }
 
 func (p Project) KindDetermine(name string) (Kind, error) {

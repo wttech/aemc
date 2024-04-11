@@ -201,16 +201,19 @@ import aemc "github.com/wttech/aemc/pkg"
 
 func main() {
     aem := aemc.DefaultAEM()
-    instance, _ := aem.InstanceManager().NewByURL("http://admin:admin@192.168.1.2:4502")
+    instance, _ := aem.InstanceManager().NewByIDAndURL("remote_author", "http://admin:admin@192.168.1.2:4502")
     changed, err := instance.PackageManager().DeployWithChanged("/tmp/my-package.zip")
     if err != nil {
         fmt.Printf("cannot deploy package: %s\n", err)
         os.Exit(1)
     }
     if changed {
-      aem.InstanceManager().AwaitStartedOne(*instance)
+      if err := aem.InstanceManager().AwaitStartedOne(*instance); err != nil {
+		  fmt.Printf("instance not stable after deploying package: %s\n", err)
+		  os.Exit(1)
+      }
     }
-    fmt.Printf("package deployed properly\n")
+    fmt.Println("package deployed properly")
     os.Exit(0)
 }
 ```

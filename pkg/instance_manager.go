@@ -134,7 +134,7 @@ func (im *InstanceManager) newFromConfig(id string) *Instance {
 		return nil
 	}
 
-	i, err := im.NewByURL(httpURL)
+	i, err := im.NewByIDAndURL(id, httpURL)
 	if err != nil {
 		log.Fatalf("cannot create instance from config with ID '%s' using URL '%s': %s", id, httpURL, err)
 		return nil
@@ -223,12 +223,12 @@ func (im *InstanceManager) Publishes() []Instance {
 }
 
 func (im *InstanceManager) NewLocalAuthor() Instance {
-	i, _ := im.NewByURL(instance.URLLocalAuthor)
+	i, _ := im.NewByIDAndURL(instance.LocationLocal+instance.IDDelimiter+string(instance.RoleAuthor), instance.URLLocalAuthor)
 	return *i
 }
 
 func (im *InstanceManager) NewLocalPublish() Instance {
-	i, _ := im.NewByURL(instance.URLLocalPublish)
+	i, _ := im.NewByIDAndURL(instance.LocationLocal+instance.IDDelimiter+string(instance.RolePublish), instance.URLLocalPublish)
 	return *i
 }
 
@@ -238,18 +238,6 @@ func (im *InstanceManager) NewLocalPair() []Instance {
 
 func (im *InstanceManager) NewByID(id string) *Instance {
 	return im.newFromConfig(id)
-}
-
-func (im *InstanceManager) NewByURL(url string) (*Instance, error) {
-	urlConfig, err := nurl.Parse(url)
-	if err != nil {
-		return nil, fmt.Errorf("invalid instance URL '%s': %w", url, err)
-	}
-	location := locationByURL(urlConfig)
-	role := roleByURL(urlConfig)
-	parts := []string{location, string(role)}
-	id := strings.Join(parts, instance.IDDelimiter)
-	return im.NewByIDAndURL(id, url)
 }
 
 func (im *InstanceManager) NewByIDAndURL(id string, url string) (*Instance, error) {

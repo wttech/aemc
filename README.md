@@ -124,7 +124,7 @@ Supported project types:
 
   | AEM Compose (init) | AEM Project Archetype (tested) |
   |--------------------|--------------------------------|
-  | >= 1.2.0           | 41, 42, 43, ?, 47              |
+  | >= 1.2.0           | 41, 42, 43, 47, 48             |
 
 - with any type of structure, however afterwards only a little customizations in *Taskfile.yml* need to be done to reflect configuration related to built AEM application artifact path and AEM dispatcher files location
 - empty folder; the project kind will be needed to be specified explicitly during initialization

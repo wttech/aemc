@@ -15,6 +15,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/common/tplx"
+	"github.com/wttech/aemc/pkg/content"
 	"github.com/wttech/aemc/pkg/pkg"
 	"io"
 	"io/fs"
@@ -22,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -168,6 +170,8 @@ type PackageCreateOpts struct {
 	PID         string
 	FilterRoots []string
 	FilterFile  string
+	ContentDir  string
+	ContentFile string
 }
 
 func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
@@ -183,6 +187,9 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 		_ = pathx.DeleteIfExists(tmpDir)
 		_ = pathx.DeleteIfExists(tmpFile)
 	}()
+	if len(opts.FilterRoots) == 0 && opts.FilterFile == "" {
+		opts.FilterRoots = []string{determineFilterRoot(opts)}
+	}
 	data := map[string]any{
 		"Pid":         opts.PID,
 		"Group":       pidConfig.Group,
@@ -219,6 +226,30 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	}
 	log.Infof("%s > created package '%s'", pm.instance.IDColor(), opts.PID)
 	return status.Path, nil
+}
+
+func determineFilterRoot(opts PackageCreateOpts) string {
+	if opts.ContentDir != "" {
+		return strings.Split(opts.ContentDir, content.JCRRoot)[1]
+	}
+
+	if opts.ContentFile != "" {
+		contentFile := strings.Split(opts.ContentFile, content.JCRRoot)[1]
+		if content.IsContentFile(opts.ContentFile) {
+			return strings.ReplaceAll(contentFile, content.JCRContentFile, content.JCRContentNode)
+		} else if strings.HasSuffix(contentFile, content.JCRContentFile) {
+			re := regexp.MustCompile(NamespacePattern)
+			contentFile = re.ReplaceAllString(contentFile, "$1:")
+			return filepath.Dir(contentFile)
+		} else if strings.HasSuffix(contentFile, content.JCRContentFileSuffix) {
+			re := regexp.MustCompile(NamespacePattern)
+			contentFile = re.ReplaceAllString(contentFile, "$1:")
+			return strings.ReplaceAll(contentFile, content.JCRContentFileSuffix, "")
+		}
+		return contentFile
+	}
+
+	return ""
 }
 
 func (pm *PackageManager) Copy(remotePath string, destInstance *Instance) error {

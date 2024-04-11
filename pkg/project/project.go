@@ -32,7 +32,13 @@ const (
 	KindAppCloud   = "app_cloud"
 	KindUnknown    = "unknown"
 
-	GitIgnoreFile = ".gitignore"
+	KindPropName          = "aemVersion"
+	KindPropCloudValue    = "cloud"
+	KindPropClassicPrefix = "6."
+
+	GitIgnoreFile   = ".gitignore"
+	PropFile        = "archetype.properties"
+	PackagePropName = "package"
 )
 
 func Kinds() []Kind {
@@ -54,6 +60,10 @@ func KindOf(name string) (Kind, error) {
 		return KindAppClassic, nil
 	}
 	return "", fmt.Errorf("project kind '%s' is not supported", name)
+}
+
+func (p Project) IsAppKind(kind Kind) bool {
+	return kind == KindAppClassic || kind == KindAppCloud
 }
 
 //go:embed common
@@ -83,6 +93,9 @@ func (p Project) initialize(kind Kind) error {
 		return err
 	}
 	if err := p.prepareGitIgnore(kind); err != nil {
+		return err
+	}
+	if err := p.prepareLocalEnvFile(kind); err != nil {
 		return err
 	}
 	return nil
@@ -161,6 +174,26 @@ func (p Project) prepareGitIgnore(kind Kind) error {
 	}
 }
 
+func (p Project) prepareLocalEnvFile(kind Kind) error {
+	if p.IsAppKind(kind) && p.HasProps() {
+		prop, err := p.Prop(PackagePropName)
+		if err != nil {
+			return err
+		}
+		propTrimmed := strings.TrimSpace(prop)
+		if propTrimmed != "" {
+			if err := filex.AppendString(osx.EnvLocalFile, osx.LineSep()+strings.Join([]string{
+				"",
+				"AEM_PACKAGE=" + prop,
+				"",
+			}, osx.LineSep())); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (p Project) KindDetermine(name string) (Kind, error) {
 	var kind Kind = KindAuto
 	if name != "" {
@@ -180,13 +213,6 @@ func (p Project) KindDetermine(name string) (Kind, error) {
 	return kind, nil
 }
 
-const (
-	KindPropFile          = "archetype.properties"
-	KindPropName          = "aemVersion"
-	KindPropCloudValue    = "cloud"
-	KindPropClassicPrefix = "6."
-)
-
 func (p Project) EnsureDirs() error {
 	log.Infof("ensuring conventional project directories")
 	if err := pathx.Ensure(common.LibDir); err != nil {
@@ -198,28 +224,39 @@ func (p Project) EnsureDirs() error {
 	return nil
 }
 
-func (p Project) KindInfer() (Kind, error) {
-	if pathx.Exists(KindPropFile) {
-		log.Infof("inferring project kind basing on file '%s' and property '%s'", KindPropFile, KindPropName)
-		propLoader := properties.Loader{
-			Encoding:         properties.ISO_8859_1,
-			DisableExpansion: true,
-		}
-		props, err := propLoader.LoadFile(KindPropFile)
-		if err != nil {
-			return "", fmt.Errorf("cannot infer project kind: %w", err)
-		}
-		propValue := props.GetString(KindPropName, "")
+func (p Project) HasProps() bool {
+	return pathx.Exists(PropFile)
+}
 
+func (p Project) Prop(name string) (string, error) {
+	propLoader := properties.Loader{
+		Encoding:         properties.ISO_8859_1,
+		DisableExpansion: true,
+	}
+	props, err := propLoader.LoadFile(PropFile)
+	if err != nil {
+		return "", fmt.Errorf("cannot read project property '%s' from file '%s': %w", name, PropFile, err)
+	}
+	propValue := props.GetString(name, "")
+	return propValue, nil
+}
+
+func (p Project) KindInfer() (Kind, error) {
+	if p.HasProps() {
+		log.Infof("inferring project kind basing on file '%s' and property '%s'", PropFile, KindPropName)
+		propValue, err := p.Prop(KindPropName)
+		if err != nil {
+			return "", err
+		}
 		var kind Kind
 		if propValue == KindPropCloudValue {
 			kind = KindAppCloud
 		} else if strings.HasPrefix(propValue, KindPropClassicPrefix) {
 			kind = KindAppClassic
 		} else {
-			return "", fmt.Errorf("cannot infer project kind as value '%s' of property '%s' in file '%s' is not recognized", propValue, KindPropName, KindPropFile)
+			return "", fmt.Errorf("cannot infer project kind as value '%s' of property '%s' in file '%s' is not recognized", propValue, KindPropName, PropFile)
 		}
-		log.Infof("inferred project kind basing on file '%s' and property '%s' is '%s'", KindPropFile, KindPropName, kind)
+		log.Infof("inferred project kind basing on file '%s' and property '%s' is '%s'", PropFile, KindPropName, kind)
 		return kind, nil
 	}
 	return KindUnknown, nil

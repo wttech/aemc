@@ -32,7 +32,13 @@ const (
 	KindAppCloud   = "app_cloud"
 	KindUnknown    = "unknown"
 
-	GitIgnoreFile = ".gitignore"
+	KindPropName          = "aemVersion"
+	KindPropCloudValue    = "cloud"
+	KindPropClassicPrefix = "6."
+
+	GitIgnoreFile   = ".gitignore"
+	PropFile        = "archetype.properties"
+	PackagePropName = "package"
 )
 
 func Kinds() []Kind {
@@ -54,6 +60,10 @@ func KindOf(name string) (Kind, error) {
 		return KindAppClassic, nil
 	}
 	return "", fmt.Errorf("project kind '%s' is not supported", name)
+}
+
+func (p Project) IsAppKind(kind Kind) bool {
+	return kind == KindAppClassic || kind == KindAppCloud
 }
 
 //go:embed common
@@ -165,21 +175,21 @@ func (p Project) prepareGitIgnore(kind Kind) error {
 }
 
 func (p Project) prepareLocalEnvFile(kind Kind) error {
-	if !(kind == KindAppClassic || kind == KindAppCloud) {
-		return nil
-	}
-
-	prop, err := p.Prop(PackagePropName)
-	if err != nil {
-		return err
-	}
-	propTrimmed := strings.TrimSpace(prop)
-	if propTrimmed != "" {
-		return filex.AppendString(osx.EnvLocalFile, osx.LineSep()+strings.Join([]string{
-			"",
-			"AEM_PACKAGE=" + prop,
-			"",
-		}, osx.LineSep()))
+	if p.IsAppKind(kind) && p.HasProps() {
+		prop, err := p.Prop(PackagePropName)
+		if err != nil {
+			return err
+		}
+		propTrimmed := strings.TrimSpace(prop)
+		if propTrimmed != "" {
+			if err := filex.AppendString(osx.EnvLocalFile, osx.LineSep()+strings.Join([]string{
+				"",
+				"AEM_PACKAGE=" + prop,
+				"",
+			}, osx.LineSep())); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -203,14 +213,6 @@ func (p Project) KindDetermine(name string) (Kind, error) {
 	return kind, nil
 }
 
-const (
-	PropFile              = "archetype.properties"
-	PackagePropName       = "package"
-	KindPropName          = "aemVersion"
-	KindPropCloudValue    = "cloud"
-	KindPropClassicPrefix = "6."
-)
-
 func (p Project) EnsureDirs() error {
 	log.Infof("ensuring conventional project directories")
 	if err := pathx.Ensure(common.LibDir); err != nil {
@@ -220,6 +222,10 @@ func (p Project) EnsureDirs() error {
 		return err
 	}
 	return nil
+}
+
+func (p Project) HasProps() bool {
+	return pathx.Exists(PropFile)
 }
 
 func (p Project) Prop(name string) (string, error) {
@@ -236,7 +242,7 @@ func (p Project) Prop(name string) (string, error) {
 }
 
 func (p Project) KindInfer() (Kind, error) {
-	if pathx.Exists(PropFile) {
+	if p.HasProps() {
 		log.Infof("inferring project kind basing on file '%s' and property '%s'", PropFile, KindPropName)
 		propValue, err := p.Prop(KindPropName)
 		if err != nil {

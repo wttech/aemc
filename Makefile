@@ -33,7 +33,7 @@ install:
 other_build:
 	GOARCH=amd64 GOOS=darwin go build --ldflags "${.LD_FLAGS}" -o bin/aem.darwin ./cmd/aem
 	GOARCH=amd64 GOOS=linux go build --ldflags "${.LD_FLAGS}" -o bin/aem.linux ./cmd/aem
-	GOARCH=amd64 GOOS=windows go build --ldflags "${.LD_FLAGS}" -o bin/aem.exe ./cmd/aem
+	GOARCH=amd64 GOOS=windows go build -tags timetzdata --ldflags "${.LD_FLAGS}" -o bin/aem.exe ./cmd/aem
 
 clean:
 	go clean

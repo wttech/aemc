@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/timex"
@@ -12,8 +13,20 @@ import (
 )
 
 const (
-	NamespacePattern = "_([a-z]+)_"
+	NamespacePattern = "^_([a-z]+)_"
 )
+
+var (
+	namespacePatternRegex *regexp.Regexp
+)
+
+func init() {
+	var err error
+	namespacePatternRegex, err = regexp.Compile(NamespacePattern)
+	if err != nil {
+		log.Fatalf("Failed to compile regex: %v", err)
+	}
+}
 
 type ContentManager struct {
 	instance *Instance
@@ -134,8 +147,7 @@ func (cm *ContentManager) PullFile(file string, clean bool, packageOpts PackageC
 }
 
 func determineCleanFile(file string) string {
-	re := regexp.MustCompile(NamespacePattern)
-	if re.MatchString(file) && !strings.HasSuffix(file, content.JCRContentFile) {
+	if namespacePatternRegex.MatchString(file) && !strings.HasSuffix(file, content.JCRContentFile) {
 		return filepath.Join(strings.ReplaceAll(file, content.JCRContentFileSuffix, ""), content.JCRContentFile)
 	}
 	return file

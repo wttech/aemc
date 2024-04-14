@@ -5,7 +5,6 @@ import (
 	"github.com/gobwas/glob"
 	"github.com/iancoleman/strcase"
 	"github.com/samber/lo"
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -30,10 +29,6 @@ func Match(value, pattern string) bool {
 
 func MatchSome(value string, patterns []string) bool {
 	return lo.SomeBy(patterns, func(p string) bool { return Match(value, p) })
-}
-
-func MatchGroups(value string, pattern string) []string {
-	return regexp.MustCompile(pattern).FindStringSubmatch(value)
 }
 
 func Between(str string, start string, end string) (result string) {

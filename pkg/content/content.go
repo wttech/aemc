@@ -13,6 +13,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -30,6 +31,24 @@ const (
 	JCRContentPrefix          = "<jcr:content"
 	JCRContentDirName         = "_jcr_content"
 )
+
+var (
+	propPatternRegex      *regexp.Regexp
+	namespacePatternRegex *regexp.Regexp
+)
+
+func init() {
+	var err error
+	propPatternRegex, err = regexp.Compile(PropPattern)
+	if err != nil {
+		log.Fatalf("Failed to compile regex: %v", err)
+	}
+
+	namespacePatternRegex, err = regexp.Compile(NamespacePattern)
+	if err != nil {
+		log.Fatalf("Failed to compile regex: %v", err)
+	}
+}
 
 type Manager struct {
 	baseOpts *base.Opts
@@ -189,7 +208,7 @@ func (c Manager) cleanNamespaces(lines []string) []string {
 		if strings.HasPrefix(line, JCRRootPrefix) {
 			var rootResult []string
 			for _, part := range strings.Split(line, " ") {
-				groups := stringsx.MatchGroups(part, NamespacePattern)
+				groups := namespacePatternRegex.FindStringSubmatch(part)
 				if groups == nil {
 					rootResult = append(rootResult, part)
 				} else {
@@ -210,7 +229,7 @@ func (c Manager) cleanNamespaces(lines []string) []string {
 }
 
 func (c Manager) lineProcess(path string, line string) (bool, string) {
-	groups := stringsx.MatchGroups(line, PropPattern)
+	groups := propPatternRegex.FindStringSubmatch(line)
 	if groups == nil {
 		return false, line
 	} else if groups[1] == JCRMixinTypesProp {

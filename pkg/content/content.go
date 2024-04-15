@@ -230,7 +230,9 @@ func (c Manager) cleanNamespaces(lines []string) []string {
 
 func (c Manager) lineProcess(path string, line string) (bool, string) {
 	groups := propPatternRegex.FindStringSubmatch(line)
-	if groups == nil {
+	if strings.TrimSpace(line) == "" {
+		return true, ""
+	} else if groups == nil {
 		return false, line
 	} else if groups[1] == JCRMixinTypesProp {
 		return c.normalizeMixins(path, line, groups[2], groups[3])

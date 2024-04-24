@@ -193,6 +193,12 @@ instance:
         start_level: 20
         refresh_packages: true
 
+      # Force re-installing of snapshot OSGi bundles (just built / unreleased)
+      snapshot_patterns: [ "**/*-SNAPSHOT.jar" ]
+      snapshot_ignored: false
+      # Use checksums to avoid re-installations when snapshot OSGi bundles are unchanged
+      snapshot_install_skipping: true
+
   # Crypto Support
   crypto:
     key_bundle_symbolic_name: com.adobe.granite.crypto.file

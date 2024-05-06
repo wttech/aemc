@@ -17,7 +17,6 @@ const (
 )
 
 var (
-	propPatternRegex      *regexp.Regexp
 	namespacePatternRegex *regexp.Regexp
 )
 
@@ -139,8 +138,11 @@ func (cm *ContentManager) PullFile(file string, clean bool, packageOpts PackageC
 			return err
 		}
 		if strings.HasSuffix(file, content.JCRContentFile) {
-			if err := contentManager.CleanDir(filepath.Join(dir, content.JCRContentDirName)); err != nil {
-				return err
+			root := filepath.Join(dir, content.JCRContentDirName)
+			if pathx.Exists(root) {
+				if err := contentManager.CleanDir(root); err != nil {
+					return err
+				}
 			}
 		}
 	}

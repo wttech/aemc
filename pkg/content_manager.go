@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/timex"
@@ -21,11 +20,7 @@ var (
 )
 
 func init() {
-	var err error
-	namespacePatternRegex, err = regexp.Compile(NamespacePattern)
-	if err != nil {
-		log.Fatalf("Failed to compile regex: %v", err)
-	}
+	namespacePatternRegex = regexp.MustCompile(NamespacePattern)
 }
 
 type ContentManager struct {

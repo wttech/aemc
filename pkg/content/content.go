@@ -38,16 +38,8 @@ var (
 )
 
 func init() {
-	var err error
-	propPatternRegex, err = regexp.Compile(PropPattern)
-	if err != nil {
-		log.Fatalf("Failed to compile regex: %v", err)
-	}
-
-	namespacePatternRegex, err = regexp.Compile(NamespacePattern)
-	if err != nil {
-		log.Fatalf("Failed to compile regex: %v", err)
-	}
+	propPatternRegex = regexp.MustCompile(PropPattern)
+	namespacePatternRegex = regexp.MustCompile(NamespacePattern)
 }
 
 type Manager struct {

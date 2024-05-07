@@ -4,16 +4,25 @@ import (
 	"fmt"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
+	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/fmtx"
+	"github.com/wttech/aemc/pkg/common/osx"
+	"github.com/wttech/aemc/pkg/common/pathx"
+	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/osgi"
+	"path/filepath"
+	"time"
 )
 
 type OSGiBundleManager struct {
 	instance *Instance
 
-	InstallStart           bool
-	InstallStartLevel      int
-	InstallRefreshPackages bool
+	InstallStart            bool
+	InstallStartLevel       int
+	InstallRefreshPackages  bool
+	SnapshotInstallSkipping bool
+	SnapshotIgnored         bool
+	SnapshotPatterns        []string
 }
 
 func NewBundleManager(instance *Instance) *OSGiBundleManager {
@@ -22,9 +31,12 @@ func NewBundleManager(instance *Instance) *OSGiBundleManager {
 	return &OSGiBundleManager{
 		instance: instance,
 
-		InstallStart:           cv.GetBool("instance.osgi.bundle.install.start"),
-		InstallStartLevel:      cv.GetInt("instance.osgi.bundle.install.start_level"),
-		InstallRefreshPackages: cv.GetBool("instance.osgi.bundle.install.refresh_packages"),
+		InstallStart:            cv.GetBool("instance.osgi.bundle.install.start"),
+		InstallStartLevel:       cv.GetInt("instance.osgi.bundle.install.start_level"),
+		InstallRefreshPackages:  cv.GetBool("instance.osgi.bundle.install.refresh_packages"),
+		SnapshotInstallSkipping: cv.GetBool("instance.osgi.bundle.snapshot_install_skipping"),
+		SnapshotIgnored:         cv.GetBool("instance.osgi.bundle.snapshot_ignored"),
+		SnapshotPatterns:        cv.GetStringSlice("instance.osgi.bundle.snapshot_patterns"),
 	}
 }
 
@@ -43,7 +55,7 @@ func (bm *OSGiBundleManager) ByFile(localPath string) (*OSGiBundle, error) {
 	return &OSGiBundle{manager: bm, symbolicName: manifest.SymbolicName}, nil
 }
 
-func (bm OSGiBundleManager) Find(symbolicName string) (*osgi.BundleListItem, error) {
+func (bm *OSGiBundleManager) Find(symbolicName string) (*osgi.BundleListItem, error) {
 	bundles, err := bm.List()
 	if err != nil {
 		return nil, fmt.Errorf("%s > cannot find bundle '%s'", bm.instance.IDColor(), symbolicName)
@@ -98,27 +110,80 @@ func (bm *OSGiBundleManager) Stop(id int) error {
 	return nil
 }
 
+func (bm *OSGiBundleManager) IsSnapshot(localPath string) bool {
+	return !bm.SnapshotIgnored && stringsx.MatchSome(pathx.Normalize(localPath), bm.SnapshotPatterns)
+}
+
 func (bm *OSGiBundleManager) InstallWithChanged(localPath string) (bool, error) {
+	if bm.IsSnapshot(localPath) {
+		return bm.installSnapshot(localPath)
+	}
+	return bm.installRegular(localPath)
+}
+
+func (bm *OSGiBundleManager) installRegular(localPath string) (bool, error) {
+	installed, err := bm.IsInstalled(localPath)
+	if err != nil {
+		return false, err
+	}
+	if !installed {
+		return true, bm.Install(localPath)
+	}
+	return false, nil
+}
+
+func (bm *OSGiBundleManager) IsInstalled(localPath string) (bool, error) {
 	manifest, err := osgi.ReadBundleManifest(localPath)
 	if err != nil {
 		return false, err
 	}
 	bundle := bm.New(manifest.SymbolicName)
-	if err != nil {
-		return false, nil
-	}
 	state, err := bundle.State()
 	if err != nil {
 		return false, err
 	}
-	if !state.Exists || state.data.Version != manifest.Version {
-		err = bm.Install(localPath)
+	return state.Exists && state.data.Version == manifest.Version, nil
+}
+
+func (bm *OSGiBundleManager) installSnapshot(localPath string) (bool, error) {
+	checksum, err := filex.ChecksumFile(localPath)
+	if err != nil {
+		return false, err
+	}
+	installed, err := bm.IsInstalled(localPath)
+	if err != nil {
+		return false, err
+	}
+	var lock = bm.installLock(localPath, checksum)
+	if installed && bm.SnapshotInstallSkipping && lock.IsLocked() {
+		lockData, err := lock.Locked()
 		if err != nil {
 			return false, err
 		}
-		return true, nil
+		if checksum == lockData.Checksum {
+			log.Infof("%s > skipped installing bundle '%s'", bm.instance.IDColor(), localPath)
+			return false, nil
+		}
 	}
-	return false, nil
+	if err := bm.Install(localPath); err != nil {
+		return false, err
+	}
+	if err := lock.Lock(); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (bm *OSGiBundleManager) installLock(file string, checksum string) osx.Lock[osgiBundleInstallLock] {
+	name := filepath.Base(file)
+	return osx.NewLock(fmt.Sprintf("%s/osgi/bundle/install/%s.yml", bm.instance.LockDir(), name), func() (osgiBundleInstallLock, error) {
+		return osgiBundleInstallLock{Installed: time.Now(), Checksum: checksum}, nil
+	})
+}
+
+type osgiBundleInstallLock struct {
+	Installed time.Time `yaml:"installed"`
+	Checksum  string    `yaml:"checksum"`
 }
 
 func (bm *OSGiBundleManager) Install(localPath string) error {

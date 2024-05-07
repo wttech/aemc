@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/fatih/color"
-	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/instance"
@@ -181,13 +180,6 @@ func (i Instance) IsAdHoc() bool {
 	return i.IDInfo().Role == instance.RoleAdHoc
 }
 
-func locationByURL(config *nurl.URL) string {
-	if lo.Contains(localHosts(), config.Hostname()) {
-		return instance.LocationLocal
-	}
-	return instance.LocationRemote
-}
-
 func roleByURL(config *nurl.URL) instance.Role {
 	if strings.HasSuffix(config.Port(), instance.RoleAuthorPortSuffix) {
 		return instance.RoleAuthor
@@ -292,9 +284,12 @@ func (i Instance) HealthChecks() []string {
 				continue
 			}
 			result := check.Check(i.manager.CheckContext().Value(checkContextKey{}).(CheckContext), i)
-			resultText := result.Text()
+			resultText := InstanceTrim(i, result.Text())
 			if resultText != "" {
 				messages = append(messages, resultText)
+			}
+			if !result.ok && check.Spec().Mandatory {
+				break
 			}
 		}
 	}

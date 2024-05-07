@@ -96,7 +96,7 @@ instance:
     component_stable:
       skip: false
       pids:
-        include: ['com.day.crx.packaging.*', 'org.apache.sling.installer.*']
+        include: ['[[.Env.AEM_PACKAGE | default "com.mysite" ]].*', 'com.day.crx.packaging.*', 'org.apache.sling.installer.*']
         exclude: ['org.apache.sling.installer.hc.*', 'org.apache.sling.installer.core.impl.console.*']
         match:
           "disabled": []
@@ -189,6 +189,12 @@ instance:
         start: true
         start_level: 20
         refresh_packages: true
+
+      # Force re-installing of snapshot OSGi bundles (just built / unreleased)
+      snapshot_patterns: [ "**/*-SNAPSHOT.jar" ]
+      snapshot_ignored: false
+      # Use checksums to avoid re-installations when snapshot OSGi bundles are unchanged
+      snapshot_install_skipping: true
 
   # Crypto Support
   crypto:

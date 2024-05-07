@@ -124,7 +124,7 @@ Supported project types:
 
   | AEM Compose (init) | AEM Project Archetype (tested) |
   |--------------------|--------------------------------|
-  | >= 1.2.0           | 41, 42, 43, ?, 47              |
+  | >= 1.2.0           | 41, 42, 43, 47, 48             |
 
 - with any type of structure, however afterwards only a little customizations in *Taskfile.yml* need to be done to reflect configuration related to built AEM application artifact path and AEM dispatcher files location
 - empty folder; the project kind will be needed to be specified explicitly during initialization
@@ -201,16 +201,19 @@ import aemc "github.com/wttech/aemc/pkg"
 
 func main() {
     aem := aemc.DefaultAEM()
-    instance, _ := aem.InstanceManager().NewByURL("http://admin:admin@192.168.1.2:4502")
+    instance, _ := aem.InstanceManager().NewByIDAndURL("remote_author", "http://admin:admin@192.168.1.2:4502")
     changed, err := instance.PackageManager().DeployWithChanged("/tmp/my-package.zip")
     if err != nil {
         fmt.Printf("cannot deploy package: %s\n", err)
         os.Exit(1)
     }
     if changed {
-      aem.InstanceManager().AwaitStartedOne(*instance)
+      if err := aem.InstanceManager().AwaitStartedOne(*instance); err != nil {
+		  fmt.Printf("instance not stable after deploying package: %s\n", err)
+		  os.Exit(1)
+      }
     }
-    fmt.Printf("package deployed properly\n")
+    fmt.Println("package deployed properly")
     os.Exit(0)
 }
 ```

@@ -38,16 +38,8 @@ var (
 )
 
 func init() {
-	var err error
-	propPatternRegex, err = regexp.Compile(PropPattern)
-	if err != nil {
-		log.Fatalf("Failed to compile regex: %v", err)
-	}
-
-	namespacePatternRegex, err = regexp.Compile(NamespacePattern)
-	if err != nil {
-		log.Fatalf("Failed to compile regex: %v", err)
-	}
+	propPatternRegex = regexp.MustCompile(PropPattern)
+	namespacePatternRegex = regexp.MustCompile(NamespacePattern)
 }
 
 type Manager struct {
@@ -95,6 +87,10 @@ func (c Manager) AfterPullFile(path string) error {
 }
 
 func (c Manager) CleanDir(root string) error {
+	if !pathx.Exists(root) {
+		return fmt.Errorf("cannot clean directory as it does not exist '%s'", root)
+	}
+	log.Infof("cleaning directory '%s'", root)
 	if err := c.cleanDotContents(root); err != nil {
 		return err
 	}
@@ -107,13 +103,15 @@ func (c Manager) CleanDir(root string) error {
 	if err := deleteEmptyDirs(root); err != nil {
 		return err
 	}
+	log.Infof("cleaned directory '%s'", root)
 	return nil
 }
 
 func (c Manager) CleanFile(path string) error {
 	if !pathx.Exists(path) {
-		return fmt.Errorf("file does not exist: %s", path)
+		return fmt.Errorf("cannot clean file as it does not exist '%s'", path)
 	}
+	log.Infof("cleaning file '%s'", path)
 	if err := c.cleanDotContentFile(path); err != nil {
 		return err
 	}
@@ -123,6 +121,7 @@ func (c Manager) CleanFile(path string) error {
 	if err := deleteEmptyDirs(filepath.Dir(path)); err != nil {
 		return err
 	}
+	log.Infof("cleaned file '%s'", path)
 	return nil
 }
 
@@ -161,7 +160,7 @@ func (c Manager) cleanDotContentFile(path string) error {
 		return nil
 	}
 
-	log.Infof("cleaning file %s", path)
+	log.Infof("cleaning dot content file '%s'", path)
 	inputLines, err := readLines(path)
 	if err != nil {
 		return err
@@ -223,7 +222,9 @@ func (c Manager) cleanNamespaces(lines []string) []string {
 
 func (c Manager) lineProcess(path string, line string) (bool, string) {
 	groups := propPatternRegex.FindStringSubmatch(line)
-	if groups == nil {
+	if strings.TrimSpace(line) == "" {
+		return true, ""
+	} else if groups == nil {
 		return false, line
 	} else if groups[1] == JCRMixinTypesProp {
 		return c.normalizeMixins(path, line, groups[2], groups[3])
@@ -260,9 +261,9 @@ func (c Manager) flattenFile(path string) error {
 
 	dest := filepath.Dir(path) + ".xml"
 	if pathx.Exists(dest) {
-		log.Infof("flattening file (override): %s", path)
+		log.Infof("flattening file (override) '%s'", path)
 	} else {
-		log.Infof("flattening file: %s", path)
+		log.Infof("flattening file '%s'", path)
 	}
 	return os.Rename(path, dest)
 }
@@ -291,7 +292,7 @@ func deleteDir(dir string) error {
 	if !pathx.Exists(dir) {
 		return nil
 	}
-	log.Infof("deleting dir %s", dir)
+	log.Infof("deleting dir '%s'", dir)
 	return os.RemoveAll(dir)
 }
 
@@ -299,7 +300,7 @@ func deleteFile(path string, allowedFunc func() bool) error {
 	if !pathx.Exists(path) || allowedFunc != nil && !allowedFunc() {
 		return nil
 	}
-	log.Infof("deleting file %s", path)
+	log.Infof("deleting file '%s'", path)
 	return os.Remove(path)
 }
 
@@ -320,20 +321,23 @@ func deleteEmptyDirs(root string) error {
 		return err
 	}
 	if len(entries) == 0 {
+		log.Infof("deleting empty directory '%s'", root)
 		if err = os.Remove(root); err != nil {
 			return err
 		}
-		log.Infof("deleting empty directory %s", root)
-
 	}
 	return nil
 }
 
 func (c Manager) doParentsBackup(root string) error {
 	return eachParentFiles(root, func(parent string) error {
+		if err := createBackupIndicator(parent); err != nil {
+			return err
+		}
 		return eachFilesInDir(parent, func(path string) error {
-			if !strings.HasSuffix(path, ParentsBackupSuffix) {
-				if err := c.backupFile(path, "doing backup of parent file: %s"); err != nil {
+			if !strings.HasSuffix(path, ParentsBackupSuffix) && !strings.HasSuffix(path, ParentsBackupDirIndicator) {
+				log.Infof("doing backup of parent file '%s'", path)
+				if err := c.backupFile(path); err != nil {
 					return err
 				}
 			}
@@ -344,9 +348,13 @@ func (c Manager) doParentsBackup(root string) error {
 
 func (c Manager) doSiblingsBackup(file string) error {
 	dir := filepath.Dir(file)
+	if err := createBackupIndicator(dir); err != nil {
+		return err
+	}
 	return eachFilesInDir(dir, func(path string) error {
-		if path != file && !strings.HasSuffix(path, ParentsBackupSuffix) {
-			if err := c.backupFile(path, "doing backup of file: %s"); err != nil {
+		if path != file && !strings.HasSuffix(path, ParentsBackupSuffix) && !strings.HasSuffix(path, ParentsBackupDirIndicator) {
+			log.Infof("doing backup of file '%s'", path)
+			if err := c.backupFile(path); err != nil {
 				return err
 			}
 		}
@@ -378,7 +386,7 @@ func (c Manager) undoParentsBackup(root string) error {
 		return eachFilesInDir(parent, func(path string) error {
 			if strings.HasSuffix(path, ParentsBackupSuffix) {
 				origin := strings.TrimSuffix(path, ParentsBackupSuffix)
-				log.Infof("undoing backup of parent file: %s", path)
+				log.Infof("undoing backup of parent file '%s'", path)
 				return os.Rename(path, origin)
 			}
 			return nil
@@ -391,7 +399,7 @@ func (c Manager) undoSiblingBackup(path string) error {
 	return eachFilesInDir(dir, func(path string) error {
 		if strings.HasSuffix(path, ParentsBackupSuffix) {
 			origin := strings.TrimSuffix(path, ParentsBackupSuffix)
-			log.Infof("undoing backup of file: %s", path)
+			log.Infof("undoing backup of file '%s'", path)
 			return os.Rename(path, origin)
 		} else if strings.HasSuffix(path, ParentsBackupDirIndicator) {
 			return deleteFile(path, nil)
@@ -452,14 +460,13 @@ func writeLines(path string, lines []string) error {
 	return err
 }
 
-func (c Manager) backupFile(path string, format string) error {
-	dir := filepath.Dir(path)
+func createBackupIndicator(dir string) error {
 	indicator, err := os.Create(filepath.Join(dir, ParentsBackupDirIndicator))
-	if err != nil {
-		return err
-	}
 	defer func() { _ = indicator.Close() }()
+	return err
+}
 
+func (c Manager) backupFile(path string) error {
 	source, err := os.Open(path)
 	if err != nil {
 		return err
@@ -476,7 +483,6 @@ func (c Manager) backupFile(path string, format string) error {
 	if err != nil {
 		return err
 	}
-	log.Infof(format, path)
 	return nil
 }
 

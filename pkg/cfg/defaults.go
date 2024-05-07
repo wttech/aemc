@@ -120,6 +120,10 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.osgi.bundle.install.start_level", 20)
 	v.SetDefault("instance.osgi.bundle.install.refresh_packages", true)
 
+	v.SetDefault("instance.osgi.bundle.snapshot_install_skipping", true)
+	v.SetDefault("instance.osgi.bundle.snapshot_ignored", false)
+	v.SetDefault("instance.osgi.bundle.snapshot_patterns", []string{"**/*-SNAPSHOT.jar"})
+
 	v.SetDefault("instance.ssl.setup_timeout", time.Second*30)
 
 	v.SetDefault("instance.crypto.key_bundle_symbolic_name", "com.adobe.granite.crypto.file")

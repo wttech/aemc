@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -238,12 +237,10 @@ func determineFilterRoot(opts PackageCreateOpts) string {
 		if content.IsContentFile(opts.ContentFile) {
 			return strings.ReplaceAll(contentFile, content.JCRContentFile, content.JCRContentNode)
 		} else if strings.HasSuffix(contentFile, content.JCRContentFile) {
-			re := regexp.MustCompile(NamespacePattern)
-			contentFile = re.ReplaceAllString(contentFile, "$1:")
+			contentFile = namespacePatternRegex.ReplaceAllString(contentFile, "$1:")
 			return filepath.Dir(contentFile)
 		} else if strings.HasSuffix(contentFile, content.JCRContentFileSuffix) {
-			re := regexp.MustCompile(NamespacePattern)
-			contentFile = re.ReplaceAllString(contentFile, "$1:")
+			contentFile = namespacePatternRegex.ReplaceAllString(contentFile, "$1:")
 			return strings.ReplaceAll(contentFile, content.JCRContentFileSuffix, "")
 		}
 		return contentFile

@@ -12,8 +12,16 @@ import (
 )
 
 const (
-	NamespacePattern = "_([a-z]+)_"
+	NamespacePattern = "^_([a-z]+)_"
 )
+
+var (
+	namespacePatternRegex *regexp.Regexp
+)
+
+func init() {
+	namespacePatternRegex = regexp.MustCompile(NamespacePattern)
+}
 
 type ContentManager struct {
 	instance *Instance
@@ -125,8 +133,11 @@ func (cm *ContentManager) PullFile(file string, clean bool, packageOpts PackageC
 			return err
 		}
 		if strings.HasSuffix(file, content.JCRContentFile) {
-			if err := contentManager.CleanDir(filepath.Join(dir, content.JCRContentDirName)); err != nil {
-				return err
+			root := filepath.Join(dir, content.JCRContentDirName)
+			if pathx.Exists(root) {
+				if err := contentManager.CleanDir(root); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -134,8 +145,7 @@ func (cm *ContentManager) PullFile(file string, clean bool, packageOpts PackageC
 }
 
 func determineCleanFile(file string) string {
-	re := regexp.MustCompile(NamespacePattern)
-	if re.MatchString(file) && !strings.HasSuffix(file, content.JCRContentFile) {
+	if namespacePatternRegex.MatchString(file) && !strings.HasSuffix(file, content.JCRContentFile) {
 		return filepath.Join(strings.ReplaceAll(file, content.JCRContentFileSuffix, ""), content.JCRContentFile)
 	}
 	return file

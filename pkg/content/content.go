@@ -331,8 +331,11 @@ func deleteEmptyDirs(root string) error {
 
 func (c Manager) doParentsBackup(root string) error {
 	return eachParentFiles(root, func(parent string) error {
+		if err := createBackupIndicator(parent); err != nil {
+			return err
+		}
 		return eachFilesInDir(parent, func(path string) error {
-			if !strings.HasSuffix(path, ParentsBackupSuffix) {
+			if !strings.HasSuffix(path, ParentsBackupSuffix) && !strings.HasSuffix(path, ParentsBackupDirIndicator) {
 				log.Infof("doing backup of parent file '%s'", path)
 				if err := c.backupFile(path); err != nil {
 					return err
@@ -345,8 +348,11 @@ func (c Manager) doParentsBackup(root string) error {
 
 func (c Manager) doSiblingsBackup(file string) error {
 	dir := filepath.Dir(file)
+	if err := createBackupIndicator(dir); err != nil {
+		return err
+	}
 	return eachFilesInDir(dir, func(path string) error {
-		if path != file && !strings.HasSuffix(path, ParentsBackupSuffix) {
+		if path != file && !strings.HasSuffix(path, ParentsBackupSuffix) && !strings.HasSuffix(path, ParentsBackupDirIndicator) {
 			log.Infof("doing backup of file '%s'", path)
 			if err := c.backupFile(path); err != nil {
 				return err
@@ -454,14 +460,13 @@ func writeLines(path string, lines []string) error {
 	return err
 }
 
-func (c Manager) backupFile(path string) error {
-	dir := filepath.Dir(path)
+func createBackupIndicator(dir string) error {
 	indicator, err := os.Create(filepath.Join(dir, ParentsBackupDirIndicator))
-	if err != nil {
-		return err
-	}
 	defer func() { _ = indicator.Close() }()
+	return err
+}
 
+func (c Manager) backupFile(path string) error {
 	source, err := os.Open(path)
 	if err != nil {
 		return err

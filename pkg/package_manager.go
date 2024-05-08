@@ -207,28 +207,28 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	if opts.PushContent {
 		for _, contentPath := range opts.ContentPaths {
 			if pathx.IsDir(contentPath) {
-				_, after, _ := strings.Cut(contentPath, content.JCRRoot)
-				if err = pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
+				jcrPath := content.DetermineJcrPath(contentPath)
+				if err = pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, jcrPath)); err != nil {
 					return "", err
 				}
-				if err = filex.CopyDir(contentPath, filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
+				if err = filex.CopyDir(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath)); err != nil {
 					return "", err
 				}
 			} else if pathx.IsFile(contentPath) {
 				dir := filepath.Dir(contentPath)
-				_, after, _ := strings.Cut(dir, content.JCRRoot)
-				if err = pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
+				jcrPath := content.DetermineJcrPath(dir)
+				if err = pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, jcrPath)); err != nil {
 					return "", err
 				}
-				_, after, _ = strings.Cut(contentPath, content.JCRRoot)
-				if err = filex.Copy(contentPath, filepath.Join(tmpDir, content.JCRRoot, after), true); err != nil {
+				jcrPath = content.DetermineJcrPath(contentPath)
+				if err = filex.Copy(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath), true); err != nil {
 					return "", err
 				}
 				if strings.HasSuffix(contentPath, content.JCRContentFile) {
 					dir = strings.ReplaceAll(contentPath, content.JCRContentNode, content.JCRContentDirName)
-					_, after, _ = strings.Cut(dir, content.JCRRoot)
 					if pathx.Exists(dir) {
-						if err = filex.CopyDir(dir, filepath.Join(tmpDir, content.JCRRoot, after)); err != nil {
+						jcrPath := content.DetermineJcrPath(dir)
+						if err = filex.CopyDir(dir, filepath.Join(tmpDir, content.JCRRoot, jcrPath)); err != nil {
 							return "", err
 						}
 					}
@@ -262,22 +262,17 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 func determineFilterRoots(opts PackageCreateOpts) []string {
 	var filterRoots []string
 	for _, contentPath := range opts.ContentPaths {
-		if pathx.IsDir(contentPath) {
-			filterRoots = append(filterRoots, strings.Split(contentPath, content.JCRRoot)[1])
-		} else if pathx.IsFile(contentPath) {
-			contentFile := strings.Split(contentPath, content.JCRRoot)[1]
-			if content.IsContentFile(contentPath) {
-				filterRoots = append(filterRoots, strings.ReplaceAll(contentFile, content.JCRContentFile, content.JCRContentNode))
-			} else if strings.HasSuffix(contentFile, content.JCRContentFile) {
-				contentFile = namespacePatternRegex.ReplaceAllString(contentFile, "$1:")
-				filterRoots = append(filterRoots, filepath.Dir(contentFile))
-			} else if strings.HasSuffix(contentFile, content.JCRContentFileSuffix) {
-				contentFile = namespacePatternRegex.ReplaceAllString(contentFile, "$1:")
-				filterRoots = append(filterRoots, strings.ReplaceAll(contentFile, content.JCRContentFileSuffix, ""))
-			} else {
-				filterRoots = append(filterRoots, contentFile)
-			}
+		filterRoot := content.DetermineJcrPath(contentPath)
+		if content.IsContentFile(contentPath) {
+			filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFile, content.JCRContentNode)
+		} else if strings.HasSuffix(filterRoot, content.JCRContentFile) {
+			filterRoot = namespacePatternRegex.ReplaceAllString(filterRoot, "$1:")
+			filterRoot = filepath.Dir(filterRoot)
+		} else if strings.HasSuffix(filterRoot, content.JCRContentFileSuffix) {
+			filterRoot = namespacePatternRegex.ReplaceAllString(filterRoot, "$1:")
+			filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFileSuffix, "")
 		}
+		filterRoots = append(filterRoots, filterRoot)
 	}
 	return filterRoots
 }
@@ -301,6 +296,9 @@ func (pm *PackageManager) Copy(remotePath string, destInstance *Instance) error 
 }
 
 func (pm *PackageManager) tmpDir() string {
+	if !pm.instance.manager.aem.config.TemplateFileExists() {
+		return os.TempDir()
+	}
 	return pm.instance.manager.aem.baseOpts.TmpDir
 }
 

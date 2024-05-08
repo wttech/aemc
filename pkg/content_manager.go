@@ -6,13 +6,14 @@ import (
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/content"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 )
 
 const (
-	NamespacePattern = "^_([a-z]+)_"
+	NamespacePattern = "_([a-z]+)_"
 )
 
 var (
@@ -36,6 +37,9 @@ func (cm *ContentManager) pkgMgr() *PackageManager {
 }
 
 func (cm *ContentManager) tmpDir() string {
+	if !cm.instance.manager.aem.config.TemplateFileExists() {
+		return os.TempDir()
+	}
 	return cm.instance.manager.aem.baseOpts.TmpDir
 }
 
@@ -75,7 +79,7 @@ func (cm *ContentManager) PullDir(dir string, clean bool, replace bool, packageO
 	if err := pathx.Ensure(dir); err != nil {
 		return err
 	}
-	before, _, _ := strings.Cut(dir, content.JCRRoot)
+	mainDir := strings.Split(dir, content.JCRRoot)[0]
 	contentManager := cm.instance.manager.aem.contentManager
 	if replace {
 		if err := contentManager.Prepare(dir); err != nil {
@@ -85,7 +89,7 @@ func (cm *ContentManager) PullDir(dir string, clean bool, replace bool, packageO
 	if err := contentManager.BeforePullDir(dir); err != nil {
 		return err
 	}
-	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot), filepath.Join(before, content.JCRRoot)); err != nil {
+	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot), filepath.Join(mainDir, content.JCRRoot)); err != nil {
 		return err
 	}
 	if err := contentManager.AfterPullDir(dir); err != nil {
@@ -116,12 +120,12 @@ func (cm *ContentManager) PullFile(file string, clean bool, packageOpts PackageC
 	if err := pathx.Ensure(dir); err != nil {
 		return err
 	}
-	_, after, _ := strings.Cut(dir, content.JCRRoot)
+	jcrPath := content.DetermineJcrPath(dir)
 	contentManager := cm.instance.manager.aem.contentManager
 	if err := contentManager.BeforePullFile(file); err != nil {
 		return err
 	}
-	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot, after), dir); err != nil {
+	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot, jcrPath), dir); err != nil {
 		return err
 	}
 	if err := contentManager.AfterPullFile(file); err != nil {
@@ -144,13 +148,6 @@ func (cm *ContentManager) PullFile(file string, clean bool, packageOpts PackageC
 	return nil
 }
 
-func determineCleanFile(file string) string {
-	if namespacePatternRegex.MatchString(file) && !strings.HasSuffix(file, content.JCRContentFile) {
-		return filepath.Join(strings.ReplaceAll(file, content.JCRContentFileSuffix, ""), content.JCRContentFile)
-	}
-	return file
-}
-
 func (cm *ContentManager) Push(packageOpts PackageCreateOpts) error {
 	remotePath, err := cm.pkgMgr().Create(packageOpts)
 	if err != nil {
@@ -163,6 +160,13 @@ func (cm *ContentManager) Push(packageOpts PackageCreateOpts) error {
 		return err
 	}
 	return nil
+}
+
+func determineCleanFile(file string) string {
+	if namespacePatternRegex.MatchString(file) && !strings.HasSuffix(file, content.JCRContentFile) {
+		return filepath.Join(strings.ReplaceAll(file, content.JCRContentFileSuffix, ""), content.JCRContentFile)
+	}
+	return file
 }
 
 func (cm *ContentManager) Copy(destInstance *Instance, clean bool, pkgOpts PackageCreateOpts) error {

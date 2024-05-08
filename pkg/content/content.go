@@ -514,7 +514,7 @@ func determineStringSlice(values any, key string) []string {
 }
 
 func IsContentFile(path string) bool {
-	if !strings.HasSuffix(path, JCRContentFile) {
+	if pathx.IsDir(path) || !strings.HasSuffix(path, JCRContentFile) {
 		return false
 	}
 
@@ -529,4 +529,8 @@ func IsContentFile(path string) bool {
 		}
 	}
 	return false
+}
+
+func DetermineJcrPath(path string) string {
+	return strings.Split(path, JCRRoot)[1]
 }

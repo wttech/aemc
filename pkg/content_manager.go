@@ -79,7 +79,7 @@ func (cm *ContentManager) PullDir(dir string, clean bool, replace bool, packageO
 	if err := pathx.Ensure(dir); err != nil {
 		return err
 	}
-	mainDir := strings.Split(dir, content.JCRRoot)[0]
+	mainDir, _, _ := strings.Cut(dir, content.JCRRoot)
 	contentManager := cm.instance.manager.aem.contentManager
 	if replace {
 		if err := contentManager.Prepare(dir); err != nil {
@@ -120,7 +120,7 @@ func (cm *ContentManager) PullFile(file string, clean bool, packageOpts PackageC
 	if err := pathx.Ensure(dir); err != nil {
 		return err
 	}
-	jcrPath := content.DetermineJcrPath(dir)
+	_, jcrPath, _ := strings.Cut(dir, content.JCRRoot)
 	contentManager := cm.instance.manager.aem.contentManager
 	if err := contentManager.BeforePullFile(file); err != nil {
 		return err

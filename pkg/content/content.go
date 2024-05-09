@@ -530,7 +530,3 @@ func IsContentFile(path string) bool {
 	}
 	return false
 }
-
-func DetermineJcrPath(path string) string {
-	return strings.Split(path, JCRRoot)[1]
-}

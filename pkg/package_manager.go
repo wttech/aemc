@@ -206,8 +206,8 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	}
 	if opts.PushContent {
 		for _, contentPath := range opts.ContentPaths {
+			_, jcrPath, _ := strings.Cut(contentPath, content.JCRRoot)
 			if pathx.IsDir(contentPath) {
-				jcrPath := content.DetermineJcrPath(contentPath)
 				if err = pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, jcrPath)); err != nil {
 					return "", err
 				}
@@ -215,20 +215,17 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 					return "", err
 				}
 			} else if pathx.IsFile(contentPath) {
-				dir := filepath.Dir(contentPath)
-				jcrPath := content.DetermineJcrPath(dir)
-				if err = pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, jcrPath)); err != nil {
+				jcrDir := filepath.Dir(jcrPath)
+				if err = pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, jcrDir)); err != nil {
 					return "", err
 				}
-				jcrPath = content.DetermineJcrPath(contentPath)
 				if err = filex.Copy(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath), true); err != nil {
 					return "", err
 				}
 				if strings.HasSuffix(contentPath, content.JCRContentFile) {
-					dir = strings.ReplaceAll(contentPath, content.JCRContentNode, content.JCRContentDirName)
-					if pathx.Exists(dir) {
-						jcrPath := content.DetermineJcrPath(dir)
-						if err = filex.CopyDir(dir, filepath.Join(tmpDir, content.JCRRoot, jcrPath)); err != nil {
+					contentDir := strings.ReplaceAll(contentPath, content.JCRContentFile, content.JCRContentDirName)
+					if pathx.Exists(contentDir) {
+						if err = filex.CopyDir(contentDir, filepath.Join(tmpDir, content.JCRRoot, jcrDir, content.JCRContentDirName)); err != nil {
 							return "", err
 						}
 					}
@@ -262,7 +259,7 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 func determineFilterRoots(opts PackageCreateOpts) []string {
 	var filterRoots []string
 	for _, contentPath := range opts.ContentPaths {
-		filterRoot := content.DetermineJcrPath(contentPath)
+		_, filterRoot, _ := strings.Cut(contentPath, content.JCRRoot)
 		if content.IsContentFile(contentPath) {
 			filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFile, content.JCRContentNode)
 		} else if strings.HasSuffix(filterRoot, content.JCRContentFile) {

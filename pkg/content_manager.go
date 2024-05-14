@@ -43,11 +43,11 @@ func (cm *ContentManager) tmpDir() string {
 	return cm.instance.manager.aem.baseOpts.TmpDir
 }
 
-func (cm *ContentManager) Download(localFile string, opts PackageCreateOpts) error {
-	if opts.PID == "" {
-		opts.PID = fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", timex.FileTimestampForNow())
+func (cm *ContentManager) Download(localFile string, packageOpts PackageCreateOpts) error {
+	if packageOpts.PID == "" {
+		packageOpts.PID = fmt.Sprintf("aemc:content-pull:%s-SNAPSHOT", timex.FileTimestampForNow())
 	}
-	remotePath, err := cm.pkgMgr().Create(opts)
+	remotePath, err := cm.pkgMgr().Create(packageOpts)
 	if err != nil {
 		return err
 	}
@@ -149,6 +149,9 @@ func (cm *ContentManager) PullFile(file string, clean bool, packageOpts PackageC
 }
 
 func (cm *ContentManager) Push(packageOpts PackageCreateOpts) error {
+	if packageOpts.PID == "" {
+		packageOpts.PID = fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow())
+	}
 	remotePath, err := cm.pkgMgr().Create(packageOpts)
 	if err != nil {
 		return err
@@ -169,20 +172,20 @@ func determineCleanFile(file string) string {
 	return file
 }
 
-func (cm *ContentManager) Copy(destInstance *Instance, clean bool, pkgOpts PackageCreateOpts) error {
+func (cm *ContentManager) Copy(destInstance *Instance, clean bool, packageOpts PackageCreateOpts) error {
 	var pkgFile = pathx.RandomFileName(cm.tmpDir(), "content_copy", ".zip")
 	defer func() { _ = pathx.DeleteIfExists(pkgFile) }()
 	if clean {
 		workDir := pathx.RandomDir(cm.tmpDir(), "content_copy")
 		defer func() { _ = pathx.DeleteIfExists(workDir) }()
-		if err := cm.PullDir(filepath.Join(workDir, content.JCRRoot), clean, false, pkgOpts); err != nil {
+		if err := cm.PullDir(filepath.Join(workDir, content.JCRRoot), clean, false, packageOpts); err != nil {
 			return err
 		}
 		if err := filex.Archive(workDir, pkgFile); err != nil {
 			return err
 		}
 	} else {
-		if err := cm.Download(pkgFile, pkgOpts); err != nil {
+		if err := cm.Download(pkgFile, packageOpts); err != nil {
 			return err
 		}
 	}

@@ -293,7 +293,7 @@ func (pm *PackageManager) Copy(remotePath string, destInstance *Instance) error 
 }
 
 func (pm *PackageManager) tmpDir() string {
-	if !pm.instance.manager.aem.config.TemplateFileExists() {
+	if pm.instance.manager.aem.Detached() {
 		return os.TempDir()
 	}
 	return pm.instance.manager.aem.baseOpts.TmpDir

@@ -37,7 +37,7 @@ func (cm *ContentManager) pkgMgr() *PackageManager {
 }
 
 func (cm *ContentManager) tmpDir() string {
-	if !cm.instance.manager.aem.config.TemplateFileExists() {
+	if cm.instance.manager.aem.Detached() {
 		return os.TempDir()
 	}
 	return cm.instance.manager.aem.baseOpts.TmpDir
@@ -45,7 +45,7 @@ func (cm *ContentManager) tmpDir() string {
 
 func (cm *ContentManager) Download(localFile string, packageOpts PackageCreateOpts) error {
 	if packageOpts.PID == "" {
-		packageOpts.PID = fmt.Sprintf("aemc:content-pull:%s-SNAPSHOT", timex.FileTimestampForNow())
+		packageOpts.PID = fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", timex.FileTimestampForNow())
 	}
 	remotePath, err := cm.pkgMgr().Create(packageOpts)
 	if err != nil {

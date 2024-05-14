@@ -125,9 +125,9 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
 				filterFile, _ := cmd.Flags().GetString("filter-file")
 				if err = instance.ContentManager().PullDir(dir, clean, replace, pkg.PackageCreateOpts{
-					FilterRoots:  filterRoots,
-					FilterFile:   filterFile,
-					ContentPaths: []string{dir},
+					FilterRoots: filterRoots,
+					FilterFile:  filterFile,
+					ContentDir:  dir,
 				}); err != nil {
 					c.Error(err)
 					return
@@ -135,7 +135,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				c.SetOutput("dir", dir)
 			} else if file != "" {
 				if err = instance.ContentManager().PullFile(file, clean, pkg.PackageCreateOpts{
-					ContentPaths: []string{file},
+					ContentFile: file,
 				}); err != nil {
 					c.Error(err)
 					return
@@ -161,32 +161,43 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "push",
 		Aliases: []string{"ps"},
-		Short:   "Push content from JCR root directories or local files to running instance",
+		Short:   "Push content from JCR root directory or local file to running instance",
 		Run: func(cmd *cobra.Command, args []string) {
 			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
 				c.Error(err)
 				return
 			}
-			contentPaths, err := determineContentPaths(cmd)
+			dir, err := determineContentDir(cmd)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			file, err := determineContentFile(cmd)
 			if err != nil {
 				c.Error(err)
 				return
 			}
 			if err = instance.ContentManager().Push(pkg.PackageCreateOpts{
-				PushContent:  true,
-				ContentPaths: contentPaths,
+				PushContent: true,
+				ContentDir:  dir,
+				ContentFile: file,
 			}); err != nil {
 				c.Error(err)
 				return
 			}
-			c.SetOutput("paths", contentPaths)
+			if dir != "" {
+				c.SetOutput("dir", dir)
+			} else if file != "" {
+				c.SetOutput("file", file)
+			}
 			c.Changed("content pushed")
 		},
 	}
-	cmd.Flags().StringSliceP("dir", "d", []string{}, "JCR root path")
-	cmd.Flags().StringSliceP("file", "f", []string{}, "Local file path")
-	cmd.Flags().StringSliceP("path", "p", []string{}, "JCR root path or local file path")
+	cmd.Flags().StringP("dir", "d", "", "JCR root path")
+	cmd.Flags().StringP("file", "f", "", "Local file path")
+	cmd.Flags().StringP("path", "p", "", "JCR root path or local file path")
+	cmd.MarkFlagsOneRequired("dir", "file", "path")
 	return cmd
 }
 
@@ -279,28 +290,4 @@ func determineContentFile(cmd *cobra.Command) (string, error) {
 		return path, nil
 	}
 	return file, nil
-}
-
-func determineContentPaths(cmd *cobra.Command) ([]string, error) {
-	var contentPaths []string
-	dirs, _ := cmd.Flags().GetStringSlice("dir")
-	files, _ := cmd.Flags().GetStringSlice("file")
-	paths, _ := cmd.Flags().GetStringSlice("path")
-	data := map[string][]string{
-		"dir":    dirs,
-		"file":   files,
-		"cherry": paths,
-	}
-	for mode, paths := range data {
-		for _, path := range paths {
-			contentPaths = append(contentPaths, path)
-			if !strings.Contains(path, content.JCRRoot) {
-				return nil, fmt.Errorf("content %s '%s' does not contain '%s'", mode, path, content.JCRRoot)
-			}
-			if !pathx.Exists(path) {
-				return nil, fmt.Errorf("content %s does not exist: %s", mode, path)
-			}
-		}
-	}
-	return contentPaths, nil
 }

@@ -2,6 +2,8 @@ package filex
 
 import (
 	"fmt"
+	"github.com/mholt/archiver/v3"
+	"github.com/samber/lo"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"os"
 	"path/filepath"
@@ -15,7 +17,19 @@ func Archive(sourcePath, targetFile string) error {
 	if err != nil {
 		return err
 	}
-	err = compress(sourcePath, targetFile)
+	var sourcePaths []string
+	if pathx.IsDir(sourcePath) {
+		sourceDirEntries, err := os.ReadDir(sourcePath)
+		if err != nil {
+			return fmt.Errorf("cannot read dir '%s' to be archived to file '%s': %w", sourcePath, targetFile, err)
+		}
+		sourcePaths = lo.Map(sourceDirEntries, func(e os.DirEntry, _ int) string {
+			return pathx.Canonical(fmt.Sprintf("%s/%s", sourcePath, e.Name()))
+		})
+	} else {
+		sourcePaths = []string{sourcePath}
+	}
+	err = archiver.Archive(sourcePaths, targetFile)
 	if err != nil {
 		return fmt.Errorf("cannot archive dir '%s' to file '%s': %w", sourcePath, targetFile, err)
 	}
@@ -46,7 +60,7 @@ func Unarchive(sourceFile string, targetDir string) error {
 	if err := pathx.Ensure(targetDir); err != nil {
 		return err
 	}
-	if err := extract(sourceFile, targetDir); err != nil {
+	if err := archiver.Unarchive(sourceFile, targetDir); err != nil {
 		return fmt.Errorf("cannot unarchive file '%s' to dir '%s': %w", sourceFile, targetDir, err)
 	}
 	return nil

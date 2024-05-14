@@ -73,7 +73,7 @@ func (cm *ContentManager) PullDir(dir string, clean bool, replace bool, packageO
 		_ = pathx.DeleteIfExists(pkgFile)
 		_ = pathx.DeleteIfExists(workDir)
 	}()
-	if err := filex.Unarchive(pkgFile, workDir); err != nil {
+	if err := content.Unarchive(pkgFile, workDir); err != nil {
 		return err
 	}
 	if err := pathx.Ensure(dir); err != nil {
@@ -113,7 +113,7 @@ func (cm *ContentManager) PullFile(file string, clean bool, packageOpts PackageC
 		_ = pathx.DeleteIfExists(pkgFile)
 		_ = pathx.DeleteIfExists(workDir)
 	}()
-	if err := filex.Unarchive(pkgFile, workDir); err != nil {
+	if err := content.Unarchive(pkgFile, workDir); err != nil {
 		return err
 	}
 	dir := filepath.Dir(file)
@@ -181,7 +181,7 @@ func (cm *ContentManager) Copy(destInstance *Instance, clean bool, packageOpts P
 		if err := cm.PullDir(filepath.Join(workDir, content.JCRRoot), clean, false, packageOpts); err != nil {
 			return err
 		}
-		if err := filex.Archive(workDir, pkgFile); err != nil {
+		if err := content.Archive(workDir, pkgFile); err != nil {
 			return err
 		}
 	} else {

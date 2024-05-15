@@ -76,9 +76,6 @@ func (cm *ContentManager) PullDir(dir string, clean bool, replace bool, packageO
 	if err := content.Unarchive(pkgFile, workDir); err != nil {
 		return err
 	}
-	if err := pathx.Ensure(dir); err != nil {
-		return err
-	}
 	mainDir, _, _ := strings.Cut(dir, content.JCRRoot)
 	contentManager := cm.instance.manager.aem.contentManager
 	if replace {
@@ -117,9 +114,6 @@ func (cm *ContentManager) PullFile(file string, clean bool, packageOpts PackageC
 		return err
 	}
 	dir := filepath.Dir(file)
-	if err := pathx.Ensure(dir); err != nil {
-		return err
-	}
 	_, jcrPath, _ := strings.Cut(dir, content.JCRRoot)
 	contentManager := cm.instance.manager.aem.contentManager
 	if err := contentManager.BeforePullFile(file); err != nil {
@@ -148,9 +142,42 @@ func (cm *ContentManager) PullFile(file string, clean bool, packageOpts PackageC
 	return nil
 }
 
-func (cm *ContentManager) Push(packageOpts PackageCreateOpts) error {
+func (cm *ContentManager) Push(clean bool, contentPath string, packageOpts PackageCreateOpts) error {
 	if packageOpts.PID == "" {
 		packageOpts.PID = fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow())
+	}
+	if clean {
+		workDir := pathx.RandomDir(cm.tmpDir(), "content_push")
+		defer func() {
+			_ = pathx.DeleteIfExists(workDir)
+		}()
+		if pathx.IsDir(contentPath) {
+			_, jcrPath, _ := strings.Cut(contentPath, content.JCRRoot)
+			if err := filex.CopyDir(contentPath, filepath.Join(workDir, content.JCRRoot, jcrPath)); err != nil {
+				return err
+			}
+		} else if pathx.IsFile(contentPath) {
+			_, jcrPath, _ := strings.Cut(contentPath, content.JCRRoot)
+			jcrDir := filepath.Dir(jcrPath)
+			if err := filex.Copy(contentPath, filepath.Join(workDir, content.JCRRoot, jcrPath), true); err != nil {
+				return err
+			}
+			if strings.HasSuffix(contentPath, content.JCRContentFile) {
+				contentDir := strings.ReplaceAll(contentPath, content.JCRContentFile, content.JCRContentDirName)
+				if pathx.Exists(contentDir) {
+					if err := filex.CopyDir(contentDir, filepath.Join(workDir, content.JCRRoot, jcrDir, content.JCRContentDirName)); err != nil {
+						return err
+					}
+				}
+			}
+		}
+		contentManager := cm.instance.manager.aem.contentManager
+		if err := contentManager.CleanDir(filepath.Join(workDir, content.JCRRoot)); err != nil {
+			return err
+		}
+		packageOpts.ContentPath = filepath.Join(workDir, content.JCRRoot)
+	} else {
+		packageOpts.ContentPath = contentPath
 	}
 	remotePath, err := cm.pkgMgr().Create(packageOpts)
 	if err != nil {

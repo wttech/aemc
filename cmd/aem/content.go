@@ -124,18 +124,21 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 			if dir != "" {
 				filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
 				filterFile, _ := cmd.Flags().GetString("filter-file")
+				if len(filterRoots) == 0 && filterFile == "" {
+					filterRoots = []string{pkg.DetermineFilterRoot(dir, file)}
+				}
 				if err = instance.ContentManager().PullDir(dir, clean, replace, pkg.PackageCreateOpts{
 					FilterRoots: filterRoots,
 					FilterFile:  filterFile,
-					ContentDir:  dir,
 				}); err != nil {
 					c.Error(err)
 					return
 				}
 				c.SetOutput("dir", dir)
 			} else if file != "" {
+				filterRoots := []string{pkg.DetermineFilterRoot(dir, file)}
 				if err = instance.ContentManager().PullFile(file, clean, pkg.PackageCreateOpts{
-					ContentFile: file,
+					FilterRoots: filterRoots,
 				}); err != nil {
 					c.Error(err)
 					return
@@ -178,10 +181,10 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			if err = instance.ContentManager().Push(pkg.PackageCreateOpts{
-				PushContent: true,
-				ContentDir:  dir,
-				ContentFile: file,
+			clean, _ := cmd.Flags().GetBool("clean")
+			filterRoots := []string{pkg.DetermineFilterRoot(dir, file)}
+			if err = instance.ContentManager().Push(clean, "", pkg.PackageCreateOpts{
+				FilterRoots: filterRoots,
 			}); err != nil {
 				c.Error(err)
 				return
@@ -198,6 +201,7 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 	cmd.Flags().StringP("file", "f", "", "Local file path")
 	cmd.Flags().StringP("path", "p", "", "JCR root path or local file path")
 	cmd.MarkFlagsOneRequired("dir", "file", "path")
+	cmd.Flags().Bool("clean", false, "Normalize content while uploading")
 	return cmd
 }
 

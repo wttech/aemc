@@ -169,9 +169,7 @@ type PackageCreateOpts struct {
 	PID         string
 	FilterRoots []string
 	FilterFile  string
-	PushContent bool
-	ContentDir  string
-	ContentFile string
+	ContentPath string
 }
 
 func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
@@ -187,9 +185,6 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 		_ = pathx.DeleteIfExists(tmpDir)
 		_ = pathx.DeleteIfExists(tmpFile)
 	}()
-	if len(opts.FilterRoots) == 0 && opts.FilterFile == "" || opts.PushContent {
-		opts.FilterRoots = []string{determineFilterRoot(opts)}
-	}
 	data := map[string]any{
 		"Pid":         opts.PID,
 		"Group":       pidConfig.Group,
@@ -205,23 +200,17 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 			return "", err
 		}
 	}
-	if opts.PushContent {
-		if opts.ContentDir != "" {
-			contentPath := opts.ContentDir
+	if opts.ContentPath != "" {
+		if pathx.IsDir(opts.ContentPath) {
+			contentPath := opts.ContentPath
 			_, jcrPath, _ := strings.Cut(contentPath, content.JCRRoot)
-			if err = pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, jcrPath)); err != nil {
-				return "", err
-			}
 			if err = filex.CopyDir(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath)); err != nil {
 				return "", err
 			}
-		} else if opts.ContentFile != "" {
-			contentPath := opts.ContentFile
+		} else if pathx.IsFile(opts.ContentPath) {
+			contentPath := opts.ContentPath
 			_, jcrPath, _ := strings.Cut(contentPath, content.JCRRoot)
 			jcrDir := filepath.Dir(jcrPath)
-			if err = pathx.Ensure(filepath.Join(tmpDir, content.JCRRoot, jcrDir)); err != nil {
-				return "", err
-			}
 			if err = filex.Copy(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath), true); err != nil {
 				return "", err
 			}
@@ -258,12 +247,12 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	return status.Path, nil
 }
 
-func determineFilterRoot(opts PackageCreateOpts) string {
+func DetermineFilterRoot(contentDir string, contentFile string) string {
 	var contentPath string
-	if opts.ContentDir != "" {
-		contentPath = opts.ContentDir
-	} else if opts.ContentFile != "" {
-		contentPath = opts.ContentFile
+	if contentDir != "" {
+		contentPath = contentDir
+	} else if contentFile != "" {
+		contentPath = contentFile
 	}
 	_, filterRoot, _ := strings.Cut(contentPath, content.JCRRoot)
 	if content.IsContentFile(contentPath) {

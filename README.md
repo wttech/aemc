@@ -37,6 +37,7 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
   * [CLI - Overview](#cli---overview)
   * [CLI - Screenshots](#cli---screenshots)
   * [CLI - AEM Project Quickstart](#cli---aem-project-quickstart)
+  * [IaaC Providers](#iaac-providers)
   * [Ansible Collection](#ansible-collection)
   * [Go Scripting](#go-scripting)
 * [Dependencies](#dependencies)
@@ -184,7 +185,18 @@ Simply run command with appending [task variable](https://taskfile.dev/usage/#va
 sh taskw aem:build AEM_BUILD_ARGS="-PfedDev -DskipTests -pl '!ui.tests'"
 ```
 
+## IaaC Providers
+
+The tool is designed to be used in Infrastructure as a Code (IaaC) solutions such as [Terraform](https://www.terraform.io/) or [Pulumi](https://www.pulumi.com/).
+
+See separate projects based on AEM Compose:
+
+- Terraform Provider: <https://github.com/wttech/terraform-provider-aem>
+- Pulumi Provider: <https://github.com/wttech/pulumi-aem>
+
 ## Ansible Collection
+
+The tool is designed to be used in Ansible playbooks and roles.
 
 See a separate project based on AEM Compose: <https://github.com/wttech/aemc-ansible>
 

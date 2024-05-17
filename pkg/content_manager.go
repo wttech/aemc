@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	NamespacePattern = "_([a-z]+)_"
+	NamespacePattern = "(\\|/)_(mediapro|lr|xmpTPg|prismusagerights|xmpPLUS|dam|s7sitecatalyst|xmpNote|dex|xml|xmp|viewerpreset|rep|stock|psAux|prism|MP|Iptc4xmpExt|photoshop|xmpDM|prl|plus|xmpMM|acdsee|wcmio|exif|xmpRights|bd|tiff|nt|stEvt|s7userdata|jcr|oak|DICOM|mix|oauth|cc|sv|social|crs|album|crx|cm|xmpBJ|cq|sling|adobe_dam|pdfx|pdf|Iptc4xmpCore|rdf|granite|stRef|MicrosoftPhoto|slingevent|dc|vlt)_"
 )
 
 var (
@@ -73,7 +73,7 @@ func (cm *ContentManager) PullDir(dir string, clean bool, replace bool, packageO
 		_ = pathx.DeleteIfExists(pkgFile)
 		_ = pathx.DeleteIfExists(workDir)
 	}()
-	if err := content.Unarchive(pkgFile, workDir); err != nil {
+	if err := content.Unzip(pkgFile, workDir); err != nil {
 		return err
 	}
 	mainDir, _, _ := strings.Cut(dir, content.JCRRoot)
@@ -110,7 +110,7 @@ func (cm *ContentManager) PullFile(file string, clean bool, packageOpts PackageC
 		_ = pathx.DeleteIfExists(pkgFile)
 		_ = pathx.DeleteIfExists(workDir)
 	}()
-	if err := content.Unarchive(pkgFile, workDir); err != nil {
+	if err := content.Unzip(pkgFile, workDir); err != nil {
 		return err
 	}
 	dir := filepath.Dir(file)
@@ -143,6 +143,9 @@ func (cm *ContentManager) PullFile(file string, clean bool, packageOpts PackageC
 }
 
 func (cm *ContentManager) Push(clean bool, contentPath string, packageOpts PackageCreateOpts) error {
+	if !pathx.Exists(contentPath) {
+		return fmt.Errorf("cannot push content as it does not exist '%s'", contentPath)
+	}
 	if packageOpts.PID == "" {
 		packageOpts.PID = fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow())
 	}
@@ -208,7 +211,7 @@ func (cm *ContentManager) Copy(destInstance *Instance, clean bool, packageOpts P
 		if err := cm.PullDir(filepath.Join(workDir, content.JCRRoot), clean, false, packageOpts); err != nil {
 			return err
 		}
-		if err := content.Archive(workDir, pkgFile); err != nil {
+		if err := content.Zip(workDir, pkgFile); err != nil {
 			return err
 		}
 	} else {

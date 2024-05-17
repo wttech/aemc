@@ -75,7 +75,7 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 			}
 			pid, _ := cmd.Flags().GetString("pid")
 			targetFile, _ := cmd.Flags().GetString("target-file")
-			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
+			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
 			if err = instance.ContentManager().Download(targetFile, pkg.PackageCreateOpts{
 				PID:         pid,
@@ -121,12 +121,9 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			filterRoots := determineFilterRoots(cmd)
+			filterFile, _ := cmd.Flags().GetString("filter-file")
 			if dir != "" {
-				filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
-				filterFile, _ := cmd.Flags().GetString("filter-file")
-				if len(filterRoots) == 0 && filterFile == "" {
-					filterRoots = []string{pkg.DetermineFilterRoot(dir, file)}
-				}
 				if err = instance.ContentManager().PullDir(dir, clean, replace, pkg.PackageCreateOpts{
 					FilterRoots: filterRoots,
 					FilterFile:  filterFile,
@@ -136,7 +133,6 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				}
 				c.SetOutput("dir", dir)
 			} else if file != "" {
-				filterRoots := []string{pkg.DetermineFilterRoot(dir, file)}
 				if err = instance.ContentManager().PullFile(file, clean, pkg.PackageCreateOpts{
 					FilterRoots: filterRoots,
 				}); err != nil {
@@ -181,9 +177,13 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			path := dir
+			if path == "" {
+				path = file
+			}
 			clean, _ := cmd.Flags().GetBool("clean")
-			filterRoots := []string{pkg.DetermineFilterRoot(dir, file)}
-			if err = instance.ContentManager().Push(clean, "", pkg.PackageCreateOpts{
+			filterRoots := determineFilterRoots(cmd)
+			if err = instance.ContentManager().Push(clean, path, pkg.PackageCreateOpts{
 				FilterRoots: filterRoots,
 			}); err != nil {
 				c.Error(err)
@@ -221,7 +221,7 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
+			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
 			clean, _ := cmd.Flags().GetBool("clean")
 			if err = instance.ContentManager().Copy(targetInstance, clean, pkg.PackageCreateOpts{
@@ -294,4 +294,24 @@ func determineContentFile(cmd *cobra.Command) (string, error) {
 		return path, nil
 	}
 	return file, nil
+}
+
+func determineFilterRoots(cmd *cobra.Command) []string {
+	filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
+	if len(filterRoots) > 0 {
+		return filterRoots
+	}
+	filterFile, _ := cmd.Flags().GetString("filter-file")
+	if filterFile != "" {
+		return nil
+	}
+	dir, _ := determineContentDir(cmd)
+	if dir != "" {
+		return []string{pkg.DetermineFilterRoot(dir)}
+	}
+	file, _ := determineContentFile(cmd)
+	if file != "" {
+		return []string{pkg.DetermineFilterRoot(file)}
+	}
+	return nil
 }

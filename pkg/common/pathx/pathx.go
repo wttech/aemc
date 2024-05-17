@@ -46,7 +46,7 @@ func ExistsStrict(path string) (bool, error) {
 }
 
 func IsFile(path string) bool {
-	return !IsDir(path)
+	return Exists(path) && !IsDir(path)
 }
 
 func IsDir(path string) bool {

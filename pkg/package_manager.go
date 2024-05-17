@@ -201,15 +201,13 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 		}
 	}
 	if opts.ContentPath != "" {
-		if pathx.IsDir(opts.ContentPath) {
-			contentPath := opts.ContentPath
-			_, jcrPath, _ := strings.Cut(contentPath, content.JCRRoot)
+		contentPath := opts.ContentPath
+		_, jcrPath, _ := strings.Cut(contentPath, content.JCRRoot)
+		if pathx.IsDir(contentPath) {
 			if err = filex.CopyDir(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath)); err != nil {
 				return "", err
 			}
-		} else if pathx.IsFile(opts.ContentPath) {
-			contentPath := opts.ContentPath
-			_, jcrPath, _ := strings.Cut(contentPath, content.JCRRoot)
+		} else if pathx.IsFile(contentPath) {
 			jcrDir := filepath.Dir(jcrPath)
 			if err = filex.Copy(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath), true); err != nil {
 				return "", err
@@ -224,7 +222,7 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 			}
 		}
 	}
-	if err = content.Archive(tmpDir, tmpFile); err != nil {
+	if err = content.Zip(tmpDir, tmpFile); err != nil {
 		return "", err
 	}
 	response, err := pm.instance.http.Request().
@@ -247,23 +245,18 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	return status.Path, nil
 }
 
-func DetermineFilterRoot(contentDir string, contentFile string) string {
-	var contentPath string
-	if contentDir != "" {
-		contentPath = contentDir
-	} else if contentFile != "" {
-		contentPath = contentFile
-	}
+func DetermineFilterRoot(contentPath string) string {
 	_, filterRoot, _ := strings.Cut(contentPath, content.JCRRoot)
+	filterRoot = strings.ReplaceAll(filterRoot, "\\", "/")
 	if content.IsContentFile(contentPath) {
 		filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFile, content.JCRContentNode)
 	} else if strings.HasSuffix(filterRoot, content.JCRContentFile) {
-		filterRoot = namespacePatternRegex.ReplaceAllString(filterRoot, "$1:")
 		filterRoot = filepath.Dir(filterRoot)
 	} else if strings.HasSuffix(filterRoot, content.JCRContentFileSuffix) {
-		filterRoot = namespacePatternRegex.ReplaceAllString(filterRoot, "$1:")
 		filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFileSuffix, "")
 	}
+	filterRoot = namespacePatternRegex.ReplaceAllString(filterRoot, "/$2:")
+	filterRoot = strings.ReplaceAll(filterRoot, "/__", "/_")
 	return filterRoot
 }
 

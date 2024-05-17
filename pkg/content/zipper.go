@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 )
 
-func Archive(sourcePath, targetFile string) error {
+func Zip(sourcePath, targetFile string) error {
 	if !pathx.Exists(sourcePath) {
-		return fmt.Errorf("cannot archive path '%s' to file '%s' as source path does not exist", sourcePath, targetFile)
+		return fmt.Errorf("cannot zip path '%s' to file '%s' as source path does not exist", sourcePath, targetFile)
 	}
 	err := pathx.Ensure(filepath.Dir(targetFile))
 	if err != nil {
@@ -19,20 +19,20 @@ func Archive(sourcePath, targetFile string) error {
 	}
 	err = compress(sourcePath, targetFile)
 	if err != nil {
-		return fmt.Errorf("cannot archive dir '%s' to file '%s': %w", sourcePath, targetFile, err)
+		return fmt.Errorf("cannot zip dir '%s' to file '%s': %w", sourcePath, targetFile, err)
 	}
 	return nil
 }
 
-func Unarchive(sourceFile string, targetDir string) error {
+func Unzip(sourceFile string, targetDir string) error {
 	if !pathx.Exists(sourceFile) {
-		return fmt.Errorf("cannot unarchive file '%s' to dir '%s' as source file does not exist", sourceFile, targetDir)
+		return fmt.Errorf("cannot unzip file '%s' to dir '%s' as source file does not exist", sourceFile, targetDir)
 	}
 	if err := pathx.Ensure(targetDir); err != nil {
 		return err
 	}
 	if err := extract(sourceFile, targetDir); err != nil {
-		return fmt.Errorf("cannot unarchive file '%s' to dir '%s': %w", sourceFile, targetDir, err)
+		return fmt.Errorf("cannot unzip file '%s' to dir '%s': %w", sourceFile, targetDir, err)
 	}
 	return nil
 }

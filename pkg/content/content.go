@@ -512,21 +512,3 @@ func determineStringSlice(values any, key string) []string {
 	}
 	return result
 }
-
-func IsContentFile(path string) bool {
-	if !pathx.Exists(path) || pathx.IsDir(path) || !strings.HasSuffix(path, JCRContentFile) {
-		return false
-	}
-
-	inputLines, err := readLines(path)
-	if err != nil {
-		return false
-	}
-
-	for _, inputLine := range inputLines {
-		if strings.Contains(inputLine, JCRContentPrefix) {
-			return true
-		}
-	}
-	return false
-}

@@ -10,6 +10,10 @@ func TestDetermineFilterRoot(t *testing.T) {
 	}{
 		{"/somepath/jcr_root/content/my_site", "/content/my_site"},
 		{"/somepath/jcr_root/content/my_site/_cq_path", "/content/my_site/cq:path"},
+		{"/somepath/jcr_root/content/my_site/_xmpBJ_path", "/content/my_site/xmpBJ:path"},
+		{"/somepath/jcr_root/content/my_site/_s7sitecatalyst_path", "/content/my_site/s7sitecatalyst:path"},
+		{"/somepath/jcr_root/content/my_site/adobe_dam%3apath", "/content/my_site/adobe_dam:path"},
+		{"/somepath/jcr_root/content/my_site/_cq__sub_path_", "/content/my_site/cq:_sub_path_"},
 		{"/somepath/jcr_root/content/my_site/__cq_path", "/content/my_site/_cq_path"},
 		{"/somepath/jcr_root/content/my_site/__abc_path", "/content/my_site/_abc_path"},
 		{"/somepath/jcr_root/content/my_site/__path", "/content/my_site/_path"},

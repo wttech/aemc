@@ -257,6 +257,7 @@ func DetermineFilterRoot(contentPath string) string {
 	}
 	filterRoot = namespacePatternRegex.ReplaceAllString(filterRoot, "/$2:")
 	filterRoot = strings.ReplaceAll(filterRoot, "/__", "/_")
+	filterRoot = strings.ReplaceAll(filterRoot, "%3a", ":")
 	return filterRoot
 }
 

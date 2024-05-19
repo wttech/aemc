@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	NamespacePattern = "(\\\\|/)_(mediapro|lr|xmpTPg|prismusagerights|xmpPLUS|dam|s7sitecatalyst|xmpNote|dex|xml|xmp|viewerpreset|rep|stock|psAux|prism|MP|Iptc4xmpExt|photoshop|xmpDM|prl|plus|xmpMM|acdsee|wcmio|exif|xmpRights|bd|tiff|nt|stEvt|s7userdata|jcr|oak|DICOM|mix|oauth|cc|sv|social|crs|album|crx|cm|xmpBJ|cq|sling|adobe_dam|pdfx|pdf|Iptc4xmpCore|rdf|granite|stRef|MicrosoftPhoto|slingevent|dc|vlt)_"
+	NamespacePattern = "(\\\\|/)_([a-zA-Z0-9]+)_"
 )
 
 var (

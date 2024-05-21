@@ -201,25 +201,8 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 		}
 	}
 	if opts.ContentPath != "" {
-		contentPath := opts.ContentPath
-		_, jcrPath, _ := strings.Cut(contentPath, content.JCRRoot)
-		if pathx.IsDir(contentPath) {
-			if err = filex.CopyDir(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath)); err != nil {
-				return "", err
-			}
-		} else if pathx.IsFile(contentPath) {
-			jcrDir := filepath.Dir(jcrPath)
-			if err = filex.Copy(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath), true); err != nil {
-				return "", err
-			}
-			if strings.HasSuffix(contentPath, content.JCRContentFile) {
-				contentDir := strings.ReplaceAll(contentPath, content.JCRContentFile, content.JCRContentDirName)
-				if pathx.Exists(contentDir) {
-					if err = filex.CopyDir(contentDir, filepath.Join(tmpDir, content.JCRRoot, jcrDir, content.JCRContentDirName)); err != nil {
-						return "", err
-					}
-				}
-			}
+		if err = pm.copyContentFiles(opts, tmpDir); err != nil {
+			return "", err
 		}
 	}
 	if err = content.Zip(tmpDir, tmpFile); err != nil {
@@ -243,6 +226,30 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	}
 	log.Infof("%s > created package '%s'", pm.instance.IDColor(), opts.PID)
 	return status.Path, nil
+}
+
+func (pm *PackageManager) copyContentFiles(opts PackageCreateOpts, tmpDir string) error {
+	contentPath := opts.ContentPath
+	_, jcrPath, _ := strings.Cut(contentPath, content.JCRRoot)
+	if pathx.IsDir(contentPath) {
+		if err := filex.CopyDir(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath)); err != nil {
+			return err
+		}
+	} else if pathx.IsFile(contentPath) {
+		jcrDir := filepath.Dir(jcrPath)
+		if err := filex.Copy(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath), true); err != nil {
+			return err
+		}
+		if strings.HasSuffix(contentPath, content.JCRContentFile) {
+			contentDir := strings.ReplaceAll(contentPath, content.JCRContentFile, content.JCRContentDirName)
+			if pathx.Exists(contentDir) {
+				if err := filex.CopyDir(contentDir, filepath.Join(tmpDir, content.JCRRoot, jcrDir, content.JCRContentDirName)); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func DetermineFilterRoot(contentPath string) string {

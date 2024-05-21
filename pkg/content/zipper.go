@@ -1,7 +1,18 @@
+/*
+This is a simple library for archiving files. It allows you to compress a single directory into a zip archive file
+and extract files from a zip archive file. The library creates zip archive files that are compatible
+with AEM package file specifications.
+
+This library is limited to basic zip operations, whereas github.com/mholt/archiver/v3 provides more advanced features
+but may not always produce zip archive files compatible with AEM package file specifications. Additionally,
+when using github.com/mholt/archiver/v3, the extracted directory may have insufficient permissions,
+requiring additional handling.
+*/
+
 package content
 
 import (
-	"archive/zip"
+	zipper "archive/zip"
 	"fmt"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"io"
@@ -17,7 +28,7 @@ func Zip(sourcePath, targetFile string) error {
 	if err != nil {
 		return err
 	}
-	err = compress(sourcePath, targetFile)
+	err = zip(sourcePath, targetFile)
 	if err != nil {
 		return fmt.Errorf("cannot zip dir '%s' to file '%s': %w", sourcePath, targetFile, err)
 	}
@@ -31,20 +42,20 @@ func Unzip(sourceFile string, targetDir string) error {
 	if err := pathx.Ensure(targetDir); err != nil {
 		return err
 	}
-	if err := extract(sourceFile, targetDir); err != nil {
+	if err := unzip(sourceFile, targetDir); err != nil {
 		return fmt.Errorf("cannot unzip file '%s' to dir '%s': %w", sourceFile, targetDir, err)
 	}
 	return nil
 }
 
-func compress(src string, dest string) error {
+func zip(src string, dest string) error {
 	destFile, err := os.Create(dest)
 	if err != nil {
 		return err
 	}
 	defer destFile.Close()
 
-	zipWriter := zip.NewWriter(destFile)
+	zipWriter := zipper.NewWriter(destFile)
 	defer zipWriter.Close()
 
 	err = filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
@@ -52,7 +63,7 @@ func compress(src string, dest string) error {
 			return err
 		}
 
-		header, err := zip.FileInfoHeader(info)
+		header, err := zipper.FileInfoHeader(info)
 		if err != nil {
 			return err
 		}
@@ -65,7 +76,7 @@ func compress(src string, dest string) error {
 		if info.IsDir() {
 			header.Name += "/"
 		} else {
-			header.Method = zip.Deflate
+			header.Method = zipper.Deflate
 		}
 
 		writer, err := zipWriter.CreateHeader(header)
@@ -92,8 +103,8 @@ func compress(src string, dest string) error {
 	return err
 }
 
-func extract(src string, dest string) error {
-	zipReader, err := zip.OpenReader(src)
+func unzip(src string, dest string) error {
+	zipReader, err := zipper.OpenReader(src)
 	if err != nil {
 		return err
 	}

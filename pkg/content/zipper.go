@@ -5,7 +5,7 @@ with AEM package file specifications.
 
 This library is limited to basic zip operations, whereas github.com/mholt/archiver/v3 provides more advanced features
 but may not always produce zip archive files compatible with AEM package file specifications. Additionally,
-when using github.com/mholt/archiver/v3, the extracted directory may have insufficient permissions,
+when using github.com/mholt/archiver/v3, extracted directories may have insufficient permissions,
 requiring additional handling.
 */
 

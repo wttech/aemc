@@ -442,6 +442,15 @@ func readLines(path string) ([]string, error) {
 
 	var lines []string
 	scanner := bufio.NewScanner(file)
+	fileStat, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if fileStat.Size() > bufio.MaxScanTokenSize {
+		size := fileStat.Size()
+		buffer := make([]byte, size)
+		scanner.Buffer(buffer, int(size))
+	}
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}

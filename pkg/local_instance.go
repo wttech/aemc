@@ -137,8 +137,15 @@ func (li LocalInstance) overrideDirsChecksum() (string, error) {
 	return filex.ChecksumPaths(lo.Filter(li.OverrideDirs(), func(d string, _ int) bool { return pathx.Exists(d) }), []string{})
 }
 
-func (li LocalInstance) LockDir() string {
-	return pathx.Canonical(fmt.Sprintf("%s/%s/lock", li.WorkDir(), common.VarDirName))
+func (li LocalInstance) StateDir() string {
+	oldDir := pathx.Canonical(fmt.Sprintf("%s/%s/lock", li.WorkDir(), common.VarDirName))
+	newDir := pathx.Canonical(fmt.Sprintf("%s/%s/state", li.WorkDir(), common.VarDirName))
+	if pathx.Exists(oldDir) && !pathx.Exists(newDir) {
+		if err := os.Rename(oldDir, newDir); err != nil {
+			log.Fatalf("%s > cannot migrate state dir from '%s' to '%s': %s", li.instance.IDColor(), oldDir, newDir, err)
+		}
+	}
+	return newDir
 }
 
 func (li LocalInstance) QuickstartDir() string {
@@ -248,7 +255,7 @@ func (li LocalInstance) Import() error {
 }
 
 func (li LocalInstance) createLock() osx.Lock[localInstanceCreateLock] {
-	return osx.NewLock(fmt.Sprintf("%s/create.yml", li.LockDir()), func() (localInstanceCreateLock, error) {
+	return osx.NewLock(fmt.Sprintf("%s/create.yml", li.StateDir()), func() (localInstanceCreateLock, error) {
 		var zero localInstanceCreateLock
 		jar, err := li.LocalOpts().Jar()
 		if err != nil {
@@ -344,7 +351,7 @@ func (li LocalInstance) IsCreated() bool {
 }
 
 func (li LocalInstance) initLock() osx.Lock[localInstanceInitLock] {
-	return osx.NewLock(fmt.Sprintf("%s/init.yml", li.LockDir()), func() (localInstanceInitLock, error) {
+	return osx.NewLock(fmt.Sprintf("%s/init.yml", li.StateDir()), func() (localInstanceInitLock, error) {
 		return localInstanceInitLock{Initialized: true}, nil
 	})
 }
@@ -517,7 +524,7 @@ func (li LocalInstance) CheckPortsOpen() error {
 }
 
 func (li LocalInstance) updateLock() osx.Lock[localInstanceUpdateLock] {
-	return osx.NewLock(fmt.Sprintf("%s/start.yml", li.LockDir()), func() (localInstanceUpdateLock, error) {
+	return osx.NewLock(fmt.Sprintf("%s/start.yml", li.StateDir()), func() (localInstanceUpdateLock, error) {
 		var zero localInstanceUpdateLock
 		overrides, err := li.overrideDirsChecksum()
 		if err != nil {

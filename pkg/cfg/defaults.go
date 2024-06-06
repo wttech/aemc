@@ -36,6 +36,8 @@ func (c *Config) setDefaults() {
 	v.SetDefault("java.download.url", c.tplString("https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.18_10.[[.ArchiveExt]]"))
 	v.SetDefault("java.download.replacements", map[string]string{"darwin": "mac", "x86_64": "x64", "amd64": "x64", "386": "x86-32", "arm64": "x64", "aarch64": "x64"})
 
+	v.SetDefault("vault.download_url", "https://repo1.maven.org/maven2/org/apache/jackrabbit/vault/vault-cli/3.7.2/vault-cli-3.7.2-bin.tar.gz")
+
 	v.SetDefault("instance.processing_mode", instance.ProcessingAuto)
 
 	v.SetDefault("instance.http.timeout", time.Minute*10)

@@ -110,6 +110,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				return
 			}
 			clean, _ := cmd.Flags().GetBool("clean")
+			vault, _ := cmd.Flags().GetBool("vault")
 			replace, _ := cmd.Flags().GetBool("replace")
 			dir, err := determineContentDir(cmd)
 			if err != nil {
@@ -124,7 +125,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
 			if dir != "" {
-				if err = instance.ContentManager().PullDir(dir, clean, replace, pkg.PackageCreateOpts{
+				if err = instance.ContentManager().PullDir(dir, clean, vault, replace, pkg.PackageCreateOpts{
 					FilterRoots: filterRoots,
 					FilterFile:  filterFile,
 				}); err != nil {
@@ -133,7 +134,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				}
 				c.SetOutput("dir", dir)
 			} else if file != "" {
-				if err = instance.ContentManager().PullFile(file, clean, pkg.PackageCreateOpts{
+				if err = instance.ContentManager().PullFile(file, clean, vault, pkg.PackageCreateOpts{
 					FilterRoots: filterRoots,
 				}); err != nil {
 					c.Error(err)
@@ -152,6 +153,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
 	cmd.Flags().Bool("clean", false, "Normalize content after downloading")
+	cmd.Flags().Bool("vault", false, "Use Vault-Cli to download content")
 	cmd.Flags().Bool("replace", false, "Replace content after downloading")
 	return cmd
 }
@@ -182,8 +184,9 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 				path = file
 			}
 			clean, _ := cmd.Flags().GetBool("clean")
+			vault, _ := cmd.Flags().GetBool("vault")
 			filterRoots := determineFilterRoots(cmd)
-			if err = instance.ContentManager().Push(path, clean, pkg.PackageCreateOpts{
+			if err = instance.ContentManager().Push(path, clean, vault, pkg.PackageCreateOpts{
 				FilterRoots: filterRoots,
 			}); err != nil {
 				c.Error(err)
@@ -202,6 +205,7 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 	cmd.Flags().StringP("path", "p", "", "JCR root path or local file path")
 	cmd.MarkFlagsOneRequired("dir", "file", "path")
 	cmd.Flags().Bool("clean", false, "Normalize content while uploading")
+	cmd.Flags().Bool("vault", false, "Use Vault-Cli to upload content")
 	return cmd
 }
 
@@ -224,7 +228,8 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
 			clean, _ := cmd.Flags().GetBool("clean")
-			if err = instance.ContentManager().Copy(targetInstance, clean, pkg.PackageCreateOpts{
+			vault, _ := cmd.Flags().GetBool("vault")
+			if err = instance.ContentManager().Copy(targetInstance, clean, vault, pkg.PackageCreateOpts{
 				FilterRoots: filterRoots,
 				FilterFile:  filterFile,
 			}); err != nil {
@@ -241,6 +246,7 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
 	cmd.MarkFlagsOneRequired("filter-roots", "filter-file")
 	cmd.Flags().Bool("clean", false, "Normalize content while copying")
+	cmd.Flags().Bool("vault", false, "Use Vault-Cli to copy content")
 	return cmd
 }
 

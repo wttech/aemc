@@ -4,10 +4,10 @@ instance:
   # Full details of local or remote instances
   config:
     local_author:
-      active: [[.Env.AEM_AUTHOR_ACTIVE | default true ]]
-      http_url: [[.Env.AEM_AUTHOR_HTTP_URL | default "http://127.0.0.1:4502" ]]
-      user: [[.Env.AEM_AUTHOR_USER | default "admin" ]]
-      password: [[.Env.AEM_AUTHOR_PASSWORD | default "admin" ]]
+      active: [ [ .Env.AEM_AUTHOR_ACTIVE | default true ] ]
+      http_url: [ [ .Env.AEM_AUTHOR_HTTP_URL | default "http://127.0.0.1:4502" ] ]
+      user: [ [ .Env.AEM_AUTHOR_USER | default "admin" ] ]
+      password: [ [ .Env.AEM_AUTHOR_PASSWORD | default "admin" ] ]
       run_modes: [ local ]
       jvm_opts:
         - -server
@@ -17,17 +17,17 @@ instance:
         - -Duser.language=en
         - -Duser.country=US
         - -Duser.timezone=UTC
-      start_opts: []
+      start_opts: [ ]
       secret_vars:
         - ACME_SECRET=value
       env_vars:
         - ACME_VAR=value
-      sling_props: []
+      sling_props: [ ]
     local_publish:
-      active: [[.Env.AEM_PUBLISH_ACTIVE | default true ]]
-      http_url: [[.Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4503" ]]
-      user: [[.Env.AEM_PUBLISH_USER | default "admin" ]]
-      password: [[.Env.AEM_PUBLISH_PASSWORD | default "admin" ]]
+      active: [ [ .Env.AEM_PUBLISH_ACTIVE | default true ] ]
+      http_url: [ [ .Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4503" ] ]
+      user: [ [ .Env.AEM_PUBLISH_USER | default "admin" ] ]
+      password: [ [ .Env.AEM_PUBLISH_PASSWORD | default "admin" ] ]
       run_modes: [ local ]
       jvm_opts:
         - -server
@@ -37,12 +37,12 @@ instance:
         - -Duser.language=en
         - -Duser.country=US
         - -Duser.timezone=UTC
-      start_opts: []
+      start_opts: [ ]
       secret_vars:
         - ACME_SECRET=value
       env_vars:
         - ACME_VAR=value
-      sling_props: []
+      sling_props: [ ]
 
   # Tuning performance & reliability
   # 'auto'     - for more than 1 local instances - 'serial', otherwise 'parallel'
@@ -77,7 +77,7 @@ instance:
     # Bundle state tracking
     bundle_stable:
       skip: false
-      symbolic_names_ignored: []
+      symbolic_names_ignored: [ ]
     # OSGi events tracking
     event_stable:
       skip: false
@@ -96,13 +96,13 @@ instance:
     component_stable:
       skip: false
       pids:
-        include: ['com.day.crx.packaging.*', 'org.apache.sling.installer.*']
-        exclude: ['org.apache.sling.installer.hc.*', 'org.apache.sling.installer.core.impl.console.*']
+        include: [ 'com.day.crx.packaging.*', 'org.apache.sling.installer.*' ]
+        exclude: [ 'org.apache.sling.installer.hc.*', 'org.apache.sling.installer.core.impl.console.*' ]
         match:
-          "disabled": []
-          "no config": []
-          "unsatisfied (reference)": []
-          "satisfied": []
+          "disabled": [ ]
+          "no config": [ ]
+          "unsatisfied (reference)": [ ]
+          "satisfied": [ ]
     # Sling Installer tracking
     installer:
       skip: false
@@ -162,7 +162,7 @@ instance:
     # Use checksums to avoid re-deployments when snapshot AEM packages are unchanged
     snapshot_deploy_skipping: true
     # Disable following workflow launchers for a package deployment time only
-    toggled_workflows: [/libs/settings/workflow/launcher/config/asset_processing_on_sdk_*,/libs/settings/workflow/launcher/config/update_asset_*,/libs/settings/workflow/launcher/config/dam_*]
+    toggled_workflows: [ /libs/settings/workflow/launcher/config/asset_processing_on_sdk_*,/libs/settings/workflow/launcher/config/update_asset_*,/libs/settings/workflow/launcher/config/dam_* ]
     # Also sub-packages
     install_recursive: true
     # Use slower HTML endpoint for deployments but with better troubleshooting
@@ -240,6 +240,10 @@ java:
       # enforce non-ARM Java as some AEM features are not working on ARM (e.g Scene7)
       "arm64": "x64"
       "aarch64": "x64"
+
+# Vault-Cli tool options
+vault:
+  "download_url": "https://repo1.maven.org/maven2/org/apache/jackrabbit/vault/vault-cli/3.7.2/vault-cli-3.7.2-bin.tar.gz"
 
 base:
   # Location of temporary files (downloaded AEM packages, etc)

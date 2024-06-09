@@ -24,10 +24,12 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
 
 # References
 
-* Intro Guide Blog Post - [Get your AEM together with AEM Compose!](https://wttech.blog/blog/2023/get-your-aem-together-with-aem-compose/) by [Krystian Panek](mailto:krystian.panek@wundermanthompson.com)
+* Blog Posts
+  * [Get your AEM together with AEM Compose!](https://wttech.blog/blog/2023/get-your-aem-together-with-aem-compose/) by [Krystian Panek](mailto:krystian.panek@wundermanthompson.com)
+  * [Turning IDE into an AEM development powerhouse](https://wttech.blog/blog/2024/turning-ide-into-an-aem-development-powerhouse/) by [Krystian Panek](mailto:krystian.panek@wundermanthompson.com) and [Dominik Przybył](mailto:dominik.przybyl@wundermanthompson.com)
 * Talk at AdaptTo 2023 Conference - [Get Your AEM Together: AEM Compose, the Ultimate DevEx Tool](https://www.youtube.com/watch?v=EH4ubsxNpbs) by [Tomasz Sobczyk](mailto:tomasz.sobczyk@wundermanthompson.com) & [Krystian Panek](mailto:krystian.panek@wundermanthompson.com)
 
-    [![AdaptTo 2023 Video](docs/adapto-to-video.png)](https://www.youtube.com/watch?v=EH4ubsxNpbs)
+[![AdaptTo 2023 Video](docs/adapto-to-video.png)](https://www.youtube.com/watch?v=EH4ubsxNpbs)
 
 # Table of Contents
 
@@ -35,6 +37,7 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
   * [CLI - Overview](#cli---overview)
   * [CLI - Screenshots](#cli---screenshots)
   * [CLI - AEM Project Quickstart](#cli---aem-project-quickstart)
+  * [IaaC Providers](#iaac-providers)
   * [Ansible Collection](#ansible-collection)
   * [Go Scripting](#go-scripting)
 * [Dependencies](#dependencies)
@@ -182,7 +185,18 @@ Simply run command with appending [task variable](https://taskfile.dev/usage/#va
 sh taskw aem:build AEM_BUILD_ARGS="-PfedDev -DskipTests -pl '!ui.tests'"
 ```
 
+## IaaC Providers
+
+The tool is designed to be used in Infrastructure as a Code (IaaC) solutions such as [Terraform](https://www.terraform.io/) or [Pulumi](https://www.pulumi.com/).
+
+See separate projects based on AEM Compose:
+
+- Terraform Provider: <https://github.com/wttech/terraform-provider-aem>
+- Pulumi Provider: <https://github.com/wttech/pulumi-aem>
+
 ## Ansible Collection
+
+The tool is designed to be used in Ansible playbooks and roles.
 
 See a separate project based on AEM Compose: <https://github.com/wttech/aemc-ansible>
 

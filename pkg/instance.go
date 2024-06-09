@@ -341,7 +341,7 @@ func (i Instance) CacheDir() string {
 
 func (i Instance) LockDir() string {
 	if i.IsLocal() {
-		return i.local.LockDir()
+		return i.local.StateDir()
 	}
 	return i.CacheDir()
 }

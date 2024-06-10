@@ -442,6 +442,15 @@ func readLines(path string) ([]string, error) {
 
 	var lines []string
 	scanner := bufio.NewScanner(file)
+	fileStat, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if fileStat.Size() > bufio.MaxScanTokenSize {
+		size := fileStat.Size()
+		buffer := make([]byte, size)
+		scanner.Buffer(buffer, int(size))
+	}
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
@@ -511,22 +520,4 @@ func determineStringSlice(values any, key string) []string {
 		result = cast.ToStringSlice(value)
 	}
 	return result
-}
-
-func IsContentFile(path string) bool {
-	if !strings.HasSuffix(path, JCRContentFile) {
-		return false
-	}
-
-	inputLines, err := readLines(path)
-	if err != nil {
-		return false
-	}
-
-	for _, inputLine := range inputLines {
-		if strings.Contains(inputLine, JCRContentPrefix) {
-			return true
-		}
-	}
-	return false
 }

@@ -183,7 +183,7 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 			}
 			clean, _ := cmd.Flags().GetBool("clean")
 			filterRoots := determineFilterRoots(cmd)
-			if err = instance.ContentManager().Push(clean, path, pkg.PackageCreateOpts{
+			if err = instance.ContentManager().Push(path, clean, pkg.PackageCreateOpts{
 				FilterRoots: filterRoots,
 			}); err != nil {
 				c.Error(err)

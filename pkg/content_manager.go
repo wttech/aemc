@@ -142,7 +142,7 @@ func (cm *ContentManager) PullFile(file string, clean bool, packageOpts PackageC
 	return nil
 }
 
-func (cm *ContentManager) Push(clean bool, contentPath string, packageOpts PackageCreateOpts) error {
+func (cm *ContentManager) Push(contentPath string, clean bool, packageOpts PackageCreateOpts) error {
 	if !pathx.Exists(contentPath) {
 		return fmt.Errorf("cannot push content as it does not exist '%s'", contentPath)
 	}

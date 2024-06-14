@@ -19,6 +19,8 @@ builds:
       - linux
       - windows
       - darwin
+    tags:
+      - timetzdata
     ldflags:
       - "-s -w -X main.appVersion={{ .Version }} -X main.appCommit={{ .Commit }} -X main.appCommitDate={{.CommitDate}}"
 

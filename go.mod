@@ -9,7 +9,6 @@ require (
 	github.com/antchfx/xmlquery v1.3.18
 	github.com/cheggaaa/pb/v3 v3.1.4
 	github.com/codingsince1985/checksum v1.3.0
-	github.com/dominik-przybyl-wttech/archiver/v3 v3.5.4
 	github.com/dustin/go-humanize v1.0.1
 	github.com/essentialkaos/go-jar v1.0.6
 	github.com/fatih/color v1.16.0
@@ -21,6 +20,7 @@ require (
 	github.com/jmespath-community/go-jmespath v1.1.1
 	github.com/joho/godotenv v1.5.1
 	github.com/magiconair/properties v1.8.7
+	github.com/mholt/archiver/v3 v3.5.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/otiai10/copy v1.14.0
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06

@@ -75,3 +75,7 @@ func (a *AEM) Project() *project.Project {
 func (a *AEM) ContentManager() *content.Manager {
 	return a.contentManager
 }
+
+func (a *AEM) Detached() bool {
+	return !a.config.TemplateFileExists()
+}

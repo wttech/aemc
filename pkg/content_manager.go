@@ -6,6 +6,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/content"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -36,6 +37,9 @@ func (cm *ContentManager) pkgMgr() *PackageManager {
 }
 
 func (cm *ContentManager) tmpDir() string {
+	if cm.instance.manager.aem.Detached() {
+		return os.TempDir()
+	}
 	return cm.instance.manager.aem.baseOpts.TmpDir
 }
 

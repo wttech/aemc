@@ -204,7 +204,7 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 			return "", err
 		}
 	}
-	if err = filex.Archive(tmpDir, tmpFile); err != nil {
+	if err = content.Zip(tmpDir, tmpFile); err != nil {
 		return "", err
 	}
 	response, err := pm.instance.http.Request().

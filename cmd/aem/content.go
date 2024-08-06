@@ -17,6 +17,7 @@ func (c *CLI) contentCmd() *cobra.Command {
 	}
 	cmd.AddCommand(c.contentCleanCmd())
 	cmd.AddCommand(c.contentPullCmd())
+	cmd.AddCommand(c.contentPushCmd())
 	cmd.AddCommand(c.contentDownloadCmd())
 	cmd.AddCommand(c.contentCopyCmd())
 	return cmd
@@ -74,7 +75,7 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 			}
 			pid, _ := cmd.Flags().GetString("pid")
 			targetFile, _ := cmd.Flags().GetString("target-file")
-			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
+			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
 			if err = instance.ContentManager().Download(targetFile, pkg.PackageCreateOpts{
 				PID:         pid,
@@ -120,13 +121,12 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			filterRoots := determineFilterRoots(cmd)
+			filterFile, _ := cmd.Flags().GetString("filter-file")
 			if dir != "" {
-				filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
-				filterFile, _ := cmd.Flags().GetString("filter-file")
 				if err = instance.ContentManager().PullDir(dir, clean, replace, pkg.PackageCreateOpts{
 					FilterRoots: filterRoots,
 					FilterFile:  filterFile,
-					ContentDir:  dir,
 				}); err != nil {
 					c.Error(err)
 					return
@@ -134,7 +134,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				c.SetOutput("dir", dir)
 			} else if file != "" {
 				if err = instance.ContentManager().PullFile(file, clean, pkg.PackageCreateOpts{
-					ContentFile: file,
+					FilterRoots: filterRoots,
 				}); err != nil {
 					c.Error(err)
 					return
@@ -156,6 +156,55 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 	return cmd
 }
 
+func (c *CLI) contentPushCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "push",
+		Aliases: []string{"ps"},
+		Short:   "Push content from JCR root directory or local file to running instance",
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			dir, err := determineContentDir(cmd)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			file, err := determineContentFile(cmd)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			path := dir
+			if path == "" {
+				path = file
+			}
+			clean, _ := cmd.Flags().GetBool("clean")
+			filterRoots := determineFilterRoots(cmd)
+			if err = instance.ContentManager().Push(path, clean, pkg.PackageCreateOpts{
+				FilterRoots: filterRoots,
+			}); err != nil {
+				c.Error(err)
+				return
+			}
+			if dir != "" {
+				c.SetOutput("dir", dir)
+			} else if file != "" {
+				c.SetOutput("file", file)
+			}
+			c.Changed("content pushed")
+		},
+	}
+	cmd.Flags().StringP("dir", "d", "", "JCR root path")
+	cmd.Flags().StringP("file", "f", "", "Local file path")
+	cmd.Flags().StringP("path", "p", "", "JCR root path or local file path")
+	cmd.MarkFlagsOneRequired("dir", "file", "path")
+	cmd.Flags().Bool("clean", false, "Normalize content while uploading")
+	return cmd
+}
+
 func (c *CLI) contentCopyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "copy",
@@ -172,7 +221,7 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
+			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
 			clean, _ := cmd.Flags().GetBool("clean")
 			if err = instance.ContentManager().Copy(targetInstance, clean, pkg.PackageCreateOpts{
@@ -245,4 +294,24 @@ func determineContentFile(cmd *cobra.Command) (string, error) {
 		return path, nil
 	}
 	return file, nil
+}
+
+func determineFilterRoots(cmd *cobra.Command) []string {
+	filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
+	if len(filterRoots) > 0 {
+		return filterRoots
+	}
+	filterFile, _ := cmd.Flags().GetString("filter-file")
+	if filterFile != "" {
+		return nil
+	}
+	dir, _ := determineContentDir(cmd)
+	if dir != "" {
+		return []string{pkg.DetermineFilterRoot(dir)}
+	}
+	file, _ := determineContentFile(cmd)
+	if file != "" {
+		return []string{pkg.DetermineFilterRoot(file)}
+	}
+	return nil
 }

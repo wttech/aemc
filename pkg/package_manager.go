@@ -169,8 +169,7 @@ type PackageCreateOpts struct {
 	PID         string
 	FilterRoots []string
 	FilterFile  string
-	ContentDir  string
-	ContentFile string
+	ContentPath string
 }
 
 func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
@@ -186,9 +185,6 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 		_ = pathx.DeleteIfExists(tmpDir)
 		_ = pathx.DeleteIfExists(tmpFile)
 	}()
-	if len(opts.FilterRoots) == 0 && opts.FilterFile == "" {
-		opts.FilterRoots = []string{determineFilterRoot(opts)}
-	}
 	data := map[string]any{
 		"Pid":         opts.PID,
 		"Group":       pidConfig.Group,
@@ -201,6 +197,11 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	}
 	if opts.FilterFile != "" {
 		if err = filex.Copy(opts.FilterFile, filepath.Join(tmpDir, "META-INF", "vault", FilterXML), true); err != nil {
+			return "", err
+		}
+	}
+	if opts.ContentPath != "" {
+		if err = pm.copyContentFiles(opts, tmpDir); err != nil {
 			return "", err
 		}
 	}
@@ -227,26 +228,44 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	return status.Path, nil
 }
 
-func determineFilterRoot(opts PackageCreateOpts) string {
-	if opts.ContentDir != "" {
-		return strings.Split(opts.ContentDir, content.JCRRoot)[1]
-	}
-
-	if opts.ContentFile != "" {
-		contentFile := strings.Split(opts.ContentFile, content.JCRRoot)[1]
-		if content.IsContentFile(opts.ContentFile) {
-			return strings.ReplaceAll(contentFile, content.JCRContentFile, content.JCRContentNode)
-		} else if strings.HasSuffix(contentFile, content.JCRContentFile) {
-			contentFile = namespacePatternRegex.ReplaceAllString(contentFile, "$1:")
-			return filepath.Dir(contentFile)
-		} else if strings.HasSuffix(contentFile, content.JCRContentFileSuffix) {
-			contentFile = namespacePatternRegex.ReplaceAllString(contentFile, "$1:")
-			return strings.ReplaceAll(contentFile, content.JCRContentFileSuffix, "")
+func (pm *PackageManager) copyContentFiles(opts PackageCreateOpts, tmpDir string) error {
+	contentPath := opts.ContentPath
+	_, jcrPath, _ := strings.Cut(contentPath, content.JCRRoot)
+	if pathx.IsDir(contentPath) {
+		if err := filex.CopyDir(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath)); err != nil {
+			return err
 		}
-		return contentFile
+	} else if pathx.IsFile(contentPath) {
+		jcrDir := filepath.Dir(jcrPath)
+		if err := filex.Copy(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath), true); err != nil {
+			return err
+		}
+		if strings.HasSuffix(contentPath, content.JCRContentFile) {
+			contentDir := strings.ReplaceAll(contentPath, content.JCRContentFile, content.JCRContentDirName)
+			if pathx.Exists(contentDir) {
+				if err := filex.CopyDir(contentDir, filepath.Join(tmpDir, content.JCRRoot, jcrDir, content.JCRContentDirName)); err != nil {
+					return err
+				}
+			}
+		}
 	}
+	return nil
+}
 
-	return ""
+func DetermineFilterRoot(contentPath string) string {
+	_, filterRoot, _ := strings.Cut(contentPath, content.JCRRoot)
+	filterRoot = strings.ReplaceAll(filterRoot, "\\", "/")
+	if strings.HasSuffix(filterRoot, content.JCRContentFile) && !namespacePatternRegex.MatchString(filterRoot) {
+		filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFile, content.JCRContentNode)
+	} else if strings.HasSuffix(filterRoot, content.JCRContentFile) {
+		filterRoot = filepath.Dir(filterRoot)
+	} else if strings.HasSuffix(filterRoot, content.JCRContentFileSuffix) {
+		filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFileSuffix, "")
+	}
+	filterRoot = namespacePatternRegex.ReplaceAllString(filterRoot, "/$2:")
+	filterRoot = strings.ReplaceAll(filterRoot, "/__", "/_")
+	filterRoot = strings.ReplaceAll(filterRoot, "%3a", ":")
+	return filterRoot
 }
 
 func (pm *PackageManager) Copy(remotePath string, destInstance *Instance) error {

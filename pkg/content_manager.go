@@ -76,6 +76,9 @@ func (cm *ContentManager) PullDir(dir string, clean bool, replace bool, opts Pac
 	if err := content.Unzip(pkgFile, workDir); err != nil {
 		return err
 	}
+	if err := pathx.Ensure(dir); err != nil {
+		return err
+	}
 	mainDir, _, _ := strings.Cut(dir, content.JCRRoot)
 	contentManager := cm.instance.manager.aem.contentManager
 	if replace {
@@ -114,6 +117,9 @@ func (cm *ContentManager) PullFile(file string, clean bool, opts PackageCreateOp
 		return err
 	}
 	dir := filepath.Dir(file)
+	if err := pathx.Ensure(dir); err != nil {
+		return err
+	}
 	_, jcrPath, _ := strings.Cut(dir, content.JCRRoot)
 	contentManager := cm.instance.manager.aem.contentManager
 	if err := contentManager.BeforePullFile(file); err != nil {

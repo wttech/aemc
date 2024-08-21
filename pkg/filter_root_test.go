@@ -20,11 +20,9 @@ func TestDetermineFilterRoot(t *testing.T) {
 		{"/somepath/jcr_root/content/my_site/___path", "/content/my_site/__path"},
 		{"\\somepath\\jcr_root\\content\\my_site", "/content/my_site"},
 		{"\\somepath\\jcr_root\\content\\my_site\\_cq_path", "/content/my_site/cq:path"},
-		{"/somepath/jcr_root/content/my_site/.content.xml", "/content/my_site/jcr:content"},
 		{"/somepath/jcr_root/content/my_app/_cq_dialog/.content.xml", "/content/my_app/cq:dialog"},
 		{"/somepath/jcr_root/content/my_app/_cq_dialog.xml", "/content/my_app/cq:dialog"},
 		{"/somepath/jcr_root/content/my_conf/workflow.xml", "/content/my_conf/workflow"},
-		{"/somepath/jcr_root/content/my_app/__cq_dialog/.content.xml", "/content/my_app/_cq_dialog/jcr:content"},
 		{"/somepath/jcr_root/content/dam/my_site/image.png", "/content/dam/my_site/image.png"},
 		{"/somepath/jcr_root/conf/my_site/_sling_configs/com.config.ImageConfig", "/conf/my_site/sling:configs/com.config.ImageConfig"},
 	}

@@ -235,6 +235,12 @@ func (pm *PackageManager) copyContentFiles(opts PackageCreateOpts, tmpDir string
 		if err := filex.CopyDir(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath)); err != nil {
 			return err
 		}
+	} else if strings.HasSuffix(contentPath, content.JCRContentFile) && !content.IsContentFile(contentPath) {
+		contentDir := filepath.Dir(contentPath)
+		jcrDir := filepath.Dir(jcrPath)
+		if err := filex.CopyDir(contentDir, filepath.Join(tmpDir, content.JCRRoot, jcrDir)); err != nil {
+			return err
+		}
 	} else if pathx.IsFile(contentPath) {
 		jcrDir := filepath.Dir(jcrPath)
 		if err := filex.Copy(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath), true); err != nil {
@@ -255,7 +261,7 @@ func (pm *PackageManager) copyContentFiles(opts PackageCreateOpts, tmpDir string
 func DetermineFilterRoot(contentPath string) string {
 	_, filterRoot, _ := strings.Cut(contentPath, content.JCRRoot)
 	filterRoot = strings.ReplaceAll(filterRoot, "\\", "/")
-	if strings.HasSuffix(filterRoot, content.JCRContentFile) && !namespacePatternRegex.MatchString(filterRoot) {
+	if strings.HasSuffix(filterRoot, content.JCRContentFile) && content.IsContentFile(contentPath) {
 		filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFile, content.JCRContentNode)
 	} else if strings.HasSuffix(filterRoot, content.JCRContentFile) {
 		filterRoot = filepath.Dir(filterRoot)

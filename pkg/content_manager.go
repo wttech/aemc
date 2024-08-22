@@ -186,7 +186,7 @@ func (cm *ContentManager) Push(contentPath string, clean bool, packageOpts Packa
 
 func determineCleanFile(file string) string {
 	if namespacePatternRegex.MatchString(file) && !strings.HasSuffix(file, content.JCRContentFile) {
-		return filepath.Join(strings.ReplaceAll(file, content.JCRContentFileSuffix, ""), content.JCRContentFile)
+		return filepath.Join(strings.ReplaceAll(file, content.XmlFileSuffix, ""), content.JCRContentFile)
 	}
 	return file
 }

@@ -264,8 +264,8 @@ func DetermineFilterRoot(contentPath string) string {
 		filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFile, content.JCRContentNode)
 	} else if strings.HasSuffix(filterRoot, content.JCRContentFile) {
 		filterRoot = filepath.Dir(filterRoot)
-	} else if strings.HasSuffix(filterRoot, content.JCRContentFileSuffix) {
-		filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFileSuffix, "")
+	} else if strings.HasSuffix(filterRoot, content.XmlFileSuffix) {
+		filterRoot = strings.ReplaceAll(filterRoot, content.XmlFileSuffix, "")
 	}
 	filterRoot = namespacePatternRegex.ReplaceAllString(filterRoot, "/$2:")
 	filterRoot = strings.ReplaceAll(filterRoot, "/__", "/_")

@@ -20,7 +20,7 @@ import (
 const (
 	JCRRoot                   = "jcr_root"
 	JCRContentFile            = ".content.xml"
-	JCRContentFileSuffix      = ".xml"
+	XmlFileSuffix             = ".xml"
 	JCRMixinTypesProp         = "jcr:mixinTypes"
 	JCRRootPrefix             = "<jcr:root"
 	PropPattern               = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
@@ -156,7 +156,7 @@ func (c Manager) cleanDotContents(root string) error {
 }
 
 func (c Manager) cleanDotContentFile(path string) error {
-	if !strings.HasSuffix(path, JCRContentFileSuffix) {
+	if !strings.HasSuffix(path, XmlFileSuffix) {
 		return nil
 	}
 

@@ -117,7 +117,7 @@ func (cm *ContentManager) PullFile(file string, clean bool, opts PackageCreateOp
 		return err
 	}
 	cleanFile := determineCleanFile(file)
-	if file != cleanFile {
+	if pathx.Exists(file) && file != cleanFile {
 		if err := os.Remove(file); err != nil {
 			return err
 		}

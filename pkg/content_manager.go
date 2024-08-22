@@ -160,25 +160,8 @@ func (cm *ContentManager) Push(contentPath string, clean bool, packageOpts Packa
 		defer func() {
 			_ = pathx.DeleteIfExists(workDir)
 		}()
-		if pathx.IsDir(contentPath) {
-			_, jcrPath, _ := strings.Cut(contentPath, content.JCRRoot)
-			if err := filex.CopyDir(contentPath, filepath.Join(workDir, content.JCRRoot, jcrPath)); err != nil {
-				return err
-			}
-		} else if pathx.IsFile(contentPath) {
-			_, jcrPath, _ := strings.Cut(contentPath, content.JCRRoot)
-			jcrDir := filepath.Dir(jcrPath)
-			if err := filex.Copy(contentPath, filepath.Join(workDir, content.JCRRoot, jcrPath), true); err != nil {
-				return err
-			}
-			if strings.HasSuffix(contentPath, content.JCRContentFile) {
-				contentDir := strings.ReplaceAll(contentPath, content.JCRContentFile, content.JCRContentDirName)
-				if pathx.Exists(contentDir) {
-					if err := filex.CopyDir(contentDir, filepath.Join(workDir, content.JCRRoot, jcrDir, content.JCRContentDirName)); err != nil {
-						return err
-					}
-				}
-			}
+		if err := copyContentFiles(contentPath, workDir); err != nil {
+			return err
 		}
 		contentManager := cm.instance.manager.aem.contentManager
 		if err := contentManager.CleanDir(filepath.Join(workDir, content.JCRRoot)); err != nil {

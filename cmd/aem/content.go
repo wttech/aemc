@@ -6,6 +6,8 @@ import (
 	"github.com/wttech/aemc/pkg"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/content"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -183,8 +185,10 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 			}
 			clean, _ := cmd.Flags().GetBool("clean")
 			filterRoots := determineFilterRoots(cmd)
+			filterFileContent := determineFilterFileContent(cmd)
 			if err = instance.ContentManager().Push(path, clean, pkg.PackageCreateOpts{
-				FilterRoots: filterRoots,
+				FilterRoots:       filterRoots,
+				FilterFileContent: filterFileContent,
 			}); err != nil {
 				c.Error(err)
 				return
@@ -314,4 +318,31 @@ func determineFilterRoots(cmd *cobra.Command) []string {
 		return []string{pkg.DetermineFilterRoot(file)}
 	}
 	return nil
+}
+
+func determineFilterFileContent(cmd *cobra.Command) string {
+	file, _ := determineContentFile(cmd)
+	if file == "" || !strings.HasSuffix(file, content.JCRContentFile) || content.IsContentFile(file) {
+		return ""
+	}
+
+	dir := filepath.Dir(file)
+	filterRoot := pkg.DetermineFilterRoot(file)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return ""
+	}
+
+	filterFileContent := "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+	filterFileContent += "<workspaceFilter version=\"1.0\">\n"
+	filterFileContent += fmt.Sprintf("<filter root=\"%s\">\n", filterRoot)
+	for _, entry := range entries {
+		if entry.Name() != content.JCRContentFile {
+			jcrPath := pkg.DetermineFilterRoot(filepath.Join(dir, entry.Name()))
+			filterFileContent += fmt.Sprintf("    <exclude pattern=\"%s(/.*)?\"/>\n", jcrPath)
+		}
+	}
+	filterFileContent += "  </filter>\n"
+	filterFileContent += "</workspaceFilter>\n"
+	return filterFileContent
 }

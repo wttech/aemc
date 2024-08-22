@@ -166,11 +166,11 @@ func copyPackageDefaultFiles(targetTmpDir string, data map[string]any) error {
 }
 
 type PackageCreateOpts struct {
-	PID               string
-	FilterRoots       []string
-	FilterFile        string
-	FilterFileContent string
-	ContentPath       string
+	PID             string
+	FilterRoots     []string
+	FilterFile      string
+	ExcludePatterns []string
+	ContentPath     string
 }
 
 func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
@@ -187,22 +187,18 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 		_ = pathx.DeleteIfExists(tmpFile)
 	}()
 	data := map[string]any{
-		"Pid":         opts.PID,
-		"Group":       pidConfig.Group,
-		"Name":        pidConfig.Name,
-		"Version":     pidConfig.Version,
-		"FilterRoots": opts.FilterRoots,
+		"Pid":             opts.PID,
+		"Group":           pidConfig.Group,
+		"Name":            pidConfig.Name,
+		"Version":         pidConfig.Version,
+		"FilterRoots":     opts.FilterRoots,
+		"ExcludePatterns": opts.ExcludePatterns,
 	}
 	if err = copyPackageDefaultFiles(tmpDir, data); err != nil {
 		return "", err
 	}
 	if opts.FilterFile != "" {
 		if err = filex.Copy(opts.FilterFile, filepath.Join(tmpDir, "META-INF", "vault", FilterXML), true); err != nil {
-			return "", err
-		}
-	}
-	if opts.FilterFileContent != "" {
-		if err = filex.WriteString(filepath.Join(tmpDir, "META-INF", "vault", FilterXML), opts.FilterFileContent); err != nil {
 			return "", err
 		}
 	}

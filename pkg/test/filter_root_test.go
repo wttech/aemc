@@ -1,6 +1,7 @@
-package pkg
+package test
 
 import (
+	"github.com/wttech/aemc/pkg"
 	"testing"
 )
 
@@ -27,7 +28,7 @@ func TestDetermineFilterRoot(t *testing.T) {
 		{"/somepath/jcr_root/conf/my_site/_sling_configs/com.config.ImageConfig", "/conf/my_site/sling:configs/com.config.ImageConfig"},
 	}
 	for _, test := range tests {
-		actual := DetermineFilterRoot(test.path)
+		actual := pkg.DetermineFilterRoot(test.path)
 		if actual != test.expected {
 			t.Errorf("DetermineFilterRoot(%s) = %s; want %s", test.path, actual, test.expected)
 		}

@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<workspaceFilter version="1.0">[[range .FilterRoots]]
-    <filter root="[[.]]"/>[[end]]
+<workspaceFilter version="1.0">[[ if .ExcludePatterns ]]
+    <filter root="[[ index .FilterRoots 0 ]]">[[ range .ExcludePatterns ]]
+        <exclude pattern="[[ . ]]"/>[[ end ]]
+    </filter>[[ else ]][[ range .FilterRoots ]]
+    <filter root="[[ . ]]"/>[[ end ]][[ end ]]
 </workspaceFilter>

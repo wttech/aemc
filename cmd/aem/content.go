@@ -185,10 +185,10 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 			}
 			clean, _ := cmd.Flags().GetBool("clean")
 			filterRoots := determineFilterRoots(cmd)
-			filterFileContent := determineFilterFileContent(cmd)
+			excludePatterns := determineExcludePatterns(cmd)
 			if err = instance.ContentManager().Push(path, clean, pkg.PackageCreateOpts{
-				FilterRoots:       filterRoots,
-				FilterFileContent: filterFileContent,
+				FilterRoots:     filterRoots,
+				ExcludePatterns: excludePatterns,
 			}); err != nil {
 				c.Error(err)
 				return
@@ -320,29 +320,25 @@ func determineFilterRoots(cmd *cobra.Command) []string {
 	return nil
 }
 
-func determineFilterFileContent(cmd *cobra.Command) string {
+func determineExcludePatterns(cmd *cobra.Command) []string {
 	file, _ := determineContentFile(cmd)
 	if file == "" || !strings.HasSuffix(file, content.JCRContentFile) || content.IsContentFile(file) {
-		return ""
+		return nil
 	}
 
 	dir := filepath.Dir(file)
-	filterRoot := pkg.DetermineFilterRoot(file)
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return ""
+		return nil
 	}
 
-	filterFileContent := "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-	filterFileContent += "<workspaceFilter version=\"1.0\">\n"
-	filterFileContent += fmt.Sprintf("<filter root=\"%s\">\n", filterRoot)
+	var excludePatterns []string
 	for _, entry := range entries {
-		if entry.Name() != content.JCRContentFile {
+		if entry.Name() != content.JCRContentFile && entry.Name() != content.JCRContentDirName {
 			jcrPath := pkg.DetermineFilterRoot(filepath.Join(dir, entry.Name()))
-			filterFileContent += fmt.Sprintf("    <exclude pattern=\"%s(/.*)?\"/>\n", jcrPath)
+			excludePattern := fmt.Sprintf("%s(/.*)?", jcrPath)
+			excludePatterns = append(excludePatterns, excludePattern)
 		}
 	}
-	filterFileContent += "  </filter>\n"
-	filterFileContent += "</workspaceFilter>\n"
-	return filterFileContent
+	return excludePatterns
 }

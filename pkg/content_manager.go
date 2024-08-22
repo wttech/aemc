@@ -136,14 +136,6 @@ func (cm *ContentManager) PullFile(file string, clean bool, opts PackageCreateOp
 		if err := contentManager.CleanFile(cleanFile); err != nil {
 			return err
 		}
-		if strings.HasSuffix(file, content.JCRContentFile) {
-			root := filepath.Join(dir, content.JCRContentDirName)
-			if pathx.Exists(root) {
-				if err := contentManager.CleanDir(root); err != nil {
-					return err
-				}
-			}
-		}
 	}
 	return nil
 }

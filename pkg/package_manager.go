@@ -253,17 +253,8 @@ func copyContentFiles(contentPath string, tmpDir string) error {
 			return err
 		}
 	} else if pathx.IsFile(contentPath) {
-		jcrDir := filepath.Dir(jcrPath)
 		if err := filex.Copy(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath), true); err != nil {
 			return err
-		}
-		if strings.HasSuffix(contentPath, content.JCRContentFile) {
-			contentDir := strings.ReplaceAll(contentPath, content.JCRContentFile, content.JCRContentDirName)
-			if pathx.IsDir(contentDir) {
-				if err := filex.CopyDir(contentDir, filepath.Join(tmpDir, content.JCRRoot, jcrDir, content.JCRContentDirName)); err != nil {
-					return err
-				}
-			}
 		}
 	}
 	return nil

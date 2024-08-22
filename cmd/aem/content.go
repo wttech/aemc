@@ -125,6 +125,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 			}
 			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
+			excludePatterns := determineExcludePatterns(cmd)
 			if dir != "" {
 				if err = instance.ContentManager().PullDir(dir, clean, replace, pkg.PackageCreateOpts{
 					FilterRoots: filterRoots,
@@ -136,7 +137,8 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				c.SetOutput("dir", dir)
 			} else if file != "" {
 				if err = instance.ContentManager().PullFile(file, clean, pkg.PackageCreateOpts{
-					FilterRoots: filterRoots,
+					FilterRoots:     filterRoots,
+					ExcludePatterns: excludePatterns,
 				}); err != nil {
 					c.Error(err)
 					return
@@ -334,7 +336,7 @@ func determineExcludePatterns(cmd *cobra.Command) []string {
 
 	var excludePatterns []string
 	for _, entry := range entries {
-		if entry.Name() != content.JCRContentFile && entry.Name() != content.JCRContentDirName {
+		if entry.Name() != content.JCRContentFile {
 			jcrPath := pkg.DetermineFilterRoot(filepath.Join(dir, entry.Name()))
 			excludePattern := fmt.Sprintf("%s(/.*)?", jcrPath)
 			excludePatterns = append(excludePatterns, excludePattern)

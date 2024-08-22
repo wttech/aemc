@@ -29,7 +29,6 @@ const (
 	ParentsBackupDirIndicator = ".bakdir"
 	JCRContentNode            = "jcr:content"
 	JCRContentPrefix          = "<jcr:content"
-	JCRContentDirName         = "_jcr_content"
 )
 
 var (

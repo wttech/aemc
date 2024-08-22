@@ -230,6 +230,22 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	return status.Path, nil
 }
 
+func DetermineFilterRoot(contentPath string) string {
+	_, filterRoot, _ := strings.Cut(contentPath, content.JCRRoot)
+	filterRoot = strings.ReplaceAll(filterRoot, "\\", "/")
+	if strings.HasSuffix(filterRoot, content.JCRContentFile) && content.IsContentFile(contentPath) {
+		filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFile, content.JCRContentNode)
+	} else if strings.HasSuffix(filterRoot, content.JCRContentFile) {
+		filterRoot = filepath.Dir(filterRoot)
+	} else if strings.HasSuffix(filterRoot, content.XmlFileSuffix) {
+		filterRoot = strings.ReplaceAll(filterRoot, content.XmlFileSuffix, "")
+	}
+	filterRoot = namespacePatternRegex.ReplaceAllString(filterRoot, "/$2:")
+	filterRoot = strings.ReplaceAll(filterRoot, "/__", "/_")
+	filterRoot = strings.ReplaceAll(filterRoot, "%3a", ":")
+	return filterRoot
+}
+
 func copyContentFiles(contentPath string, tmpDir string) error {
 	_, jcrPath, _ := strings.Cut(contentPath, content.JCRRoot)
 	if pathx.IsDir(contentPath) {
@@ -251,22 +267,6 @@ func copyContentFiles(contentPath string, tmpDir string) error {
 		}
 	}
 	return nil
-}
-
-func DetermineFilterRoot(contentPath string) string {
-	_, filterRoot, _ := strings.Cut(contentPath, content.JCRRoot)
-	filterRoot = strings.ReplaceAll(filterRoot, "\\", "/")
-	if strings.HasSuffix(filterRoot, content.JCRContentFile) && content.IsContentFile(contentPath) {
-		filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFile, content.JCRContentNode)
-	} else if strings.HasSuffix(filterRoot, content.JCRContentFile) {
-		filterRoot = filepath.Dir(filterRoot)
-	} else if strings.HasSuffix(filterRoot, content.XmlFileSuffix) {
-		filterRoot = strings.ReplaceAll(filterRoot, content.XmlFileSuffix, "")
-	}
-	filterRoot = namespacePatternRegex.ReplaceAllString(filterRoot, "/$2:")
-	filterRoot = strings.ReplaceAll(filterRoot, "/__", "/_")
-	filterRoot = strings.ReplaceAll(filterRoot, "%3a", ":")
-	return filterRoot
 }
 
 func (pm *PackageManager) Copy(remotePath string, destInstance *Instance) error {

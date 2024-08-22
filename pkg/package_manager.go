@@ -259,7 +259,7 @@ func copyContentFiles(contentPath string, tmpDir string) error {
 		}
 		if strings.HasSuffix(contentPath, content.JCRContentFile) {
 			contentDir := strings.ReplaceAll(contentPath, content.JCRContentFile, content.JCRContentDirName)
-			if pathx.Exists(contentDir) {
+			if pathx.IsDir(contentDir) {
 				if err := filex.CopyDir(contentDir, filepath.Join(tmpDir, content.JCRRoot, jcrDir, content.JCRContentDirName)); err != nil {
 					return err
 				}

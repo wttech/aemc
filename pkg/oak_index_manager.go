@@ -50,3 +50,11 @@ func (im *OAKIndexManager) List() (*oak.IndexList, error) {
 	}
 	return &res, nil
 }
+
+func (im *OAKIndexManager) Reindex(name string) error {
+	node := im.instance.Repo().Node(fmt.Sprintf("/oak:index/%s", name))
+	if err := node.SaveProp("reindex", true); err != nil {
+		return fmt.Errorf("%s > cannot reindex '%s': %w", im.instance.IDColor(), name, err)
+	}
+	return nil
+}

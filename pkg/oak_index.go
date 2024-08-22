@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/oak"
+	"time"
 )
 
 type OAKIndex struct {
@@ -14,8 +16,8 @@ type OAKIndex struct {
 	name string
 }
 
-func (b OAKIndex) Name() string {
-	return b.name
+func (i OAKIndex) Name() string {
+	return i.name
 }
 
 type OAKIndexState struct {
@@ -26,14 +28,48 @@ type OAKIndexState struct {
 	Details map[string]any `yaml:"details" json:"details"`
 }
 
-func (b OAKIndex) State() (*OAKIndexState, error) {
-	data, err := b.manager.Find(b.name)
+func (i OAKIndex) assumeExists() (*OAKIndexState, error) {
+	state, err := i.State()
+	if err != nil {
+		return state, err
+	}
+	if !state.Exists {
+		return state, fmt.Errorf("%s > index '%s' does not exist", i.manager.instance.IDColor(), i.name)
+	}
+	return state, nil
+}
+
+func (i OAKIndex) ReindexWithChanged() (bool, error) {
+	state, err := i.assumeExists()
+	if err != nil {
+		return false, err
+	}
+	if state.data.Reindex {
+		return false, nil
+	}
+	return true, i.manager.Reindex(state.data.Name)
+}
+
+func (i OAKIndex) Reindex() error {
+	state, err := i.assumeExists()
+	if err != nil {
+		return err
+	}
+	err = i.manager.Reindex(state.data.Name)
+	if err != nil {
+		return fmt.Errorf("%s > cannot reindex index '%s': %w", i.manager.instance.IDColor(), i.name, err)
+	}
+	return nil
+}
+
+func (i OAKIndex) State() (*OAKIndexState, error) {
+	data, err := i.manager.Find(i.name)
 	if err != nil {
 		return nil, err
 	}
 	if data == nil {
 		return &OAKIndexState{
-			Name:   b.name,
+			Name:   i.name,
 			Exists: false,
 		}, nil
 	}
@@ -41,7 +77,7 @@ func (b OAKIndex) State() (*OAKIndexState, error) {
 	return &OAKIndexState{
 		data: data,
 
-		Name:   b.name,
+		Name:   i.name,
 		Exists: true,
 		Details: map[string]any{
 			"type":                     data.Type,
@@ -58,33 +94,59 @@ func (b OAKIndex) State() (*OAKIndexState, error) {
 	}, nil
 }
 
-func (b OAKIndex) String() string {
-	return fmt.Sprintf("index '%s'", b.name)
+func (i OAKIndex) String() string {
+	return fmt.Sprintf("index '%s'", i.name)
 }
 
-func (b OAKIndex) MarshalJSON() ([]byte, error) {
-	state, err := b.State()
+func (i OAKIndex) MarshalJSON() ([]byte, error) {
+	state, err := i.State()
 	if err != nil {
 		return nil, err
 	}
 	return json.Marshal(state)
 }
 
-func (b OAKIndex) MarshalYAML() (interface{}, error) {
-	return b.State()
+func (i OAKIndex) MarshalYAML() (interface{}, error) {
+	return i.State()
 }
 
-func (b OAKIndex) MarshalText() string {
-	state, err := b.State()
+func (i OAKIndex) MarshalText() string {
+	state, err := i.State()
 	if err != nil {
-		return fmt.Sprintf("name '%s' state cannot be read\n", b.name)
+		return fmt.Sprintf("name '%s' state cannot be read\n", i.name)
 	}
 	sb := bytes.NewBufferString("")
 	if state.Exists {
-		sb.WriteString(fmt.Sprintf("name '%s'\n", b.name))
+		sb.WriteString(fmt.Sprintf("name '%s'\n", i.name))
 		sb.WriteString(fmtx.TblProps(state.Details))
 	} else {
-		sb.WriteString(fmt.Sprintf("name '%s' cannot be found\n", b.name))
+		sb.WriteString(fmt.Sprintf("name '%s' cannot be found\n", i.name))
 	}
 	return sb.String()
+}
+
+func (i OAKIndex) AwaitNotReindexed() error {
+	return i.Await("not reindexed", func() bool {
+		state, err := i.State()
+		if err != nil {
+			log.Warn(err)
+			return false
+		}
+		return state.Exists && !state.data.Reindex
+	}, time.Minute*1)
+}
+
+func (i OAKIndex) Await(state string, condition func() bool, timeout time.Duration) error {
+	started := time.Now()
+	for {
+		if condition() {
+			break
+		}
+		if time.Now().After(started.Add(timeout)) {
+			return fmt.Errorf("%s > awaiting index '%s' state '%s' reached timeout after %s", i.manager.instance.IDColor(), i.name, state, timeout)
+		}
+		log.Infof("%s > awaiting index '%s' state '%s'", i.manager.instance.IDColor(), i.name, state)
+		time.Sleep(time.Second * 5)
+	}
+	return nil
 }

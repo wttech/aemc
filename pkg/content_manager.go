@@ -116,33 +116,20 @@ func (cm *ContentManager) PullFile(file string, clean bool, opts PackageCreateOp
 	if err := content.Unzip(pkgFile, workDir); err != nil {
 		return err
 	}
-	dir := filepath.Dir(file)
-	if err := pathx.Ensure(dir); err != nil {
-		return err
+	cleanFile := determineCleanFile(file)
+	if file != cleanFile {
+		if err := os.Remove(file); err != nil {
+			return err
+		}
 	}
-	_, after, _ := strings.Cut(dir, content.JCRRoot)
-	contentManager := cm.instance.manager.aem.contentManager
-	if err := contentManager.BeforePullFile(file); err != nil {
-		return err
-	}
-	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot, after), dir); err != nil {
-		return err
-	}
-	if err := contentManager.AfterPullFile(file); err != nil {
+	_, after, _ := strings.Cut(cleanFile, content.JCRRoot)
+	if err := filex.Copy(filepath.Join(workDir, content.JCRRoot, after), cleanFile, true); err != nil {
 		return err
 	}
 	if clean {
-		cleanFile := determineCleanFile(file)
+		contentManager := cm.instance.manager.aem.contentManager
 		if err := contentManager.CleanFile(cleanFile); err != nil {
 			return err
-		}
-		if strings.HasSuffix(file, content.JCRContentFile) {
-			root := filepath.Join(dir, content.JCRContentDirName)
-			if pathx.Exists(root) {
-				if err := contentManager.CleanDir(root); err != nil {
-					return err
-				}
-			}
 		}
 	}
 	return nil

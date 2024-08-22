@@ -25,6 +25,7 @@ type Instance struct {
 	http            *HTTP
 	status          *Status
 	repo            *Repo
+	oak             *OAK
 	osgi            *OSGi
 	sling           *Sling
 	crypto          *Crypto
@@ -91,6 +92,10 @@ func (i Instance) Repo() *Repo {
 
 func (i Instance) OSGI() *OSGi {
 	return i.osgi
+}
+
+func (i Instance) OAK() *OAK {
+	return i.oak
 }
 
 func (i Instance) Sling() *Sling {
@@ -344,8 +349,4 @@ func (i Instance) LockDir() string {
 		return i.local.StateDir()
 	}
 	return i.CacheDir()
-}
-
-func (i Instance) OAK() {
-	// TODO
 }

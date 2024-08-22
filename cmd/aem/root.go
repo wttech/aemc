@@ -23,6 +23,7 @@ func (c *CLI) rootCmd() *cobra.Command {
 	cmd.AddCommand(c.configCmd())
 	cmd.AddCommand(c.instanceCmd())
 	cmd.AddCommand(c.osgiCmd())
+	cmd.AddCommand(c.oakCmd())
 	cmd.AddCommand(c.pkgCmd())
 	cmd.AddCommand(c.repoCmd())
 	cmd.AddCommand(c.replCmd())

@@ -34,12 +34,12 @@ func (c *CLI) oakIndexListCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			bundles, err := instance.OAK().IndexManager().List()
+			indexes, err := instance.OAK().IndexManager().List()
 			if err != nil {
 				c.Error(err)
 				return
 			}
-			c.SetOutput("indexes", bundles)
+			c.SetOutput("indexes", indexes)
 			c.Ok("indexes listed")
 		},
 	}

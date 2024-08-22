@@ -345,3 +345,7 @@ func (i Instance) LockDir() string {
 	}
 	return i.CacheDir()
 }
+
+func (i Instance) OAK() {
+	// TODO
+}

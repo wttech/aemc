@@ -44,7 +44,16 @@ func (b OAKIndex) State() (*OAKIndexState, error) {
 		Name:   b.name,
 		Exists: true,
 		Details: map[string]any{
-			"reindex": data.Reindex,
+			"type":                     data.Type,
+			"async":                    data.Async,
+			"includePaths":             data.IncludedPaths,
+			"queryPaths":               data.QueryPaths,
+			"reindex":                  data.Reindex,
+			"reindexCount":             data.ReindexCount,
+			"evaluatePathRestrictions": data.EvaluatePathRestrictions,
+			"declaringNodeTypes":       data.DeclaringNodeTypes,
+			"propertyNames":            data.PropertyNames,
+			"tags":                     data.Tags,
 		},
 	}, nil
 }

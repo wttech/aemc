@@ -25,7 +25,7 @@ func (c *CLI) oakIndexCmd() *cobra.Command {
 	cmd.AddCommand(c.oakIndexListCmd())
 	cmd.AddCommand(c.oakIndexReadCmd())
 	cmd.AddCommand(c.oakIndexReindexCmd())
-	cmd.AddCommand(c.oakIndexReindexAllCmd())
+	cmd.AddCommand(c.oakIndexReindexBatchCmd())
 	return cmd
 }
 
@@ -122,24 +122,25 @@ func (c *CLI) oakIndexReindexCmd() *cobra.Command {
 	return cmd
 }
 
-func (c *CLI) oakIndexReindexAllCmd() *cobra.Command {
+func (c *CLI) oakIndexReindexBatchCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "reindex-all",
-		Short: "Reindex all OAK indexes",
+		Use:   "reindex-batch",
+		Short: "Reindex OAK indexes in batch",
 		Run: func(cmd *cobra.Command, args []string) {
 			instances, err := c.aem.InstanceManager().Some()
 			if err != nil {
 				c.Error(err)
 				return
 			}
+			reason, _ := cmd.Flags().GetString("reason")
 			reindexed, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
-				indexes, err := instance.OAK().IndexManager().ReindexAll()
+				indexes, changed, err := instance.OAK().IndexManager().ReindexAllWithChanged(reason)
 				if err != nil {
 					return nil, err
 				}
 
 				return map[string]any{
-					OutputChanged: true,
+					OutputChanged: changed,
 					"instance":    instance,
 					"indexes":     indexes,
 				}, nil
@@ -150,12 +151,14 @@ func (c *CLI) oakIndexReindexAllCmd() *cobra.Command {
 			}
 			c.SetOutput("reindexed", reindexed)
 			if mapsx.SomeHas(reindexed, OutputChanged, true) {
-				c.Changed("indexes reindexed")
+				c.Changed("indexes batch reindexed")
 			} else {
-				c.Ok("indexes already reindexed (up-to-date)")
+				c.Ok("indexes batch already reindexed (up-to-date)")
 			}
 		},
 	}
+	cmd.Flags().StringP("reason", "r", "", "Reason for reindexing")
+	_ = cmd.MarkFlagRequired("reason")
 	return cmd
 }
 

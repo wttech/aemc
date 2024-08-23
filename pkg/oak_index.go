@@ -28,6 +28,10 @@ type OAKIndexState struct {
 	Details map[string]any `yaml:"details" json:"details"`
 }
 
+func (i OAKIndexState) Reindexed() bool {
+	return i.data.Reindex
+}
+
 func (i OAKIndex) assumeExists() (*OAKIndexState, error) {
 	state, err := i.State()
 	if err != nil {
@@ -134,8 +138,8 @@ func (i OAKIndex) AwaitNotReindexed() error {
 			log.Warn(err)
 			return false
 		}
-		return state.Exists && !state.data.Reindex
-	}, time.Minute*1)
+		return state.Exists && !state.Reindexed()
+	}, i.manager.awaitNotReindexedTimeout)
 }
 
 func (i OAKIndex) Await(state string, condition func() bool, timeout time.Duration) error {

@@ -5,6 +5,7 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/fmtx"
+	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/oak"
 )
 
@@ -67,11 +68,21 @@ func (im *OAKIndexManager) ReindexAll() (*oak.IndexList, error) {
 		return nil, err
 	}
 
+	count := 0
+	total := indexes.Total()
+
+	log.Infof("%s > reindexing all indexes (%d)", im.instance.IDColor(), total)
+
 	for _, i := range indexes.List {
+		count++
+		percent := stringsx.PercentExplained(count, total, 0)
+
 		if i.Reindex {
-			log.Warnf("%s > index '%s' is currently being reindexed, skipping", im.instance.IDColor(), i.Name)
+			log.Warnf("%s > reindexing '%s' skipped as already in progress (%s)", im.instance.IDColor(), i.Name, percent)
 			continue
 		}
+		log.Infof("%s > reindexing '%s' (%s)", im.instance.IDColor(), i.Name, percent)
+
 		index := im.New(i.Name)
 		if err = im.Reindex(i.Name); err != nil {
 			return nil, err
@@ -80,6 +91,7 @@ func (im *OAKIndexManager) ReindexAll() (*oak.IndexList, error) {
 			return nil, err
 		}
 	}
+	log.Infof("%s > reindexed all indexes (%d)", im.instance.IDColor(), total)
 
 	return indexes, nil
 }

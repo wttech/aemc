@@ -139,19 +139,21 @@ func (c *CLI) oakIndexReindexBatchCmd() *cobra.Command {
 			force, _ := cmd.Flags().GetBool("force")
 
 			reindexed, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
+				indexes, err := instance.OAK().IndexManager().FindByName(namePatterns)
+				indexNames := lo.Map(indexes, func(i pkg.OAKIndex, _ int) any { return i.Name() })
+
 				if force {
-					indexes, err := instance.OAK().IndexManager().ReindexBatch(namePatterns)
-					if err != nil {
+					if err := instance.OAK().IndexManager().ReindexBatch(indexes); err != nil {
 						return nil, err
 					}
 					return map[string]any{
 						OutputChanged: true,
 						"instance":    instance,
-						"indexNames":  lo.Map(indexes, func(i pkg.OAKIndex, _ int) any { return i.Name() }),
+						"indexNames":  indexNames,
 					}, nil
 				}
 
-				indexes, changed, err := instance.OAK().IndexManager().ReindexBatchWithChanged(batchId, namePatterns)
+				changed, err := instance.OAK().IndexManager().ReindexBatchWithChanged(batchId, indexes)
 				if err != nil {
 					return nil, err
 				}
@@ -159,7 +161,7 @@ func (c *CLI) oakIndexReindexBatchCmd() *cobra.Command {
 					OutputChanged: changed,
 					"instance":    instance,
 					"batchId":     batchId,
-					"indexNames":  lo.Map(indexes, func(i pkg.OAKIndex, _ int) any { return i.Name() }),
+					"indexNames":  indexNames,
 				}, nil
 			})
 			if err != nil {

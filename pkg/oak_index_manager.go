@@ -72,11 +72,7 @@ func (im *OAKIndexManager) Reindex(name string) error {
 	return nil
 }
 
-func (im *OAKIndexManager) ReindexBatchWithChanged(batchId string, namePatterns []string) ([]OAKIndex, bool, error) {
-	indexes, err := im.FindByName(namePatterns)
-	if err != nil {
-		return nil, false, err
-	}
+func (im *OAKIndexManager) ReindexBatchWithChanged(batchId string, indexes []OAKIndex) (bool, error) {
 	lock := osx.NewLock(fmt.Sprintf("%s/oak/reindex-batch/%s.yml", im.instance.LockDir(), batchId), func() (oakReindexAllLock, error) {
 		namesSorted := lo.Map(indexes, func(i OAKIndex, _ int) string { return i.Name() })
 		sort.Strings(namesSorted)
@@ -84,34 +80,26 @@ func (im *OAKIndexManager) ReindexBatchWithChanged(batchId string, namePatterns 
 	})
 	lockState, err := lock.State()
 	if err != nil {
-		return nil, false, err
+		return false, err
 	}
 	if lockState.UpToDate {
 		log.Debugf("%s > reindexing '%s' already done (up-to-date)", im.instance.IDColor(), batchId)
-		return nil, false, nil
+		return false, nil
 	}
-	if err := im.reindexBatch(indexes); err != nil {
-		return nil, false, err
+	if err := im.ReindexBatch(indexes); err != nil {
+		return false, err
 	}
 	if err = lock.Lock(); err != nil {
-		return nil, false, err
+		return false, err
 	}
-	return indexes, true, nil
+	return true, nil
 }
 
 type oakReindexAllLock struct {
 	Names string `yaml:"names"`
 }
 
-func (im *OAKIndexManager) ReindexBatch(namePatterns []string) ([]OAKIndex, error) {
-	indexes, err := im.FindByName(namePatterns)
-	if err != nil {
-		return nil, err
-	}
-	return indexes, im.reindexBatch(indexes)
-}
-
-func (im *OAKIndexManager) reindexBatch(indexes []OAKIndex) error {
+func (im *OAKIndexManager) ReindexBatch(indexes []OAKIndex) error {
 	total := len(indexes)
 	log.Infof("%s > reindexing batch of indexes (%d)", im.instance.IDColor(), total)
 	for i, index := range indexes {

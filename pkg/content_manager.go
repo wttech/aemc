@@ -117,6 +117,11 @@ func (cm *ContentManager) PullFile(file string, clean bool, opts PackageCreateOp
 		return err
 	}
 	cleanFile := determineCleanFile(file)
+	if pathx.Exists(file) && file != cleanFile {
+		if err := os.Remove(file); err != nil {
+			return err
+		}
+	}
 	_, jcrPath, _ := strings.Cut(cleanFile, content.JCRRoot)
 	if err := filex.Copy(filepath.Join(workDir, content.JCRRoot, jcrPath), cleanFile, true); err != nil {
 		return err

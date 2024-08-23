@@ -15,14 +15,14 @@ builds:
       - cli
       - provision
       - config_mgmt
+      - timetzdata
     env:
       - CGO_ENABLED=0
     goos:
       - linux
       - windows
       - darwin
-    tags:
-      - timetzdata
+
     ldflags:
       - "-s -w -X main.appVersion={{ .Version }} -X main.appCommit={{ .Commit }} -X main.appCommitDate={{.CommitDate}}"
 

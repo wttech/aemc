@@ -200,11 +200,6 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 			return "", err
 		}
 	}
-	if opts.ContentPath != "" {
-		if err = pm.copyContentFiles(opts, tmpDir); err != nil {
-			return "", err
-		}
-	}
 	if err = content.Zip(tmpDir, tmpFile); err != nil {
 		return "", err
 	}

@@ -82,7 +82,9 @@ func (i OAKIndex) State() (*OAKIndexState, error) {
 		Details: map[string]any{
 			"type":                     data.Type,
 			"async":                    data.Async,
-			"includePaths":             data.IncludedPaths,
+			"unique":                   data.Unique,
+			"includedPaths":            data.IncludedPaths,
+			"excludedPaths":            data.ExcludedPaths,
 			"queryPaths":               data.QueryPaths,
 			"reindex":                  data.Reindex,
 			"reindexCount":             data.ReindexCount,

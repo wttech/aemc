@@ -3,6 +3,7 @@ package pkg
 import (
 	"fmt"
 	"github.com/samber/lo"
+	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/oak"
 )
@@ -48,6 +49,7 @@ func (im *OAKIndexManager) List() (*oak.IndexList, error) {
 	if err = fmtx.UnmarshalJSON(resp.RawBody(), &res); err != nil {
 		return nil, fmt.Errorf("%s > cannot parse index list: %w", im.instance.IDColor(), err)
 	}
+	res.List = lo.Filter(res.List, func(i oak.IndexListItem, _ int) bool { return i.PrimaryType == oak.IndexPrimaryType })
 	return &res, nil
 }
 
@@ -57,4 +59,27 @@ func (im *OAKIndexManager) Reindex(name string) error {
 		return fmt.Errorf("%s > cannot reindex '%s': %w", im.instance.IDColor(), name, err)
 	}
 	return nil
+}
+
+func (im *OAKIndexManager) ReindexAll() (*oak.IndexList, error) {
+	indexes, err := im.List()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, i := range indexes.List {
+		if i.Reindex {
+			log.Warnf("%s > index '%s' is currently being reindexed, skipping", im.instance.IDColor(), i.Name)
+			continue
+		}
+		index := im.New(i.Name)
+		if err = im.Reindex(i.Name); err != nil {
+			return nil, err
+		}
+		if err = index.AwaitNotReindexed(); err != nil {
+			return nil, err
+		}
+	}
+
+	return indexes, nil
 }

@@ -14,10 +14,13 @@ type IndexList struct {
 }
 
 type IndexListItem struct {
+	PrimaryType              string   `json:"jcr:primaryType,omitempty"`
 	Name                     string   `json:"__name__"`
 	Type                     string   `json:"type"`
-	Async                    any      `json:"async"`         /* string or []string */
+	Async                    any      `json:"async"` /* string or []string */
+	Unique                   bool     `json:"unique"`
 	IncludedPaths            any      `json:"includedPaths"` /* string or []string */
+	ExcludedPaths            any      `json:"excludedPaths"` /* string or []string */
 	QueryPaths               any      `json:"queryPaths"`    /* string or []string */
 	Reindex                  bool     `json:"reindex"`
 	ReindexCount             int      `json:"reindexCount"`

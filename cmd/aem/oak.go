@@ -25,6 +25,7 @@ func (c *CLI) oakIndexCmd() *cobra.Command {
 	cmd.AddCommand(c.oakIndexListCmd())
 	cmd.AddCommand(c.oakIndexReadCmd())
 	cmd.AddCommand(c.oakIndexReindexCmd())
+	cmd.AddCommand(c.oakIndexReindexAllCmd())
 	return cmd
 }
 
@@ -85,12 +86,12 @@ func (c *CLI) oakIndexReindexCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			started, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
+			reindexed, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
 				index, err := oakIndexByFlags(cmd, instance)
 				if err != nil {
 					return nil, err
 				}
-				changed, err := index.ReindexWithChanged() // TODO assess if idempotent does make sense
+				changed, err := index.ReindexWithChanged()
 				if err != nil {
 					return nil, err
 				}
@@ -109,15 +110,52 @@ func (c *CLI) oakIndexReindexCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			c.SetOutput("started", started)
-			if mapsx.SomeHas(started, OutputChanged, true) {
+			c.SetOutput("reindexed", reindexed)
+			if mapsx.SomeHas(reindexed, OutputChanged, true) {
 				c.Changed("index reindexed")
 			} else {
-				c.Ok("index already re-indexed (in-progress)")
+				c.Ok("index already reindexed (in progress)")
 			}
 		},
 	}
 	oakIndexDefineFlags(cmd)
+	return cmd
+}
+
+func (c *CLI) oakIndexReindexAllCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "reindex-all",
+		Short: "Reindex all OAK indexes",
+		Run: func(cmd *cobra.Command, args []string) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			reindexed, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
+				indexes, err := instance.OAK().IndexManager().ReindexAll()
+				if err != nil {
+					return nil, err
+				}
+
+				return map[string]any{
+					OutputChanged: true,
+					"instance":    instance,
+					"indexes":     indexes,
+				}, nil
+			})
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("reindexed", reindexed)
+			if mapsx.SomeHas(reindexed, OutputChanged, true) {
+				c.Changed("indexes reindexed")
+			} else {
+				c.Ok("indexes already reindexed (up-to-date)")
+			}
+		},
+	}
 	return cmd
 }
 

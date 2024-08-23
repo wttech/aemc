@@ -72,9 +72,13 @@ func (im *OAKIndexManager) Reindex(name string) error {
 	return nil
 }
 
-func (im *OAKIndexManager) ReindexBatchWithChanged(names []string, reason string) ([]OAKIndex, bool, error) {
-	lock := osx.NewLock(fmt.Sprintf("%s/oak/reindex-batch/%s.yml", im.instance.LockDir(), reason), func() (oakReindexAllLock, error) {
-		namesSorted := append([]string(nil), names...)
+func (im *OAKIndexManager) ReindexBatchWithChanged(batchId string, namePatterns []string) ([]OAKIndex, bool, error) {
+	indexes, err := im.FindByName(namePatterns)
+	if err != nil {
+		return nil, false, err
+	}
+	lock := osx.NewLock(fmt.Sprintf("%s/oak/reindex-batch/%s.yml", im.instance.LockDir(), batchId), func() (oakReindexAllLock, error) {
+		namesSorted := lo.Map(indexes, func(i OAKIndex, _ int) string { return i.Name() })
 		sort.Strings(namesSorted)
 		return oakReindexAllLock{Names: strings.Join(namesSorted, ",")}, nil
 	})
@@ -83,11 +87,10 @@ func (im *OAKIndexManager) ReindexBatchWithChanged(names []string, reason string
 		return nil, false, err
 	}
 	if lockState.UpToDate {
-		log.Debugf("%s > reindexing '%s' already done (up-to-date)", im.instance.IDColor(), reason)
+		log.Debugf("%s > reindexing '%s' already done (up-to-date)", im.instance.IDColor(), batchId)
 		return nil, false, nil
 	}
-	indexes, err := im.ReindexBatch(names)
-	if err != nil {
+	if err := im.reindexBatch(indexes); err != nil {
 		return nil, false, err
 	}
 	if err = lock.Lock(); err != nil {
@@ -100,21 +103,23 @@ type oakReindexAllLock struct {
 	Names string `yaml:"names"`
 }
 
-func (im *OAKIndexManager) ReindexBatch(names []string) ([]OAKIndex, error) {
-	indexes, err := im.FindByName(names)
+func (im *OAKIndexManager) ReindexBatch(namePatterns []string) ([]OAKIndex, error) {
+	indexes, err := im.FindByName(namePatterns)
 	if err != nil {
 		return nil, err
 	}
+	return indexes, im.reindexBatch(indexes)
+}
 
-	total := len(names)
+func (im *OAKIndexManager) reindexBatch(indexes []OAKIndex) error {
+	total := len(indexes)
 	log.Infof("%s > reindexing batch of indexes (%d)", im.instance.IDColor(), total)
-
 	for i, index := range indexes {
 		percent := stringsx.PercentExplained(i+1, total, 0)
 
 		state, err := index.State()
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		if state.Reindexed() {
@@ -124,56 +129,25 @@ func (im *OAKIndexManager) ReindexBatch(names []string) ([]OAKIndex, error) {
 		log.Infof("%s > reindexing '%s' (%s)", im.instance.IDColor(), index.Name(), percent)
 
 		if err = index.Reindex(); err != nil {
-			return nil, err
+			return err
 		}
 		if err = index.AwaitNotReindexed(); err != nil {
-			return nil, err
+			return err
 		}
 	}
 	log.Infof("%s > reindexed batch of indexes (%d)", im.instance.IDColor(), total)
+	return nil
+}
 
+func (im *OAKIndexManager) FindByName(namePatterns []string) ([]OAKIndex, error) {
+	items, err := im.List()
+	if err != nil {
+		return nil, err
+	}
+	indexes := lo.Map(lo.Filter(items.List, func(i oak.IndexListItem, _ int) bool {
+		return stringsx.MatchSome(i.Name, namePatterns)
+	}), func(i oak.IndexListItem, _ int) OAKIndex {
+		return im.New(i.Name)
+	})
 	return indexes, nil
-}
-
-func (im *OAKIndexManager) FindByName(names []string) ([]OAKIndex, error) {
-	indexes, err := im.List()
-	if err != nil {
-		return nil, err
-	}
-	var res []OAKIndex
-	for _, name := range names {
-		item, found := lo.Find(indexes.List, func(i oak.IndexListItem) bool { return name == i.Name })
-		if !found {
-			return nil, fmt.Errorf("%s > index '%s' cannot be found", im.instance.IDColor(), name)
-		}
-		res = append(res, OAKIndex{
-			manager: im,
-			name:    item.Name,
-		})
-	}
-	return res, nil
-}
-
-func (im *OAKIndexManager) Names() ([]string, error) {
-	list, err := im.List()
-	if err != nil {
-		return nil, err
-	}
-	return lo.Map(list.List, func(i oak.IndexListItem, _ int) string { return i.Name }), nil
-}
-
-func (im *OAKIndexManager) ReindexAll() ([]OAKIndex, error) {
-	names, err := im.Names()
-	if err != nil {
-		return nil, err
-	}
-	return im.ReindexBatch(names)
-}
-
-func (im *OAKIndexManager) ReindexAllWithChanged(reason string) ([]OAKIndex, bool, error) {
-	names, err := im.Names()
-	if err != nil {
-		return nil, false, err
-	}
-	return im.ReindexBatchWithChanged(names, reason)
 }

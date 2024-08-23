@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg"
 	"github.com/wttech/aemc/pkg/common/mapsx"
@@ -132,17 +133,33 @@ func (c *CLI) oakIndexReindexBatchCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			reason, _ := cmd.Flags().GetString("reason")
+
+			batchId, _ := cmd.Flags().GetString("batch-id")
+			namePatterns, _ := cmd.Flags().GetStringSlice("name-pattern")
+			force, _ := cmd.Flags().GetBool("force")
+
 			reindexed, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
-				indexes, changed, err := instance.OAK().IndexManager().ReindexAllWithChanged(reason)
+				if force {
+					indexes, err := instance.OAK().IndexManager().ReindexBatch(namePatterns)
+					if err != nil {
+						return nil, err
+					}
+					return map[string]any{
+						OutputChanged: true,
+						"instance":    instance,
+						"indexNames":  lo.Map(indexes, func(i pkg.OAKIndex, _ int) any { return i.Name() }),
+					}, nil
+				}
+
+				indexes, changed, err := instance.OAK().IndexManager().ReindexBatchWithChanged(batchId, namePatterns)
 				if err != nil {
 					return nil, err
 				}
-
 				return map[string]any{
 					OutputChanged: changed,
 					"instance":    instance,
-					"indexes":     indexes,
+					"batchId":     batchId,
+					"indexNames":  lo.Map(indexes, func(i pkg.OAKIndex, _ int) any { return i.Name() }),
 				}, nil
 			})
 			if err != nil {
@@ -157,8 +174,9 @@ func (c *CLI) oakIndexReindexBatchCmd() *cobra.Command {
 			}
 		},
 	}
-	cmd.Flags().StringP("reason", "r", "", "Reason for reindexing")
-	_ = cmd.MarkFlagRequired("reason")
+	cmd.Flags().StringP("batch-id", "b", "all", "Batch ID")
+	cmd.Flags().StringSliceP("name-pattern", "n", []string{"*"}, "Index name pattern(s)")
+	cmd.Flags().BoolP("force", "f", false, "Reindex even if already indexed")
 	return cmd
 }
 

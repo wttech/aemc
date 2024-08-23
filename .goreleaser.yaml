@@ -1,3 +1,5 @@
+version: 2
+
 # Make sure to check the documentation at https://goreleaser.com
 before:
   hooks:
@@ -13,14 +15,14 @@ builds:
       - cli
       - provision
       - config_mgmt
+      - timetzdata
     env:
       - CGO_ENABLED=0
     goos:
       - linux
       - windows
       - darwin
-    tags:
-      - timetzdata
+
     ldflags:
       - "-s -w -X main.appVersion={{ .Version }} -X main.appCommit={{ .Commit }} -X main.appCommitDate={{.CommitDate}}"
 
@@ -45,7 +47,7 @@ checksum:
   name_template: 'checksums.txt'
 
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  version_template: "{{ incpatch .Version }}-next"
 
 changelog:
   sort: asc

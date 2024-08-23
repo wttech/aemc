@@ -126,6 +126,8 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.osgi.bundle.snapshot_ignored", false)
 	v.SetDefault("instance.osgi.bundle.snapshot_patterns", []string{"**/*-SNAPSHOT.jar"})
 
+	v.SetDefault("instance.oak.index.await_not_reindexed_timeout", time.Minute*60)
+
 	v.SetDefault("instance.ssl.setup_timeout", time.Second*30)
 
 	v.SetDefault("instance.crypto.key_bundle_symbolic_name", "com.adobe.granite.crypto.file")

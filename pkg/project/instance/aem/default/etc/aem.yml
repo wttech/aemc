@@ -199,6 +199,11 @@ instance:
       # Use checksums to avoid re-installations when snapshot OSGi bundles are unchanged
       snapshot_install_skipping: true
 
+  # OAK Repository
+  oak:
+    index:
+      await_not_reindexed_timeout: 60m
+
   # Crypto Support
   crypto:
     key_bundle_symbolic_name: com.adobe.granite.crypto.file

@@ -51,9 +51,7 @@ func (cm *ContentManager) Download(localFile string, packageOpts PackageCreateOp
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = cm.pkgMgr().Delete(remotePath)
-	}()
+	defer func() { _ = cm.pkgMgr().Delete(remotePath) }()
 	if err := cm.pkgMgr().Build(remotePath); err != nil {
 		return err
 	}
@@ -65,14 +63,14 @@ func (cm *ContentManager) Download(localFile string, packageOpts PackageCreateOp
 
 func (cm *ContentManager) PullDir(dir string, clean bool, replace bool, opts PackageCreateOpts) error {
 	pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_pull", ".zip")
-	if err := cm.Download(pkgFile, opts); err != nil {
-		return err
-	}
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_pull")
 	defer func() {
 		_ = pathx.DeleteIfExists(pkgFile)
 		_ = pathx.DeleteIfExists(workDir)
 	}()
+	if err := cm.Download(pkgFile, opts); err != nil {
+		return err
+	}
 	if err := content.Unzip(pkgFile, workDir); err != nil {
 		return err
 	}
@@ -105,14 +103,14 @@ func (cm *ContentManager) PullDir(dir string, clean bool, replace bool, opts Pac
 
 func (cm *ContentManager) PullFile(file string, clean bool, opts PackageCreateOpts) error {
 	pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_pull", ".zip")
-	if err := cm.Download(pkgFile, opts); err != nil {
-		return err
-	}
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_pull")
 	defer func() {
 		_ = pathx.DeleteIfExists(pkgFile)
 		_ = pathx.DeleteIfExists(workDir)
 	}()
+	if err := cm.Download(pkgFile, opts); err != nil {
+		return err
+	}
 	if err := content.Unzip(pkgFile, workDir); err != nil {
 		return err
 	}
@@ -135,19 +133,17 @@ func (cm *ContentManager) PullFile(file string, clean bool, opts PackageCreateOp
 	return nil
 }
 
-func (cm *ContentManager) Push(contentPath string, clean bool, packageOpts PackageCreateOpts) error {
-	if !pathx.Exists(contentPath) {
-		return fmt.Errorf("cannot push content as it does not exist '%s'", contentPath)
+func (cm *ContentManager) Push(path string, clean bool, packageOpts PackageCreateOpts) error {
+	if !pathx.Exists(path) {
+		return fmt.Errorf("cannot push content as it does not exist '%s'", path)
 	}
 	if packageOpts.PID == "" {
 		packageOpts.PID = fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow())
 	}
 	if clean {
 		workDir := pathx.RandomDir(cm.tmpDir(), "content_push")
-		defer func() {
-			_ = pathx.DeleteIfExists(workDir)
-		}()
-		if err := copyContentFiles(contentPath, workDir); err != nil {
+		defer func() { _ = pathx.DeleteIfExists(workDir) }()
+		if err := copyContentFiles(path, workDir); err != nil {
 			return err
 		}
 		contentManager := cm.instance.manager.aem.contentManager
@@ -156,15 +152,13 @@ func (cm *ContentManager) Push(contentPath string, clean bool, packageOpts Packa
 		}
 		packageOpts.ContentPath = filepath.Join(workDir, content.JCRRoot)
 	} else {
-		packageOpts.ContentPath = contentPath
+		packageOpts.ContentPath = path
 	}
 	remotePath, err := cm.pkgMgr().Create(packageOpts)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = cm.pkgMgr().Delete(remotePath)
-	}()
+	defer func() { _ = cm.pkgMgr().Delete(remotePath) }()
 	if err = cm.pkgMgr().Install(remotePath); err != nil {
 		return err
 	}

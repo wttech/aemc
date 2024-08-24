@@ -230,14 +230,14 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	return status.Path, nil
 }
 
-func DetermineFilterRoot(contentPath string) string {
-	_, filterRoot, _ := strings.Cut(contentPath, content.JCRRoot)
+func DetermineFilterRoot(path string) string {
+	_, filterRoot, _ := strings.Cut(path, content.JCRRoot)
 	filterRoot = strings.ReplaceAll(filterRoot, "\\", "/")
-	if strings.HasSuffix(filterRoot, content.JCRContentFile) && content.IsContentFile(contentPath) {
+	if strings.HasSuffix(path, content.JCRContentFile) && content.IsContentFile(path) {
 		filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFile, content.JCRContentNode)
-	} else if strings.HasSuffix(filterRoot, content.JCRContentFile) {
+	} else if strings.HasSuffix(path, content.JCRContentFile) {
 		filterRoot = filepath.Dir(filterRoot)
-	} else if strings.HasSuffix(filterRoot, content.XmlFileSuffix) {
+	} else if strings.HasSuffix(path, content.XmlFileSuffix) {
 		filterRoot = strings.ReplaceAll(filterRoot, content.XmlFileSuffix, "")
 	}
 	filterRoot = namespacePatternRegex.ReplaceAllString(filterRoot, "/$2:")
@@ -246,14 +246,14 @@ func DetermineFilterRoot(contentPath string) string {
 	return filterRoot
 }
 
-func copyContentFiles(contentPath string, tmpDir string) error {
-	_, jcrPath, _ := strings.Cut(contentPath, content.JCRRoot)
-	if pathx.IsDir(contentPath) {
-		if err := filex.CopyDir(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath)); err != nil {
+func copyContentFiles(path string, tmpDir string) error {
+	_, jcrPath, _ := strings.Cut(path, content.JCRRoot)
+	if pathx.IsDir(path) {
+		if err := filex.CopyDir(path, filepath.Join(tmpDir, content.JCRRoot, jcrPath)); err != nil {
 			return err
 		}
-	} else if pathx.IsFile(contentPath) {
-		if err := filex.Copy(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath), true); err != nil {
+	} else if pathx.IsFile(path) {
+		if err := filex.Copy(path, filepath.Join(tmpDir, content.JCRRoot, jcrPath), true); err != nil {
 			return err
 		}
 	}
@@ -262,9 +262,7 @@ func copyContentFiles(contentPath string, tmpDir string) error {
 
 func (pm *PackageManager) Copy(remotePath string, destInstance *Instance) error {
 	var localPath = pathx.RandomFileName(pm.tmpDir(), "pkg_copy", ".zip")
-	defer func() {
-		_ = pathx.DeleteIfExists(localPath)
-	}()
+	defer func() { _ = pathx.DeleteIfExists(localPath) }()
 	if err := pm.Download(remotePath, localPath); err != nil {
 		return err
 	}

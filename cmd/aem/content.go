@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg"
 	"github.com/wttech/aemc/pkg/common/pathx"
@@ -111,9 +112,6 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			clean, _ := cmd.Flags().GetBool("clean")
-			vault, _ := cmd.Flags().GetBool("vault")
-			replace, _ := cmd.Flags().GetBool("replace")
 			dir, err := determineContentDir(cmd)
 			if err != nil {
 				c.Error(err)
@@ -127,6 +125,9 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
 			excludePatterns := determineExcludePatterns(cmd)
+			clean, _ := cmd.Flags().GetBool("clean")
+			vault, _ := cmd.Flags().GetBool("vault")
+			replace, _ := cmd.Flags().GetBool("replace")
 			if dir != "" {
 				if err = instance.ContentManager().PullDir(dir, clean, vault, replace, pkg.PackageCreateOpts{
 					FilterRoots: filterRoots,
@@ -187,10 +188,11 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 			if path == "" {
 				path = file
 			}
-			clean, _ := cmd.Flags().GetBool("clean")
-			vault, _ := cmd.Flags().GetBool("vault")
 			filterRoots := determineFilterRoots(cmd)
 			excludePatterns := determineExcludePatterns(cmd)
+			clean, _ := cmd.Flags().GetBool("clean")
+			vault, _ := cmd.Flags().GetBool("vault")
+			vault = vault && pathx.IsDir(path)
 			if err = instance.ContentManager().Push(path, clean, vault, pkg.PackageCreateOpts{
 				FilterRoots:     filterRoots,
 				ExcludePatterns: excludePatterns,
@@ -235,6 +237,9 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 			filterFile, _ := cmd.Flags().GetString("filter-file")
 			clean, _ := cmd.Flags().GetBool("clean")
 			vault, _ := cmd.Flags().GetBool("vault")
+			vault = vault && lo.EveryBy(filterRoots, func(filterRoot string) bool {
+				return pathx.IsDir(filterRoot)
+			})
 			if err = instance.ContentManager().Copy(targetInstance, clean, vault, pkg.PackageCreateOpts{
 				FilterRoots: filterRoots,
 				FilterFile:  filterFile,

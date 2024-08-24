@@ -8,6 +8,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/tplx"
 	"github.com/wttech/aemc/pkg/content"
 	"github.com/wttech/aemc/pkg/pkg"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -71,7 +72,20 @@ func (cm *ContentManager) PullDir(dir string, clean bool, vault bool, replace bo
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_pull")
 	defer func() { _ = pathx.DeleteIfExists(workDir) }()
 	if vault {
-		if err := cm.executeVaultCliCommand("checkout", workDir, opts); err != nil {
+		filterFile, err := cm.determineFilterFile(workDir, opts)
+		if err != nil {
+			return err
+		}
+		vaultCliArgs := []string{
+			"vlt",
+			"--credentials", fmt.Sprintf("%s:%s", cm.instance.user, cm.instance.password),
+			"checkout",
+			"--force",
+			"--filter", filterFile,
+			fmt.Sprintf("%s/crx/server/crx.default", cm.instance.http.baseURL),
+			workDir,
+		}
+		if err = cm.vaultCli().CommandShell(vaultCliArgs); err != nil {
 			return err
 		}
 	} else {
@@ -115,7 +129,20 @@ func (cm *ContentManager) PullFile(file string, clean bool, vault bool, opts Pac
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_pull")
 	defer func() { _ = pathx.DeleteIfExists(workDir) }()
 	if vault {
-		if err := cm.executeVaultCliCommand("checkout", workDir, opts); err != nil {
+		filterFile, err := cm.determineFilterFile(workDir, opts)
+		if err != nil {
+			return err
+		}
+		vaultCliArgs := []string{
+			"vlt",
+			"--credentials", fmt.Sprintf("%s:%s", cm.instance.user, cm.instance.password),
+			"checkout",
+			"--force",
+			"--filter", filterFile,
+			fmt.Sprintf("%s/crx/server/crx.default", cm.instance.http.baseURL),
+			workDir,
+		}
+		if err = cm.vaultCli().CommandShell(vaultCliArgs); err != nil {
 			return err
 		}
 	} else {
@@ -169,8 +196,15 @@ func (cm *ContentManager) Push(path string, clean bool, vault bool, opts Package
 		opts.ContentPath = path
 	}
 	if vault {
-		// TODO implement Vault-Cli command
-		if err := cm.executeVaultCliCommand("commit", workDir, opts); err != nil {
+		mainDir, jcrPath, _ := strings.Cut(path, content.JCRRoot)
+		vaultCliArgs := []string{
+			"vlt",
+			"--credentials", fmt.Sprintf("%s:%s", cm.instance.user, cm.instance.password),
+			"import",
+			fmt.Sprintf("%s/crx/-/jcr:root%s", cm.instance.http.baseURL, jcrPath),
+			mainDir,
+		}
+		if err := cm.vaultCli().CommandShell(vaultCliArgs); err != nil {
 			return err
 		}
 	} else {
@@ -197,9 +231,31 @@ func (cm *ContentManager) Copy(destInstance *Instance, clean bool, vault bool, o
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_copy")
 	defer func() { _ = pathx.DeleteIfExists(workDir) }()
 	if vault {
-		// TODO implement Vault-Cli command
-		if err := cm.executeVaultCliCommand("", workDir, opts); err != nil {
-			return err
+		for _, filterRoot := range opts.FilterRoots {
+			parsedURLSrc, err := url.Parse(cm.instance.http.baseURL)
+			if err != nil {
+				return err
+			}
+			parsedURLDest, err := url.Parse(destInstance.http.baseURL)
+			if err != nil {
+				return err
+			}
+			vaultCliArgs := []string{
+				"vlt",
+				"rcp",
+				"-b", "100",
+				"-r",
+				"-u",
+				fmt.Sprintf("%s://%s:%s@%s/crx/-/jcr:root%s",
+					parsedURLSrc.Scheme, cm.instance.user, cm.instance.password,
+					parsedURLSrc.Host, filterRoot),
+				fmt.Sprintf("%s://%s:%s@%s/crx/-/jcr:root%s",
+					parsedURLDest.Scheme, destInstance.user, destInstance.password,
+					parsedURLDest.Host, filterRoot),
+			}
+			if err = cm.vaultCli().CommandShell(vaultCliArgs); err != nil {
+				return err
+			}
 		}
 	} else {
 		pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_copy", ".zip")
@@ -228,44 +284,22 @@ func (cm *ContentManager) Copy(destInstance *Instance, clean bool, vault bool, o
 	return nil
 }
 
-func (cm *ContentManager) determineTmpFilterFile(workDir string, opts PackageCreateOpts) (string, error) {
-	tmpFilterFile := filepath.Join(workDir, FilterXML)
+func (cm *ContentManager) determineFilterFile(workDir string, opts PackageCreateOpts) (string, error) {
 	if opts.FilterFile != "" {
-		if err := filex.Copy(opts.FilterFile, tmpFilterFile, true); err != nil {
-			return tmpFilterFile, err
-		}
-	} else {
-		bytes, err := pkg.VaultFS.ReadFile("vault/META-INF/vault/filter.xml")
-		if err != nil {
-			return tmpFilterFile, err
-		}
-		data := map[string]any{
-			"FilterRoots":     opts.FilterRoots,
-			"ExcludePatterns": opts.ExcludePatterns,
-		}
-		if err := tplx.RenderFile(tmpFilterFile, string(bytes), data); err != nil {
-			return tmpFilterFile, err
-		}
+		return opts.FilterFile, nil
 	}
-	return tmpFilterFile, nil
-}
-func (cm *ContentManager) executeVaultCliCommand(command string, workDir string, opts PackageCreateOpts) error {
-	tmpFilterFile, err := cm.determineTmpFilterFile(workDir, opts)
-	defer func() { _ = pathx.DeleteIfExists(tmpFilterFile) }()
+
+	filterFile := filepath.Join(workDir, FilterXML)
+	bytes, err := pkg.VaultFS.ReadFile("vault/META-INF/vault/filter.xml")
 	if err != nil {
-		return err
+		return "", err
 	}
-	vaultCliArgs := []string{
-		"vlt",
-		"--credentials", fmt.Sprintf("%s:%s", cm.instance.user, cm.instance.password),
-		command,
-		"--force",
-		"--filter", tmpFilterFile,
-		fmt.Sprintf("%s/crx/server/crx.default", cm.instance.http.baseURL),
-		workDir,
+	data := map[string]any{
+		"FilterRoots":     opts.FilterRoots,
+		"ExcludePatterns": opts.ExcludePatterns,
 	}
-	if err := cm.vaultCli().CommandShell(vaultCliArgs); err != nil {
-		return err
+	if err = tplx.RenderFile(filterFile, string(bytes), data); err != nil {
+		return "", err
 	}
-	return nil
+	return filterFile, nil
 }

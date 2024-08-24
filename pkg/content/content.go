@@ -496,10 +496,5 @@ func IsContentFile(path string) bool {
 		return false
 	}
 
-	for _, inputLine := range inputLines {
-		if strings.Contains(inputLine, JCRContentPrefix) {
-			return true
-		}
-	}
-	return false
+	return lo.SomeBy(inputLines, func(inputLine string) bool { return strings.Contains(inputLine, JCRContentPrefix) })
 }

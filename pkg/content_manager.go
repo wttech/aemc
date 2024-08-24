@@ -53,9 +53,7 @@ func (cm *ContentManager) Download(localFile string, packageOpts PackageCreateOp
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = cm.pkgMgr().Delete(remotePath)
-	}()
+	defer func() { _ = cm.pkgMgr().Delete(remotePath) }()
 	if err := cm.pkgMgr().Build(remotePath); err != nil {
 		return err
 	}
@@ -151,10 +149,6 @@ func (cm *ContentManager) PullDir(dir string, clean bool, vault bool, replace bo
 }
 
 func (cm *ContentManager) PullFile(file string, clean bool, vault bool, packageOpts PackageCreateOpts) error {
-	contentManager := cm.instance.manager.aem.contentManager
-	if err := contentManager.BeforePullFile(file); err != nil {
-		return err
-	}
 	mainDir, _, _ := strings.Cut(file, content.JCRRoot)
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_pull")
 	defer func() {
@@ -202,10 +196,8 @@ func (cm *ContentManager) Push(contentPath string, clean bool, vault bool, packa
 	}
 	if clean {
 		workDir := pathx.RandomDir(cm.tmpDir(), "content_push")
-		defer func() {
-			_ = pathx.DeleteIfExists(workDir)
-		}()
-		if err := copyContentFiles(contentPath, workDir); err != nil {
+		defer func() { _ = pathx.DeleteIfExists(workDir) }()
+		if err := copyContentFiles(path, workDir); err != nil {
 			return err
 		}
 		contentManager := cm.instance.manager.aem.contentManager
@@ -214,7 +206,7 @@ func (cm *ContentManager) Push(contentPath string, clean bool, vault bool, packa
 		}
 		packageOpts.ContentPath = filepath.Join(workDir, content.JCRRoot)
 	} else {
-		packageOpts.ContentPath = contentPath
+		packageOpts.ContentPath = path
 	}
 	if vault {
 		// TODO implement Vault-Cli command
@@ -227,9 +219,7 @@ func (cm *ContentManager) Push(contentPath string, clean bool, vault bool, packa
 		if err != nil {
 			return err
 		}
-		defer func() {
-			_ = cm.pkgMgr().Delete(remotePath)
-		}()
+		defer func() { _ = cm.pkgMgr().Delete(remotePath) }()
 		if err = cm.pkgMgr().Install(remotePath); err != nil {
 			return err
 		}

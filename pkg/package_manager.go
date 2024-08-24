@@ -261,7 +261,7 @@ func copyContentFiles(path string, tmpDir string) error {
 }
 
 func (pm *PackageManager) Copy(remotePath string, destInstance *Instance) error {
-	var localPath = pathx.RandomFileName(pm.tmpDir(), "pkg_copy", ".zip")
+	localPath := pathx.RandomFileName(pm.tmpDir(), "pkg_copy", ".zip")
 	defer func() { _ = pathx.DeleteIfExists(localPath) }()
 	if err := pm.Download(remotePath, localPath); err != nil {
 		return err

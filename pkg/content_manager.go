@@ -43,11 +43,11 @@ func (cm *ContentManager) tmpDir() string {
 	return cm.instance.manager.aem.baseOpts.TmpDir
 }
 
-func (cm *ContentManager) Download(localFile string, packageOpts PackageCreateOpts) error {
-	if packageOpts.PID == "" {
-		packageOpts.PID = fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", timex.FileTimestampForNow())
+func (cm *ContentManager) Download(localFile string, opts PackageCreateOpts) error {
+	if opts.PID == "" {
+		opts.PID = fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", timex.FileTimestampForNow())
 	}
-	remotePath, err := cm.pkgMgr().Create(packageOpts)
+	remotePath, err := cm.pkgMgr().Create(opts)
 	if err != nil {
 		return err
 	}
@@ -133,12 +133,12 @@ func (cm *ContentManager) PullFile(file string, clean bool, opts PackageCreateOp
 	return nil
 }
 
-func (cm *ContentManager) Push(path string, clean bool, packageOpts PackageCreateOpts) error {
+func (cm *ContentManager) Push(path string, clean bool, opts PackageCreateOpts) error {
 	if !pathx.Exists(path) {
 		return fmt.Errorf("cannot push content as it does not exist '%s'", path)
 	}
-	if packageOpts.PID == "" {
-		packageOpts.PID = fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow())
+	if opts.PID == "" {
+		opts.PID = fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow())
 	}
 	if clean {
 		workDir := pathx.RandomDir(cm.tmpDir(), "content_push")
@@ -150,11 +150,11 @@ func (cm *ContentManager) Push(path string, clean bool, packageOpts PackageCreat
 		if err := contentManager.CleanDir(filepath.Join(workDir, content.JCRRoot)); err != nil {
 			return err
 		}
-		packageOpts.ContentPath = filepath.Join(workDir, content.JCRRoot)
+		opts.ContentPath = filepath.Join(workDir, content.JCRRoot)
 	} else {
-		packageOpts.ContentPath = path
+		opts.ContentPath = path
 	}
-	remotePath, err := cm.pkgMgr().Create(packageOpts)
+	remotePath, err := cm.pkgMgr().Create(opts)
 	if err != nil {
 		return err
 	}

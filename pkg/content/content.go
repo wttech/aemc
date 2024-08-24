@@ -74,17 +74,7 @@ func (c Manager) BeforePullDir(root string) error {
 }
 
 func (c Manager) AfterPullDir(root string) error {
-	if err := c.undoParentsBackup(root); err != nil {
-		return err
-	}
-	if err := eachFiles(root, func(path string) error {
-		return deleteFile(path, func() bool {
-			return filepath.Base(path) == ".vlt"
-		})
-	}); err != nil {
-		return err
-	}
-	return nil
+	return c.undoParentsBackup(root)
 }
 
 func (c Manager) CleanDir(root string) error {
@@ -441,9 +431,6 @@ func writeLines(path string, lines []string) error {
 }
 
 func createBackupIndicator(dir string) error {
-	if err := pathx.Ensure(dir); err != nil {
-		return err
-	}
 	indicator, err := os.Create(filepath.Join(dir, ParentsBackupDirIndicator))
 	defer func() { _ = indicator.Close() }()
 	return err

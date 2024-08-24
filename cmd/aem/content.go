@@ -6,6 +6,8 @@ import (
 	"github.com/wttech/aemc/pkg"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/content"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -124,6 +126,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 			}
 			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
+			excludePatterns := determineExcludePatterns(cmd)
 			if dir != "" {
 				if err = instance.ContentManager().PullDir(dir, clean, vault, replace, pkg.PackageCreateOpts{
 					FilterRoots: filterRoots,
@@ -135,7 +138,8 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				c.SetOutput("dir", dir)
 			} else if file != "" {
 				if err = instance.ContentManager().PullFile(file, clean, vault, pkg.PackageCreateOpts{
-					FilterRoots: filterRoots,
+					FilterRoots:     filterRoots,
+					ExcludePatterns: excludePatterns,
 				}); err != nil {
 					c.Error(err)
 					return
@@ -186,8 +190,10 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 			clean, _ := cmd.Flags().GetBool("clean")
 			vault, _ := cmd.Flags().GetBool("vault")
 			filterRoots := determineFilterRoots(cmd)
+			excludePatterns := determineExcludePatterns(cmd)
 			if err = instance.ContentManager().Push(path, clean, vault, pkg.PackageCreateOpts{
-				FilterRoots: filterRoots,
+				FilterRoots:     filterRoots,
+				ExcludePatterns: excludePatterns,
 			}); err != nil {
 				c.Error(err)
 				return
@@ -320,4 +326,27 @@ func determineFilterRoots(cmd *cobra.Command) []string {
 		return []string{pkg.DetermineFilterRoot(file)}
 	}
 	return nil
+}
+
+func determineExcludePatterns(cmd *cobra.Command) []string {
+	file, _ := determineContentFile(cmd)
+	if file == "" || !strings.HasSuffix(file, content.JCRContentFile) || content.IsContentFile(file) {
+		return nil
+	}
+
+	dir := filepath.Dir(file)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+
+	var excludePatterns []string
+	for _, entry := range entries {
+		if entry.Name() != content.JCRContentFile {
+			jcrPath := pkg.DetermineFilterRoot(filepath.Join(dir, entry.Name()))
+			excludePattern := fmt.Sprintf("%s(/.*)?", jcrPath)
+			excludePatterns = append(excludePatterns, excludePattern)
+		}
+	}
+	return excludePatterns
 }

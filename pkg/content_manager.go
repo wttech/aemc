@@ -160,6 +160,7 @@ func (cm *ContentManager) PullFile(file string, clean bool, vault bool, packageO
 	defer func() {
 		_ = pathx.DeleteIfExists(workDir)
 	}()
+	cleanFile := determineCleanFile(file)
 	if vault {
 		if err := cm.pullWithVault(mainDir, workDir, packageOpts); err != nil {
 			return err
@@ -168,27 +169,25 @@ func (cm *ContentManager) PullFile(file string, clean bool, vault bool, packageO
 		if err := cm.pullWithPackMgr(workDir, packageOpts); err != nil {
 			return err
 		}
-		dir := filepath.Dir(file)
-		_, jcrPath, _ := strings.Cut(dir, content.JCRRoot)
-		if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot, jcrPath), dir); err != nil {
+		cleanFile := determineCleanFile(file)
+		if pathx.Exists(file) && file != cleanFile {
+			if err := os.Remove(file); err != nil {
+				return err
+			}
+		}
+		_, jcrPath, _ := strings.Cut(cleanFile, content.JCRRoot)
+		if err := filex.Copy(filepath.Join(workDir, content.JCRRoot, jcrPath), cleanFile, true); err != nil {
 			return err
 		}
 	}
-	if err := contentManager.AfterPullFile(file); err != nil {
+	_, jcrPath, _ := strings.Cut(cleanFile, content.JCRRoot)
+	if err := filex.Copy(filepath.Join(workDir, content.JCRRoot, jcrPath), cleanFile, true); err != nil {
 		return err
 	}
 	if clean {
-		cleanFile := determineCleanFile(file)
+		contentManager := cm.instance.manager.aem.contentManager
 		if err := contentManager.CleanFile(cleanFile); err != nil {
 			return err
-		}
-		if strings.HasSuffix(file, content.JCRContentFile) {
-			root := strings.ReplaceAll(file, content.JCRContentFile, content.JCRContentDirName)
-			if pathx.Exists(root) {
-				if err := contentManager.CleanDir(root); err != nil {
-					return err
-				}
-			}
 		}
 	}
 	return nil
@@ -206,25 +205,8 @@ func (cm *ContentManager) Push(contentPath string, clean bool, vault bool, packa
 		defer func() {
 			_ = pathx.DeleteIfExists(workDir)
 		}()
-		if pathx.IsDir(contentPath) {
-			_, jcrPath, _ := strings.Cut(contentPath, content.JCRRoot)
-			if err := filex.CopyDir(contentPath, filepath.Join(workDir, content.JCRRoot, jcrPath)); err != nil {
-				return err
-			}
-		} else if pathx.IsFile(contentPath) {
-			_, jcrPath, _ := strings.Cut(contentPath, content.JCRRoot)
-			jcrDir := filepath.Dir(jcrPath)
-			if err := filex.Copy(contentPath, filepath.Join(workDir, content.JCRRoot, jcrPath), true); err != nil {
-				return err
-			}
-			if strings.HasSuffix(contentPath, content.JCRContentFile) {
-				contentDir := strings.ReplaceAll(contentPath, content.JCRContentFile, content.JCRContentDirName)
-				if pathx.Exists(contentDir) {
-					if err := filex.CopyDir(contentDir, filepath.Join(workDir, content.JCRRoot, jcrDir, content.JCRContentDirName)); err != nil {
-						return err
-					}
-				}
-			}
+		if err := copyContentFiles(contentPath, workDir); err != nil {
+			return err
 		}
 		contentManager := cm.instance.manager.aem.contentManager
 		if err := contentManager.CleanDir(filepath.Join(workDir, content.JCRRoot)); err != nil {
@@ -257,7 +239,7 @@ func (cm *ContentManager) Push(contentPath string, clean bool, vault bool, packa
 
 func determineCleanFile(file string) string {
 	if namespacePatternRegex.MatchString(file) && !strings.HasSuffix(file, content.JCRContentFile) {
-		return filepath.Join(strings.ReplaceAll(file, content.JCRContentFileSuffix, ""), content.JCRContentFile)
+		return filepath.Join(strings.ReplaceAll(file, content.XmlFileSuffix, ""), content.JCRContentFile)
 	}
 	return file
 }

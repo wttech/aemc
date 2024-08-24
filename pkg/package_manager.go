@@ -166,10 +166,11 @@ func copyPackageDefaultFiles(targetTmpDir string, data map[string]any) error {
 }
 
 type PackageCreateOpts struct {
-	PID         string
-	FilterRoots []string
-	FilterFile  string
-	ContentPath string
+	PID             string
+	FilterRoots     []string
+	FilterFile      string
+	ExcludePatterns []string
+	ContentPath     string
 }
 
 func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
@@ -186,17 +187,23 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 		_ = pathx.DeleteIfExists(tmpFile)
 	}()
 	data := map[string]any{
-		"Pid":         opts.PID,
-		"Group":       pidConfig.Group,
-		"Name":        pidConfig.Name,
-		"Version":     pidConfig.Version,
-		"FilterRoots": opts.FilterRoots,
+		"Pid":             opts.PID,
+		"Group":           pidConfig.Group,
+		"Name":            pidConfig.Name,
+		"Version":         pidConfig.Version,
+		"FilterRoots":     opts.FilterRoots,
+		"ExcludePatterns": opts.ExcludePatterns,
 	}
 	if err = copyPackageDefaultFiles(tmpDir, data); err != nil {
 		return "", err
 	}
 	if opts.FilterFile != "" {
 		if err = filex.Copy(opts.FilterFile, filepath.Join(tmpDir, "META-INF", "vault", FilterXML), true); err != nil {
+			return "", err
+		}
+	}
+	if opts.ContentPath != "" {
+		if err = copyContentFiles(opts.ContentPath, tmpDir); err != nil {
 			return "", err
 		}
 	}
@@ -223,44 +230,34 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	return status.Path, nil
 }
 
-func (pm *PackageManager) copyContentFiles(opts PackageCreateOpts, tmpDir string) error {
-	contentPath := opts.ContentPath
+func DetermineFilterRoot(contentPath string) string {
+	_, filterRoot, _ := strings.Cut(contentPath, content.JCRRoot)
+	filterRoot = strings.ReplaceAll(filterRoot, "\\", "/")
+	if strings.HasSuffix(filterRoot, content.JCRContentFile) && content.IsContentFile(contentPath) {
+		filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFile, content.JCRContentNode)
+	} else if strings.HasSuffix(filterRoot, content.JCRContentFile) {
+		filterRoot = filepath.Dir(filterRoot)
+	} else if strings.HasSuffix(filterRoot, content.XmlFileSuffix) {
+		filterRoot = strings.ReplaceAll(filterRoot, content.XmlFileSuffix, "")
+	}
+	filterRoot = namespacePatternRegex.ReplaceAllString(filterRoot, "/$2:")
+	filterRoot = strings.ReplaceAll(filterRoot, "/__", "/_")
+	filterRoot = strings.ReplaceAll(filterRoot, "%3a", ":")
+	return filterRoot
+}
+
+func copyContentFiles(contentPath string, tmpDir string) error {
 	_, jcrPath, _ := strings.Cut(contentPath, content.JCRRoot)
 	if pathx.IsDir(contentPath) {
 		if err := filex.CopyDir(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath)); err != nil {
 			return err
 		}
 	} else if pathx.IsFile(contentPath) {
-		jcrDir := filepath.Dir(jcrPath)
 		if err := filex.Copy(contentPath, filepath.Join(tmpDir, content.JCRRoot, jcrPath), true); err != nil {
 			return err
 		}
-		if strings.HasSuffix(contentPath, content.JCRContentFile) {
-			contentDir := strings.ReplaceAll(contentPath, content.JCRContentFile, content.JCRContentDirName)
-			if pathx.Exists(contentDir) {
-				if err := filex.CopyDir(contentDir, filepath.Join(tmpDir, content.JCRRoot, jcrDir, content.JCRContentDirName)); err != nil {
-					return err
-				}
-			}
-		}
 	}
 	return nil
-}
-
-func DetermineFilterRoot(contentPath string) string {
-	_, filterRoot, _ := strings.Cut(contentPath, content.JCRRoot)
-	filterRoot = strings.ReplaceAll(filterRoot, "\\", "/")
-	if strings.HasSuffix(filterRoot, content.JCRContentFile) && !namespacePatternRegex.MatchString(filterRoot) {
-		filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFile, content.JCRContentNode)
-	} else if strings.HasSuffix(filterRoot, content.JCRContentFile) {
-		filterRoot = filepath.Dir(filterRoot)
-	} else if strings.HasSuffix(filterRoot, content.JCRContentFileSuffix) {
-		filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFileSuffix, "")
-	}
-	filterRoot = namespacePatternRegex.ReplaceAllString(filterRoot, "/$2:")
-	filterRoot = strings.ReplaceAll(filterRoot, "/__", "/_")
-	filterRoot = strings.ReplaceAll(filterRoot, "%3a", ":")
-	return filterRoot
 }
 
 func (pm *PackageManager) Copy(remotePath string, destInstance *Instance) error {

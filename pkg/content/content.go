@@ -20,7 +20,7 @@ import (
 const (
 	JCRRoot                   = "jcr_root"
 	JCRContentFile            = ".content.xml"
-	JCRContentFileSuffix      = ".xml"
+	XmlFileSuffix             = ".xml"
 	JCRMixinTypesProp         = "jcr:mixinTypes"
 	JCRRootPrefix             = "<jcr:root"
 	PropPattern               = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
@@ -28,7 +28,7 @@ const (
 	ParentsBackupSuffix       = ".bak"
 	ParentsBackupDirIndicator = ".bakdir"
 	JCRContentNode            = "jcr:content"
-	JCRContentDirName         = "_jcr_content"
+	JCRContentPrefix          = "<jcr:content"
 )
 
 var (
@@ -165,7 +165,7 @@ func (c Manager) cleanDotContents(root string) error {
 }
 
 func (c Manager) cleanDotContentFile(path string) error {
-	if !strings.HasSuffix(path, JCRContentFileSuffix) {
+	if !strings.HasSuffix(path, XmlFileSuffix) {
 		return nil
 	}
 
@@ -532,4 +532,22 @@ func determineStringSlice(values any, key string) []string {
 		result = cast.ToStringSlice(value)
 	}
 	return result
+}
+
+func IsContentFile(path string) bool {
+	if !pathx.IsFile(path) || !strings.HasSuffix(path, JCRContentFile) {
+		return false
+	}
+
+	inputLines, err := readLines(path)
+	if err != nil {
+		return false
+	}
+
+	for _, inputLine := range inputLines {
+		if strings.Contains(inputLine, JCRContentPrefix) {
+			return true
+		}
+	}
+	return false
 }

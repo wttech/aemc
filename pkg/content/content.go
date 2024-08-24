@@ -66,7 +66,10 @@ func NewManager(baseOpts *base.Opts) *Manager {
 }
 
 func (c Manager) Prepare(root string) error {
-	return deleteDir(root)
+	if err := deleteDir(root); err != nil {
+		return err
+	}
+	return pathx.Ensure(root)
 }
 
 func (c Manager) BeforePullDir(root string) error {

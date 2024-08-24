@@ -178,7 +178,7 @@ func (cm *ContentManager) Copy(destInstance *Instance, clean bool, opts PackageC
 	if clean {
 		workDir := pathx.RandomDir(cm.tmpDir(), "content_copy")
 		defer func() { _ = pathx.DeleteIfExists(workDir) }()
-		if err := cm.PullDir(filepath.Join(workDir, content.JCRRoot), clean, false, opts); err != nil {
+		if err := cm.PullDir(filepath.Join(workDir, content.JCRRoot), true, false, opts); err != nil {
 			return err
 		}
 		if err := content.Zip(workDir, pkgFile); err != nil {

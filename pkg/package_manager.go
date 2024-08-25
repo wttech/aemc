@@ -197,7 +197,7 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 		return "", err
 	}
 	if opts.FilterFile != "" {
-		if err = filex.Copy(opts.FilterFile, filepath.Join(tmpDir, "META-INF", "vault", FilterXML), true); err != nil {
+		if err = filex.Copy(opts.FilterFile, filepath.Join(tmpDir, pkg.MetaPath, pkg.VltDir, FilterXML), true); err != nil {
 			return "", err
 		}
 	}

@@ -50,20 +50,62 @@ func (cm *ContentManager) tmpDir() string {
 	return cm.instance.manager.aem.baseOpts.TmpDir
 }
 
-func (cm *ContentManager) Download(localFile string, opts PackageCreateOpts) error {
+func (cm *ContentManager) Download(localFile string, vault bool, opts PackageCreateOpts) error {
+	workDir := pathx.RandomDir(cm.tmpDir(), "content_download")
+	defer func() { _ = pathx.DeleteIfExists(workDir) }()
 	if opts.PID == "" {
 		opts.PID = fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", timex.FileTimestampForNow())
 	}
-	remotePath, err := cm.pkgMgr().Create(opts)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = cm.pkgMgr().Delete(remotePath) }()
-	if err := cm.pkgMgr().Build(remotePath); err != nil {
-		return err
-	}
-	if err := cm.pkgMgr().Download(remotePath, localFile); err != nil {
-		return err
+	if vault {
+		pidConfig, err := pkg.ParsePID(opts.PID)
+		if err != nil {
+			return err
+		}
+		data := map[string]any{
+			"Pid":             opts.PID,
+			"Group":           pidConfig.Group,
+			"Name":            pidConfig.Name,
+			"Version":         pidConfig.Version,
+			"FilterRoots":     opts.FilterRoots,
+			"ExcludePatterns": opts.ExcludePatterns,
+		}
+		if err = copyPackageDefaultFiles(workDir, data); err != nil {
+			return err
+		}
+		filterFile, err := cm.determineFilterFile(workDir, opts)
+		if err != nil {
+			return err
+		}
+		if err = os.Rename(filterFile, filepath.Join(workDir, pkg.MetaPath, pkg.VltDir, FilterXML)); err != nil {
+			return err
+		}
+		vaultCliArgs := []string{
+			"vlt",
+			"--credentials", fmt.Sprintf("%s:%s", cm.instance.user, cm.instance.password),
+			"checkout",
+			"--force",
+			"--filter", filterFile,
+			fmt.Sprintf("%s/crx/server/crx.default", cm.instance.http.baseURL),
+			workDir,
+		}
+		if err = cm.vaultCli().CommandShell(vaultCliArgs); err != nil {
+			return err
+		}
+		if err = content.Zip(workDir, localFile); err != nil {
+			return err
+		}
+	} else {
+		remotePath, err := cm.pkgMgr().Create(opts)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = cm.pkgMgr().Delete(remotePath) }()
+		if err := cm.pkgMgr().Build(remotePath); err != nil {
+			return err
+		}
+		if err := cm.pkgMgr().Download(remotePath, localFile); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -91,7 +133,7 @@ func (cm *ContentManager) PullDir(dir string, clean bool, vault bool, replace bo
 	} else {
 		pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_pull", ".zip")
 		defer func() { _ = pathx.DeleteIfExists(pkgFile) }()
-		if err := cm.Download(pkgFile, opts); err != nil {
+		if err := cm.Download(pkgFile, false, opts); err != nil {
 			return err
 		}
 		if err := content.Unzip(pkgFile, workDir); err != nil {
@@ -148,7 +190,7 @@ func (cm *ContentManager) PullFile(file string, clean bool, vault bool, opts Pac
 	} else {
 		pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_pull", ".zip")
 		defer func() { _ = pathx.DeleteIfExists(pkgFile) }()
-		if err := cm.Download(pkgFile, opts); err != nil {
+		if err := cm.Download(pkgFile, false, opts); err != nil {
 			return err
 		}
 		if err := content.Unzip(pkgFile, workDir); err != nil {
@@ -268,7 +310,7 @@ func (cm *ContentManager) Copy(destInstance *Instance, clean bool, vault bool, o
 				return err
 			}
 		} else {
-			if err := cm.Download(pkgFile, opts); err != nil {
+			if err := cm.Download(pkgFile, false, opts); err != nil {
 				return err
 			}
 		}

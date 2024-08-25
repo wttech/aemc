@@ -20,7 +20,7 @@ import (
 const (
 	JCRRoot                   = "jcr_root"
 	JCRContentFile            = ".content.xml"
-	JCRContentFileSuffix      = ".xml"
+	XmlFileSuffix             = ".xml"
 	JCRMixinTypesProp         = "jcr:mixinTypes"
 	JCRRootPrefix             = "<jcr:root"
 	PropPattern               = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
@@ -66,7 +66,10 @@ func NewManager(baseOpts *base.Opts) *Manager {
 }
 
 func (c Manager) Prepare(root string) error {
-	return deleteDir(root)
+	if err := deleteDir(root); err != nil {
+		return err
+	}
+	return pathx.Ensure(root)
 }
 
 func (c Manager) BeforePullDir(root string) error {
@@ -147,7 +150,7 @@ func (c Manager) cleanDotContents(root string) error {
 }
 
 func (c Manager) cleanDotContentFile(path string) error {
-	if !strings.HasSuffix(path, JCRContentFileSuffix) {
+	if !strings.HasSuffix(path, XmlFileSuffix) {
 		return nil
 	}
 
@@ -484,7 +487,7 @@ func determineStringSlice(values any, key string) []string {
 }
 
 func IsContentFile(path string) bool {
-	if !strings.HasSuffix(path, JCRContentFile) {
+	if !pathx.IsFile(path) || !strings.HasSuffix(path, JCRContentFile) {
 		return false
 	}
 
@@ -493,10 +496,7 @@ func IsContentFile(path string) bool {
 		return false
 	}
 
-	for _, inputLine := range inputLines {
-		if strings.Contains(inputLine, JCRContentPrefix) {
-			return true
-		}
-	}
-	return false
+	return lo.SomeBy(inputLines, func(inputLine string) bool {
+		return strings.Contains(inputLine, JCRContentPrefix)
+	})
 }

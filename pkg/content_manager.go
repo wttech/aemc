@@ -127,7 +127,6 @@ func (cm *ContentManager) PullFile(file string, clean bool, opts PackageCreateOp
 		}
 	}
 	return nil
-
 }
 
 func (cm *ContentManager) Push(path string, clean bool, opts PackageCreateOpts) error {

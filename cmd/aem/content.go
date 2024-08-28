@@ -276,7 +276,7 @@ func determineContentDir(cmd *cobra.Command) (string, error) {
 		return "", fmt.Errorf("content path '%s' does not contain '%s'", path, content.JCRRoot)
 	}
 	if path != "" && !pathx.Exists(path) {
-		return "", fmt.Errorf("content path does not exist: %s", path)
+		return "", fmt.Errorf("content path '%s' need to exist on file system; consider using 'dir' or 'file' parameter otherwise", path)
 	}
 	if path != "" && pathx.IsDir(path) {
 		return path, nil
@@ -294,7 +294,7 @@ func determineContentFile(cmd *cobra.Command) (string, error) {
 		return "", fmt.Errorf("content path '%s' does not contain '%s'", path, content.JCRRoot)
 	}
 	if path != "" && !pathx.Exists(path) {
-		return "", fmt.Errorf("content path does not exist: %s", path)
+		return "", fmt.Errorf("content path '%s' need to exist on file system; consider using 'dir' or 'file' parameter otherwise", path)
 	}
 	if path != "" && pathx.IsFile(path) {
 		return path, nil

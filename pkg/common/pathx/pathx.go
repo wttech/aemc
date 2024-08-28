@@ -202,10 +202,10 @@ func DirAndFileName(path string) (string, string) {
 
 func RandomDir(tmpDir string, prefix string) string {
 	suffix, _ := goutils.RandomNumeric(8)
-	return filepath.Join(tmpDir, prefix+"_"+suffix)
+	return Abs(filepath.Join(tmpDir, prefix+"_"+suffix))
 }
 
 func RandomFileName(tmpDir string, prefix string, extension string) string {
 	suffix, _ := goutils.RandomNumeric(8)
-	return filepath.Join(tmpDir, prefix+"_"+suffix+extension)
+	return Abs(filepath.Join(tmpDir, prefix+"_"+suffix+extension))
 }

@@ -111,8 +111,6 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			clean, _ := cmd.Flags().GetBool("clean")
-			replace, _ := cmd.Flags().GetBool("replace")
 			dir, err := determineContentDir(cmd)
 			if err != nil {
 				c.Error(err)
@@ -126,6 +124,8 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
 			excludePatterns := determineExcludePatterns(cmd)
+			clean, _ := cmd.Flags().GetBool("clean")
+			replace, _ := cmd.Flags().GetBool("replace")
 			if dir != "" {
 				if err = instance.ContentManager().PullDir(dir, clean, replace, pkg.PackageCreateOpts{
 					FilterRoots: filterRoots,
@@ -185,9 +185,9 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 			if path == "" {
 				path = file
 			}
-			clean, _ := cmd.Flags().GetBool("clean")
 			filterRoots := determineFilterRoots(cmd)
 			excludePatterns := determineExcludePatterns(cmd)
+			clean, _ := cmd.Flags().GetBool("clean")
 			if err = instance.ContentManager().Push(path, clean, pkg.PackageCreateOpts{
 				FilterRoots:     filterRoots,
 				ExcludePatterns: excludePatterns,

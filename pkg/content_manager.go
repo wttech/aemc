@@ -5,7 +5,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/timex"
-	"github.com/wttech/aemc/pkg/common/tplx"
 	"github.com/wttech/aemc/pkg/content"
 	"github.com/wttech/aemc/pkg/pkg"
 	"net/url"
@@ -39,6 +38,10 @@ func (cm *ContentManager) pkgMgr() *PackageManager {
 	return cm.instance.PackageManager()
 }
 
+func (cm *ContentManager) contentManager() *content.Manager {
+	return cm.instance.manager.aem.ContentManager()
+}
+
 func (cm *ContentManager) vaultCli() *VaultCli {
 	return NewVaultCli(cm.instance.manager.aem)
 }
@@ -57,28 +60,10 @@ func (cm *ContentManager) Download(localFile string, vault bool, opts PackageCre
 		opts.PID = fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", timex.FileTimestampForNow())
 	}
 	if vault {
-		pidConfig, err := pkg.ParsePID(opts.PID)
-		if err != nil {
+		if err := copyPackageAllFiles(workDir, opts); err != nil {
 			return err
 		}
-		data := map[string]any{
-			"Pid":             opts.PID,
-			"Group":           pidConfig.Group,
-			"Name":            pidConfig.Name,
-			"Version":         pidConfig.Version,
-			"FilterRoots":     opts.FilterRoots,
-			"ExcludePatterns": opts.ExcludePatterns,
-		}
-		if err = copyPackageDefaultFiles(workDir, data); err != nil {
-			return err
-		}
-		filterFile, err := cm.determineFilterFile(workDir, opts)
-		if err != nil {
-			return err
-		}
-		if err = os.Rename(filterFile, filepath.Join(workDir, pkg.MetaPath, pkg.VltDir, FilterXML)); err != nil {
-			return err
-		}
+		filterFile := filepath.Join(workDir, pkg.MetaPath, pkg.VltDir, FilterXML)
 		vaultCliArgs := []string{
 			"vlt",
 			"--credentials", fmt.Sprintf("%s:%s", cm.instance.user, cm.instance.password),
@@ -88,10 +73,10 @@ func (cm *ContentManager) Download(localFile string, vault bool, opts PackageCre
 			fmt.Sprintf("%s/crx/server/crx.default", cm.instance.http.baseURL),
 			workDir,
 		}
-		if err = cm.vaultCli().CommandShell(vaultCliArgs); err != nil {
+		if err := cm.vaultCli().CommandShell(vaultCliArgs); err != nil {
 			return err
 		}
-		if err = content.Zip(workDir, localFile); err != nil {
+		if err := content.Zip(workDir, localFile); err != nil {
 			return err
 		}
 	} else {
@@ -100,10 +85,10 @@ func (cm *ContentManager) Download(localFile string, vault bool, opts PackageCre
 			return err
 		}
 		defer func() { _ = cm.pkgMgr().Delete(remotePath) }()
-		if err := cm.pkgMgr().Build(remotePath); err != nil {
+		if err = cm.pkgMgr().Build(remotePath); err != nil {
 			return err
 		}
-		if err := cm.pkgMgr().Download(remotePath, localFile); err != nil {
+		if err = cm.pkgMgr().Download(remotePath, localFile); err != nil {
 			return err
 		}
 	}
@@ -112,12 +97,16 @@ func (cm *ContentManager) Download(localFile string, vault bool, opts PackageCre
 
 func (cm *ContentManager) PullDir(dir string, clean bool, vault bool, replace bool, opts PackageCreateOpts) error {
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_pull")
-	defer func() { _ = pathx.DeleteIfExists(workDir) }()
+	pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_pull", ".zip")
+	defer func() {
+		_ = pathx.DeleteIfExists(workDir)
+		_ = pathx.DeleteIfExists(pkgFile)
+	}()
 	if vault {
-		filterFile, err := cm.determineFilterFile(workDir, opts)
-		if err != nil {
+		if err := copyPackageAllFiles(workDir, opts); err != nil {
 			return err
 		}
+		filterFile := filepath.Join(workDir, pkg.MetaPath, pkg.VltDir, FilterXML)
 		vaultCliArgs := []string{
 			"vlt",
 			"--credentials", fmt.Sprintf("%s:%s", cm.instance.user, cm.instance.password),
@@ -127,12 +116,10 @@ func (cm *ContentManager) PullDir(dir string, clean bool, vault bool, replace bo
 			fmt.Sprintf("%s/crx/server/crx.default", cm.instance.http.baseURL),
 			workDir,
 		}
-		if err = cm.vaultCli().CommandShell(vaultCliArgs); err != nil {
+		if err := cm.vaultCli().CommandShell(vaultCliArgs); err != nil {
 			return err
 		}
 	} else {
-		pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_pull", ".zip")
-		defer func() { _ = pathx.DeleteIfExists(pkgFile) }()
 		if err := cm.Download(pkgFile, false, opts); err != nil {
 			return err
 		}
@@ -140,27 +127,17 @@ func (cm *ContentManager) PullDir(dir string, clean bool, vault bool, replace bo
 			return err
 		}
 	}
-	if err := pathx.Ensure(dir); err != nil {
-		return err
-	}
-	mainDir, _, _ := strings.Cut(dir, content.JCRRoot)
-	contentManager := cm.instance.manager.aem.contentManager
 	if replace {
-		if err := contentManager.Prepare(dir); err != nil {
+		if err := cm.contentManager().PrepareDir(dir); err != nil {
 			return err
 		}
 	}
-	if err := contentManager.BeforePullDir(dir); err != nil {
-		return err
-	}
-	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot), filepath.Join(mainDir, content.JCRRoot)); err != nil {
-		return err
-	}
-	if err := contentManager.AfterPullDir(dir); err != nil {
+	_, jcrPath, _ := strings.Cut(dir, content.JCRRoot)
+	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot, jcrPath), dir); err != nil {
 		return err
 	}
 	if clean {
-		if err := contentManager.CleanDir(dir); err != nil {
+		if err := cm.contentManager().CleanDir(dir); err != nil {
 			return err
 		}
 	}
@@ -169,12 +146,16 @@ func (cm *ContentManager) PullDir(dir string, clean bool, vault bool, replace bo
 
 func (cm *ContentManager) PullFile(file string, clean bool, vault bool, opts PackageCreateOpts) error {
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_pull")
-	defer func() { _ = pathx.DeleteIfExists(workDir) }()
+	pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_pull", ".zip")
+	defer func() {
+		_ = pathx.DeleteIfExists(workDir)
+		_ = pathx.DeleteIfExists(pkgFile)
+	}()
 	if vault {
-		filterFile, err := cm.determineFilterFile(workDir, opts)
-		if err != nil {
+		if err := copyPackageAllFiles(workDir, opts); err != nil {
 			return err
 		}
+		filterFile := filepath.Join(workDir, pkg.MetaPath, pkg.VltDir, FilterXML)
 		vaultCliArgs := []string{
 			"vlt",
 			"--credentials", fmt.Sprintf("%s:%s", cm.instance.user, cm.instance.password),
@@ -184,12 +165,10 @@ func (cm *ContentManager) PullFile(file string, clean bool, vault bool, opts Pac
 			fmt.Sprintf("%s/crx/server/crx.default", cm.instance.http.baseURL),
 			workDir,
 		}
-		if err = cm.vaultCli().CommandShell(vaultCliArgs); err != nil {
+		if err := cm.vaultCli().CommandShell(vaultCliArgs); err != nil {
 			return err
 		}
 	} else {
-		pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_pull", ".zip")
-		defer func() { _ = pathx.DeleteIfExists(pkgFile) }()
 		if err := cm.Download(pkgFile, false, opts); err != nil {
 			return err
 		}
@@ -197,9 +176,9 @@ func (cm *ContentManager) PullFile(file string, clean bool, vault bool, opts Pac
 			return err
 		}
 	}
-	cleanFile := determineCleanFile(file)
-	if pathx.Exists(file) && file != cleanFile {
-		if err := os.Remove(file); err != nil {
+	cleanFile := DetermineCleanFile(file)
+	if file != cleanFile {
+		if err := cm.contentManager().PrepareFile(file); err != nil {
 			return err
 		}
 	}
@@ -208,8 +187,7 @@ func (cm *ContentManager) PullFile(file string, clean bool, vault bool, opts Pac
 		return err
 	}
 	if clean {
-		contentManager := cm.instance.manager.aem.contentManager
-		if err := contentManager.CleanFile(cleanFile); err != nil {
+		if err := cm.contentManager().CleanFile(cleanFile); err != nil {
 			return err
 		}
 	}
@@ -229,8 +207,7 @@ func (cm *ContentManager) Push(path string, clean bool, vault bool, opts Package
 		if err := copyContentFiles(path, workDir); err != nil {
 			return err
 		}
-		contentManager := cm.instance.manager.aem.contentManager
-		if err := contentManager.CleanDir(filepath.Join(workDir, content.JCRRoot)); err != nil {
+		if err := cm.contentManager().CleanDir(filepath.Join(workDir, content.JCRRoot)); err != nil {
 			return err
 		}
 		opts.ContentPath = filepath.Join(workDir, content.JCRRoot)
@@ -262,7 +239,7 @@ func (cm *ContentManager) Push(path string, clean bool, vault bool, opts Package
 	return nil
 }
 
-func determineCleanFile(file string) string {
+func DetermineCleanFile(file string) string {
 	if namespacePatternRegex.MatchString(file) && !strings.HasSuffix(file, content.JCRContentFile) {
 		return filepath.Join(strings.ReplaceAll(file, content.XmlFileSuffix, ""), content.JCRContentFile)
 	}
@@ -271,17 +248,21 @@ func determineCleanFile(file string) string {
 
 func (cm *ContentManager) Copy(destInstance *Instance, clean bool, vault bool, opts PackageCreateOpts) error {
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_copy")
-	defer func() { _ = pathx.DeleteIfExists(workDir) }()
+	pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_copy", ".zip")
+	defer func() {
+		_ = pathx.DeleteIfExists(workDir)
+		_ = pathx.DeleteIfExists(pkgFile)
+	}()
 	if vault {
+		parsedURLSrc, err := url.Parse(cm.instance.http.baseURL)
+		if err != nil {
+			return err
+		}
+		parsedURLDest, err := url.Parse(destInstance.http.baseURL)
+		if err != nil {
+			return err
+		}
 		for _, filterRoot := range opts.FilterRoots {
-			parsedURLSrc, err := url.Parse(cm.instance.http.baseURL)
-			if err != nil {
-				return err
-			}
-			parsedURLDest, err := url.Parse(destInstance.http.baseURL)
-			if err != nil {
-				return err
-			}
 			vaultCliArgs := []string{
 				"vlt",
 				"rcp",
@@ -300,8 +281,6 @@ func (cm *ContentManager) Copy(destInstance *Instance, clean bool, vault bool, o
 			}
 		}
 	} else {
-		pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_copy", ".zip")
-		defer func() { _ = pathx.DeleteIfExists(pkgFile) }()
 		if clean {
 			if err := cm.PullDir(filepath.Join(workDir, content.JCRRoot), true, false, false, opts); err != nil {
 				return err
@@ -324,24 +303,4 @@ func (cm *ContentManager) Copy(destInstance *Instance, clean bool, vault bool, o
 		}
 	}
 	return nil
-}
-
-func (cm *ContentManager) determineFilterFile(workDir string, opts PackageCreateOpts) (string, error) {
-	if opts.FilterFile != "" {
-		return opts.FilterFile, nil
-	}
-
-	filterFile := filepath.Join(workDir, FilterXML)
-	bytes, err := pkg.VaultFS.ReadFile("vault/META-INF/vault/filter.xml")
-	if err != nil {
-		return "", err
-	}
-	data := map[string]any{
-		"FilterRoots":     opts.FilterRoots,
-		"ExcludePatterns": opts.ExcludePatterns,
-	}
-	if err = tplx.RenderFile(filterFile, string(bytes), data); err != nil {
-		return "", err
-	}
-	return filterFile, nil
 }

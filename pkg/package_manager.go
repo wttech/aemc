@@ -149,11 +149,23 @@ func (pm *PackageManager) IsSnapshot(localPath string) bool {
 	return !pm.SnapshotIgnored && stringsx.MatchSome(pathx.Normalize(localPath), pm.SnapshotPatterns)
 }
 
-func copyPackageDefaultFiles(targetTmpDir string, data map[string]any) error {
-	if err := pathx.DeleteIfExists(targetTmpDir); err != nil {
+func copyPackageAllFiles(targetTmpDir string, opts PackageCreateOpts) error {
+	pidConfig, err := pkg.ParsePID(opts.PID)
+	if err != nil {
+		return err
+	}
+	data := map[string]any{
+		"Pid":             opts.PID,
+		"Group":           pidConfig.Group,
+		"Name":            pidConfig.Name,
+		"Version":         pidConfig.Version,
+		"FilterRoots":     opts.FilterRoots,
+		"ExcludePatterns": opts.ExcludePatterns,
+	}
+	if err = pathx.DeleteIfExists(targetTmpDir); err != nil {
 		return fmt.Errorf("cannot delete temporary dir '%s': %w", targetTmpDir, err)
 	}
-	return fs.WalkDir(pkg.VaultFS, ".", func(path string, entry fs.DirEntry, err error) error {
+	if err = fs.WalkDir(pkg.VaultFS, ".", func(path string, entry fs.DirEntry, err error) error {
 		if entry.IsDir() {
 			return nil
 		}
@@ -162,7 +174,20 @@ func copyPackageDefaultFiles(targetTmpDir string, data map[string]any) error {
 			return err
 		}
 		return tplx.RenderFile(targetTmpDir+strings.ReplaceAll(strings.TrimPrefix(path, "vault"), "$", ""), string(bytes), data)
-	})
+	}); err != nil {
+		return err
+	}
+	if opts.FilterFile != "" {
+		if err = filex.Copy(opts.FilterFile, filepath.Join(targetTmpDir, pkg.MetaPath, pkg.VltDir, FilterXML), true); err != nil {
+			return err
+		}
+	}
+	if opts.ContentPath != "" {
+		if err = copyContentFiles(opts.ContentPath, targetTmpDir); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type PackageCreateOpts struct {
@@ -175,10 +200,6 @@ type PackageCreateOpts struct {
 
 func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	log.Infof("%s > creating package '%s'", pm.instance.IDColor(), opts.PID)
-	pidConfig, err := pkg.ParsePID(opts.PID)
-	if err != nil {
-		return "", err
-	}
 
 	tmpDir := pathx.RandomDir(pm.tmpDir(), "pkg_create")
 	tmpFile := pathx.RandomFileName(pm.tmpDir(), "pkg_create", ".zip")
@@ -186,28 +207,10 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 		_ = pathx.DeleteIfExists(tmpDir)
 		_ = pathx.DeleteIfExists(tmpFile)
 	}()
-	data := map[string]any{
-		"Pid":             opts.PID,
-		"Group":           pidConfig.Group,
-		"Name":            pidConfig.Name,
-		"Version":         pidConfig.Version,
-		"FilterRoots":     opts.FilterRoots,
-		"ExcludePatterns": opts.ExcludePatterns,
-	}
-	if err = copyPackageDefaultFiles(tmpDir, data); err != nil {
+	if err := copyPackageAllFiles(tmpDir, opts); err != nil {
 		return "", err
 	}
-	if opts.FilterFile != "" {
-		if err = filex.Copy(opts.FilterFile, filepath.Join(tmpDir, pkg.MetaPath, pkg.VltDir, FilterXML), true); err != nil {
-			return "", err
-		}
-	}
-	if opts.ContentPath != "" {
-		if err = copyContentFiles(opts.ContentPath, tmpDir); err != nil {
-			return "", err
-		}
-	}
-	if err = content.Zip(tmpDir, tmpFile); err != nil {
+	if err := content.Zip(tmpDir, tmpFile); err != nil {
 		return "", err
 	}
 	response, err := pm.instance.http.Request().
@@ -233,9 +236,7 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 func DetermineFilterRoot(path string) string {
 	_, filterRoot, _ := strings.Cut(path, content.JCRRoot)
 	filterRoot = strings.ReplaceAll(filterRoot, "\\", "/")
-	if strings.HasSuffix(path, content.JCRContentFile) && content.IsContentFile(path) {
-		filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFile, content.JCRContentNode)
-	} else if strings.HasSuffix(path, content.JCRContentFile) {
+	if strings.HasSuffix(path, content.JCRContentFile) {
 		filterRoot = filepath.Dir(filterRoot)
 	} else if strings.HasSuffix(path, content.XmlFileSuffix) {
 		filterRoot = strings.ReplaceAll(filterRoot, content.XmlFileSuffix, "")
@@ -261,7 +262,7 @@ func copyContentFiles(path string, tmpDir string) error {
 }
 
 func (pm *PackageManager) Copy(remotePath string, destInstance *Instance) error {
-	var localPath = pathx.RandomFileName(pm.tmpDir(), "pkg_copy", ".zip")
+	localPath := pathx.RandomFileName(pm.tmpDir(), "pkg_copy", ".zip")
 	defer func() { _ = pathx.DeleteIfExists(localPath) }()
 	if err := pm.Download(remotePath, localPath); err != nil {
 		return err
@@ -270,7 +271,7 @@ func (pm *PackageManager) Copy(remotePath string, destInstance *Instance) error 
 	if err != nil {
 		return err
 	}
-	if err := destInstance.PackageManager().Install(destRemotePath); err != nil {
+	if err = destInstance.PackageManager().Install(destRemotePath); err != nil {
 		return err
 	}
 	return nil
@@ -528,7 +529,7 @@ func (pm *PackageManager) installHTML(remotePath string) error {
 	var htmlWriter *bufio.Writer
 
 	if !pm.InstallHTMLConsole {
-		if err := pathx.Ensure(filepath.Dir(htmlFilePath)); err != nil {
+		if err = pathx.Ensure(filepath.Dir(htmlFilePath)); err != nil {
 			return err
 		}
 		htmlFile, err := os.OpenFile(htmlFilePath, os.O_RDWR|os.O_CREATE, 0666)
@@ -550,7 +551,7 @@ func (pm *PackageManager) installHTML(remotePath string) error {
 			successWithErrors = true
 		}
 		if !pm.InstallHTMLConsole {
-			_, err := htmlWriter.WriteString(htmlLine + osx.LineSep())
+			_, err = htmlWriter.WriteString(htmlLine + osx.LineSep())
 			if err != nil {
 				return fmt.Errorf("%s > cannot install package '%s': cannot write to HTML report file '%s'", pm.instance.IDColor(), remotePath, htmlFilePath)
 			}
@@ -558,7 +559,7 @@ func (pm *PackageManager) installHTML(remotePath string) error {
 			fmt.Println(htmlLine)
 		}
 	}
-	if err := scanner.Err(); err != nil {
+	if err = scanner.Err(); err != nil {
 		return fmt.Errorf("%s > cannot install package '%s': cannot parse HTML response: %w", pm.instance.IDColor(), remotePath, err)
 	}
 
@@ -625,10 +626,10 @@ func (pm *PackageManager) deploySnapshot(localPath string) (bool, error) {
 			return false, nil
 		}
 	}
-	if err := pm.Deploy(localPath); err != nil {
+	if err = pm.Deploy(localPath); err != nil {
 		return false, err
 	}
-	if err := lock.Lock(); err != nil {
+	if err = lock.Lock(); err != nil {
 		return false, err
 	}
 	return true, nil

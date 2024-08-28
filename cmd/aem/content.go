@@ -81,9 +81,6 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
 			vault, _ := cmd.Flags().GetBool("vault")
-			vault = vault && lo.EveryBy(filterRoots, func(filterRoot string) bool {
-				return pathx.IsDir(filterRoot)
-			})
 			if err = instance.ContentManager().Download(targetFile, vault, pkg.PackageCreateOpts{
 				PID:         pid,
 				FilterRoots: filterRoots,
@@ -197,7 +194,6 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 			excludePatterns := determineExcludePatterns(cmd)
 			clean, _ := cmd.Flags().GetBool("clean")
 			vault, _ := cmd.Flags().GetBool("vault")
-			vault = vault && pathx.IsDir(path)
 			if err = instance.ContentManager().Push(path, clean, vault, pkg.PackageCreateOpts{
 				FilterRoots:     filterRoots,
 				ExcludePatterns: excludePatterns,
@@ -292,7 +288,7 @@ func determineContentDir(cmd *cobra.Command) (string, error) {
 		return "", fmt.Errorf("content path '%s' does not contain '%s'", path, content.JCRRoot)
 	}
 	if path != "" && !pathx.Exists(path) {
-		return "", fmt.Errorf("content path does not exist: %s", path)
+		return "", fmt.Errorf("content path '%s' need to exist on file system; consider using 'dir' or 'file' parameter otherwise", path)
 	}
 	if path != "" && pathx.IsDir(path) {
 		return path, nil
@@ -310,7 +306,7 @@ func determineContentFile(cmd *cobra.Command) (string, error) {
 		return "", fmt.Errorf("content path '%s' does not contain '%s'", path, content.JCRRoot)
 	}
 	if path != "" && !pathx.Exists(path) {
-		return "", fmt.Errorf("content path does not exist: %s", path)
+		return "", fmt.Errorf("content path '%s' need to exist on file system; consider using 'dir' or 'file' parameter otherwise", path)
 	}
 	if path != "" && pathx.IsFile(path) {
 		return path, nil
@@ -340,7 +336,7 @@ func determineFilterRoots(cmd *cobra.Command) []string {
 
 func determineExcludePatterns(cmd *cobra.Command) []string {
 	file, _ := determineContentFile(cmd)
-	if file == "" || !strings.HasSuffix(file, content.JCRContentFile) || content.IsContentFile(file) {
+	if file == "" || !strings.HasSuffix(file, content.JCRContentFile) {
 		return nil
 	}
 

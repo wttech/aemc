@@ -26,6 +26,7 @@ func TestDetermineFilterRoot(t *testing.T) {
 		{"/somepath/jcr_root/content/my_conf/workflow.xml", "/content/my_conf/workflow"},
 		{"/somepath/jcr_root/content/dam/my_site/image.png", "/content/dam/my_site/image.png"},
 		{"/somepath/jcr_root/conf/my_site/_sling_configs/com.config.ImageConfig", "/conf/my_site/sling:configs/com.config.ImageConfig"},
+		{"/somepath/jcr_root/conf/my_site/_sling_configs/com.config.ImageConfig/_jcr_content", "/conf/my_site/sling:configs/com.config.ImageConfig/jcr:content"},
 	}
 	for _, test := range tests {
 		actual := pkg.DetermineFilterRoot(test.path)

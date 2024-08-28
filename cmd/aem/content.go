@@ -324,7 +324,7 @@ func determineFilterRoots(cmd *cobra.Command) []string {
 
 func determineExcludePatterns(cmd *cobra.Command) []string {
 	file, _ := determineContentFile(cmd)
-	if file == "" || !strings.HasSuffix(file, content.JCRContentFile) || content.IsContentFile(file) {
+	if file == "" || !strings.HasSuffix(file, content.JCRContentFile) {
 		return nil
 	}
 

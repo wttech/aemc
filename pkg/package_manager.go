@@ -233,9 +233,7 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 func DetermineFilterRoot(path string) string {
 	_, filterRoot, _ := strings.Cut(path, content.JCRRoot)
 	filterRoot = strings.ReplaceAll(filterRoot, "\\", "/")
-	if strings.HasSuffix(path, content.JCRContentFile) && content.IsContentFile(path) {
-		filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFile, content.JCRContentNode)
-	} else if strings.HasSuffix(path, content.JCRContentFile) {
+	if strings.HasSuffix(path, content.JCRContentFile) {
 		filterRoot = filepath.Dir(filterRoot)
 	} else if strings.HasSuffix(path, content.XmlFileSuffix) {
 		filterRoot = strings.ReplaceAll(filterRoot, content.XmlFileSuffix, "")

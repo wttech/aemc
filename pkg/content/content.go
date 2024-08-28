@@ -27,8 +27,6 @@ const (
 	NamespacePattern          = "^\\w+:(\\w+)=\"[^\"]+\"$"
 	ParentsBackupSuffix       = ".bak"
 	ParentsBackupDirIndicator = ".bakdir"
-	JCRContentNode            = "jcr:content"
-	JCRContentPrefix          = "<jcr:content"
 )
 
 var (
@@ -484,19 +482,4 @@ func determineStringSlice(values any, key string) []string {
 		result = cast.ToStringSlice(value)
 	}
 	return result
-}
-
-func IsContentFile(path string) bool {
-	if !pathx.IsFile(path) || !strings.HasSuffix(path, JCRContentFile) {
-		return false
-	}
-
-	inputLines, err := readLines(path)
-	if err != nil {
-		return false
-	}
-
-	return lo.SomeBy(inputLines, func(inputLine string) bool {
-		return strings.Contains(inputLine, JCRContentPrefix)
-	})
 }

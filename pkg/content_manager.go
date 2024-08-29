@@ -67,30 +67,24 @@ func (cm *ContentManager) Download(localFile string, opts PackageCreateOpts) err
 
 func (cm *ContentManager) PullDir(dir string, clean bool, replace bool, opts PackageCreateOpts) error {
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_pull")
-	pkgFile := pathx.RandomFileName(workDir, "content_pull", ".zip")
-	defer func() { _ = pathx.DeleteIfExists(workDir) }()
+	pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_pull", ".zip")
+	defer func() {
+		_ = pathx.DeleteIfExists(workDir)
+		_ = pathx.DeleteIfExists(pkgFile)
+	}()
 	if err := cm.Download(pkgFile, opts); err != nil {
 		return err
 	}
 	if err := content.Unzip(pkgFile, workDir); err != nil {
 		return err
 	}
-	if err := pathx.Ensure(dir); err != nil {
-		return err
-	}
-	mainDir, _, _ := strings.Cut(dir, content.JCRRoot)
 	if replace {
-		if err := cm.contentManager().Prepare(dir); err != nil {
+		if err := cm.contentManager().PrepareDir(dir); err != nil {
 			return err
 		}
 	}
-	if err := cm.contentManager().BeforePullDir(dir); err != nil {
-		return err
-	}
-	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot), filepath.Join(mainDir, content.JCRRoot)); err != nil {
-		return err
-	}
-	if err := cm.contentManager().AfterPullDir(dir); err != nil {
+	_, jcrPath, _ := strings.Cut(dir, content.JCRRoot)
+	if err := filex.CopyDir(filepath.Join(workDir, content.JCRRoot, jcrPath), dir); err != nil {
 		return err
 	}
 	if clean {
@@ -103,8 +97,11 @@ func (cm *ContentManager) PullDir(dir string, clean bool, replace bool, opts Pac
 
 func (cm *ContentManager) PullFile(file string, clean bool, opts PackageCreateOpts) error {
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_pull")
-	pkgFile := pathx.RandomFileName(workDir, "content_pull", ".zip")
-	defer func() { _ = pathx.DeleteIfExists(workDir) }()
+	pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_pull", ".zip")
+	defer func() {
+		_ = pathx.DeleteIfExists(workDir)
+		_ = pathx.DeleteIfExists(pkgFile)
+	}()
 	if err := cm.Download(pkgFile, opts); err != nil {
 		return err
 	}
@@ -112,8 +109,8 @@ func (cm *ContentManager) PullFile(file string, clean bool, opts PackageCreateOp
 		return err
 	}
 	cleanFile := determineCleanFile(file)
-	if pathx.Exists(file) && file != cleanFile {
-		if err := os.Remove(file); err != nil {
+	if file != cleanFile {
+		if err := cm.contentManager().PrepareFile(file); err != nil {
 			return err
 		}
 	}
@@ -134,7 +131,9 @@ func (cm *ContentManager) Push(path string, clean bool, opts PackageCreateOpts) 
 		return fmt.Errorf("cannot push content as it does not exist '%s'", path)
 	}
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_push")
-	defer func() { _ = pathx.DeleteIfExists(workDir) }()
+	defer func() {
+		_ = pathx.DeleteIfExists(workDir)
+	}()
 	if opts.PID == "" {
 		opts.PID = fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow())
 	}
@@ -169,8 +168,11 @@ func determineCleanFile(file string) string {
 
 func (cm *ContentManager) Copy(destInstance *Instance, clean bool, opts PackageCreateOpts) error {
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_copy")
-	pkgFile := pathx.RandomFileName(workDir, "content_copy", ".zip")
-	defer func() { _ = pathx.DeleteIfExists(workDir) }()
+	pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_copy", ".zip")
+	defer func() {
+		_ = pathx.DeleteIfExists(workDir)
+		_ = pathx.DeleteIfExists(pkgFile)
+	}()
 	if clean {
 		if err := cm.PullDir(filepath.Join(workDir, content.JCRRoot), true, false, opts); err != nil {
 			return err

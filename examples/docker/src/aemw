@@ -37,31 +37,20 @@ detect_arch() {
   echo ${arch}
 }
 
-# https://github.com/client9/shlib/blob/master/http_download.sh
 download_file() {
   local_file=$1
   source_url=$2
-  header=$3
-  if [ -z "$header" ]; then
-    code=$(curl -w '%{http_code}' -sL -o "$local_file" "$source_url")
-  else
-    code=$(curl -w '%{http_code}' -sL -H "$header" -o "$local_file" "$source_url")
-  fi
-  if [ "$code" != "200" ]; then
-    echo "Error! Downloading file from URL '$source_url' received HTTP status '$code'"
-    return 1
-  fi
-  return 0
+  curl -sL -o "$local_file" "$source_url"
 }
 
-download_file_once () {
+download_file_once() {
   URL=$1
   FILE=$2
   if [ ! -f "${FILE}" ]; then
-      mkdir -p "$(dirname "$FILE")"
-      FILE_TMP="$2.tmp"
-      download_file "$FILE_TMP" "$URL"
-      mv "$FILE_TMP" "$FILE"
+    mkdir -p "$(dirname "$FILE")"
+    FILE_TMP="$2.tmp"
+    download_file "$FILE_TMP" "$URL"
+    mv "$FILE_TMP" "$FILE"
   fi
 }
 
@@ -71,13 +60,12 @@ unarchive_file() {
 
   rm -fr "$DIR"
   mkdir -p "$DIR"
-  if [ "${FILE##*.}" = "zip" ] ; then
+  if [ "${FILE##*.}" = "zip" ]; then
     unzip "$FILE" -d "$DIR"
   else
     tar -xf "$FILE" -C "$DIR"
   fi
 }
-
 
 # Download or use installed tool
 # ==============================
@@ -91,7 +79,7 @@ DOWNLOAD_DIR="${HOME_DIR}/opt"
 
 BIN_DOWNLOAD_NAME="aemc-cli"
 BIN_ARCHIVE_EXT="tar.gz"
-if [ "$OS" = "windows" ] ; then
+if [ "$OS" = "windows" ]; then
   BIN_ARCHIVE_EXT="zip"
 fi
 BIN_DOWNLOAD_URL="https://github.com/wttech/aemc/releases/download/v${VERSION}/${BIN_DOWNLOAD_NAME}_${OS}_${ARCH}.${BIN_ARCHIVE_EXT}"
@@ -101,7 +89,7 @@ BIN_ARCHIVE_DIR="${BIN_ROOT}/${BIN_DOWNLOAD_NAME}"
 BIN_NAME="aem"
 BIN_EXEC_FILE="${BIN_ARCHIVE_DIR}/${BIN_NAME}"
 
-if [ "${VERSION}" != "installed" ] ; then
+if [ "${VERSION}" != "installed" ]; then
   if [ ! -f "${BIN_EXEC_FILE}" ]; then
     mkdir -p "${BIN_ARCHIVE_DIR}"
     download_file_once "${BIN_DOWNLOAD_URL}" "${BIN_ARCHIVE_FILE}"
@@ -109,7 +97,7 @@ if [ "${VERSION}" != "installed" ] ; then
     chmod +x "${BIN_EXEC_FILE}"
   fi
   aem() {
-      "./${BIN_EXEC_FILE}" "$@"
+    "./${BIN_EXEC_FILE}" "$@"
   }
 fi
 

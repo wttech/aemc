@@ -6,6 +6,8 @@ import (
 	"github.com/wttech/aemc/pkg"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/content"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -74,7 +76,7 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 			}
 			pid, _ := cmd.Flags().GetString("pid")
 			targetFile, _ := cmd.Flags().GetString("target-file")
-			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
+			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
 			if err = instance.ContentManager().Download(targetFile, pkg.PackageCreateOpts{
 				PID:         pid,
@@ -108,8 +110,6 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			clean, _ := cmd.Flags().GetBool("clean")
-			replace, _ := cmd.Flags().GetBool("replace")
 			dir, err := determineContentDir(cmd)
 			if err != nil {
 				c.Error(err)
@@ -120,13 +120,15 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			filterRoots := determineFilterRoots(cmd)
+			filterFile, _ := cmd.Flags().GetString("filter-file")
+			excludePatterns := determineExcludePatterns(cmd)
+			clean, _ := cmd.Flags().GetBool("clean")
+			replace, _ := cmd.Flags().GetBool("replace")
 			if dir != "" {
-				filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
-				filterFile, _ := cmd.Flags().GetString("filter-file")
 				if err = instance.ContentManager().PullDir(dir, clean, replace, pkg.PackageCreateOpts{
 					FilterRoots: filterRoots,
 					FilterFile:  filterFile,
-					ContentDir:  dir,
 				}); err != nil {
 					c.Error(err)
 					return
@@ -134,7 +136,8 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				c.SetOutput("dir", dir)
 			} else if file != "" {
 				if err = instance.ContentManager().PullFile(file, clean, pkg.PackageCreateOpts{
-					ContentFile: file,
+					FilterRoots:     filterRoots,
+					ExcludePatterns: excludePatterns,
 				}); err != nil {
 					c.Error(err)
 					return
@@ -172,7 +175,7 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
+			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
 			clean, _ := cmd.Flags().GetBool("clean")
 			if err = instance.ContentManager().Copy(targetInstance, clean, pkg.PackageCreateOpts{
@@ -221,7 +224,7 @@ func determineContentDir(cmd *cobra.Command) (string, error) {
 		return "", fmt.Errorf("content path '%s' does not contain '%s'", path, content.JCRRoot)
 	}
 	if path != "" && !pathx.Exists(path) {
-		return "", fmt.Errorf("content path does not exist: %s", path)
+		return "", fmt.Errorf("content path '%s' need to exist on file system; consider using 'dir' or 'file' parameter otherwise", path)
 	}
 	if path != "" && pathx.IsDir(path) {
 		return path, nil
@@ -239,10 +242,53 @@ func determineContentFile(cmd *cobra.Command) (string, error) {
 		return "", fmt.Errorf("content path '%s' does not contain '%s'", path, content.JCRRoot)
 	}
 	if path != "" && !pathx.Exists(path) {
-		return "", fmt.Errorf("content path does not exist: %s", path)
+		return "", fmt.Errorf("content path '%s' need to exist on file system; consider using 'dir' or 'file' parameter otherwise", path)
 	}
 	if path != "" && pathx.IsFile(path) {
 		return path, nil
 	}
 	return file, nil
+}
+
+func determineFilterRoots(cmd *cobra.Command) []string {
+	filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
+	if len(filterRoots) > 0 {
+		return filterRoots
+	}
+	filterFile, _ := cmd.Flags().GetString("filter-file")
+	if filterFile != "" {
+		return nil
+	}
+	dir, _ := determineContentDir(cmd)
+	if dir != "" {
+		return []string{pkg.DetermineFilterRoot(dir)}
+	}
+	file, _ := determineContentFile(cmd)
+	if file != "" {
+		return []string{pkg.DetermineFilterRoot(file)}
+	}
+	return nil
+}
+
+func determineExcludePatterns(cmd *cobra.Command) []string {
+	file, _ := determineContentFile(cmd)
+	if file == "" || !strings.HasSuffix(file, content.JCRContentFile) {
+		return nil
+	}
+
+	dir := filepath.Dir(file)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+
+	var excludePatterns []string
+	for _, entry := range entries {
+		if entry.Name() != content.JCRContentFile {
+			jcrPath := pkg.DetermineFilterRoot(filepath.Join(dir, entry.Name()))
+			excludePattern := fmt.Sprintf("%s(/.*)?", jcrPath)
+			excludePatterns = append(excludePatterns, excludePattern)
+		}
+	}
+	return excludePatterns
 }

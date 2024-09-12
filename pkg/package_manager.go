@@ -166,11 +166,10 @@ func copyPackageDefaultFiles(targetTmpDir string, data map[string]any) error {
 }
 
 type PackageCreateOpts struct {
-	PID         string
-	FilterRoots []string
-	FilterFile  string
-	ContentDir  string
-	ContentFile string
+	PID             string
+	FilterRoots     []string
+	FilterFile      string
+	ExcludePatterns []string
 }
 
 func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
@@ -186,21 +185,19 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 		_ = pathx.DeleteIfExists(tmpDir)
 		_ = pathx.DeleteIfExists(tmpFile)
 	}()
-	if len(opts.FilterRoots) == 0 && opts.FilterFile == "" {
-		opts.FilterRoots = []string{determineFilterRoot(opts)}
-	}
 	data := map[string]any{
-		"Pid":         opts.PID,
-		"Group":       pidConfig.Group,
-		"Name":        pidConfig.Name,
-		"Version":     pidConfig.Version,
-		"FilterRoots": opts.FilterRoots,
+		"Pid":             opts.PID,
+		"Group":           pidConfig.Group,
+		"Name":            pidConfig.Name,
+		"Version":         pidConfig.Version,
+		"FilterRoots":     opts.FilterRoots,
+		"ExcludePatterns": opts.ExcludePatterns,
 	}
 	if err = copyPackageDefaultFiles(tmpDir, data); err != nil {
 		return "", err
 	}
 	if opts.FilterFile != "" {
-		if err = filex.Copy(opts.FilterFile, filepath.Join(tmpDir, "META-INF", "vault", FilterXML), true); err != nil {
+		if err = filex.Copy(opts.FilterFile, filepath.Join(tmpDir, pkg.MetaPath, pkg.VltDir, FilterXML), true); err != nil {
 			return "", err
 		}
 	}
@@ -227,33 +224,23 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	return status.Path, nil
 }
 
-func determineFilterRoot(opts PackageCreateOpts) string {
-	if opts.ContentDir != "" {
-		return strings.Split(opts.ContentDir, content.JCRRoot)[1]
+func DetermineFilterRoot(path string) string {
+	_, filterRoot, _ := strings.Cut(path, content.JCRRoot)
+	filterRoot = strings.ReplaceAll(filterRoot, "\\", "/")
+	if strings.HasSuffix(path, content.JCRContentFile) {
+		filterRoot = filepath.Dir(filterRoot)
+	} else if strings.HasSuffix(path, content.XmlFileSuffix) {
+		filterRoot = strings.ReplaceAll(filterRoot, content.XmlFileSuffix, "")
 	}
-
-	if opts.ContentFile != "" {
-		contentFile := strings.Split(opts.ContentFile, content.JCRRoot)[1]
-		if content.IsContentFile(opts.ContentFile) {
-			return strings.ReplaceAll(contentFile, content.JCRContentFile, content.JCRContentNode)
-		} else if strings.HasSuffix(contentFile, content.JCRContentFile) {
-			contentFile = namespacePatternRegex.ReplaceAllString(contentFile, "$1:")
-			return filepath.Dir(contentFile)
-		} else if strings.HasSuffix(contentFile, content.JCRContentFileSuffix) {
-			contentFile = namespacePatternRegex.ReplaceAllString(contentFile, "$1:")
-			return strings.ReplaceAll(contentFile, content.JCRContentFileSuffix, "")
-		}
-		return contentFile
-	}
-
-	return ""
+	filterRoot = namespacePatternRegex.ReplaceAllString(filterRoot, "/$2:")
+	filterRoot = strings.ReplaceAll(filterRoot, "/__", "/_")
+	filterRoot = strings.ReplaceAll(filterRoot, "%3a", ":")
+	return filterRoot
 }
 
 func (pm *PackageManager) Copy(remotePath string, destInstance *Instance) error {
-	var localPath = pathx.RandomFileName(pm.tmpDir(), "pkg_copy", ".zip")
-	defer func() {
-		_ = pathx.DeleteIfExists(localPath)
-	}()
+	localPath := pathx.RandomFileName(pm.tmpDir(), "pkg_copy", ".zip")
+	defer func() { _ = pathx.DeleteIfExists(localPath) }()
 	if err := pm.Download(remotePath, localPath); err != nil {
 		return err
 	}

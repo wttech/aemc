@@ -108,7 +108,7 @@ func (cm *ContentManager) PullFile(file string, clean bool, opts PackageCreateOp
 	if err := content.Unzip(pkgFile, workDir); err != nil {
 		return err
 	}
-	cleanFile := determineCleanFile(file)
+	cleanFile := DetermineCleanFile(file)
 	if file != cleanFile {
 		if err := cm.contentManager().PrepareFile(file); err != nil {
 			return err
@@ -159,7 +159,7 @@ func (cm *ContentManager) Push(path string, clean bool, opts PackageCreateOpts) 
 	return nil
 }
 
-func determineCleanFile(file string) string {
+func DetermineCleanFile(file string) string {
 	if namespacePatternRegex.MatchString(file) && !strings.HasSuffix(file, content.JCRContentFile) {
 		return filepath.Join(strings.ReplaceAll(file, content.XmlFileSuffix, ""), content.JCRContentFile)
 	}

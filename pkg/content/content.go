@@ -25,6 +25,7 @@ const (
 	JCRRootPrefix             = "<jcr:root"
 	PropPattern               = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
 	NamespacePattern          = "^\\w+:(\\w+)=\"[^\"]+\"$"
+	NamespaceFilePattern      = "[\\\\/]_([a-zA-Z0-9]+)_"
 	ParentsBackupSuffix       = ".bak"
 	ParentsBackupDirIndicator = ".bakdir"
 	JCRContentNode            = "jcr:content"
@@ -33,13 +34,15 @@ const (
 )
 
 var (
-	propPatternRegex      *regexp.Regexp
-	namespacePatternRegex *regexp.Regexp
+	propPatternRegex          *regexp.Regexp
+	namespacePatternRegex     *regexp.Regexp
+	namespaceFilePatternRegex *regexp.Regexp
 )
 
 func init() {
 	propPatternRegex = regexp.MustCompile(PropPattern)
 	namespacePatternRegex = regexp.MustCompile(NamespacePattern)
+	namespaceFilePatternRegex = regexp.MustCompile(NamespaceFilePattern)
 }
 
 type Manager struct {
@@ -187,12 +190,18 @@ func (c Manager) filterLines(path string, lines []string) []string {
 			result = result[:len(result)-1]
 		}
 	}
-	return c.cleanNamespaces(result)
+	return c.cleanNamespaces(path, result)
 }
 
-func (c Manager) cleanNamespaces(lines []string) []string {
+func (c Manager) cleanNamespaces(path string, lines []string) []string {
 	if !c.NamespacesSkipped {
 		return lines
+	}
+
+	var fileNamespace string
+	groups := namespaceFilePatternRegex.FindStringSubmatch(path)
+	if groups != nil {
+		fileNamespace = groups[1]
 	}
 
 	var result []string
@@ -200,12 +209,12 @@ func (c Manager) cleanNamespaces(lines []string) []string {
 		if strings.HasPrefix(line, JCRRootPrefix) {
 			var rootResult []string
 			for _, part := range strings.Split(line, " ") {
-				groups := namespacePatternRegex.FindStringSubmatch(part)
+				groups = namespacePatternRegex.FindStringSubmatch(part)
 				if groups == nil {
 					rootResult = append(rootResult, part)
 				} else {
 					flag := lo.SomeBy(lines, func(line string) bool {
-						return strings.Contains(line, groups[1]+":")
+						return strings.Contains(line, groups[1]+":") || groups[1] == fileNamespace
 					})
 					if flag {
 						rootResult = append(rootResult, part)

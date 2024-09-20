@@ -24,8 +24,7 @@ const (
 	JCRRootPrefix        = "<jcr:root"
 	PropPattern          = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
 	NamespacePattern     = "^\\w+:(\\w+)=\"[^\"]+\"$"
-	NamespaceFilePattern = "\\\\|/_([a-zA-Z0-9]+)_"
-
+	NamespaceFilePattern = "[\\\\/]_([a-zA-Z0-9]+)_[^\\\\/]+([\\\\/]\\.content)?\\.xml$"
 )
 
 var (

@@ -23,8 +23,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
+)
+
+const (
+	NamespacePattern = "[\\\\/]_([a-zA-Z0-9]+)_"
 )
 
 type PackageManager struct {
@@ -238,7 +243,7 @@ func DetermineFilterRoot(path string) string {
 	} else if strings.HasSuffix(path, content.XmlFileSuffix) {
 		filterRoot = strings.ReplaceAll(filterRoot, content.XmlFileSuffix, "")
 	}
-	filterRoot = namespacePatternRegex.ReplaceAllString(filterRoot, "/$2:")
+	filterRoot = regexp.MustCompile(NamespacePattern).ReplaceAllString(filterRoot, "/$1:")
 	filterRoot = strings.ReplaceAll(filterRoot, "/__", "/_")
 	filterRoot = strings.ReplaceAll(filterRoot, "%3a", ":")
 	return filterRoot

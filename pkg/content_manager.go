@@ -13,16 +13,8 @@ import (
 )
 
 const (
-	NamespacePattern = "\\\\|/_[a-zA-Z0-9]+_"
+	CleanFilePattern = "[\\\\/]_[a-zA-Z0-9]+_[^\\\\/]+\\.xml$"
 )
-
-var (
-	namespacePatternRegex *regexp.Regexp
-)
-
-func init() {
-	namespacePatternRegex = regexp.MustCompile(NamespacePattern)
-}
 
 type ContentManager struct {
 	instance *Instance
@@ -160,7 +152,7 @@ func (cm *ContentManager) Push(path string, clean bool, opts PackageCreateOpts) 
 }
 
 func DetermineCleanFile(file string) string {
-	if namespacePatternRegex.MatchString(file) && !strings.HasSuffix(file, content.JCRContentFile) {
+	if regexp.MustCompile(CleanFilePattern).MatchString(file) {
 		return filepath.Join(strings.ReplaceAll(file, content.XmlFileSuffix, ""), content.JCRContentFile)
 	}
 	return file

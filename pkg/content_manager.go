@@ -13,16 +13,8 @@ import (
 )
 
 const (
-	NamespacePattern = "\\\\|/_[a-zA-Z0-9]+_"
+	CleanFilePattern = "[\\\\/]_[a-zA-Z0-9]+_[^\\\\/]+\\.xml$"
 )
-
-var (
-	namespacePatternRegex *regexp.Regexp
-)
-
-func init() {
-	namespacePatternRegex = regexp.MustCompile(NamespacePattern)
-}
 
 type ContentManager struct {
 	instance *Instance
@@ -131,9 +123,7 @@ func (cm *ContentManager) Push(path string, clean bool, opts PackageCreateOpts) 
 		return fmt.Errorf("cannot push content as it does not exist '%s'", path)
 	}
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_push")
-	defer func() {
-		_ = pathx.DeleteIfExists(workDir)
-	}()
+	defer func() { _ = pathx.DeleteIfExists(workDir) }()
 	if opts.PID == "" {
 		opts.PID = fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow())
 	}
@@ -160,7 +150,7 @@ func (cm *ContentManager) Push(path string, clean bool, opts PackageCreateOpts) 
 }
 
 func DetermineCleanFile(file string) string {
-	if namespacePatternRegex.MatchString(file) && !strings.HasSuffix(file, content.JCRContentFile) {
+	if regexp.MustCompile(CleanFilePattern).MatchString(file) {
 		return filepath.Join(strings.ReplaceAll(file, content.XmlFileSuffix, ""), content.JCRContentFile)
 	}
 	return file

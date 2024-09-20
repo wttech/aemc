@@ -23,8 +23,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
+)
+
+const (
+	NamespacePattern = "[\\\\/]_([a-zA-Z0-9]+)_"
 )
 
 type PackageManager struct {
@@ -149,11 +154,23 @@ func (pm *PackageManager) IsSnapshot(localPath string) bool {
 	return !pm.SnapshotIgnored && stringsx.MatchSome(pathx.Normalize(localPath), pm.SnapshotPatterns)
 }
 
-func copyPackageDefaultFiles(targetTmpDir string, data map[string]any) error {
-	if err := pathx.DeleteIfExists(targetTmpDir); err != nil {
+func copyPackageAllFiles(targetTmpDir string, opts PackageCreateOpts) error {
+	pidConfig, err := pkg.ParsePID(opts.PID)
+	if err != nil {
+		return err
+	}
+	data := map[string]any{
+		"Pid":             opts.PID,
+		"Group":           pidConfig.Group,
+		"Name":            pidConfig.Name,
+		"Version":         pidConfig.Version,
+		"FilterRoots":     opts.FilterRoots,
+		"ExcludePatterns": opts.ExcludePatterns,
+	}
+	if err = pathx.DeleteIfExists(targetTmpDir); err != nil {
 		return fmt.Errorf("cannot delete temporary dir '%s': %w", targetTmpDir, err)
 	}
-	return fs.WalkDir(pkg.VaultFS, ".", func(path string, entry fs.DirEntry, err error) error {
+	if err = fs.WalkDir(pkg.VaultFS, ".", func(path string, entry fs.DirEntry, err error) error {
 		if entry.IsDir() {
 			return nil
 		}
@@ -162,7 +179,20 @@ func copyPackageDefaultFiles(targetTmpDir string, data map[string]any) error {
 			return err
 		}
 		return tplx.RenderFile(targetTmpDir+strings.ReplaceAll(strings.TrimPrefix(path, "vault"), "$", ""), string(bytes), data)
-	})
+	}); err != nil {
+		return err
+	}
+	if opts.FilterFile != "" {
+		if err = filex.Copy(opts.FilterFile, filepath.Join(targetTmpDir, pkg.MetaPath, pkg.VltDir, FilterXML), true); err != nil {
+			return err
+		}
+	}
+	if opts.ContentPath != "" {
+		if err = copyContentFiles(opts.ContentPath, targetTmpDir); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type PackageCreateOpts struct {
@@ -175,39 +205,16 @@ type PackageCreateOpts struct {
 
 func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	log.Infof("%s > creating package '%s'", pm.instance.IDColor(), opts.PID)
-	pidConfig, err := pkg.ParsePID(opts.PID)
-	if err != nil {
-		return "", err
-	}
-
 	tmpDir := pathx.RandomDir(pm.tmpDir(), "pkg_create")
 	tmpFile := pathx.RandomFileName(pm.tmpDir(), "pkg_create", ".zip")
 	defer func() {
 		_ = pathx.DeleteIfExists(tmpDir)
 		_ = pathx.DeleteIfExists(tmpFile)
 	}()
-	data := map[string]any{
-		"Pid":             opts.PID,
-		"Group":           pidConfig.Group,
-		"Name":            pidConfig.Name,
-		"Version":         pidConfig.Version,
-		"FilterRoots":     opts.FilterRoots,
-		"ExcludePatterns": opts.ExcludePatterns,
-	}
-	if err = copyPackageDefaultFiles(tmpDir, data); err != nil {
+	if err := copyPackageAllFiles(tmpDir, opts); err != nil {
 		return "", err
 	}
-	if opts.FilterFile != "" {
-		if err = filex.Copy(opts.FilterFile, filepath.Join(tmpDir, pkg.MetaPath, pkg.VltDir, FilterXML), true); err != nil {
-			return "", err
-		}
-	}
-	if opts.ContentPath != "" {
-		if err = copyContentFiles(opts.ContentPath, tmpDir); err != nil {
-			return "", err
-		}
-	}
-	if err = content.Zip(tmpDir, tmpFile); err != nil {
+	if err := content.Zip(tmpDir, tmpFile); err != nil {
 		return "", err
 	}
 	response, err := pm.instance.http.Request().
@@ -238,7 +245,7 @@ func DetermineFilterRoot(path string) string {
 	} else if strings.HasSuffix(path, content.XmlFileSuffix) {
 		filterRoot = strings.ReplaceAll(filterRoot, content.XmlFileSuffix, "")
 	}
-	filterRoot = namespacePatternRegex.ReplaceAllString(filterRoot, "/$2:")
+	filterRoot = regexp.MustCompile(NamespacePattern).ReplaceAllString(filterRoot, "/$1:")
 	filterRoot = strings.ReplaceAll(filterRoot, "/__", "/_")
 	filterRoot = strings.ReplaceAll(filterRoot, "%3a", ":")
 	return filterRoot

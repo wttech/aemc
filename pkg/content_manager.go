@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	NamespacePattern = "(\\\\|/)_([a-zA-Z0-9]+)_"
+	NamespacePattern = "\\\\|/_[a-zA-Z0-9]+_"
 )
 
 var (

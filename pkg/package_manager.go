@@ -23,8 +23,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
+)
+
+const (
+	NamespacePattern = "[\\\\/]_([a-zA-Z0-9]+)_"
 )
 
 type PackageManager struct {
@@ -200,7 +205,6 @@ type PackageCreateOpts struct {
 
 func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	log.Infof("%s > creating package '%s'", pm.instance.IDColor(), opts.PID)
-
 	tmpDir := pathx.RandomDir(pm.tmpDir(), "pkg_create")
 	tmpFile := pathx.RandomFileName(pm.tmpDir(), "pkg_create", ".zip")
 	defer func() {
@@ -241,7 +245,7 @@ func DetermineFilterRoot(path string) string {
 	} else if strings.HasSuffix(path, content.XmlFileSuffix) {
 		filterRoot = strings.ReplaceAll(filterRoot, content.XmlFileSuffix, "")
 	}
-	filterRoot = namespacePatternRegex.ReplaceAllString(filterRoot, "/$2:")
+	filterRoot = regexp.MustCompile(NamespacePattern).ReplaceAllString(filterRoot, "/$1:")
 	filterRoot = strings.ReplaceAll(filterRoot, "/__", "/_")
 	filterRoot = strings.ReplaceAll(filterRoot, "%3a", ":")
 	return filterRoot
@@ -271,7 +275,7 @@ func (pm *PackageManager) Copy(remotePath string, destInstance *Instance) error 
 	if err != nil {
 		return err
 	}
-	if err = destInstance.PackageManager().Install(destRemotePath); err != nil {
+	if err := destInstance.PackageManager().Install(destRemotePath); err != nil {
 		return err
 	}
 	return nil
@@ -529,7 +533,7 @@ func (pm *PackageManager) installHTML(remotePath string) error {
 	var htmlWriter *bufio.Writer
 
 	if !pm.InstallHTMLConsole {
-		if err = pathx.Ensure(filepath.Dir(htmlFilePath)); err != nil {
+		if err := pathx.Ensure(filepath.Dir(htmlFilePath)); err != nil {
 			return err
 		}
 		htmlFile, err := os.OpenFile(htmlFilePath, os.O_RDWR|os.O_CREATE, 0666)
@@ -551,7 +555,7 @@ func (pm *PackageManager) installHTML(remotePath string) error {
 			successWithErrors = true
 		}
 		if !pm.InstallHTMLConsole {
-			_, err = htmlWriter.WriteString(htmlLine + osx.LineSep())
+			_, err := htmlWriter.WriteString(htmlLine + osx.LineSep())
 			if err != nil {
 				return fmt.Errorf("%s > cannot install package '%s': cannot write to HTML report file '%s'", pm.instance.IDColor(), remotePath, htmlFilePath)
 			}
@@ -559,7 +563,7 @@ func (pm *PackageManager) installHTML(remotePath string) error {
 			fmt.Println(htmlLine)
 		}
 	}
-	if err = scanner.Err(); err != nil {
+	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("%s > cannot install package '%s': cannot parse HTML response: %w", pm.instance.IDColor(), remotePath, err)
 	}
 
@@ -626,10 +630,10 @@ func (pm *PackageManager) deploySnapshot(localPath string) (bool, error) {
 			return false, nil
 		}
 	}
-	if err = pm.Deploy(localPath); err != nil {
+	if err := pm.Deploy(localPath); err != nil {
 		return false, err
 	}
-	if err = lock.Lock(); err != nil {
+	if err := lock.Lock(); err != nil {
 		return false, err
 	}
 	return true, nil

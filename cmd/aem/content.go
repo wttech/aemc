@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg"
 	"github.com/wttech/aemc/pkg/common/pathx"
@@ -42,17 +41,17 @@ func (c *CLI) contentCleanCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
+			path := dir
+			if path == "" {
+				path = file
+			}
+			if err = c.aem.ContentManager().Clean(path); err != nil {
+				c.Error(err)
+				return
+			}
 			if dir != "" {
-				if err = c.aem.ContentManager().CleanDir(dir); err != nil {
-					c.Error(err)
-					return
-				}
 				c.SetOutput("dir", dir)
 			} else if file != "" {
-				if err = c.aem.ContentManager().CleanFile(file); err != nil {
-					c.Error(err)
-					return
-				}
 				c.SetOutput("file", file)
 			}
 			c.Changed("content cleaned")
@@ -238,9 +237,6 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 			filterFile, _ := cmd.Flags().GetString("filter-file")
 			clean, _ := cmd.Flags().GetBool("clean")
 			vault, _ := cmd.Flags().GetBool("vault")
-			vault = vault && lo.EveryBy(filterRoots, func(filterRoot string) bool {
-				return pathx.IsDir(filterRoot)
-			})
 			if err = instance.ContentManager().Copy(targetInstance, clean, vault, pkg.PackageCreateOpts{
 				FilterRoots: filterRoots,
 				FilterFile:  filterFile,

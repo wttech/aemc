@@ -2,7 +2,6 @@ package content
 
 import (
 	"bufio"
-	"fmt"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
@@ -24,7 +23,7 @@ const (
 	JCRRootPrefix        = "<jcr:root"
 	PropPattern          = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
 	NamespacePattern     = "^\\w+:(\\w+)=\"[^\"]+\"$"
-	NamespaceFilePattern = "\\\\|/_([a-zA-Z0-9]+)_"
+	NamespaceFilePattern = "[\\\\/]_([a-zA-Z0-9]+)_[^\\\\/]+([\\\\/]\\.content)?\\.xml$"
 )
 
 var (
@@ -63,50 +62,48 @@ func NewManager(baseOpts *base.Opts) *Manager {
 	}
 }
 
-func (c Manager) PrepareDir(dir string) error {
-	return deleteDir(dir)
-}
-
-func (c Manager) PrepareFile(file string) error {
-	return deleteFile(file, nil)
-}
-
-func (c Manager) CleanDir(root string) error {
-	if !pathx.Exists(root) {
-		return fmt.Errorf("cannot clean directory as it does not exist '%s'", root)
+func (c Manager) Prepare(path string) error {
+	if pathx.IsDir(path) {
+		return deleteDir(path)
 	}
-	log.Infof("cleaning directory '%s'", root)
-	if err := c.cleanDotContents(root); err != nil {
-		return err
+	if pathx.IsFile(path) {
+		return deleteFile(path, nil)
 	}
-	if err := c.flattenFiles(root); err != nil {
-		return err
-	}
-	if err := c.deleteFiles(root); err != nil {
-		return err
-	}
-	if err := deleteEmptyDirs(root); err != nil {
-		return err
-	}
-	log.Infof("cleaned directory '%s'", root)
 	return nil
 }
 
-func (c Manager) CleanFile(path string) error {
-	if !pathx.Exists(path) {
-		return fmt.Errorf("cannot clean file as it does not exist '%s'", path)
+func (c Manager) Clean(path string) error {
+	if pathx.IsDir(path) {
+		log.Infof("cleaning directory '%s'", path)
+		if err := c.cleanDotContents(path); err != nil {
+			return err
+		}
+		if err := c.flattenFiles(path); err != nil {
+			return err
+		}
+		if err := c.deleteFiles(path); err != nil {
+			return err
+		}
+		if err := deleteEmptyDirs(path); err != nil {
+			return err
+		}
+		log.Infof("cleaned directory '%s'", path)
+		return nil
 	}
-	log.Infof("cleaning file '%s'", path)
-	if err := c.cleanDotContentFile(path); err != nil {
-		return err
+	if pathx.IsFile(path) {
+		log.Infof("cleaning file '%s'", path)
+		if err := c.cleanDotContentFile(path); err != nil {
+			return err
+		}
+		if err := c.flattenFile(path); err != nil {
+			return err
+		}
+		if err := deleteEmptyDirs(filepath.Dir(path)); err != nil {
+			return err
+		}
+		log.Infof("cleaned file '%s'", path)
+		return nil
 	}
-	if err := c.flattenFile(path); err != nil {
-		return err
-	}
-	if err := deleteEmptyDirs(filepath.Dir(path)); err != nil {
-		return err
-	}
-	log.Infof("cleaned file '%s'", path)
 	return nil
 }
 
@@ -252,12 +249,12 @@ func (c Manager) deleteFiles(root string) error {
 	})
 }
 
-func deleteDir(dir string) error {
-	if !pathx.Exists(dir) {
+func deleteDir(path string) error {
+	if !pathx.Exists(path) {
 		return nil
 	}
-	log.Infof("deleting dir '%s'", dir)
-	return os.RemoveAll(dir)
+	log.Infof("deleting directory '%s'", path)
+	return os.RemoveAll(path)
 }
 
 func deleteFile(path string, allowedFunc func() bool) error {
@@ -268,25 +265,25 @@ func deleteFile(path string, allowedFunc func() bool) error {
 	return os.Remove(path)
 }
 
-func deleteEmptyDirs(root string) error {
-	entries, err := os.ReadDir(root)
+func deleteEmptyDirs(path string) error {
+	entries, err := os.ReadDir(path)
 	if err != nil {
 		return err
 	}
 	for _, entry := range entries {
 		if entry.IsDir() {
-			if err = deleteEmptyDirs(filepath.Join(root, entry.Name())); err != nil {
+			if err = deleteEmptyDirs(filepath.Join(path, entry.Name())); err != nil {
 				return err
 			}
 		}
 	}
-	entries, err = os.ReadDir(root)
+	entries, err = os.ReadDir(path)
 	if err != nil {
 		return err
 	}
 	if len(entries) == 0 {
-		log.Infof("deleting empty directory '%s'", root)
-		if err = os.Remove(root); err != nil {
+		log.Infof("deleting empty directory '%s'", path)
+		if err = os.Remove(path); err != nil {
 			return err
 		}
 	}

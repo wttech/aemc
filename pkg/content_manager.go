@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	CleanFilePattern = "[\\\\/]_[a-zA-Z0-9]+_[^\\\\/]+\\.xml$"
+	FlattenFilePattern = "[\\\\/]_[a-zA-Z0-9]+_[^\\\\/]+\\.xml$"
 )
 
 type ContentManager struct {
@@ -140,18 +140,18 @@ func (cm *ContentManager) PullFile(file string, clean bool, vault bool, opts Pac
 	if err := cm.pullContent(workDir, vault, opts); err != nil {
 		return err
 	}
-	cleanFile := DetermineCleanFile(file)
-	if file != cleanFile {
+	syncFile := DetermineSyncFile(file)
+	if file != syncFile {
 		if err := cm.contentManager().Prepare(file); err != nil {
 			return err
 		}
 	}
-	_, jcrPath, _ := strings.Cut(cleanFile, content.JCRRoot)
-	if err := filex.Copy(filepath.Join(workDir, content.JCRRoot, jcrPath), cleanFile, true); err != nil {
+	_, jcrPath, _ := strings.Cut(syncFile, content.JCRRoot)
+	if err := filex.Copy(filepath.Join(workDir, content.JCRRoot, jcrPath), syncFile, true); err != nil {
 		return err
 	}
 	if clean {
-		if err := cm.contentManager().Clean(cleanFile); err != nil {
+		if err := cm.contentManager().Clean(syncFile); err != nil {
 			return err
 		}
 	}
@@ -298,8 +298,8 @@ func (cm *ContentManager) Copy(destInstance *Instance, clean bool, vault bool, o
 	return cm.copyByPkgMgr(destInstance, clean, opts)
 }
 
-func DetermineCleanFile(file string) string {
-	if regexp.MustCompile(CleanFilePattern).MatchString(file) {
+func DetermineSyncFile(file string) string {
+	if regexp.MustCompile(FlattenFilePattern).MatchString(file) {
 		return filepath.Join(strings.ReplaceAll(file, content.XmlFileSuffix, ""), content.JCRContentFile)
 	}
 	return file

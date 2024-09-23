@@ -277,7 +277,10 @@ func determineContentTargetInstance(cmd *cobra.Command, instanceManager *pkg.Ins
 func determineContentDir(cmd *cobra.Command) (string, error) {
 	dir, _ := cmd.Flags().GetString("dir")
 	if dir != "" && !strings.Contains(dir, content.JCRRoot) {
-		return "", fmt.Errorf("content dir '%s' does not contain '%s'", dir, content.JCRRoot)
+		return "", fmt.Errorf("content directory '%s' does not contain '%s'", dir, content.JCRRoot)
+	}
+	if pathx.IsFile(dir) {
+		return "", fmt.Errorf("content directory '%s' is not a directory; consider using 'file' parameter", dir)
 	}
 	path, _ := cmd.Flags().GetString("path")
 	if path != "" && !strings.Contains(path, content.JCRRoot) {
@@ -296,6 +299,9 @@ func determineContentFile(cmd *cobra.Command) (string, error) {
 	file, _ := cmd.Flags().GetString("file")
 	if file != "" && !strings.Contains(file, content.JCRRoot) {
 		return "", fmt.Errorf("content file '%s' does not contain '%s'", file, content.JCRRoot)
+	}
+	if pathx.IsDir(file) {
+		return "", fmt.Errorf("content file '%s' is not a file; consider using 'dir' parameter", file)
 	}
 	path, _ := cmd.Flags().GetString("path")
 	if path != "" && !strings.Contains(path, content.JCRRoot) {

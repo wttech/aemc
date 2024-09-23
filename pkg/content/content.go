@@ -16,26 +16,26 @@ import (
 )
 
 const (
-	JCRRoot              = "jcr_root"
-	JCRContentFile       = ".content.xml"
-	XmlFileSuffix        = ".xml"
-	JCRMixinTypesProp    = "jcr:mixinTypes"
-	JCRRootPrefix        = "<jcr:root"
-	PropPattern          = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
-	NamespacePattern     = "^\\w+:(\\w+)=\"[^\"]+\"$"
-	NamespaceFilePattern = "[\\\\/]_([a-zA-Z0-9]+)_[^\\\\/]+([\\\\/]\\.content)?\\.xml$"
+	JCRRoot                  = "jcr_root"
+	JCRContentFile           = ".content.xml"
+	XmlFileSuffix            = ".xml"
+	JCRMixinTypesProp        = "jcr:mixinTypes"
+	JCRRootPrefix            = "<jcr:root"
+	PropPattern              = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
+	NamespacePattern         = "^\\w+:(\\w+)=\"[^\"]+\"$"
+	FileWithNamespacePattern = "[\\\\/]_([a-zA-Z0-9]+)_[^\\\\/]+([\\\\/]\\.content)?\\.xml$"
 )
 
 var (
-	propPatternRegex          *regexp.Regexp
-	namespacePatternRegex     *regexp.Regexp
-	namespaceFilePatternRegex *regexp.Regexp
+	propPatternRegex              *regexp.Regexp
+	namespacePatternRegex         *regexp.Regexp
+	fileWithNamespacePatternRegex *regexp.Regexp
 )
 
 func init() {
 	propPatternRegex = regexp.MustCompile(PropPattern)
 	namespacePatternRegex = regexp.MustCompile(NamespacePattern)
-	namespaceFilePatternRegex = regexp.MustCompile(NamespaceFilePattern)
+	fileWithNamespacePatternRegex = regexp.MustCompile(FileWithNamespacePattern)
 }
 
 type Manager struct {
@@ -163,7 +163,7 @@ func (c Manager) cleanNamespaces(path string, lines []string) []string {
 	}
 
 	var fileNamespace string
-	groups := namespaceFilePatternRegex.FindStringSubmatch(path)
+	groups := fileWithNamespacePatternRegex.FindStringSubmatch(path)
 	if groups != nil {
 		fileNamespace = groups[1]
 	}

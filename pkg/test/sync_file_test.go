@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestDetermineCleanFile(t *testing.T) {
+func TestDetermineSyncFile(t *testing.T) {
 	tests := []struct {
 		path, expected string
 	}{
@@ -17,9 +17,9 @@ func TestDetermineCleanFile(t *testing.T) {
 		{"/somepath/jcr_root/content/.content.xml", "/somepath/jcr_root/content/.content.xml"},
 	}
 	for _, test := range tests {
-		actual := pkg.DetermineCleanFile(test.path)
+		actual := pkg.DetermineSyncFile(test.path)
 		if actual != test.expected {
-			t.Errorf("DetermineCleanFile(%s) = %s; want %s", test.path, actual, test.expected)
+			t.Errorf("DetermineSyncFile(%s) = %s; want %s", test.path, actual, test.expected)
 		}
 	}
 }

@@ -62,16 +62,6 @@ func NewManager(baseOpts *base.Opts) *Manager {
 	}
 }
 
-func (c Manager) Prepare(path string) error {
-	if pathx.IsDir(path) {
-		return deleteDir(path)
-	}
-	if pathx.IsFile(path) {
-		return deleteFile(path, nil)
-	}
-	return nil
-}
-
 func (c Manager) Clean(path string) error {
 	if pathx.IsDir(path) {
 		log.Infof("cleaning directory '%s'", path)
@@ -81,7 +71,7 @@ func (c Manager) Clean(path string) error {
 		if err := c.flattenFiles(path); err != nil {
 			return err
 		}
-		if err := c.deleteFiles(path); err != nil {
+		if err := c.DeleteFiles(path); err != nil {
 			return err
 		}
 		if err := deleteEmptyDirs(path); err != nil {
@@ -241,15 +231,15 @@ func (c Manager) flattenFile(path string) error {
 	return os.Rename(path, dest)
 }
 
-func (c Manager) deleteFiles(root string) error {
+func (c Manager) DeleteFiles(root string) error {
 	return eachFiles(root, func(path string) error {
-		return deleteFile(path, func() bool {
+		return c.DeleteFile(path, func() bool {
 			return matchAnyRule(path, path, c.FilesDeleted)
 		})
 	})
 }
 
-func deleteDir(path string) error {
+func (c Manager) DeleteDir(path string) error {
 	if !pathx.Exists(path) {
 		return nil
 	}
@@ -257,7 +247,7 @@ func deleteDir(path string) error {
 	return os.RemoveAll(path)
 }
 
-func deleteFile(path string, allowedFunc func() bool) error {
+func (c Manager) DeleteFile(path string, allowedFunc func() bool) error {
 	if !pathx.Exists(path) || allowedFunc != nil && !allowedFunc() {
 		return nil
 	}

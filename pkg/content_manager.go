@@ -45,6 +45,9 @@ func (cm *ContentManager) tmpDir() string {
 }
 
 func (cm *ContentManager) pullContent(workDir string, vault bool, opts PackageCreateOpts) error {
+	if opts.PID == "" {
+		opts.PID = fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", timex.FileTimestampForNow())
+	}
 	if vault {
 		if err := copyPackageAllFiles(workDir, opts); err != nil {
 			return err
@@ -60,6 +63,9 @@ func (cm *ContentManager) pullContent(workDir string, vault bool, opts PackageCr
 			workDir,
 		}
 		if err := cm.vaultCli().CommandShell(vaultCliArgs); err != nil {
+			return err
+		}
+		if err := cm.contentManager().DeleteFiles(filepath.Join(workDir, content.JCRRoot)); err != nil {
 			return err
 		}
 	} else {
@@ -93,20 +99,22 @@ func (cm *ContentManager) downloadByPkgMgr(localFile string, opts PackageCreateO
 	return nil
 }
 
-func (cm *ContentManager) Download(localFile string, vault bool, opts PackageCreateOpts) error {
-	if vault {
-		workDir := pathx.RandomDir(cm.tmpDir(), "content_pull")
-		defer func() { _ = pathx.DeleteIfExists(workDir) }()
-		if err := cm.pullContent(workDir, vault, opts); err != nil {
+func (cm *ContentManager) Download(localFile string, clean bool, vault bool, opts PackageCreateOpts) error {
+	workDir := pathx.RandomDir(cm.tmpDir(), "content_download")
+	defer func() { _ = pathx.DeleteIfExists(workDir) }()
+	if !clean && !vault {
+		return cm.downloadByPkgMgr(localFile, opts)
+	}
+	if err := cm.pullContent(workDir, vault, opts); err != nil {
+		return err
+	}
+	if clean {
+		if err := cm.contentManager().Clean(filepath.Join(workDir, content.JCRRoot)); err != nil {
 			return err
 		}
-		if err := content.Zip(workDir, localFile); err != nil {
-			return err
-		}
-	} else {
-		if err := cm.downloadByPkgMgr(localFile, opts); err != nil {
-			return err
-		}
+	}
+	if err := content.Zip(workDir, localFile); err != nil {
+		return err
 	}
 	return nil
 }
@@ -118,7 +126,7 @@ func (cm *ContentManager) PullDir(dir string, clean bool, replace bool, vault bo
 		return err
 	}
 	if replace {
-		if err := cm.contentManager().Prepare(dir); err != nil {
+		if err := cm.contentManager().DeleteFiles(dir); err != nil {
 			return err
 		}
 	}
@@ -142,7 +150,7 @@ func (cm *ContentManager) PullFile(file string, clean bool, vault bool, opts Pac
 	}
 	syncFile := DetermineSyncFile(file)
 	if file != syncFile {
-		if err := cm.contentManager().Prepare(file); err != nil {
+		if err := cm.contentManager().DeleteFile(file, nil); err != nil {
 			return err
 		}
 	}
@@ -194,10 +202,10 @@ func (cm *ContentManager) Push(path string, clean bool, vault bool, opts Package
 	}
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_push")
 	defer func() { _ = pathx.DeleteIfExists(workDir) }()
-	if opts.PID == "" {
-		opts.PID = fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow())
-	}
 	if clean || vault && pathx.IsFile(path) {
+		if opts.PID == "" {
+			opts.PID = fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow())
+		}
 		if err := copyPackageAllFiles(workDir, opts); err != nil {
 			return err
 		}
@@ -220,8 +228,13 @@ func (cm *ContentManager) copyByPkgMgr(destInstance *Instance, clean bool, opts 
 	if clean {
 		workDir := pathx.RandomDir(cm.tmpDir(), "content_copy")
 		defer func() { _ = pathx.DeleteIfExists(workDir) }()
-		if err := cm.PullDir(filepath.Join(workDir, content.JCRRoot), true, false, false, opts); err != nil {
+		if err := cm.pullContent(workDir, false, opts); err != nil {
 			return err
+		}
+		if clean {
+			if err := cm.contentManager().Clean(filepath.Join(workDir, content.JCRRoot)); err != nil {
+				return err
+			}
 		}
 		if err := content.Zip(workDir, pkgFile); err != nil {
 			return err
@@ -246,17 +259,15 @@ func (cm *ContentManager) copyByVaultCli(destInstance *Instance, clean bool, opt
 	if clean || opts.FilterFile != "" {
 		workDir := pathx.RandomDir(cm.tmpDir(), "content_copy")
 		defer func() { _ = pathx.DeleteIfExists(workDir) }()
-		if err := copyPackageAllFiles(workDir, opts); err != nil {
-			return err
-		}
 		if err := cm.pullContent(workDir, true, opts); err != nil {
 			return err
 		}
 		if clean {
-			if err := cm.contentManager().Clean(workDir); err != nil {
+			if err := cm.contentManager().Clean(filepath.Join(workDir, content.JCRRoot)); err != nil {
 				return err
 			}
 		}
+		opts.ContentPath = filepath.Join(workDir, content.JCRRoot)
 		if err := cm.pushContent(destInstance, true, opts); err != nil {
 			return err
 		}

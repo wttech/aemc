@@ -79,8 +79,9 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 			targetFile, _ := cmd.Flags().GetString("target-file")
 			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
+			clean, _ := cmd.Flags().GetBool("clean")
 			vault, _ := cmd.Flags().GetBool("vault")
-			if err = instance.ContentManager().Download(targetFile, vault, pkg.PackageCreateOpts{
+			if err = instance.ContentManager().Download(targetFile, clean, vault, pkg.PackageCreateOpts{
 				PID:         pid,
 				FilterRoots: filterRoots,
 				FilterFile:  filterFile,
@@ -98,6 +99,7 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
 	cmd.MarkFlagsOneRequired("filter-roots", "filter-file")
+	cmd.Flags().Bool("clean", false, "Normalize content after downloading")
 	cmd.Flags().Bool("vault", false, "Use Vault-Cli to download content")
 	return cmd
 }

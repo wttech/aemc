@@ -6,8 +6,7 @@ import (
 	"github.com/wttech/aemc/pkg"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/content"
-	"os"
-	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -127,7 +126,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 			}
 			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
-			excludePatterns := determineExcludePatterns(cmd)
+			onlyOneContent := determineOnlyOneContent(cmd)
 			clean, _ := cmd.Flags().GetBool("clean")
 			vault, _ := cmd.Flags().GetBool("vault")
 			replace, _ := cmd.Flags().GetBool("replace")
@@ -142,8 +141,8 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				c.SetOutput("dir", dir)
 			} else if file != "" {
 				if err = instance.ContentManager().PullFile(file, clean, vault, pkg.PackageCreateOpts{
-					FilterRoots:     filterRoots,
-					ExcludePatterns: excludePatterns,
+					FilterRoots:    filterRoots,
+					OnlyOneContent: onlyOneContent,
 				}); err != nil {
 					c.Error(err)
 					return
@@ -192,12 +191,13 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 				path = file
 			}
 			filterRoots := determineFilterRoots(cmd)
-			excludePatterns := determineExcludePatterns(cmd)
+			onlyOneContent := determineOnlyOneContent(cmd)
 			clean, _ := cmd.Flags().GetBool("clean")
 			vault, _ := cmd.Flags().GetBool("vault")
 			if err = instance.ContentManager().Push(path, clean, vault, pkg.PackageCreateOpts{
-				FilterRoots:     filterRoots,
-				ExcludePatterns: excludePatterns,
+				FilterRoots:    filterRoots,
+				OnlyOneContent: onlyOneContent,
+				ContentPath:    path,
 			}); err != nil {
 				c.Error(err)
 				return
@@ -338,25 +338,7 @@ func determineFilterRoots(cmd *cobra.Command) []string {
 	return nil
 }
 
-func determineExcludePatterns(cmd *cobra.Command) []string {
+func determineOnlyOneContent(cmd *cobra.Command) bool {
 	file, _ := determineContentFile(cmd)
-	if file == "" || !strings.HasSuffix(file, content.JCRContentFile) {
-		return nil
-	}
-
-	dir := filepath.Dir(file)
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil
-	}
-
-	var excludePatterns []string
-	for _, entry := range entries {
-		if entry.Name() != content.JCRContentFile {
-			jcrPath := pkg.DetermineFilterRoot(filepath.Join(dir, entry.Name()))
-			excludePattern := fmt.Sprintf("%s(/.*)?", jcrPath)
-			excludePatterns = append(excludePatterns, excludePattern)
-		}
-	}
-	return excludePatterns
+	return strings.HasSuffix(file, content.JCRContentFile) && !regexp.MustCompile(content.FileWithNamespacePattern).MatchString(file)
 }

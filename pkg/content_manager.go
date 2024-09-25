@@ -119,7 +119,7 @@ func (cm *ContentManager) Download(localFile string, clean bool, vault bool, opt
 	return nil
 }
 
-func (cm *ContentManager) PullDir(dir string, clean bool, replace bool, vault bool, opts PackageCreateOpts) error {
+func (cm *ContentManager) PullDir(dir string, clean bool, vault bool, replace bool, opts PackageCreateOpts) error {
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_pull")
 	defer func() { _ = pathx.DeleteIfExists(workDir) }()
 	if err := cm.pullContent(workDir, vault, opts); err != nil {
@@ -168,11 +168,8 @@ func (cm *ContentManager) PullFile(file string, clean bool, vault bool, opts Pac
 
 func (cm *ContentManager) pushContent(destInstance *Instance, vault bool, opts PackageCreateOpts) error {
 	if vault {
-		mainDir := opts.ContentPath
-		if pathx.IsFile(mainDir) {
-			mainDir = filepath.Dir(mainDir)
-		}
-		jcrPath := DetermineFilterRoot(mainDir)
+		mainDir, _, _ := strings.Cut(opts.ContentPath, content.JCRRoot)
+		jcrPath := DetermineFilterRoot(opts.ContentPath)
 		vaultCliArgs := []string{
 			"vlt",
 			"--credentials", fmt.Sprintf("%s:%s", destInstance.user, destInstance.password),
@@ -202,7 +199,7 @@ func (cm *ContentManager) Push(path string, clean bool, vault bool, opts Package
 	}
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_push")
 	defer func() { _ = pathx.DeleteIfExists(workDir) }()
-	if clean || vault && pathx.IsFile(path) {
+	if clean || vault && strings.HasSuffix(path, content.JCRContentFile) {
 		if opts.PID == "" {
 			opts.PID = fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow())
 		}

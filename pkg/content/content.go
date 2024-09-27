@@ -22,6 +22,7 @@ const (
 	XmlFileSuffix            = ".xml"
 	JCRMixinTypesProp        = "jcr:mixinTypes"
 	JCRRootPrefix            = "<jcr:root"
+	JCRContentNode           = "jcr:content"
 	PropPattern              = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
 	NamespacePattern         = "^\\w+:(\\w+)=\"[^\"]+\"$"
 	FileWithNamespacePattern = "[\\\\/]_([a-zA-Z0-9]+)_[^\\\\/]+([\\\\/]\\.content)?\\.xml$"
@@ -356,4 +357,19 @@ func determineStringSlice(values any, key string) []string {
 		result = cast.ToStringSlice(value)
 	}
 	return result
+}
+
+func IsPageContentFile(path string) bool {
+	if pathx.IsDir(path) || !strings.HasSuffix(path, JCRContentFile) {
+		return false
+	}
+
+	lines, err := readLines(path)
+	if err != nil {
+		return false
+	}
+
+	return lo.SomeBy(lines, func(line string) bool {
+		return strings.Contains(line, "cq:PageContent")
+	})
 }

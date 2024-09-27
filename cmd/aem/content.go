@@ -198,6 +198,7 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 			if err = instance.ContentManager().Push(path, clean, vault, pkg.PackageCreateOpts{
 				FilterRoots:     filterRoots,
 				ExcludePatterns: excludePatterns,
+				ContentPath:     path,
 			}); err != nil {
 				c.Error(err)
 				return
@@ -340,7 +341,7 @@ func determineFilterRoots(cmd *cobra.Command) []string {
 
 func determineExcludePatterns(cmd *cobra.Command) []string {
 	file, _ := determineContentFile(cmd)
-	if file == "" || !strings.HasSuffix(file, content.JCRContentFile) {
+	if file == "" || !strings.HasSuffix(file, content.JCRContentFile) || content.IsPageContentFile(file) {
 		return nil
 	}
 

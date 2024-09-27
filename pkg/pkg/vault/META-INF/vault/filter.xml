@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<workspaceFilter version="1.0">[[if .OnlyOneContent]]
-    <filter root="[[index .FilterRoots 0]]">
-        <exclude pattern="[[index .FilterRoots 0]]/.*"/>
-        <include pattern="[[index .FilterRoots 0]]/.content"/>
-        <include pattern="[[index .FilterRoots 0]]/.content/.*"/>
+<workspaceFilter version="1.0">[[if .ExcludePatterns]]
+    <filter root="[[index .FilterRoots 0]]">[[range .ExcludePatterns]]
+        <exclude pattern="[[.]]"/>[[end]]
     </filter>[[else]][[range .FilterRoots]]
     <filter root="[[.]]"/>[[end]][[end]]
 </workspaceFilter>

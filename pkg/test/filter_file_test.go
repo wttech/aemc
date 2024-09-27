@@ -29,11 +29,11 @@ func TestFilterRoots(t *testing.T) {
 	)
 }
 
-func TestOnlyOneContent(t *testing.T) {
-	testFilterFile(t, "vault/META-INF/vault/filter.xml", "output/only_one_content.xml",
+func TestExcludePatterns(t *testing.T) {
+	testFilterFile(t, "vault/META-INF/vault/filter.xml", "output/exclude_patterns.xml",
 		map[string]any{
-			"FilterRoots":    []string{"/apps/my_site", "/content/my_site"},
-			"OnlyOneContent": true,
+			"FilterRoots":     []string{"/apps/my_site", "/content/my_site"},
+			"ExcludePatterns": []string{"/apps/my_site/cq:dialog(/.*)?", "/apps/my_site/rep:policy(/.*)?"},
 		},
 	)
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/pathx"
-	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/content"
 	"github.com/wttech/aemc/pkg/pkg"
 	"net/url"
@@ -45,9 +44,6 @@ func (cm *ContentManager) tmpDir() string {
 }
 
 func (cm *ContentManager) pullContent(workDir string, vault bool, opts PackageCreateOpts) error {
-	if opts.PID == "" {
-		opts.PID = fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", timex.FileTimestampForNow())
-	}
 	if vault {
 		if err := copyPackageAllFiles(workDir, opts); err != nil {
 			return err
@@ -82,9 +78,6 @@ func (cm *ContentManager) pullContent(workDir string, vault bool, opts PackageCr
 }
 
 func (cm *ContentManager) downloadByPkgMgr(localFile string, opts PackageCreateOpts) error {
-	if opts.PID == "" {
-		opts.PID = fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", timex.FileTimestampForNow())
-	}
 	remotePath, err := cm.pkgMgr().Create(opts)
 	defer func() { _ = cm.pkgMgr().Delete(remotePath) }()
 	if err != nil {
@@ -199,9 +192,6 @@ func (cm *ContentManager) Push(path string, clean bool, vault bool, opts Package
 	}
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_push")
 	defer func() { _ = pathx.DeleteIfExists(workDir) }()
-	if opts.PID == "" {
-		opts.PID = fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow())
-	}
 	if clean || vault && pathx.IsFile(path) {
 		if err := copyPackageAllFiles(workDir, opts); err != nil {
 			return err

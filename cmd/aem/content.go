@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg"
 	"github.com/wttech/aemc/pkg/common/pathx"
+	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/content"
 	"os"
 	"path/filepath"
@@ -76,6 +77,9 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 				return
 			}
 			pid, _ := cmd.Flags().GetString("pid")
+			if pid == "" {
+				pid = fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", timex.FileTimestampForNow())
+			}
 			targetFile, _ := cmd.Flags().GetString("target-file")
 			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
@@ -133,6 +137,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 			replace, _ := cmd.Flags().GetBool("replace")
 			if dir != "" {
 				if err = instance.ContentManager().PullDir(dir, clean, vault, replace, pkg.PackageCreateOpts{
+					PID:         fmt.Sprintf("aemc:content-pull:%s-SNAPSHOT", timex.FileTimestampForNow()),
 					FilterRoots: filterRoots,
 					FilterFile:  filterFile,
 				}); err != nil {
@@ -142,6 +147,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				c.SetOutput("dir", dir)
 			} else if file != "" {
 				if err = instance.ContentManager().PullFile(file, clean, vault, pkg.PackageCreateOpts{
+					PID:             fmt.Sprintf("aemc:content-pull:%s-SNAPSHOT", timex.FileTimestampForNow()),
 					FilterRoots:     filterRoots,
 					ExcludePatterns: excludePatterns,
 				}); err != nil {
@@ -196,6 +202,7 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 			clean, _ := cmd.Flags().GetBool("clean")
 			vault, _ := cmd.Flags().GetBool("vault")
 			if err = instance.ContentManager().Push(path, clean, vault, pkg.PackageCreateOpts{
+				PID:             fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow()),
 				FilterRoots:     filterRoots,
 				ExcludePatterns: excludePatterns,
 				ContentPath:     path,
@@ -241,6 +248,7 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 			clean, _ := cmd.Flags().GetBool("clean")
 			vault, _ := cmd.Flags().GetBool("vault")
 			if err = instance.ContentManager().Copy(targetInstance, clean, vault, pkg.PackageCreateOpts{
+				PID:         fmt.Sprintf("aemc:content-copy:%s-SNAPSHOT", timex.FileTimestampForNow()),
 				FilterRoots: filterRoots,
 				FilterFile:  filterFile,
 			}); err != nil {

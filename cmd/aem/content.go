@@ -247,7 +247,8 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 			filterFile, _ := cmd.Flags().GetString("filter-file")
 			clean, _ := cmd.Flags().GetBool("clean")
 			vault, _ := cmd.Flags().GetBool("vault")
-			if err = instance.ContentManager().Copy(targetInstance, clean, vault, pkg.PackageCreateOpts{
+			rcpArgs, _ := cmd.Flags().GetString("rcp-args")
+			if err = instance.ContentManager().Copy(targetInstance, clean, vault, rcpArgs, pkg.PackageCreateOpts{
 				PID:         fmt.Sprintf("aemc:content-copy:%s-SNAPSHOT", timex.FileTimestampForNow()),
 				FilterRoots: filterRoots,
 				FilterFile:  filterFile,
@@ -266,6 +267,7 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 	cmd.MarkFlagsOneRequired("filter-roots", "filter-file")
 	cmd.Flags().Bool("clean", false, "Normalize content while copying")
 	cmd.Flags().Bool("vault", false, "Use Vault-Cli to copy content")
+	cmd.Flags().String("rcp-args", "", "Override RCP arguments when copying via Vault-Cli")
 	return cmd
 }
 

@@ -242,7 +242,7 @@ func (cm *ContentManager) copyByPkgMgr(destInstance *Instance, clean bool, opts 
 	return nil
 }
 
-func (cm *ContentManager) copyByVaultCli(destInstance *Instance, clean bool, opts PackageCreateOpts) error {
+func (cm *ContentManager) copyByVaultCli(destInstance *Instance, clean bool, rcpArgs string, opts PackageCreateOpts) error {
 	if clean || opts.FilterFile != "" {
 		workDir := pathx.RandomDir(cm.tmpDir(), "content_copy")
 		defer func() { _ = pathx.DeleteIfExists(workDir) }()
@@ -267,20 +267,20 @@ func (cm *ContentManager) copyByVaultCli(destInstance *Instance, clean bool, opt
 		if err != nil {
 			return err
 		}
+		if rcpArgs == "" {
+			rcpArgs = "-b 100 -r -u"
+		}
 		for _, filterRoot := range opts.FilterRoots {
-			vaultCliArgs := []string{
-				"vlt",
-				"rcp",
-				"-b", "100",
-				"-r",
-				"-u",
+			vaultCliArgs := []string{"vlt", "rcp"}
+			vaultCliArgs = append(vaultCliArgs, strings.Fields(rcpArgs)...)
+			vaultCliArgs = append(vaultCliArgs, []string{
 				fmt.Sprintf("%s://%s:%s@%s/crx/-/jcr:root%s",
 					parsedURLSrc.Scheme, cm.instance.user, cm.instance.password,
 					parsedURLSrc.Host, filterRoot),
 				fmt.Sprintf("%s://%s:%s@%s/crx/-/jcr:root%s",
 					parsedURLDest.Scheme, destInstance.user, destInstance.password,
 					parsedURLDest.Host, filterRoot),
-			}
+			}...)
 			if err = cm.vaultCli().CommandShell(vaultCliArgs); err != nil {
 				return err
 			}
@@ -289,9 +289,9 @@ func (cm *ContentManager) copyByVaultCli(destInstance *Instance, clean bool, opt
 	return nil
 }
 
-func (cm *ContentManager) Copy(destInstance *Instance, clean bool, vault bool, opts PackageCreateOpts) error {
+func (cm *ContentManager) Copy(destInstance *Instance, clean bool, vault bool, rcpArgs string, opts PackageCreateOpts) error {
 	if vault {
-		return cm.copyByVaultCli(destInstance, clean, opts)
+		return cm.copyByVaultCli(destInstance, clean, rcpArgs, opts)
 	}
 	return cm.copyByPkgMgr(destInstance, clean, opts)
 }

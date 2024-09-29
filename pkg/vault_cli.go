@@ -8,6 +8,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/httpx"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -105,4 +106,50 @@ func (v VaultCli) CommandShell(args []string) error {
 		return fmt.Errorf("cannot run Vault-Cli command: %w", err)
 	}
 	return nil
+}
+
+func (v VaultCli) PushContent(instance *Instance, mainDir string, jcrPath string) error {
+	vaultCliArgs := []string{
+		"vlt",
+		"--credentials", fmt.Sprintf("%s:%s", instance.user, instance.password),
+		"import",
+		fmt.Sprintf("%s/crx/-/jcr:root%s", instance.http.baseURL, jcrPath),
+		mainDir,
+	}
+	return v.CommandShell(vaultCliArgs)
+}
+
+func (v VaultCli) PullContent(instance *Instance, mainDir string, filterFile string) error {
+	vaultCliArgs := []string{
+		"vlt",
+		"--credentials", fmt.Sprintf("%s:%s", instance.user, instance.password),
+		"checkout",
+		"--force",
+		"--filter", filterFile,
+		fmt.Sprintf("%s/crx/server/crx.default", instance.http.baseURL),
+		mainDir,
+	}
+	return v.CommandShell(vaultCliArgs)
+}
+
+func (v VaultCli) CopyContent(srcInstance *Instance, destInstance *Instance, rcpArgs []string, jcrPath string) error {
+	parsedURLSrc, err := url.Parse(srcInstance.http.baseURL)
+	if err != nil {
+		return err
+	}
+	parsedURLDest, err := url.Parse(destInstance.http.baseURL)
+	if err != nil {
+		return err
+	}
+	vaultCliArgs := []string{"vlt", "rcp"}
+	vaultCliArgs = append(vaultCliArgs, rcpArgs...)
+	vaultCliArgs = append(vaultCliArgs, []string{
+		fmt.Sprintf("%s://%s:%s@%s/crx/-/jcr:root%s",
+			parsedURLSrc.Scheme, srcInstance.user, srcInstance.password,
+			parsedURLSrc.Host, jcrPath),
+		fmt.Sprintf("%s://%s:%s@%s/crx/-/jcr:root%s",
+			parsedURLDest.Scheme, destInstance.user, destInstance.password,
+			parsedURLDest.Host, jcrPath),
+	}...)
+	return v.CommandShell(vaultCliArgs)
 }

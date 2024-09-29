@@ -6,7 +6,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/content"
 	"github.com/wttech/aemc/pkg/pkg"
-	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -48,16 +47,7 @@ func (cm *ContentManager) pullContent(instance *Instance, workDir string, vault 
 			return err
 		}
 		filterFile := filepath.Join(workDir, pkg.MetaPath, pkg.VltDir, FilterXML)
-		vaultCliArgs := []string{
-			"vlt",
-			"--credentials", fmt.Sprintf("%s:%s", instance.user, instance.password),
-			"checkout",
-			"--force",
-			"--filter", filterFile,
-			fmt.Sprintf("%s/crx/server/crx.default", instance.http.baseURL),
-			workDir,
-		}
-		if err := cm.vaultCli.CommandShell(vaultCliArgs); err != nil {
+		if err := cm.vaultCli.PullContent(instance, workDir, filterFile); err != nil {
 			return err
 		}
 		if err := cm.contentManager.DeleteFiles(filepath.Join(workDir, content.JCRRoot)); err != nil {
@@ -162,14 +152,7 @@ func (cm *ContentManager) pushContent(instance *Instance, vault bool, opts Packa
 	if vault {
 		mainDir, _, _ := strings.Cut(opts.ContentPath, content.JCRRoot)
 		jcrPath := DetermineFilterRoot(opts.ContentPath)
-		vaultCliArgs := []string{
-			"vlt",
-			"--credentials", fmt.Sprintf("%s:%s", instance.user, instance.password),
-			"import",
-			fmt.Sprintf("%s/crx/-/jcr:root%s", instance.http.baseURL, jcrPath),
-			mainDir,
-		}
-		if err := cm.vaultCli.CommandShell(vaultCliArgs); err != nil {
+		if err := cm.vaultCli.PushContent(instance, mainDir, jcrPath); err != nil {
 			return err
 		}
 	} else {
@@ -258,29 +241,11 @@ func (cm *ContentManager) copyByVaultCli(srcInstance *Instance, destInstance *In
 			return err
 		}
 	} else {
-		parsedURLSrc, err := url.Parse(srcInstance.http.baseURL)
-		if err != nil {
-			return err
-		}
-		parsedURLDest, err := url.Parse(destInstance.http.baseURL)
-		if err != nil {
-			return err
-		}
 		if rcpArgs == "" {
 			rcpArgs = "-b 100 -r -u"
 		}
 		for _, filterRoot := range opts.FilterRoots {
-			vaultCliArgs := []string{"vlt", "rcp"}
-			vaultCliArgs = append(vaultCliArgs, strings.Fields(rcpArgs)...)
-			vaultCliArgs = append(vaultCliArgs, []string{
-				fmt.Sprintf("%s://%s:%s@%s/crx/-/jcr:root%s",
-					parsedURLSrc.Scheme, srcInstance.user, srcInstance.password,
-					parsedURLSrc.Host, filterRoot),
-				fmt.Sprintf("%s://%s:%s@%s/crx/-/jcr:root%s",
-					parsedURLDest.Scheme, destInstance.user, destInstance.password,
-					parsedURLDest.Host, filterRoot),
-			}...)
-			if err = cm.vaultCli.CommandShell(vaultCliArgs); err != nil {
+			if err := cm.vaultCli.CopyContent(srcInstance, destInstance, strings.Fields(rcpArgs), filterRoot); err != nil {
 				return err
 			}
 		}

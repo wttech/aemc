@@ -18,32 +18,31 @@ const (
 )
 
 type ContentManager struct {
-	instance *Instance
+	aem            *AEM
+	contentManager *content.Manager
+	vaultCli       *VaultCli
 }
 
-func NewContentManager(instance *Instance) *ContentManager {
-	return &ContentManager{instance: instance}
+func NewContentManager(aem *AEM) *ContentManager {
+	return &ContentManager{
+		aem:            aem,
+		contentManager: content.NewManager(aem.baseOpts),
+		vaultCli:       NewVaultCli(aem),
+	}
 }
 
-func (cm *ContentManager) pkgMgr() *PackageManager {
-	return cm.instance.PackageManager()
-}
-
-func (cm *ContentManager) contentManager() *content.Manager {
-	return cm.instance.manager.aem.ContentManager()
-}
-
-func (cm *ContentManager) vaultCli() *VaultCli {
-	return NewVaultCli(cm.instance.manager.aem)
-}
 func (cm *ContentManager) tmpDir() string {
-	if cm.instance.manager.aem.Detached() {
+	if cm.aem.Detached() {
 		return os.TempDir()
 	}
-	return cm.instance.manager.aem.baseOpts.TmpDir
+	return cm.aem.baseOpts.TmpDir
 }
 
-func (cm *ContentManager) pullContent(workDir string, vault bool, opts PackageCreateOpts) error {
+func (cm *ContentManager) Clean(path string) error {
+	return cm.contentManager.Clean(path)
+}
+
+func (cm *ContentManager) pullContent(instance *Instance, workDir string, vault bool, opts PackageCreateOpts) error {
 	if vault {
 		if err := copyPackageAllFiles(workDir, opts); err != nil {
 			return err
@@ -51,23 +50,23 @@ func (cm *ContentManager) pullContent(workDir string, vault bool, opts PackageCr
 		filterFile := filepath.Join(workDir, pkg.MetaPath, pkg.VltDir, FilterXML)
 		vaultCliArgs := []string{
 			"vlt",
-			"--credentials", fmt.Sprintf("%s:%s", cm.instance.user, cm.instance.password),
+			"--credentials", fmt.Sprintf("%s:%s", instance.user, instance.password),
 			"checkout",
 			"--force",
 			"--filter", filterFile,
-			fmt.Sprintf("%s/crx/server/crx.default", cm.instance.http.baseURL),
+			fmt.Sprintf("%s/crx/server/crx.default", instance.http.baseURL),
 			workDir,
 		}
-		if err := cm.vaultCli().CommandShell(vaultCliArgs); err != nil {
+		if err := cm.vaultCli.CommandShell(vaultCliArgs); err != nil {
 			return err
 		}
-		if err := cm.contentManager().DeleteFiles(filepath.Join(workDir, content.JCRRoot)); err != nil {
+		if err := cm.contentManager.DeleteFiles(filepath.Join(workDir, content.JCRRoot)); err != nil {
 			return err
 		}
 	} else {
 		pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_pull", ".zip")
 		defer func() { _ = pathx.DeleteIfExists(pkgFile) }()
-		if err := cm.downloadByPkgMgr(pkgFile, opts); err != nil {
+		if err := cm.downloadByPkgMgr(instance, pkgFile, opts); err != nil {
 			return err
 		}
 		if err := content.Unzip(pkgFile, workDir); err != nil {
@@ -77,32 +76,32 @@ func (cm *ContentManager) pullContent(workDir string, vault bool, opts PackageCr
 	return nil
 }
 
-func (cm *ContentManager) downloadByPkgMgr(localFile string, opts PackageCreateOpts) error {
-	remotePath, err := cm.pkgMgr().Create(opts)
-	defer func() { _ = cm.pkgMgr().Delete(remotePath) }()
+func (cm *ContentManager) downloadByPkgMgr(instance *Instance, localFile string, opts PackageCreateOpts) error {
+	remotePath, err := instance.PackageManager().Create(opts)
+	defer func() { _ = instance.PackageManager().Delete(remotePath) }()
 	if err != nil {
 		return err
 	}
-	if err = cm.pkgMgr().Build(remotePath); err != nil {
+	if err = instance.PackageManager().Build(remotePath); err != nil {
 		return err
 	}
-	if err = cm.pkgMgr().Download(remotePath, localFile); err != nil {
+	if err = instance.PackageManager().Download(remotePath, localFile); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (cm *ContentManager) Download(localFile string, clean bool, vault bool, opts PackageCreateOpts) error {
+func (cm *ContentManager) Download(instance *Instance, localFile string, clean bool, vault bool, opts PackageCreateOpts) error {
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_download")
 	defer func() { _ = pathx.DeleteIfExists(workDir) }()
 	if !clean && !vault {
-		return cm.downloadByPkgMgr(localFile, opts)
+		return cm.downloadByPkgMgr(instance, localFile, opts)
 	}
-	if err := cm.pullContent(workDir, vault, opts); err != nil {
+	if err := cm.pullContent(instance, workDir, vault, opts); err != nil {
 		return err
 	}
 	if clean {
-		if err := cm.contentManager().Clean(filepath.Join(workDir, content.JCRRoot)); err != nil {
+		if err := cm.contentManager.Clean(filepath.Join(workDir, content.JCRRoot)); err != nil {
 			return err
 		}
 	}
@@ -112,14 +111,14 @@ func (cm *ContentManager) Download(localFile string, clean bool, vault bool, opt
 	return nil
 }
 
-func (cm *ContentManager) PullDir(dir string, clean bool, vault bool, replace bool, opts PackageCreateOpts) error {
+func (cm *ContentManager) PullDir(instance *Instance, dir string, clean bool, vault bool, replace bool, opts PackageCreateOpts) error {
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_pull")
 	defer func() { _ = pathx.DeleteIfExists(workDir) }()
-	if err := cm.pullContent(workDir, vault, opts); err != nil {
+	if err := cm.pullContent(instance, workDir, vault, opts); err != nil {
 		return err
 	}
 	if replace {
-		if err := cm.contentManager().DeleteFiles(dir); err != nil {
+		if err := cm.contentManager.DeleteFiles(dir); err != nil {
 			return err
 		}
 	}
@@ -128,22 +127,22 @@ func (cm *ContentManager) PullDir(dir string, clean bool, vault bool, replace bo
 		return err
 	}
 	if clean {
-		if err := cm.contentManager().Clean(dir); err != nil {
+		if err := cm.contentManager.Clean(dir); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (cm *ContentManager) PullFile(file string, clean bool, vault bool, opts PackageCreateOpts) error {
+func (cm *ContentManager) PullFile(instance *Instance, file string, clean bool, vault bool, opts PackageCreateOpts) error {
 	workDir := pathx.RandomDir(cm.tmpDir(), "content_pull")
 	defer func() { _ = pathx.DeleteIfExists(workDir) }()
-	if err := cm.pullContent(workDir, vault, opts); err != nil {
+	if err := cm.pullContent(instance, workDir, vault, opts); err != nil {
 		return err
 	}
 	syncFile := DetermineSyncFile(file)
 	if file != syncFile {
-		if err := cm.contentManager().DeleteFile(file, nil); err != nil {
+		if err := cm.contentManager.DeleteFile(file, nil); err != nil {
 			return err
 		}
 	}
@@ -152,41 +151,41 @@ func (cm *ContentManager) PullFile(file string, clean bool, vault bool, opts Pac
 		return err
 	}
 	if clean {
-		if err := cm.contentManager().Clean(syncFile); err != nil {
+		if err := cm.contentManager.Clean(syncFile); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (cm *ContentManager) pushContent(destInstance *Instance, vault bool, opts PackageCreateOpts) error {
+func (cm *ContentManager) pushContent(instance *Instance, vault bool, opts PackageCreateOpts) error {
 	if vault {
 		mainDir, _, _ := strings.Cut(opts.ContentPath, content.JCRRoot)
 		jcrPath := DetermineFilterRoot(opts.ContentPath)
 		vaultCliArgs := []string{
 			"vlt",
-			"--credentials", fmt.Sprintf("%s:%s", destInstance.user, destInstance.password),
+			"--credentials", fmt.Sprintf("%s:%s", instance.user, instance.password),
 			"import",
-			fmt.Sprintf("%s/crx/-/jcr:root%s", destInstance.http.baseURL, jcrPath),
+			fmt.Sprintf("%s/crx/-/jcr:root%s", instance.http.baseURL, jcrPath),
 			mainDir,
 		}
-		if err := cm.vaultCli().CommandShell(vaultCliArgs); err != nil {
+		if err := cm.vaultCli.CommandShell(vaultCliArgs); err != nil {
 			return err
 		}
 	} else {
-		remotePath, err := destInstance.PackageManager().Create(opts)
-		defer func() { _ = destInstance.PackageManager().Delete(remotePath) }()
+		remotePath, err := instance.PackageManager().Create(opts)
+		defer func() { _ = instance.PackageManager().Delete(remotePath) }()
 		if err != nil {
 			return err
 		}
-		if err = destInstance.PackageManager().Install(remotePath); err != nil {
+		if err = instance.PackageManager().Install(remotePath); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (cm *ContentManager) Push(path string, clean bool, vault bool, opts PackageCreateOpts) error {
+func (cm *ContentManager) Push(instance *Instance, path string, clean bool, vault bool, opts PackageCreateOpts) error {
 	if !pathx.Exists(path) {
 		return fmt.Errorf("cannot push content as it does not exist '%s'", path)
 	}
@@ -197,29 +196,29 @@ func (cm *ContentManager) Push(path string, clean bool, vault bool, opts Package
 			return err
 		}
 		if clean {
-			if err := cm.contentManager().Clean(filepath.Join(workDir, content.JCRRoot)); err != nil {
+			if err := cm.contentManager.Clean(filepath.Join(workDir, content.JCRRoot)); err != nil {
 				return err
 			}
 		}
 		opts.ContentPath = filepath.Join(workDir, content.JCRRoot)
 	}
-	if err := cm.pushContent(cm.instance, vault, opts); err != nil {
+	if err := cm.pushContent(instance, vault, opts); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (cm *ContentManager) copyByPkgMgr(destInstance *Instance, clean bool, opts PackageCreateOpts) error {
+func (cm *ContentManager) copyByPkgMgr(srcInstance *Instance, destInstance *Instance, clean bool, opts PackageCreateOpts) error {
 	pkgFile := pathx.RandomFileName(cm.tmpDir(), "content_copy", ".zip")
 	defer func() { _ = pathx.DeleteIfExists(pkgFile) }()
 	if clean {
 		workDir := pathx.RandomDir(cm.tmpDir(), "content_copy")
 		defer func() { _ = pathx.DeleteIfExists(workDir) }()
-		if err := cm.pullContent(workDir, false, opts); err != nil {
+		if err := cm.pullContent(srcInstance, workDir, false, opts); err != nil {
 			return err
 		}
 		if clean {
-			if err := cm.contentManager().Clean(filepath.Join(workDir, content.JCRRoot)); err != nil {
+			if err := cm.contentManager.Clean(filepath.Join(workDir, content.JCRRoot)); err != nil {
 				return err
 			}
 		}
@@ -227,7 +226,7 @@ func (cm *ContentManager) copyByPkgMgr(destInstance *Instance, clean bool, opts 
 			return err
 		}
 	} else {
-		if err := cm.downloadByPkgMgr(pkgFile, opts); err != nil {
+		if err := cm.downloadByPkgMgr(srcInstance, pkgFile, opts); err != nil {
 			return err
 		}
 	}
@@ -242,15 +241,15 @@ func (cm *ContentManager) copyByPkgMgr(destInstance *Instance, clean bool, opts 
 	return nil
 }
 
-func (cm *ContentManager) copyByVaultCli(destInstance *Instance, clean bool, rcpArgs string, opts PackageCreateOpts) error {
+func (cm *ContentManager) copyByVaultCli(srcInstance *Instance, destInstance *Instance, clean bool, rcpArgs string, opts PackageCreateOpts) error {
 	if clean || opts.FilterFile != "" {
 		workDir := pathx.RandomDir(cm.tmpDir(), "content_copy")
 		defer func() { _ = pathx.DeleteIfExists(workDir) }()
-		if err := cm.pullContent(workDir, true, opts); err != nil {
+		if err := cm.pullContent(srcInstance, workDir, true, opts); err != nil {
 			return err
 		}
 		if clean {
-			if err := cm.contentManager().Clean(filepath.Join(workDir, content.JCRRoot)); err != nil {
+			if err := cm.contentManager.Clean(filepath.Join(workDir, content.JCRRoot)); err != nil {
 				return err
 			}
 		}
@@ -259,7 +258,7 @@ func (cm *ContentManager) copyByVaultCli(destInstance *Instance, clean bool, rcp
 			return err
 		}
 	} else {
-		parsedURLSrc, err := url.Parse(cm.instance.http.baseURL)
+		parsedURLSrc, err := url.Parse(srcInstance.http.baseURL)
 		if err != nil {
 			return err
 		}
@@ -275,13 +274,13 @@ func (cm *ContentManager) copyByVaultCli(destInstance *Instance, clean bool, rcp
 			vaultCliArgs = append(vaultCliArgs, strings.Fields(rcpArgs)...)
 			vaultCliArgs = append(vaultCliArgs, []string{
 				fmt.Sprintf("%s://%s:%s@%s/crx/-/jcr:root%s",
-					parsedURLSrc.Scheme, cm.instance.user, cm.instance.password,
+					parsedURLSrc.Scheme, srcInstance.user, srcInstance.password,
 					parsedURLSrc.Host, filterRoot),
 				fmt.Sprintf("%s://%s:%s@%s/crx/-/jcr:root%s",
 					parsedURLDest.Scheme, destInstance.user, destInstance.password,
 					parsedURLDest.Host, filterRoot),
 			}...)
-			if err = cm.vaultCli().CommandShell(vaultCliArgs); err != nil {
+			if err = cm.vaultCli.CommandShell(vaultCliArgs); err != nil {
 				return err
 			}
 		}
@@ -289,11 +288,11 @@ func (cm *ContentManager) copyByVaultCli(destInstance *Instance, clean bool, rcp
 	return nil
 }
 
-func (cm *ContentManager) Copy(destInstance *Instance, clean bool, vault bool, rcpArgs string, opts PackageCreateOpts) error {
+func (cm *ContentManager) Copy(srcInstance *Instance, destInstance *Instance, clean bool, vault bool, rcpArgs string, opts PackageCreateOpts) error {
 	if vault {
-		return cm.copyByVaultCli(destInstance, clean, rcpArgs, opts)
+		return cm.copyByVaultCli(srcInstance, destInstance, clean, rcpArgs, opts)
 	}
-	return cm.copyByPkgMgr(destInstance, clean, opts)
+	return cm.copyByPkgMgr(srcInstance, destInstance, clean, opts)
 }
 
 func DetermineSyncFile(file string) string {

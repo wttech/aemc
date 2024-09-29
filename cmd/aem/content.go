@@ -85,7 +85,7 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 			filterFile, _ := cmd.Flags().GetString("filter-file")
 			clean, _ := cmd.Flags().GetBool("clean")
 			vault, _ := cmd.Flags().GetBool("vault")
-			if err = instance.ContentManager().Download(targetFile, clean, vault, pkg.PackageCreateOpts{
+			if err = c.aem.ContentManager().Download(instance, targetFile, clean, vault, pkg.PackageCreateOpts{
 				PID:         pid,
 				FilterRoots: filterRoots,
 				FilterFile:  filterFile,
@@ -136,7 +136,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 			vault, _ := cmd.Flags().GetBool("vault")
 			replace, _ := cmd.Flags().GetBool("replace")
 			if dir != "" {
-				if err = instance.ContentManager().PullDir(dir, clean, vault, replace, pkg.PackageCreateOpts{
+				if err = c.aem.ContentManager().PullDir(instance, dir, clean, vault, replace, pkg.PackageCreateOpts{
 					PID:         fmt.Sprintf("aemc:content-pull:%s-SNAPSHOT", timex.FileTimestampForNow()),
 					FilterRoots: filterRoots,
 					FilterFile:  filterFile,
@@ -146,7 +146,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				}
 				c.SetOutput("dir", dir)
 			} else if file != "" {
-				if err = instance.ContentManager().PullFile(file, clean, vault, pkg.PackageCreateOpts{
+				if err = c.aem.ContentManager().PullFile(instance, file, clean, vault, pkg.PackageCreateOpts{
 					PID:             fmt.Sprintf("aemc:content-pull:%s-SNAPSHOT", timex.FileTimestampForNow()),
 					FilterRoots:     filterRoots,
 					ExcludePatterns: excludePatterns,
@@ -201,7 +201,7 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 			excludePatterns := determineExcludePatterns(cmd)
 			clean, _ := cmd.Flags().GetBool("clean")
 			vault, _ := cmd.Flags().GetBool("vault")
-			if err = instance.ContentManager().Push(path, clean, vault, pkg.PackageCreateOpts{
+			if err = c.aem.ContentManager().Push(instance, path, clean, vault, pkg.PackageCreateOpts{
 				PID:             fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow()),
 				FilterRoots:     filterRoots,
 				ExcludePatterns: excludePatterns,
@@ -248,7 +248,7 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 			clean, _ := cmd.Flags().GetBool("clean")
 			vault, _ := cmd.Flags().GetBool("vault")
 			rcpArgs, _ := cmd.Flags().GetString("rcp-args")
-			if err = instance.ContentManager().Copy(targetInstance, clean, vault, rcpArgs, pkg.PackageCreateOpts{
+			if err = c.aem.ContentManager().Copy(instance, targetInstance, clean, vault, rcpArgs, pkg.PackageCreateOpts{
 				PID:         fmt.Sprintf("aemc:content-copy:%s-SNAPSHOT", timex.FileTimestampForNow()),
 				FilterRoots: filterRoots,
 				FilterFile:  filterFile,

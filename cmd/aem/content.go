@@ -178,7 +178,7 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 		Aliases: []string{"ps"},
 		Short:   "Push content from JCR root directory or local file to running instance",
 		Run: func(cmd *cobra.Command, args []string) {
-			instance, err := c.aem.InstanceManager().One()
+			instances, err := c.aem.InstanceManager().Some()
 			if err != nil {
 				c.Error(err)
 				return
@@ -201,7 +201,7 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 			excludePatterns := determineExcludePatterns(cmd)
 			clean, _ := cmd.Flags().GetBool("clean")
 			vault, _ := cmd.Flags().GetBool("vault")
-			if err = c.aem.ContentManager().Push(instance, path, clean, vault, pkg.PackageCreateOpts{
+			if err = c.aem.ContentManager().Push(instances, path, clean, vault, pkg.PackageCreateOpts{
 				PID:             fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow()),
 				FilterRoots:     filterRoots,
 				ExcludePatterns: excludePatterns,
@@ -238,7 +238,7 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			targetInstance, err := determineContentTargetInstance(cmd, c.aem.InstanceManager())
+			targetInstances, err := determineContentTargetInstances(cmd, c.aem.InstanceManager())
 			if err != nil {
 				c.Error(err)
 				return
@@ -248,7 +248,7 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 			clean, _ := cmd.Flags().GetBool("clean")
 			vault, _ := cmd.Flags().GetBool("vault")
 			rcpArgs, _ := cmd.Flags().GetString("rcp-args")
-			if err = c.aem.ContentManager().Copy(instance, targetInstance, clean, vault, rcpArgs, pkg.PackageCreateOpts{
+			if err = c.aem.ContentManager().Copy(instance, targetInstances, clean, vault, rcpArgs, pkg.PackageCreateOpts{
 				PID:         fmt.Sprintf("aemc:content-copy:%s-SNAPSHOT", timex.FileTimestampForNow()),
 				FilterRoots: filterRoots,
 				FilterFile:  filterFile,
@@ -259,8 +259,8 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 			c.Changed("content copied")
 		},
 	}
-	cmd.Flags().StringP("instance-target-url", "u", "", "Destination instance URL")
-	cmd.Flags().StringP("instance-target-id", "i", "", "Destination instance ID")
+	cmd.Flags().StringSliceP("instance-target-url", "u", []string{}, "Destination instance URL")
+	cmd.Flags().StringSliceP("instance-target-id", "i", []string{}, "Destination instance ID")
 	cmd.MarkFlagsOneRequired("instance-target-url", "instance-target-id")
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
@@ -271,20 +271,25 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 	return cmd
 }
 
-func determineContentTargetInstance(cmd *cobra.Command, instanceManager *pkg.InstanceManager) (*pkg.Instance, error) {
-	var instance *pkg.Instance
-	url, _ := cmd.Flags().GetString("instance-target-url")
-	if url != "" {
-		instance, _ = instanceManager.NewByIDAndURL("remote_adhoc_target", url)
+func determineContentTargetInstances(cmd *cobra.Command, instanceManager *pkg.InstanceManager) ([]pkg.Instance, error) {
+	var instances []pkg.Instance
+	urls, _ := cmd.Flags().GetStringSlice("instance-target-url")
+	for _, url := range urls {
+		instance, err := instanceManager.NewByIDAndURL("remote_adhoc_target", url)
+		if err != nil {
+			return nil, err
+		}
+		instances = append(instances, *instance)
 	}
-	id, _ := cmd.Flags().GetString("instance-target-id")
-	if id != "" {
-		instance = instanceManager.NewByID(id)
+	ids, _ := cmd.Flags().GetStringSlice("instance-target-id")
+	for _, id := range ids {
+		instance := instanceManager.NewByID(id)
+		instances = append(instances, *instance)
 	}
-	if instance == nil {
+	if instances == nil {
 		return nil, fmt.Errorf("missing 'instance-target-url' or 'instance-target-id'")
 	}
-	return instance, nil
+	return instances, nil
 }
 
 func determineContentDir(cmd *cobra.Command) (string, error) {

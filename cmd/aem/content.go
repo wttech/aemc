@@ -143,7 +143,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				}
 				c.SetOutput("dir", dir)
 			} else if file != "" {
-				if err = c.aem.ContentManager().PullFile(instance, file, clean, pkg.PackageCreateOpts{
+				if err = c.aem.ContentManager().PullFile(instance, file, clean, replace, pkg.PackageCreateOpts{
 					PID:             fmt.Sprintf("aemc:content-pull:%s-SNAPSHOT", timex.FileTimestampForNow()),
 					FilterRoots:     filterRoots,
 					ExcludePatterns: excludePatterns,

@@ -72,9 +72,14 @@ func zip(src string, dest string) error {
 		if err != nil {
 			return err
 		}
+		if header.Name == "." {
+			return nil
+		}
+		header.Name = pathx.Normalize(header.Name)
 
 		if info.IsDir() {
 			header.Name += "/"
+			header.Method = zipper.Store
 		} else {
 			header.Method = zipper.Deflate
 		}

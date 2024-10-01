@@ -44,7 +44,7 @@ func (cm *ContentManager) Download(instance *Instance, localFile string, clean b
 		if err := cm.pullContent(instance, workDir, opts); err != nil {
 			return err
 		}
-		if err := cm.contentManager.Clean(filepath.Join(workDir, content.JCRRoot)); err != nil {
+		if err := cm.Clean(filepath.Join(workDir, content.JCRRoot)); err != nil {
 			return err
 		}
 		if err := content.Zip(workDir, localFile); err != nil {
@@ -65,7 +65,7 @@ func (cm *ContentManager) PullDir(instance *Instance, dir string, clean bool, re
 		return err
 	}
 	if replace {
-		if err := cm.contentManager.DeleteFiles(dir); err != nil {
+		if err := cm.contentManager.DeleteDir(dir); err != nil {
 			return err
 		}
 	}
@@ -74,7 +74,7 @@ func (cm *ContentManager) PullDir(instance *Instance, dir string, clean bool, re
 		return err
 	}
 	if clean {
-		if err := cm.contentManager.Clean(dir); err != nil {
+		if err := cm.Clean(dir); err != nil {
 			return err
 		}
 	}
@@ -98,7 +98,7 @@ func (cm *ContentManager) PullFile(instance *Instance, file string, clean bool, 
 		return err
 	}
 	if clean {
-		if err := cm.contentManager.Clean(syncFile); err != nil {
+		if err := cm.Clean(syncFile); err != nil {
 			return err
 		}
 	}
@@ -112,7 +112,7 @@ func (cm *ContentManager) Push(instances []Instance, clean bool, opts PackageCre
 		return err
 	}
 	if clean {
-		if err := cm.contentManager.Clean(filepath.Join(workDir, content.JCRRoot)); err != nil {
+		if err := cm.Clean(filepath.Join(workDir, content.JCRRoot)); err != nil {
 			return err
 		}
 	}

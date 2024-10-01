@@ -72,7 +72,7 @@ func (c Manager) Clean(path string) error {
 		if err := c.flattenFiles(path); err != nil {
 			return err
 		}
-		if err := c.DeleteFiles(path); err != nil {
+		if err := c.deleteFiles(path); err != nil {
 			return err
 		}
 		if err := deleteEmptyDirs(path); err != nil {
@@ -168,10 +168,9 @@ func (c Manager) cleanNamespaces(path string, lines []string) []string {
 				if groups == nil {
 					rootResult = append(rootResult, part)
 				} else {
-					flag := lo.SomeBy(lines, func(line string) bool {
+					if lo.SomeBy(lines, func(line string) bool {
 						return strings.Contains(line, groups[1]+":") || groups[1] == fileNamespace
-					})
-					if flag {
+					}) {
 						rootResult = append(rootResult, part)
 					}
 				}
@@ -232,7 +231,7 @@ func (c Manager) flattenFile(path string) error {
 	return os.Rename(path, dest)
 }
 
-func (c Manager) DeleteFiles(root string) error {
+func (c Manager) deleteFiles(root string) error {
 	return eachFiles(root, func(path string) error {
 		return c.DeleteFile(path, func() bool {
 			return matchAnyRule(path, path, c.FilesDeleted)

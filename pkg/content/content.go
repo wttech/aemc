@@ -12,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 )
 
@@ -166,7 +165,9 @@ func (c Manager) cleanNamespaces(path string, lines []string) []string {
 			var rootResult []string
 			for _, part := range strings.Split(line, " ") {
 				groups = namespacePatternRegex.FindStringSubmatch(part)
-				if groups != nil {
+				if groups == nil {
+					rootResult = append(rootResult, part)
+				} else {
 					flag := lo.SomeBy(lines, func(line string) bool {
 						return strings.Contains(line, groups[1]+":") || groups[1] == fileNamespace
 					})
@@ -175,8 +176,6 @@ func (c Manager) cleanNamespaces(path string, lines []string) []string {
 					}
 				}
 			}
-			sort.Strings(rootResult)
-			rootResult = append([]string{JCRRootPrefix}, rootResult...)
 			result = append(result, strings.Join(rootResult, " "))
 		} else {
 			result = append(result, line)

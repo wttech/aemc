@@ -51,23 +51,21 @@ tasks:
     desc: start AEM instances and dispatcher
     aliases: [ up ]
     cmds:
-      - task: aem:up
-      - task: dispatcher:up
+      - task: aem:start
+      - task: dispatcher:start
 
   stop:
     desc: stop AEM instances and dispatcher
     aliases: [ down ]
     cmds:
-      - task: dispatcher:down
-      - task: aem:down
+      - task: dispatcher:stop
+      - task: aem:stop
 
   restart:
     desc: restart AEM instances and dispatcher
     cmds:
-      - task: aem:down
-      - task: aem:up
-      - task: dispatcher:down
-      - task: dispatcher:up
+      - task: stop
+      - task: start
 
   destroy:
     desc: destroy AEM instances and dispatcher
@@ -107,7 +105,6 @@ tasks:
     desc: tail logs of AEM publish instance
     cmd: tail -f aem/home/var/instance/publish/crx-quickstart/logs/{stdout,error}.log
 
-
   aem:provision:
     desc: provision AEM instances by installing packages and applying configurations
     aliases: [ aem:configure ]
@@ -123,8 +120,8 @@ tasks:
       PROPS="
       enabled: true
       transportUri: {{.AEM_PUBLISH_HTTP_URL}}/bin/receive?sling:authRequestLogin=1
-      transportUser: {{.AEM_PUBLISH_USER}}  
-      transportPassword: {{.AEM_PUBLISH_PASSWORD}}  
+      transportUser: {{.AEM_PUBLISH_USER}}
+      transportPassword: {{.AEM_PUBLISH_PASSWORD}}
       userId: admin
       "
       echo "$PROPS" | sh aemw repl agent setup -A --location "author" --name "publish"

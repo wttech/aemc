@@ -1,0 +1,11 @@
+<div class="cmp-helloworld" data-cmp-is="helloworld">
+    <h2 class="cmp-helloworld-title">Hello World Component</h2>
+    <div class="cmp-helloworld-item" data-sly-test="${properties.text}">
+        <div class="cmp-helloworld-item-label">Text property:</div>
+        <div class="cmp-helloworld-item-output" data-cmp-hook-helloworld="property">${properties.text}</div>
+    </div>
+    <div class="cmp-helloworld-item" data-sly-use.model="com.mysite.core.models.HelloWorldModel" data-sly-test="${model.message}">
+        <div class="cmp-helloworld-item-label">Model message:</div>
+        <div class="cmp-helloworld-item-output"data-cmp-hook-helloworld="model">${model.message}</div>
+    </div>
+</div>

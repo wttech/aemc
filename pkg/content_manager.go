@@ -87,7 +87,7 @@ func (cm *ContentManager) PullFile(instance *Instance, file string, clean bool, 
 	if err := cm.pullContent(instance, workDir, opts); err != nil {
 		return err
 	}
-	syncFile := DetermineSyncFile(file)
+	syncFile := DetermineSyncFile(workDir, file)
 	if file != syncFile || replace {
 		if err := cm.contentManager.DeleteFile(file, nil); err != nil {
 			return err
@@ -139,9 +139,13 @@ func (cm *ContentManager) Copy(srcInstance *Instance, destInstances []Instance, 
 	return nil
 }
 
-func DetermineSyncFile(file string) string {
+func DetermineSyncFile(workDir string, file string) string {
 	if regexp.MustCompile(FlattenFilePattern).MatchString(file) {
-		return filepath.Join(strings.ReplaceAll(file, content.XmlFileSuffix, ""), content.JCRContentFile)
+		syncFile := filepath.Join(strings.ReplaceAll(file, content.XmlFileSuffix, ""), content.JCRContentFile)
+		_, jcrPath, _ := strings.Cut(syncFile, content.JCRRoot)
+		if pathx.Exists(filepath.Join(workDir, content.JCRRoot, jcrPath)) {
+			return syncFile
+		}
 	}
 	return file
 }

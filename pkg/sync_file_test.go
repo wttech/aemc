@@ -15,7 +15,7 @@ import (
 func TestDetermineSyncFile(t *testing.T) {
 	workDir := pathx.RandomDir(os.TempDir(), "sync_file")
 	defer func() { _ = pathx.DeleteIfExists(workDir) }()
-	if err := copyFiles("int_test_content/sync_file", workDir); err != nil {
+	if err := copyFiles("int_test_content/repo", workDir); err != nil {
 		t.Fatal(err)
 	}
 

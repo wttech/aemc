@@ -1,6 +1,6 @@
 //go:build int_test
 
-package pkg_test
+package test
 
 import (
 	"crypto/sha256"
@@ -18,7 +18,7 @@ import (
 	"testing"
 )
 
-//go:embed int_test_content
+//go:embed resources
 var VaultFS embed.FS
 
 func TestPullDir(t *testing.T) {
@@ -95,7 +95,7 @@ func TestPullFilterRoots(t *testing.T) {
 func TestPullFilterFile(t *testing.T) {
 	workDir := pathx.RandomDir(os.TempDir(), "filter")
 	defer func() { _ = pathx.DeleteIfExists(workDir) }()
-	if err := copyFile("int_test_content", workDir, "int_test_content/filter.xml"); err != nil {
+	if err := copyFile("resources", workDir, "resources/filter.xml"); err != nil {
 		t.Fatal(err)
 	}
 	filterFile := filepath.Join(workDir, pkg.FilterXML)
@@ -210,7 +210,7 @@ func testPushContent(t *testing.T, relPath string, expectedFiles []string) {
 
 	workDir := pathx.RandomDir(os.TempDir(), "content_push")
 	defer func() { _ = pathx.DeleteIfExists(workDir) }()
-	if err := copyFiles("int_test_content/new_content", workDir); err != nil {
+	if err := copyFiles("resources/new_content", workDir); err != nil {
 		t.Fatal(err)
 	}
 
@@ -284,7 +284,7 @@ func pushContent(contentManager *pkg.ContentManager, instance pkg.Instance, path
 func installMainContent(packageManager *pkg.PackageManager) (string, error) {
 	workDir := pathx.RandomDir(os.TempDir(), "content_pull")
 	defer func() { _ = pathx.DeleteIfExists(workDir) }()
-	if err := copyFiles("int_test_content/main_content", workDir); err != nil {
+	if err := copyFiles("resources/main_content", workDir); err != nil {
 		return "", err
 	}
 	pkgFile := pathx.RandomFileName(os.TempDir(), "content_pull", ".zip")
@@ -473,7 +473,7 @@ func checkPullResult(resultDir string, expectedFiles []string) ([]string, error)
 	if err != nil {
 		return nil, err
 	}
-	files2, err := determineExpectedFiles("int_test_content/main_content/jcr_root", expectedFiles)
+	files2, err := determineExpectedFiles("resources/main_content/jcr_root", expectedFiles)
 	if err != nil {
 		return nil, err
 	}
@@ -486,12 +486,12 @@ func checkPushResult(resultDir string, expectedFiles []string) ([]string, error)
 	if err != nil {
 		return nil, err
 	}
-	files2, err := determineTestFiles("int_test_content/main_content/jcr_root")
+	files2, err := determineTestFiles("resources/main_content/jcr_root")
 	if err != nil {
 		return nil, err
 	}
 	diffFiles := determineDifferenceFiles(files1, files2)
-	files3, err := determineExpectedFiles("int_test_content/new_content/jcr_root", expectedFiles)
+	files3, err := determineExpectedFiles("resources/new_content/jcr_root", expectedFiles)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,6 @@
 //go:build int_test
 
-package pkg_test
+package test
 
 import (
 	"github.com/wttech/aemc/pkg"
@@ -14,7 +14,7 @@ import (
 func TestDetermineFilterRoot(t *testing.T) {
 	workDir := pathx.RandomDir(os.TempDir(), "filter_root")
 	defer func() { _ = pathx.DeleteIfExists(workDir) }()
-	if err := copyFiles("int_test_content/repo", workDir); err != nil {
+	if err := copyFiles("resources/repo", workDir); err != nil {
 		t.Fatal(err)
 	}
 

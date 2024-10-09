@@ -1,6 +1,6 @@
 //go:build int_test
 
-package pkg_test
+package test
 
 import (
 	"github.com/wttech/aemc/pkg"
@@ -15,7 +15,7 @@ import (
 func TestDetermineSyncFile(t *testing.T) {
 	workDir := pathx.RandomDir(os.TempDir(), "sync_file")
 	defer func() { _ = pathx.DeleteIfExists(workDir) }()
-	if err := copyFiles("int_test_content/repo", workDir); err != nil {
+	if err := copyFiles("resources/repo", workDir); err != nil {
 		t.Fatal(err)
 	}
 

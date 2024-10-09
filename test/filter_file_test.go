@@ -1,6 +1,6 @@
 //go:build int_test
 
-package pkg_test
+package test
 
 import (
 	"github.com/wttech/aemc/pkg/common/tplx"
@@ -24,7 +24,7 @@ func testFilterFile(t *testing.T, filterFile string, expectedFile string, data m
 }
 
 func TestFilterRoots(t *testing.T) {
-	testFilterFile(t, "vault/META-INF/vault/filter.xml", "int_test_content/filter_roots.xml",
+	testFilterFile(t, "vault/META-INF/vault/filter.xml", "resources/filter_roots.xml",
 		map[string]any{
 			"FilterRoots": []string{"/apps/my_site", "/content/my_site"},
 		},
@@ -32,7 +32,7 @@ func TestFilterRoots(t *testing.T) {
 }
 
 func TestExcludePatterns(t *testing.T) {
-	testFilterFile(t, "vault/META-INF/vault/filter.xml", "int_test_content/exclude_patterns.xml",
+	testFilterFile(t, "vault/META-INF/vault/filter.xml", "resources/exclude_patterns.xml",
 		map[string]any{
 			"FilterRoots":     []string{"/apps/my_site", "/content/my_site"},
 			"ExcludePatterns": []string{"/apps/my_site/cq:dialog(/.*)?", "/apps/my_site/rep:policy(/.*)?"},

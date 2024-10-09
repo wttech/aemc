@@ -5,4 +5,5 @@
     <entry key="name">[[.Name]]</entry>[[if (ne .Version "")]]
     <entry key="version">[[.Version]]</entry>[[end]]
     <entry key="createdBy">AEM Compose</entry>
+    <entry key="acHandling">merge</entry>
 </properties>

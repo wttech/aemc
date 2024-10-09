@@ -86,9 +86,7 @@ func (or OakRun) SetPassword(instanceDir string, user string, password string) e
 	if err := tplx.RenderFile(scriptFile, instance.OakRunSetPassword, map[string]any{"User": user, "Password": password}); err != nil {
 		return err
 	}
-	defer func() {
-		pathx.DeleteIfExists(scriptFile)
-	}()
+	defer func() { pathx.DeleteIfExists(scriptFile) }()
 	if err := or.RunScript(instanceDir, scriptFile); err != nil {
 		return err
 	}

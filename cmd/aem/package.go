@@ -506,8 +506,7 @@ func (c *CLI) pkgPathByFlags(cmd *cobra.Command) (string, error) {
 		path := c.aem.BaseOpts().TmpDir + "/package/" + fileName
 		if !pathx.Exists(path) {
 			log.Infof("downloading package from URL '%s' to file '%s'", url, path)
-			err := httpx.DownloadOnce(url, path)
-			if err != nil {
+			if err := httpx.DownloadOnce(url, path); err != nil {
 				return "", err
 			}
 			log.Infof("downloaded package from URL '%s' to file '%s'", url, path)
@@ -598,8 +597,7 @@ func (c *CLI) pkgUpdateCmd() *cobra.Command {
 				return
 			}
 			filterRoots, _ := cmd.Flags().GetStringSlice("filter-roots")
-			err = p.UpdateFilters(pkg.NewPackageFilters(filterRoots))
-			if err != nil {
+			if err = p.UpdateFilters(pkg.NewPackageFilters(filterRoots)); err != nil {
 				c.Error(err)
 				return
 			}

@@ -468,6 +468,10 @@ java:
       "arm64": "x64"
       "aarch64": "x64"
 
+# Vault-Cli tool options
+vault:
+  "download_url": "https://repo1.maven.org/maven2/org/apache/jackrabbit/vault/vault-cli/3.7.2/vault-cli-3.7.2-bin.tar.gz"
+
 base:
   # Location of temporary files (downloaded AEM packages, etc)
   tmp_dir: aem/home/tmp
@@ -490,6 +494,52 @@ output:
     file: aem/home/var/log/aem.log
     # Controls where outputs and logs should be written to when format is 'text' (console|file|both)
     mode: console
+
+# Content clean options
+content:
+  clean:
+    # File patterns to be deleted
+    files_deleted:
+      - patterns:
+          - "**/.vlt"
+          - "**/.vlt*.tmp"
+          - "**/install/*.jar"
+    # File patterns to be flattened
+    files_flattened:
+      - "**/_cq_design_dialog/.content.xml"
+      - "**/_cq_dialog/.content.xml"
+      - "**/_cq_htmlTag/.content.xml"
+      - "**/_cq_template/.content.xml"
+    # Property patterns to be skipped, removed from cleaned file
+    properties_skipped:
+      - patterns: "jcr:uuid"
+        excluded_paths: [ "**/home/users/*", "**/home/groups/*" ]
+      - patterns: "cq:lastModified*"
+        excluded_paths: [ "**/content/experience-fragments/*" ]
+      - patterns: [ "dam:sha1", "dam:size" ]
+        included_paths: [ "**/content/dam/*.svg/*" ]
+      - patterns:
+          - "jcr:lastModified*"
+          - "jcr:created*"
+          - "jcr:isCheckedOut"
+          - "cq:lastReplicat*"
+          - "cq:lastRolledout*"
+          - "dam:extracted"
+          - "dam:assetState"
+          - "dc:modified"
+          - "*_x0040_*"
+          - "cq:name"
+          - "cq:parentPath"
+          - "dam:copiedAt"
+          - "dam:parentAssetID"
+          - "dam:relativePath"
+    # Mixin type patterns to be skipped, removed from cleaned file
+    mixin_types_skipped:
+      - patterns:
+          - "cq:ReplicationStatus"
+          - "mix:versionable"
+    # Unused namespaces to be skipped, removed from cleaned file
+    namespaces_skipped: true
 ```
 
 Note that environment variables may be injected in any part of config file. 

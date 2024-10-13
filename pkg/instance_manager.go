@@ -264,7 +264,6 @@ func (im *InstanceManager) New(id, url, user, password string) *Instance {
 	res.repo = NewRepo(res)
 	res.packageManager = NewPackageManager(res)
 	res.workflowManager = NewWorkflowManager(res)
-	res.contentManager = NewContentManager(res)
 	res.osgi = NewOSGi(res)
 	res.oak = NewOAK(res)
 	res.sling = NewSling(res)

@@ -1,3 +1,5 @@
+//go:build int_test
+
 package pkg_test
 
 import (

@@ -26,10 +26,10 @@ AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
 # References
 
 * Blog Posts
-  * [Get your AEM together with AEM Compose!](https://wttech.blog/blog/2023/get-your-aem-together-with-aem-compose/) by [Krystian Panek](mailto:krystian.panek@wundermanthompson.com)
-  * [Turning IDE into an AEM development powerhouse](https://wttech.blog/blog/2024/turning-ide-into-an-aem-development-powerhouse/) by [Krystian Panek](mailto:krystian.panek@wundermanthompson.com) and [Dominik Przybył](mailto:dominik.przybyl@wundermanthompson.com)
-* Talk at AdaptTo 2024 Conference - [First-ever IaC Providers for AEM](https://adapt.to/2024/schedule/lightning-talks/first-ever-iaac-providers-for-aem) by [Krystian Panek](mailto:krystian.panek@wundermanthompson.com)
-* Talk at AdaptTo 2023 Conference - [Get Your AEM Together: AEM Compose, the Ultimate DevEx Tool](https://adapt.to/2023/schedule/get-your-aem-together-aem-compose-the-ultimate-devex-tool) by [Tomasz Sobczyk](mailto:tomasz.sobczyk@wundermanthompson.com) & [Krystian Panek](mailto:krystian.panek@wundermanthompson.com)
+  * [Get your AEM together with AEM Compose!](https://wttech.blog/blog/2023/get-your-aem-together-with-aem-compose/) by [Krystian Panek](mailto:krystian.panek@vml.com)
+  * [Turning IDE into an AEM development powerhouse](https://wttech.blog/blog/2024/turning-ide-into-an-aem-development-powerhouse/) by [Krystian Panek](mailto:krystian.panek@vml.com) and [Dominik Przybył](mailto:dominik.przybyl@vml.com)
+* Talk at AdaptTo 2024 Conference - [First-ever IaC Providers for AEM](https://adapt.to/2024/schedule/lightning-talks/first-ever-iaac-providers-for-aem) by [Krystian Panek](mailto:krystian.panek@vml.com)
+* Talk at AdaptTo 2023 Conference - [Get Your AEM Together: AEM Compose, the Ultimate DevEx Tool](https://adapt.to/2023/schedule/get-your-aem-together-aem-compose-the-ultimate-devex-tool) by [Tomasz Sobczyk](mailto:tomasz.sobczyk@vml.com) & [Krystian Panek](mailto:krystian.panek@vml.com)
 
 [![AdaptTo 2023 Video](docs/adapto-to-video.png)](https://www.youtube.com/watch?v=EH4ubsxNpbs)
 
@@ -714,8 +714,8 @@ Issues reported or pull requests created will be very appreciated.
 
 # Authors
 
-- Creator, owner, and maintainer: [Krystian Panek](mailto:krystian.panek@wundermanthompson.com)
-- Consultancy: [Tomasz Sobczyk](mailto:tomasz.sobczyk@wundermanthompson.com), [Maciej Majchrzak](mailto:maciej.majchrzak@wundermanthompson.com)
+- Creator, owner, and maintainer: [Krystian Panek](mailto:krystian.panek@vml.com)
+- Consultancy: [Tomasz Sobczyk](mailto:tomasz.sobczyk@vml.com), [Maciej Majchrzak](mailto:maciej.majchrzak@vml.com)
 - Contributors: [&lt;see all&gt;](https://github.com/wttech/aemc/graphs/contributors)
 
 # License

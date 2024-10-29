@@ -8,7 +8,9 @@
 
 **AEM Compose**
 
-AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. With a comprehensive set of commands, it simplifies tasks such as working CRX packages, OSGi configurations, JCR repository nodes, and more. Its seamless integration with Ansible enhances automation capabilities.
+AEMC is a versatile tool for managing Adobe Experience Manager (AEM) instances. 
+With a comprehensive set of commands, it simplifies tasks such as working CRX packages, OSGi configurations, JCR repository nodes, and more. 
+Its seamless integration with Terraform, Pulumi, and Ansible enhances automation capabilities.
 
 - Reusable core designed to handle advanced dev-ops operations needed to manage AEM instances
 - Various distributions based on core for context-specific use cases:

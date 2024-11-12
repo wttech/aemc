@@ -200,11 +200,13 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 			filterRoots := determineFilterRoots(cmd)
 			excludePatterns := determineExcludePatterns(cmd)
 			clean, _ := cmd.Flags().GetBool("clean")
+			filterMode := determineFilterMode(cmd)
 			if err = c.aem.ContentManager().Push(instances, clean, pkg.PackageCreateOpts{
 				PID:             fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow()),
 				FilterRoots:     filterRoots,
 				ExcludePatterns: excludePatterns,
 				ContentPath:     path,
+				FilterMode:      filterMode,
 			}); err != nil {
 				c.Error(err)
 				return
@@ -222,6 +224,7 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 	cmd.Flags().StringP("path", "p", "", "JCR root path or local file path")
 	cmd.MarkFlagsOneRequired("dir", "file", "path")
 	cmd.Flags().Bool("clean", false, "Normalize content while uploading")
+	cmd.Flags().Bool("update", false, "Existing content on running instance is updated, new content is added and none is deleted")
 	return cmd
 }
 
@@ -369,4 +372,12 @@ func determineExcludePatterns(cmd *cobra.Command) []string {
 		}
 	}
 	return excludePatterns
+}
+
+func determineFilterMode(cmd *cobra.Command) string {
+	update, _ := cmd.Flags().GetBool("update")
+	if update {
+		return "update"
+	}
+	return ""
 }

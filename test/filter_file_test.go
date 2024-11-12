@@ -39,3 +39,22 @@ func TestExcludePatterns(t *testing.T) {
 		},
 	)
 }
+
+func TestFilterRootsUpdate(t *testing.T) {
+	testFilterFile(t, "vault/META-INF/vault/filter.xml", "resources/filter_roots_update.xml",
+		map[string]any{
+			"FilterRoots": []string{"/apps/my_site", "/content/my_site"},
+			"FilterMode":  "update",
+		},
+	)
+}
+
+func TestExcludePatternsUpdate(t *testing.T) {
+	testFilterFile(t, "vault/META-INF/vault/filter.xml", "resources/exclude_patterns_update.xml",
+		map[string]any{
+			"FilterRoots":     []string{"/apps/my_site", "/content/my_site"},
+			"ExcludePatterns": []string{"/apps/my_site/cq:dialog(/.*)?", "/apps/my_site/rep:policy(/.*)?"},
+			"FilterMode":      "update",
+		},
+	)
+}

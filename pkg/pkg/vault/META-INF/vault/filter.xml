@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<workspaceFilter version="1.0">[[if .ExcludePatterns]]
-    <filter root="[[index .FilterRoots 0]]"[[if .FilterMode]] mode="[[.FilterMode]]"[[end]]>[[range .ExcludePatterns]]
+<workspaceFilter version="1.0">[[if .FilterRootExcludes]]
+    <filter root="[[index .FilterRoots 0]]"[[if .FilterMode]] mode="[[.FilterMode]]"[[end]]>[[range .FilterRootExcludes]]
         <exclude pattern="[[.]]"/>[[end]]
     </filter>[[else]][[range .FilterRoots]]
     <filter root="[[.]]"[[if $.FilterMode]] mode="[[$.FilterMode]]"[[end]]/>[[end]][[end]]

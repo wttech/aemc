@@ -160,13 +160,13 @@ func copyPackageAllFiles(targetTmpDir string, opts PackageCreateOpts) error {
 		return err
 	}
 	data := map[string]any{
-		"Pid":             opts.PID,
-		"Group":           pidConfig.Group,
-		"Name":            pidConfig.Name,
-		"Version":         pidConfig.Version,
-		"FilterRoots":     opts.FilterRoots,
-		"ExcludePatterns": opts.ExcludePatterns,
-		"FilterMode":      opts.FilterMode,
+		"Pid":                opts.PID,
+		"Group":              pidConfig.Group,
+		"Name":               pidConfig.Name,
+		"Version":            pidConfig.Version,
+		"FilterRoots":        opts.FilterRoots,
+		"FilterRootExcludes": opts.FilterRootExcludes,
+		"FilterMode":         opts.FilterMode,
 	}
 	if err = pathx.DeleteIfExists(targetTmpDir); err != nil {
 		return fmt.Errorf("cannot delete temporary dir '%s': %w", targetTmpDir, err)
@@ -197,12 +197,12 @@ func copyPackageAllFiles(targetTmpDir string, opts PackageCreateOpts) error {
 }
 
 type PackageCreateOpts struct {
-	PID             string
-	FilterRoots     []string
-	FilterFile      string
-	ExcludePatterns []string
-	ContentPath     string
-	FilterMode      string
+	PID                string
+	FilterRoots        []string
+	FilterFile         string
+	FilterRootExcludes []string
+	ContentPath        string
+	FilterMode         string
 }
 
 func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {

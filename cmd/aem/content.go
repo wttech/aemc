@@ -99,8 +99,8 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 	cmd.Flags().StringP("target-pid", "p", "", "ID (group:name:version) for downloaded package")
 	cmd.Flags().StringP("target-file", "t", "", "File path for downloaded package")
 	_ = cmd.MarkFlagRequired("target-file")
-	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
-	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
+	cmd.Flags().StringSliceP("filter-roots", "R", []string{}, "Vault filter root paths")
+	cmd.Flags().StringP("filter-file", "F", "", "Vault filter file path")
 	cmd.MarkFlagsOneRequired("filter-roots", "filter-file")
 	cmd.Flags().BoolP("clean", "c", false, "Normalize content after downloading")
 	return cmd
@@ -157,14 +157,14 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringP("dir", "d", "", "JCR root path")
-	cmd.Flags().String("file", "", "Local file path")
+	cmd.Flags().StringP("file", "f", "", "Local file path")
 	cmd.Flags().StringP("path", "p", "", "JCR root path or local file path")
 	cmd.MarkFlagsMutuallyExclusive("dir", "file", "path")
-	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
-	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
+	cmd.Flags().StringSliceP("filter-roots", "R", []string{}, "Vault filter root paths")
+	cmd.Flags().StringP("filter-file", "F", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
 	cmd.Flags().BoolP("clean", "c", false, "Normalize content after downloading")
-	cmd.Flags().Bool("replace", false, "Replace content after downloading")
+	cmd.Flags().BoolP("replace", "r", false, "Replace content after downloading")
 	return cmd
 }
 
@@ -261,8 +261,8 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 	cmd.Flags().StringSliceP("instance-target-url", "u", []string{}, "Destination instance URL")
 	cmd.Flags().StringSliceP("instance-target-id", "i", []string{}, "Destination instance ID")
 	cmd.MarkFlagsOneRequired("instance-target-url", "instance-target-id")
-	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
-	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
+	cmd.Flags().StringSliceP("filter-roots", "R", []string{}, "Vault filter root paths")
+	cmd.Flags().StringP("filter-file", "F", "", "Vault filter file path")
 	cmd.MarkFlagsOneRequired("filter-roots", "filter-file")
 	cmd.Flags().BoolP("clean", "c", false, "Normalize content while copying")
 	return cmd

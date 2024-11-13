@@ -573,7 +573,7 @@ func (c *CLI) pkgCreateCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
-	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
+	cmd.Flags().StringSliceP("filter-roots", "R", []string{}, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "F", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
 	cmd.Flags().BoolP("force", "f", false, "Create even when already created")
@@ -607,7 +607,7 @@ func (c *CLI) pkgUpdateCmd() *cobra.Command {
 	}
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
 	cmd.Flags().String("path", "", "Remote repository path")
-	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
+	cmd.Flags().StringSliceP("filter-roots", "R", []string{}, "Vault filter root paths")
 	cmd.MarkFlagsOneRequired("pid", "path")
 	cmd.MarkFlagsMutuallyExclusive("pid", "path")
 	return cmd

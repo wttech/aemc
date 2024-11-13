@@ -96,13 +96,13 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 			c.Changed("content downloaded")
 		},
 	}
-	cmd.Flags().String("target-pid", "", "Target package ID (group:name:version)'")
-	cmd.Flags().StringP("target-file", "t", "", "Target file path for downloaded package")
+	cmd.Flags().StringP("target-pid", "p", "", "Target package ID (group:name:version)'")
+	cmd.Flags().StringP("target-file", "t", "", "File path for downloaded package")
 	_ = cmd.MarkFlagRequired("target-file")
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
 	cmd.MarkFlagsOneRequired("filter-roots", "filter-file")
-	cmd.Flags().Bool("clean", false, "Normalize content after downloading")
+	cmd.Flags().BoolP("clean", "c", false, "Normalize content after downloading")
 	return cmd
 }
 
@@ -163,7 +163,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
-	cmd.Flags().Bool("clean", false, "Normalize content after downloading")
+	cmd.Flags().BoolP("clean", "c", false, "Normalize content after downloading")
 	cmd.Flags().Bool("replace", false, "Replace content after downloading")
 	return cmd
 }
@@ -223,8 +223,8 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 	cmd.Flags().StringP("file", "f", "", "Local file path")
 	cmd.Flags().StringP("path", "p", "", "JCR root path or local file path")
 	cmd.MarkFlagsOneRequired("dir", "file", "path")
-	cmd.Flags().Bool("clean", false, "Normalize content while uploading")
-	cmd.Flags().String("filter-mode", "", "Override default filter model")
+	cmd.Flags().BoolP("clean", "c", false, "Normalize content while uploading")
+	cmd.Flags().StringP("filter-mode", "m", "", "Override default filter model")
 	return cmd
 }
 
@@ -264,7 +264,7 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
 	cmd.MarkFlagsOneRequired("filter-roots", "filter-file")
-	cmd.Flags().Bool("clean", false, "Normalize content while copying")
+	cmd.Flags().BoolP("clean", "c", false, "Normalize content while copying")
 	return cmd
 }
 

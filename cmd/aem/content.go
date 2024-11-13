@@ -96,7 +96,7 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 			c.Changed("content downloaded")
 		},
 	}
-	cmd.Flags().StringP("target-pid", "p", "", "Target package ID (group:name:version)'")
+	cmd.Flags().StringP("target-pid", "p", "", "ID (group:name:version) for downloaded package")
 	cmd.Flags().StringP("target-file", "t", "", "File path for downloaded package")
 	_ = cmd.MarkFlagRequired("target-file")
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")

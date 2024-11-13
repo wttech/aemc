@@ -76,16 +76,16 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			pid, _ := cmd.Flags().GetString("target-pid")
-			if pid == "" {
-				pid = fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", timex.FileTimestampForNow())
+			targetPID, _ := cmd.Flags().GetString("target-pid")
+			if targetPID == "" {
+				targetPID = fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", timex.FileTimestampForNow())
 			}
 			targetFile, _ := cmd.Flags().GetString("target-file")
 			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
 			clean, _ := cmd.Flags().GetBool("clean")
 			if err = c.aem.ContentManager().Download(instance, targetFile, clean, pkg.PackageCreateOpts{
-				PID:         pid,
+				PID:         targetPID,
 				FilterRoots: filterRoots,
 				FilterFile:  filterFile,
 			}); err != nil {

@@ -76,7 +76,7 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			pid, _ := cmd.Flags().GetString("pid")
+			pid, _ := cmd.Flags().GetString("target-pid")
 			if pid == "" {
 				pid = fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", timex.FileTimestampForNow())
 			}
@@ -96,7 +96,7 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 			c.Changed("content downloaded")
 		},
 	}
-	cmd.Flags().String("pid", "", "ID (group:name:version)'")
+	cmd.Flags().String("target-pid", "", "Target package ID (group:name:version)'")
 	cmd.Flags().StringP("target-file", "t", "", "Target file path for downloaded package")
 	_ = cmd.MarkFlagRequired("target-file")
 	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")

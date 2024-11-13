@@ -129,7 +129,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 			}
 			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
-			excludePatterns := determineExcludePatterns(cmd)
+			filterRootExcludes := determineFilterRootExcludes(cmd)
 			clean, _ := cmd.Flags().GetBool("clean")
 			replace, _ := cmd.Flags().GetBool("replace")
 			if dir != "" {
@@ -144,9 +144,9 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 				c.SetOutput("dir", dir)
 			} else if file != "" {
 				if err = c.aem.ContentManager().PullFile(instance, file, clean, replace, pkg.PackageCreateOpts{
-					PID:             fmt.Sprintf("aemc:content-pull:%s-SNAPSHOT", timex.FileTimestampForNow()),
-					FilterRoots:     filterRoots,
-					ExcludePatterns: excludePatterns,
+					PID:                fmt.Sprintf("aemc:content-pull:%s-SNAPSHOT", timex.FileTimestampForNow()),
+					FilterRoots:        filterRoots,
+					FilterRootExcludes: filterRootExcludes,
 				}); err != nil {
 					c.Error(err)
 					return
@@ -198,13 +198,15 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 				return
 			}
 			filterRoots := determineFilterRoots(cmd)
-			excludePatterns := determineExcludePatterns(cmd)
+			filterRootExcludes := determineFilterRootExcludes(cmd)
 			clean, _ := cmd.Flags().GetBool("clean")
+			filterMode := determineFilterMode(cmd)
 			if err = c.aem.ContentManager().Push(instances, clean, pkg.PackageCreateOpts{
-				PID:             fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow()),
-				FilterRoots:     filterRoots,
-				ExcludePatterns: excludePatterns,
-				ContentPath:     path,
+				PID:                fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow()),
+				FilterRoots:        filterRoots,
+				FilterRootExcludes: filterRootExcludes,
+				ContentPath:        path,
+				FilterMode:         filterMode,
 			}); err != nil {
 				c.Error(err)
 				return
@@ -222,6 +224,7 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 	cmd.Flags().StringP("path", "p", "", "JCR root path or local file path")
 	cmd.MarkFlagsOneRequired("dir", "file", "path")
 	cmd.Flags().Bool("clean", false, "Normalize content while uploading")
+	cmd.Flags().Bool("update", false, "Existing content on running instance is updated, new content is added and none is deleted")
 	return cmd
 }
 
@@ -348,7 +351,7 @@ func determineFilterRoots(cmd *cobra.Command) []string {
 	return nil
 }
 
-func determineExcludePatterns(cmd *cobra.Command) []string {
+func determineFilterRootExcludes(cmd *cobra.Command) []string {
 	file, _ := determineContentFile(cmd)
 	if file == "" || !strings.HasSuffix(file, content.JCRContentFile) || content.IsPageContentFile(file) {
 		return nil
@@ -360,13 +363,21 @@ func determineExcludePatterns(cmd *cobra.Command) []string {
 		return nil
 	}
 
-	var excludePatterns []string
+	var filterRootExcludes []string
 	for _, entry := range entries {
 		if entry.Name() != content.JCRContentFile {
 			jcrPath := pkg.DetermineFilterRoot(filepath.Join(dir, entry.Name()))
 			excludePattern := fmt.Sprintf("%s(/.*)?", jcrPath)
-			excludePatterns = append(excludePatterns, excludePattern)
+			filterRootExcludes = append(filterRootExcludes, excludePattern)
 		}
 	}
-	return excludePatterns
+	return filterRootExcludes
+}
+
+func determineFilterMode(cmd *cobra.Command) string {
+	update, _ := cmd.Flags().GetBool("update")
+	if update {
+		return "update"
+	}
+	return ""
 }

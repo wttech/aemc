@@ -271,10 +271,10 @@ func pullContent(contentManager *pkg.ContentManager, instance pkg.Instance, relD
 
 func pushContent(contentManager *pkg.ContentManager, instance pkg.Instance, path string) error {
 	if err := contentManager.Push([]pkg.Instance{instance}, true, pkg.PackageCreateOpts{
-		PID:             fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow()),
-		FilterRoots:     determineFilterRoots(path, path, nil, ""),
-		ExcludePatterns: determineExcludePatterns(path),
-		ContentPath:     path,
+		PID:                fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow()),
+		FilterRoots:        determineFilterRoots(path, path, nil, ""),
+		FilterRootExcludes: determineFilterRootExcludes(path),
+		ContentPath:        path,
 	}); err != nil {
 		return nil
 	}
@@ -361,7 +361,7 @@ func determineFilterRoots(dir string, file string, filterRoots []string, filterF
 	return nil
 }
 
-func determineExcludePatterns(file string) []string {
+func determineFilterRootExcludes(file string) []string {
 	if !pathx.IsFile(file) || !strings.HasSuffix(file, content.JCRContentFile) || content.IsPageContentFile(file) {
 		return nil
 	}
@@ -370,15 +370,15 @@ func determineExcludePatterns(file string) []string {
 	if err != nil {
 		return nil
 	}
-	var excludePatterns []string
+	var filterRootExcludes []string
 	for _, entry := range entries {
 		if entry.Name() != content.JCRContentFile {
 			jcrPath := pkg.DetermineFilterRoot(filepath.Join(dir, entry.Name()))
 			excludePattern := fmt.Sprintf("%s(/.*)?", jcrPath)
-			excludePatterns = append(excludePatterns, excludePattern)
+			filterRootExcludes = append(filterRootExcludes, excludePattern)
 		}
 	}
-	return excludePatterns
+	return filterRootExcludes
 }
 
 func determineResultFiles(workDir string) (map[string]string, error) {

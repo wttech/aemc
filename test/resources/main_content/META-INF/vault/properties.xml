@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+    <entry key="group">my_packages</entry>
+    <entry key="name">test-content</entry>
+    <entry key="version">1.0.0-SNAPSHOT</entry>
+    <entry key="createdBy">AEM Compose</entry>
+    <entry key="acHandling">merge</entry>
+</properties>

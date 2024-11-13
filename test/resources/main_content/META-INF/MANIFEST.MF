@@ -1,0 +1,3 @@
+Manifest-Version: 1.0
+Content-Package-Id: my_packages:test-content:1.0.0-SNAPSHOT
+Content-Package-Type: mixed

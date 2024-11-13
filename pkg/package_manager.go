@@ -23,8 +23,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
+)
+
+const (
+	NamespacePattern = "[\\\\/]_([a-zA-Z0-9]+)_"
 )
 
 type PackageManager struct {
@@ -149,11 +154,24 @@ func (pm *PackageManager) IsSnapshot(localPath string) bool {
 	return !pm.SnapshotIgnored && stringsx.MatchSome(pathx.Normalize(localPath), pm.SnapshotPatterns)
 }
 
-func copyPackageDefaultFiles(targetTmpDir string, data map[string]any) error {
-	if err := pathx.DeleteIfExists(targetTmpDir); err != nil {
+func copyPackageAllFiles(targetTmpDir string, opts PackageCreateOpts) error {
+	pidConfig, err := pkg.ParsePID(opts.PID)
+	if err != nil {
+		return err
+	}
+	data := map[string]any{
+		"Pid":                opts.PID,
+		"Group":              pidConfig.Group,
+		"Name":               pidConfig.Name,
+		"Version":            pidConfig.Version,
+		"FilterRoots":        opts.FilterRoots,
+		"FilterRootExcludes": opts.FilterRootExcludes,
+		"FilterMode":         opts.FilterMode,
+	}
+	if err = pathx.DeleteIfExists(targetTmpDir); err != nil {
 		return fmt.Errorf("cannot delete temporary dir '%s': %w", targetTmpDir, err)
 	}
-	return fs.WalkDir(pkg.VaultFS, ".", func(path string, entry fs.DirEntry, err error) error {
+	if err = fs.WalkDir(pkg.VaultFS, ".", func(path string, entry fs.DirEntry, err error) error {
 		if entry.IsDir() {
 			return nil
 		}
@@ -162,49 +180,43 @@ func copyPackageDefaultFiles(targetTmpDir string, data map[string]any) error {
 			return err
 		}
 		return tplx.RenderFile(targetTmpDir+strings.ReplaceAll(strings.TrimPrefix(path, "vault"), "$", ""), string(bytes), data)
-	})
+	}); err != nil {
+		return err
+	}
+	if opts.FilterFile != "" {
+		if err = filex.Copy(opts.FilterFile, filepath.Join(targetTmpDir, pkg.MetaPath, pkg.VltDir, FilterXML), true); err != nil {
+			return err
+		}
+	}
+	if opts.ContentPath != "" {
+		if err = copyContentFiles(opts.ContentPath, targetTmpDir); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type PackageCreateOpts struct {
-	PID         string
-	FilterRoots []string
-	FilterFile  string
-	ContentDir  string
-	ContentFile string
+	PID                string
+	FilterRoots        []string
+	FilterRootExcludes []string
+	FilterFile         string
+	FilterMode         string
+	ContentPath        string
 }
 
 func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	log.Infof("%s > creating package '%s'", pm.instance.IDColor(), opts.PID)
-	pidConfig, err := pkg.ParsePID(opts.PID)
-	if err != nil {
-		return "", err
-	}
-
 	tmpDir := pathx.RandomDir(pm.tmpDir(), "pkg_create")
 	tmpFile := pathx.RandomFileName(pm.tmpDir(), "pkg_create", ".zip")
 	defer func() {
 		_ = pathx.DeleteIfExists(tmpDir)
 		_ = pathx.DeleteIfExists(tmpFile)
 	}()
-	if len(opts.FilterRoots) == 0 && opts.FilterFile == "" {
-		opts.FilterRoots = []string{determineFilterRoot(opts)}
-	}
-	data := map[string]any{
-		"Pid":         opts.PID,
-		"Group":       pidConfig.Group,
-		"Name":        pidConfig.Name,
-		"Version":     pidConfig.Version,
-		"FilterRoots": opts.FilterRoots,
-	}
-	if err = copyPackageDefaultFiles(tmpDir, data); err != nil {
+	if err := copyPackageAllFiles(tmpDir, opts); err != nil {
 		return "", err
 	}
-	if opts.FilterFile != "" {
-		if err = filex.Copy(opts.FilterFile, filepath.Join(tmpDir, "META-INF", "vault", FilterXML), true); err != nil {
-			return "", err
-		}
-	}
-	if err = content.Zip(tmpDir, tmpFile); err != nil {
+	if err := content.Zip(tmpDir, tmpFile); err != nil {
 		return "", err
 	}
 	response, err := pm.instance.http.Request().
@@ -227,33 +239,39 @@ func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {
 	return status.Path, nil
 }
 
-func determineFilterRoot(opts PackageCreateOpts) string {
-	if opts.ContentDir != "" {
-		return strings.Split(opts.ContentDir, content.JCRRoot)[1]
+func DetermineFilterRoot(path string) string {
+	_, filterRoot, _ := strings.Cut(path, content.JCRRoot)
+	filterRoot = pathx.Normalize(filterRoot)
+	if content.IsPageContentFile(path) {
+		filterRoot = strings.ReplaceAll(filterRoot, content.JCRContentFile, content.JCRContentNode)
+	} else if strings.HasSuffix(path, content.JCRContentFile) {
+		filterRoot = filepath.Dir(filterRoot)
+	} else if strings.HasSuffix(path, content.XmlFileSuffix) {
+		filterRoot = strings.ReplaceAll(filterRoot, content.XmlFileSuffix, "")
 	}
+	filterRoot = regexp.MustCompile(NamespacePattern).ReplaceAllString(filterRoot, "/$1:")
+	filterRoot = strings.ReplaceAll(filterRoot, "/__", "/_")
+	filterRoot = strings.ReplaceAll(filterRoot, "%3a", ":")
+	return filterRoot
+}
 
-	if opts.ContentFile != "" {
-		contentFile := strings.Split(opts.ContentFile, content.JCRRoot)[1]
-		if content.IsContentFile(opts.ContentFile) {
-			return strings.ReplaceAll(contentFile, content.JCRContentFile, content.JCRContentNode)
-		} else if strings.HasSuffix(contentFile, content.JCRContentFile) {
-			contentFile = namespacePatternRegex.ReplaceAllString(contentFile, "$1:")
-			return filepath.Dir(contentFile)
-		} else if strings.HasSuffix(contentFile, content.JCRContentFileSuffix) {
-			contentFile = namespacePatternRegex.ReplaceAllString(contentFile, "$1:")
-			return strings.ReplaceAll(contentFile, content.JCRContentFileSuffix, "")
+func copyContentFiles(path string, tmpDir string) error {
+	_, jcrPath, _ := strings.Cut(path, content.JCRRoot)
+	if pathx.IsDir(path) {
+		if err := filex.CopyDir(path, filepath.Join(tmpDir, content.JCRRoot, jcrPath)); err != nil {
+			return err
 		}
-		return contentFile
+	} else if pathx.IsFile(path) {
+		if err := filex.Copy(path, filepath.Join(tmpDir, content.JCRRoot, jcrPath), true); err != nil {
+			return err
+		}
 	}
-
-	return ""
+	return nil
 }
 
 func (pm *PackageManager) Copy(remotePath string, destInstance *Instance) error {
-	var localPath = pathx.RandomFileName(pm.tmpDir(), "pkg_copy", ".zip")
-	defer func() {
-		_ = pathx.DeleteIfExists(localPath)
-	}()
+	localPath := pathx.RandomFileName(pm.tmpDir(), "pkg_copy", ".zip")
+	defer func() { _ = pathx.DeleteIfExists(localPath) }()
 	if err := pm.Download(remotePath, localPath); err != nil {
 		return err
 	}

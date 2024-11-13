@@ -2,14 +2,12 @@ package content
 
 import (
 	"bufio"
-	"fmt"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
 	"github.com/wttech/aemc/pkg/base"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -18,28 +16,27 @@ import (
 )
 
 const (
-	JCRRoot                   = "jcr_root"
-	JCRContentFile            = ".content.xml"
-	JCRContentFileSuffix      = ".xml"
-	JCRMixinTypesProp         = "jcr:mixinTypes"
-	JCRRootPrefix             = "<jcr:root"
-	PropPattern               = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
-	NamespacePattern          = "^\\w+:(\\w+)=\"[^\"]+\"$"
-	ParentsBackupSuffix       = ".bak"
-	ParentsBackupDirIndicator = ".bakdir"
-	JCRContentNode            = "jcr:content"
-	JCRContentPrefix          = "<jcr:content"
-	JCRContentDirName         = "_jcr_content"
+	JCRRoot                  = "jcr_root"
+	JCRContentFile           = ".content.xml"
+	XmlFileSuffix            = ".xml"
+	JCRMixinTypesProp        = "jcr:mixinTypes"
+	JCRRootPrefix            = "<jcr:root"
+	JCRContentNode           = "jcr:content"
+	PropPattern              = "^\\s*([^ =]+)=\"([^\"]+)\"(.*)$"
+	NamespacePattern         = "^\\w+:(\\w+)=\"[^\"]+\"$"
+	FileWithNamespacePattern = "[\\\\/]_([a-zA-Z0-9]+)_[^\\\\/]+([\\\\/]\\.content)?\\.xml$"
 )
 
 var (
-	propPatternRegex      *regexp.Regexp
-	namespacePatternRegex *regexp.Regexp
+	propPatternRegex              *regexp.Regexp
+	namespacePatternRegex         *regexp.Regexp
+	fileWithNamespacePatternRegex *regexp.Regexp
 )
 
 func init() {
 	propPatternRegex = regexp.MustCompile(PropPattern)
 	namespacePatternRegex = regexp.MustCompile(NamespacePattern)
+	fileWithNamespacePatternRegex = regexp.MustCompile(FileWithNamespacePattern)
 }
 
 type Manager struct {
@@ -66,76 +63,37 @@ func NewManager(baseOpts *base.Opts) *Manager {
 	}
 }
 
-func (c Manager) Prepare(root string) error {
-	return deleteDir(root)
-}
-
-func (c Manager) BeforePullDir(root string) error {
-	return c.doParentsBackup(root)
-}
-
-func (c Manager) BeforePullFile(path string) error {
-	return c.doSiblingsBackup(path)
-}
-
-func (c Manager) AfterPullDir(root string) error {
-	return c.undoParentsBackup(root)
-}
-
-func (c Manager) AfterPullFile(path string) error {
-	return c.undoSiblingBackup(path)
-}
-
-func (c Manager) CleanDir(root string) error {
-	if !pathx.Exists(root) {
-		return fmt.Errorf("cannot clean directory as it does not exist '%s'", root)
-	}
-	log.Infof("cleaning directory '%s'", root)
-	if err := c.cleanDotContents(root); err != nil {
-		return err
-	}
-	if err := c.flattenFiles(root); err != nil {
-		return err
-	}
-	if err := c.deleteFiles(root); err != nil {
-		return err
-	}
-	if err := deleteEmptyDirs(root); err != nil {
-		return err
-	}
-	log.Infof("cleaned directory '%s'", root)
-	return nil
-}
-
-func (c Manager) CleanFile(path string) error {
-	if !pathx.Exists(path) {
-		return fmt.Errorf("cannot clean file as it does not exist '%s'", path)
-	}
-	log.Infof("cleaning file '%s'", path)
-	if err := c.cleanDotContentFile(path); err != nil {
-		return err
-	}
-	if err := c.flattenFile(path); err != nil {
-		return err
-	}
-	if err := deleteEmptyDirs(filepath.Dir(path)); err != nil {
-		return err
-	}
-	log.Infof("cleaned file '%s'", path)
-	return nil
-}
-
-func eachFilesInDir(root string, processFileFunc func(path string) error) error {
-	entries, err := os.ReadDir(root)
-	if err != nil {
-		return err
-	}
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			if err = processFileFunc(filepath.Join(root, entry.Name())); err != nil {
-				return err
-			}
+func (c Manager) Clean(path string) error {
+	if pathx.IsDir(path) {
+		log.Infof("cleaning directory '%s'", path)
+		if err := c.cleanDotContents(path); err != nil {
+			return err
 		}
+		if err := c.flattenFiles(path); err != nil {
+			return err
+		}
+		if err := c.deleteFiles(path); err != nil {
+			return err
+		}
+		if err := deleteEmptyDirs(path); err != nil {
+			return err
+		}
+		log.Infof("cleaned directory '%s'", path)
+		return nil
+	}
+	if pathx.IsFile(path) {
+		log.Infof("cleaning file '%s'", path)
+		if err := c.cleanDotContentFile(path); err != nil {
+			return err
+		}
+		if err := c.flattenFile(path); err != nil {
+			return err
+		}
+		if err := deleteEmptyDirs(filepath.Dir(path)); err != nil {
+			return err
+		}
+		log.Infof("cleaned file '%s'", path)
+		return nil
 	}
 	return nil
 }
@@ -156,7 +114,7 @@ func (c Manager) cleanDotContents(root string) error {
 }
 
 func (c Manager) cleanDotContentFile(path string) error {
-	if !strings.HasSuffix(path, JCRContentFileSuffix) {
+	if !strings.HasSuffix(path, XmlFileSuffix) {
 		return nil
 	}
 
@@ -187,12 +145,18 @@ func (c Manager) filterLines(path string, lines []string) []string {
 			result = result[:len(result)-1]
 		}
 	}
-	return c.cleanNamespaces(result)
+	return c.cleanNamespaces(path, result)
 }
 
-func (c Manager) cleanNamespaces(lines []string) []string {
+func (c Manager) cleanNamespaces(path string, lines []string) []string {
 	if !c.NamespacesSkipped {
 		return lines
+	}
+
+	var fileNamespace string
+	groups := fileWithNamespacePatternRegex.FindStringSubmatch(path)
+	if groups != nil {
+		fileNamespace = groups[1]
 	}
 
 	var result []string
@@ -200,14 +164,13 @@ func (c Manager) cleanNamespaces(lines []string) []string {
 		if strings.HasPrefix(line, JCRRootPrefix) {
 			var rootResult []string
 			for _, part := range strings.Split(line, " ") {
-				groups := namespacePatternRegex.FindStringSubmatch(part)
+				groups = namespacePatternRegex.FindStringSubmatch(part)
 				if groups == nil {
 					rootResult = append(rootResult, part)
 				} else {
-					flag := lo.SomeBy(lines, func(line string) bool {
-						return strings.Contains(line, groups[1]+":")
-					})
-					if flag {
+					if lo.SomeBy(lines, func(line string) bool {
+						return strings.Contains(line, groups[1]+":") || groups[1] == fileNamespace
+					}) {
 						rootResult = append(rootResult, part)
 					}
 				}
@@ -269,34 +232,22 @@ func (c Manager) flattenFile(path string) error {
 }
 
 func (c Manager) deleteFiles(root string) error {
-	if err := eachParentFiles(root, func(parent string) error {
-		return eachFilesInDir(parent, func(path string) error {
-			return deleteFile(path, func() bool {
-				return matchAnyRule(path, path, c.FilesDeleted)
-			})
-		})
-	}); err != nil {
-		return err
-	}
-	if err := eachFiles(root, func(path string) error {
-		return deleteFile(path, func() bool {
+	return eachFiles(root, func(path string) error {
+		return c.DeleteFile(path, func() bool {
 			return matchAnyRule(path, path, c.FilesDeleted)
 		})
-	}); err != nil {
-		return err
-	}
-	return nil
+	})
 }
 
-func deleteDir(dir string) error {
-	if !pathx.Exists(dir) {
+func (c Manager) DeleteDir(path string) error {
+	if !pathx.Exists(path) {
 		return nil
 	}
-	log.Infof("deleting dir '%s'", dir)
-	return os.RemoveAll(dir)
+	log.Infof("deleting directory '%s'", path)
+	return os.RemoveAll(path)
 }
 
-func deleteFile(path string, allowedFunc func() bool) error {
+func (c Manager) DeleteFile(path string, allowedFunc func() bool) error {
 	if !pathx.Exists(path) || allowedFunc != nil && !allowedFunc() {
 		return nil
 	}
@@ -304,115 +255,25 @@ func deleteFile(path string, allowedFunc func() bool) error {
 	return os.Remove(path)
 }
 
-func deleteEmptyDirs(root string) error {
-	entries, err := os.ReadDir(root)
+func deleteEmptyDirs(path string) error {
+	entries, err := os.ReadDir(path)
 	if err != nil {
 		return err
 	}
 	for _, entry := range entries {
 		if entry.IsDir() {
-			if err = deleteEmptyDirs(filepath.Join(root, entry.Name())); err != nil {
+			if err = deleteEmptyDirs(filepath.Join(path, entry.Name())); err != nil {
 				return err
 			}
 		}
 	}
-	entries, err = os.ReadDir(root)
+	entries, err = os.ReadDir(path)
 	if err != nil {
 		return err
 	}
 	if len(entries) == 0 {
-		log.Infof("deleting empty directory '%s'", root)
-		if err = os.Remove(root); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (c Manager) doParentsBackup(root string) error {
-	return eachParentFiles(root, func(parent string) error {
-		if err := createBackupIndicator(parent); err != nil {
-			return err
-		}
-		return eachFilesInDir(parent, func(path string) error {
-			if !strings.HasSuffix(path, ParentsBackupSuffix) && !strings.HasSuffix(path, ParentsBackupDirIndicator) {
-				log.Infof("doing backup of parent file '%s'", path)
-				if err := c.backupFile(path); err != nil {
-					return err
-				}
-			}
-			return nil
-		})
-	})
-}
-
-func (c Manager) doSiblingsBackup(file string) error {
-	dir := filepath.Dir(file)
-	if err := createBackupIndicator(dir); err != nil {
-		return err
-	}
-	return eachFilesInDir(dir, func(path string) error {
-		if path != file && !strings.HasSuffix(path, ParentsBackupSuffix) && !strings.HasSuffix(path, ParentsBackupDirIndicator) {
-			log.Infof("doing backup of file '%s'", path)
-			if err := c.backupFile(path); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
-
-func (c Manager) undoParentsBackup(root string) error {
-	return eachParentFiles(root, func(parent string) error {
-		indicator := false
-		if err := eachFilesInDir(parent, func(path string) error {
-			indicator = indicator || strings.HasSuffix(path, ParentsBackupDirIndicator)
-			return nil
-		}); err != nil {
-			return err
-		}
-		if !indicator {
-			return nil
-		}
-
-		if err := eachFilesInDir(parent, func(path string) error {
-			return deleteFile(path, func() bool {
-				return !strings.HasSuffix(path, ParentsBackupSuffix)
-			})
-		}); err != nil {
-			return err
-		}
-
-		return eachFilesInDir(parent, func(path string) error {
-			if strings.HasSuffix(path, ParentsBackupSuffix) {
-				origin := strings.TrimSuffix(path, ParentsBackupSuffix)
-				log.Infof("undoing backup of parent file '%s'", path)
-				return os.Rename(path, origin)
-			}
-			return nil
-		})
-	})
-}
-
-func (c Manager) undoSiblingBackup(path string) error {
-	dir := filepath.Dir(path)
-	return eachFilesInDir(dir, func(path string) error {
-		if strings.HasSuffix(path, ParentsBackupSuffix) {
-			origin := strings.TrimSuffix(path, ParentsBackupSuffix)
-			log.Infof("undoing backup of file '%s'", path)
-			return os.Rename(path, origin)
-		} else if strings.HasSuffix(path, ParentsBackupDirIndicator) {
-			return deleteFile(path, nil)
-		}
-		return nil
-	})
-}
-
-func eachParentFiles(root string, processFileFunc func(string) error) error {
-	parent := root
-	for strings.Contains(parent, JCRRoot) && filepath.Base(parent) != JCRRoot {
-		parent = filepath.Dir(parent)
-		if err := processFileFunc(parent); err != nil {
+		log.Infof("deleting empty directory '%s'", path)
+		if err = os.Remove(path); err != nil {
 			return err
 		}
 	}
@@ -469,32 +330,6 @@ func writeLines(path string, lines []string) error {
 	return err
 }
 
-func createBackupIndicator(dir string) error {
-	indicator, err := os.Create(filepath.Join(dir, ParentsBackupDirIndicator))
-	defer func() { _ = indicator.Close() }()
-	return err
-}
-
-func (c Manager) backupFile(path string) error {
-	source, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = source.Close() }()
-
-	destination, err := os.Create(path + ParentsBackupSuffix)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = destination.Close() }()
-
-	_, err = io.Copy(destination, source)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 type PathRule struct {
 	Patterns      []string
 	ExcludedPaths []string
@@ -522,20 +357,17 @@ func determineStringSlice(values any, key string) []string {
 	return result
 }
 
-func IsContentFile(path string) bool {
-	if !strings.HasSuffix(path, JCRContentFile) {
+func IsPageContentFile(path string) bool {
+	if pathx.IsDir(path) || !strings.HasSuffix(path, JCRContentFile) {
 		return false
 	}
 
-	inputLines, err := readLines(path)
+	lines, err := readLines(path)
 	if err != nil {
 		return false
 	}
 
-	for _, inputLine := range inputLines {
-		if strings.Contains(inputLine, JCRContentPrefix) {
-			return true
-		}
-	}
-	return false
+	return lo.SomeBy(lines, func(line string) bool {
+		return strings.Contains(line, "cq:PageContent")
+	})
 }

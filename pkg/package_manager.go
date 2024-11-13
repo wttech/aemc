@@ -199,10 +199,10 @@ func copyPackageAllFiles(targetTmpDir string, opts PackageCreateOpts) error {
 type PackageCreateOpts struct {
 	PID                string
 	FilterRoots        []string
-	FilterFile         string
 	FilterRootExcludes []string
-	ContentPath        string
+	FilterFile         string
 	FilterMode         string
+	ContentPath        string
 }
 
 func (pm *PackageManager) Create(opts PackageCreateOpts) (string, error) {

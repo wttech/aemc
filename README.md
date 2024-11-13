@@ -468,7 +468,6 @@ java:
       "arm64": "x64"
       "aarch64": "x64"
 
-# Vault-Cli tool options
 vault:
   "download_url": "https://repo1.maven.org/maven2/org/apache/jackrabbit/vault/vault-cli/3.7.2/vault-cli-3.7.2-bin.tar.gz"
 

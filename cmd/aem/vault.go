@@ -9,7 +9,7 @@ import (
 func (c *CLI) vaultCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "vlt",
-		Short: "Executes Vault-Cli commands",
+		Short: "Executes Vault commands",
 		Run: func(cmd *cobra.Command, args []string) {
 			vaultCli := pkg.NewVaultCli(c.aem)
 			vaultCliArgs := os.Args[1:]

@@ -56,10 +56,10 @@ func (v VaultCli) prepare() error {
 		return err
 	}
 	if check.UpToDate {
-		log.Debugf("existing Vault-Cli '%s' is up-to-date", v.DownloadURL)
+		log.Debugf("existing Vault '%s' is up-to-date", v.DownloadURL)
 		return nil
 	}
-	log.Infof("preparing new Vault-Cli '%s'", v.DownloadURL)
+	log.Infof("preparing new Vault '%s'", v.DownloadURL)
 	err = v.install()
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func (v VaultCli) prepare() error {
 	if err != nil {
 		return err
 	}
-	log.Infof("prepared new Vault-Cli '%s'", v.DownloadURL)
+	log.Infof("prepared new Vault '%s'", v.DownloadURL)
 
 	return nil
 }
@@ -79,30 +79,30 @@ func (v VaultCli) archiveFile() string {
 
 func (v VaultCli) install() error {
 	archiveFile := v.archiveFile()
-	log.Infof("downloading Vault-Cli from URL '%s' to file '%s'", v.DownloadURL, archiveFile)
+	log.Infof("downloading Vault from URL '%s' to file '%s'", v.DownloadURL, archiveFile)
 	if err := httpx.DownloadOnce(v.DownloadURL, archiveFile); err != nil {
 		return err
 	}
-	log.Infof("downloaded Vault-Cli from URL '%s' to file '%s'", v.DownloadURL, archiveFile)
+	log.Infof("downloaded Vault from URL '%s' to file '%s'", v.DownloadURL, archiveFile)
 
-	log.Infof("unarchiving Vault-Cli from file '%s'", archiveFile)
+	log.Infof("unarchiving Vault from file '%s'", archiveFile)
 	if err := filex.Unarchive(archiveFile, v.dir()); err != nil {
 		return err
 	}
-	log.Infof("unarchived Vault-Cli from file '%s'", archiveFile)
+	log.Infof("unarchived Vault from file '%s'", archiveFile)
 	return nil
 }
 
 func (v VaultCli) CommandShell(args []string) error {
 	if err := v.prepare(); err != nil {
-		return fmt.Errorf("cannot run Vault-Cli command: %w", err)
+		return fmt.Errorf("cannot run Vault command: %w", err)
 	}
 	cmd := execx.CommandShell(args)
 	cmd.Dir = v.execDir()
 	v.aem.CommandOutput(cmd)
 	err := cmd.Run()
 	if err != nil {
-		return fmt.Errorf("cannot run Vault-Cli command: %w", err)
+		return fmt.Errorf("cannot run Vault command: %w", err)
 	}
 	return nil
 }

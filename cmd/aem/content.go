@@ -159,7 +159,7 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 	cmd.Flags().StringP("dir", "d", "", "JCR root path")
 	cmd.Flags().StringP("file", "f", "", "Local file path")
 	cmd.Flags().StringP("path", "p", "", "JCR root path or local file path")
-	cmd.MarkFlagsMutuallyExclusive("dir", "file", "path")
+	cmd.MarkFlagsOneRequired("dir", "file", "path")
 	cmd.Flags().StringSliceP("filter-roots", "R", []string{}, "Vault filter root paths")
 	cmd.Flags().StringP("filter-file", "F", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")

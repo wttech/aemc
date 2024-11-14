@@ -49,7 +49,7 @@ func (v VaultCli) lock() osx.Lock[VaultCliLock] {
 	return osx.NewLock(v.dir()+"/lock/create.yml", func() (VaultCliLock, error) { return VaultCliLock{DownloadURL: v.DownloadURL}, nil })
 }
 
-func (v VaultCli) prepare() error {
+func (v VaultCli) Prepare() error {
 	lock := v.lock()
 	check, err := lock.State()
 	if err != nil {
@@ -60,7 +60,7 @@ func (v VaultCli) prepare() error {
 		return nil
 	}
 	log.Infof("preparing new Vault '%s'", v.DownloadURL)
-	err = v.install()
+	err = v.prepare()
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,10 @@ func (v VaultCli) archiveFile() string {
 	return pathx.Canonical(fmt.Sprintf("%s/%s", v.dir(), filepath.Base(v.DownloadURL)))
 }
 
-func (v VaultCli) install() error {
+func (v VaultCli) prepare() error {
+	if err := pathx.DeleteIfExists(v.dir()); err != nil {
+		return err
+	}
 	archiveFile := v.archiveFile()
 	log.Infof("downloading Vault from URL '%s' to file '%s'", v.DownloadURL, archiveFile)
 	if err := httpx.DownloadOnce(v.DownloadURL, archiveFile); err != nil {
@@ -94,8 +97,8 @@ func (v VaultCli) install() error {
 }
 
 func (v VaultCli) CommandShell(args []string) error {
-	if err := v.prepare(); err != nil {
-		return fmt.Errorf("cannot run Vault command: %w", err)
+	if err := v.Prepare(); err != nil {
+		return fmt.Errorf("cannot prepare Vault before running command: %w", err)
 	}
 	cmd := execx.CommandShell(args)
 	cmd.Dir = v.execDir()

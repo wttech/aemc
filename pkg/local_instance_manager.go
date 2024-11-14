@@ -73,20 +73,6 @@ func (o *LocalOpts) Initialize() error {
 		}
 	}
 	// preparation phase
-	if err := o.manager.aem.baseOpts.Prepare(); err != nil {
-		return err
-	}
-	if err := o.manager.aem.javaOpts.Prepare(); err != nil {
-		return err
-	}
-	if sdk {
-		if err := o.SDK.Prepare(); err != nil {
-			return err
-		}
-	}
-	if err := o.OakRun.Prepare(); err != nil {
-		return err
-	}
 	for _, instance := range o.manager.Locals() {
 		if err := instance.Local().CheckRecreationNeeded(); err != nil { // depends on SDK prepare
 			return err

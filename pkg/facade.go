@@ -20,6 +20,7 @@ type AEM struct {
 	javaOpts        *java.Opts
 	contentManager  *ContentManager
 	instanceManager *InstanceManager
+	vaultCLI        *VaultCLI
 }
 
 func DefaultAEM() *AEM {
@@ -35,6 +36,7 @@ func NewAEM(config *cfg.Config) *AEM {
 	result.javaOpts = java.NewOpts(result.baseOpts)
 	result.contentManager = NewContentManager(result)
 	result.instanceManager = NewInstanceManager(result)
+	result.vaultCLI = NewVaultCLI(result)
 	return result
 }
 
@@ -75,6 +77,37 @@ func (a *AEM) ContentManager() *ContentManager {
 	return a.contentManager
 }
 
+func (a *AEM) VaultCLI() *VaultCLI {
+	return a.vaultCLI
+}
+
 func (a *AEM) Detached() bool {
 	return !a.config.TemplateFileExists()
+}
+
+// TODO move SDK, OakRun, Quickstart under 'vendor' key in the config and namespace in the code
+func (a *AEM) Prepare() error {
+	// validation phase (quick feedback)
+	sdk, err := a.InstanceManager().LocalOpts.Quickstart.IsDistSDK()
+	if err != nil {
+		return err
+	}
+	// preparation phase (slow feedback)
+	if err := a.BaseOpts().Prepare(); err != nil {
+		return err
+	}
+	if err := a.JavaOpts().Prepare(); err != nil {
+		return err
+	}
+	// TODO move SDK and Quickstart outside of instance manager
+	if sdk {
+		if err := a.InstanceManager().LocalOpts.SDK.Prepare(); err != nil {
+			return err
+		}
+	}
+	// TODO move OakRun outside of instance manager
+	if err := a.InstanceManager().LocalOpts.OakRun.Prepare(); err != nil {
+		return err
+	}
+	return nil
 }

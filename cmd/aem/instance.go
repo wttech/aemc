@@ -346,20 +346,6 @@ func (c *CLI) instanceInitCmd() *cobra.Command {
 				return
 			}
 
-			javaHome, err := c.aem.JavaOpts().FindHomeDir()
-			if err != nil {
-				c.Error(err)
-				return
-			}
-			c.SetOutput("javaHome", javaHome)
-
-			javaExecutable, err := c.aem.JavaOpts().Executable()
-			if err != nil {
-				c.Error(err)
-				return
-			}
-			c.SetOutput("javaExecutable", javaExecutable)
-
 			c.SetOutput("initialized", true)
 			c.Changed("initialized prerequisites for instance(s)")
 		},

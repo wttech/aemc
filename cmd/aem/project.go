@@ -50,3 +50,49 @@ func (c *CLI) initCmd() *cobra.Command {
 	cmd.Flags().String(projectKindFlag, project.KindAuto, fmt.Sprintf("Type of AEM to work with (%s)", strings.Join(project.KindStrings(), "|")))
 	return cmd
 }
+
+func (c *CLI) prepareCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "prepare",
+		Aliases: []string{"prep"},
+		Short:   "Prepare vendor tools",
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := c.aem.Prepare(); err != nil {
+				c.Error(err)
+				return
+			}
+
+			javaHome, err := c.aem.JavaOpts().FindHomeDir()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("javaHome", javaHome)
+
+			javaExecutable, err := c.aem.JavaOpts().Executable()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("javaExecutable", javaExecutable)
+
+			vaultJar := "<path>/bin/vlt" // TODO c.aem.VaultCLI().JarFile()
+			c.setOutput("vaultJar", vaultJar)
+
+			oakRunJar := c.aem.InstanceManager().LocalOpts.OakRun.JarFile()
+			c.setOutput("oakRunJar", oakRunJar)
+
+			c.SetOutput("prepared", true)
+			c.Ok("prepared vendor tools")
+
+			/* TODO implement if possible
+			if changed {
+				c.Changed("project prepared")
+			} else {
+				c.Ok("project already prepared")
+			}
+			*/
+		},
+	}
+	return cmd
+}

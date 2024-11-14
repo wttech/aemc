@@ -13,43 +13,43 @@ import (
 	"strings"
 )
 
-func NewVaultCli(aem *AEM) *VaultCli {
+func NewVaultCLI(aem *AEM) *VaultCLI {
 	cv := aem.baseOpts.Config().Values()
 
-	return &VaultCli{
+	return &VaultCLI{
 		aem: aem,
 
 		DownloadURL: cv.GetString("vault.download_url"),
 	}
 }
 
-type VaultCli struct {
+type VaultCLI struct {
 	aem *AEM
 
 	DownloadURL string
 }
 
-type VaultCliLock struct {
+type VaultCLILock struct {
 	DownloadURL string `yaml:"download_url"`
 }
 
-func (v VaultCli) dir() string {
+func (v VaultCLI) dir() string {
 	if v.aem.Detached() {
 		return filepath.Join(os.TempDir(), "vault-cli")
 	}
 	return filepath.Join(v.aem.baseOpts.ToolDir, "vault-cli")
 }
 
-func (v VaultCli) execDir() string {
+func (v VaultCLI) execDir() string {
 	vaultDir, _, _ := strings.Cut(filepath.Base(v.DownloadURL), "-bin")
 	return filepath.Join(v.dir(), vaultDir, "bin")
 }
 
-func (v VaultCli) lock() osx.Lock[VaultCliLock] {
-	return osx.NewLock(v.dir()+"/lock/create.yml", func() (VaultCliLock, error) { return VaultCliLock{DownloadURL: v.DownloadURL}, nil })
+func (v VaultCLI) lock() osx.Lock[VaultCLILock] {
+	return osx.NewLock(v.dir()+"/lock/create.yml", func() (VaultCLILock, error) { return VaultCLILock{DownloadURL: v.DownloadURL}, nil })
 }
 
-func (v VaultCli) Prepare() error {
+func (v VaultCLI) Prepare() error {
 	lock := v.lock()
 	check, err := lock.State()
 	if err != nil {
@@ -73,11 +73,11 @@ func (v VaultCli) Prepare() error {
 	return nil
 }
 
-func (v VaultCli) archiveFile() string {
+func (v VaultCLI) archiveFile() string {
 	return pathx.Canonical(fmt.Sprintf("%s/%s", v.dir(), filepath.Base(v.DownloadURL)))
 }
 
-func (v VaultCli) prepare() error {
+func (v VaultCLI) prepare() error {
 	if err := pathx.DeleteIfExists(v.dir()); err != nil {
 		return err
 	}
@@ -96,15 +96,14 @@ func (v VaultCli) prepare() error {
 	return nil
 }
 
-func (v VaultCli) CommandShell(args []string) error {
+func (v VaultCLI) CommandShell(args []string) error {
 	if err := v.Prepare(); err != nil {
 		return fmt.Errorf("cannot prepare Vault before running command: %w", err)
 	}
 	cmd := execx.CommandShell(args)
-	cmd.Dir = v.execDir()
+	cmd.Dir = v.execDir() // TODO do not change dir, but prepend with absolute executable; so args should skip 'vlt'
 	v.aem.CommandOutput(cmd)
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot run Vault command: %w", err)
 	}
 	return nil

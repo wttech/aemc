@@ -13,7 +13,10 @@ func (c *CLI) vaultCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			vaultCli := pkg.NewVaultCli(c.aem)
 			vaultCliArgs := os.Args[1:]
-			_ = vaultCli.CommandShell(vaultCliArgs)
+			if err := vaultCli.CommandShell(vaultCliArgs); err != nil {
+				c.Error(err)
+				return
+			}
 		},
 		Args: cobra.ArbitraryArgs,
 		FParseErrWhitelist: cobra.FParseErrWhitelist{

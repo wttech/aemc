@@ -8,6 +8,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/httpx"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,7 +43,8 @@ func (v VaultCli) dir() string {
 
 func (v VaultCli) execDir() string {
 	vaultDir, _, _ := strings.Cut(filepath.Base(v.DownloadURL), "-bin")
-	return filepath.Join(v.dir(), vaultDir, "bin")
+	execDir, _ := filepath.Abs(filepath.Join(v.dir(), vaultDir, "bin"))
+	return execDir
 }
 
 func (v VaultCli) lock() osx.Lock[VaultCliLock] {
@@ -60,12 +62,10 @@ func (v VaultCli) Prepare() error {
 		return nil
 	}
 	log.Infof("preparing new Vault '%s'", v.DownloadURL)
-	err = v.prepare()
-	if err != nil {
+	if err = v.prepare(); err != nil {
 		return err
 	}
-	err = lock.Lock()
-	if err != nil {
+	if err = lock.Lock(); err != nil {
 		return err
 	}
 	log.Infof("prepared new Vault '%s'", v.DownloadURL)
@@ -102,10 +102,26 @@ func (v VaultCli) CommandShell(args []string) error {
 	}
 	cmd := execx.CommandShell(args)
 	cmd.Dir = v.execDir()
+	vcw := &VaultCliWriter{writer: v.aem.output, status: 0}
+	v.aem.SetOutput(vcw)
 	v.aem.CommandOutput(cmd)
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot run Vault command: %w", err)
 	}
+	if vcw.status != 0 {
+		return fmt.Errorf("")
+	}
 	return nil
+}
+
+type VaultCliWriter struct {
+	writer io.Writer
+	status int
+}
+
+func (vcw *VaultCliWriter) Write(p []byte) (int, error) {
+	if strings.Contains(string(p), "[ERROR]") {
+		vcw.status = 1
+	}
+	return vcw.writer.Write(p)
 }

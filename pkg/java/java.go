@@ -81,6 +81,21 @@ func (o *Opts) download() error {
 		log.Debugf("existing JDK '%s' is up-to-date", check.Locked.Source)
 		return nil
 	}
+	log.Infof("preparing new JDK at dir '%s'", o.jdkDir())
+	if err = o.prepare(err); err != nil {
+		return err
+	}
+	if err := lock.Lock(); err != nil {
+		return err
+	}
+	log.Infof("prepared new JDK at dir '%s'", o.jdkDir())
+	return nil
+}
+
+func (o *Opts) prepare(err error) error {
+	if err := pathx.DeleteIfExists(o.jdkDir()); err != nil {
+		return err
+	}
 	url := o.DownloadURL
 	for search, replace := range o.DownloadURLReplacements {
 		url = strings.ReplaceAll(url, search, replace)
@@ -94,10 +109,6 @@ func (o *Opts) download() error {
 	if _, err = filex.UnarchiveWithChanged(archiveFile, o.jdkDir()); err != nil {
 		return err
 	}
-	if err := lock.Lock(); err != nil {
-		return err
-	}
-	log.Infof("unarchived new JDK at dir '%s'", o.jdkDir())
 	return nil
 }
 

@@ -67,16 +67,13 @@ func (s SDK) Prepare() error {
 }
 
 func (s SDK) prepare(zipFile string) error {
-	err := pathx.Delete(s.Dir())
-	if err != nil {
+	if err := pathx.DeleteIfExists(s.Dir()); err != nil {
 		return err
 	}
-	err = s.unpackSdk(zipFile)
-	if err != nil {
+	if err := s.unpackSdk(zipFile); err != nil {
 		return err
 	}
-	err = s.unpackDispatcher()
-	if err != nil {
+	if err := s.unpackDispatcher(); err != nil {
 		return err
 	}
 	return nil

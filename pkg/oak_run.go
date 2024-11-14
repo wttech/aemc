@@ -70,6 +70,9 @@ func (or OakRun) JarFile() string {
 }
 
 func (or OakRun) prepare() error {
+	if err := pathx.DeleteIfExists(or.Dir()); err != nil {
+		return err
+	}
 	jarFile := or.JarFile()
 	log.Infof("downloading Oak Run JAR from URL '%s' to file '%s'", or.DownloadURL, jarFile)
 	if err := httpx.DownloadOnce(or.DownloadURL, jarFile); err != nil {

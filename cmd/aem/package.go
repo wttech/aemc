@@ -574,7 +574,7 @@ func (c *CLI) pkgCreateCmd() *cobra.Command {
 	}
 	cmd.Flags().String("pid", "", "ID (group:name:version)'")
 	cmd.Flags().StringSliceP("filter-roots", "k", []string{}, "Vault filter root paths")
-	cmd.Flags().StringP("filter-file", "z", "", "Vault filter file path")
+	cmd.Flags().StringP("filter-file", "l", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
 	cmd.Flags().BoolP("force", "f", false, "Create even when already created")
 	_ = cmd.MarkFlagRequired("pid")

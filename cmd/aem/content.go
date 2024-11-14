@@ -78,9 +78,6 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 				return
 			}
 			targetPID, _ := cmd.Flags().GetString("target-pid")
-			if targetPID == "" {
-				targetPID = fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", timex.FileTimestampForNow())
-			}
 			targetFile, _ := cmd.Flags().GetString("target-file")
 			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
@@ -97,7 +94,8 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 			c.Changed("content downloaded")
 		},
 	}
-	cmd.Flags().StringP("target-pid", "p", "", "ID (group:name:version) for downloaded package")
+	defaultTargetPID := fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", timex.FileTimestampForNow())
+	cmd.Flags().StringP("target-pid", "p", defaultTargetPID, "ID (group:name:version) for downloaded package")
 	cmd.Flags().StringP("target-file", "t", "", "File path for downloaded package")
 	_ = cmd.MarkFlagRequired("target-file")
 	cmd.Flags().StringSliceP("filter-roots", "k", []string{}, "Vault filter root paths")

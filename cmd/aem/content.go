@@ -62,6 +62,7 @@ func (c *CLI) contentCleanCmd() *cobra.Command {
 	cmd.Flags().StringP("file", "f", "", "Local file path")
 	cmd.Flags().StringP("path", "p", "", "JCR root path or local file path")
 	cmd.MarkFlagsOneRequired("dir", "file", "path")
+	cmd.MarkFlagsMutuallyExclusive("dir", "file", "path")
 	return cmd
 }
 
@@ -76,16 +77,13 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			pid, _ := cmd.Flags().GetString("pid")
-			if pid == "" {
-				pid = fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", timex.FileTimestampForNow())
-			}
+			targetPID, _ := cmd.Flags().GetString("target-pid")
 			targetFile, _ := cmd.Flags().GetString("target-file")
 			filterRoots := determineFilterRoots(cmd)
 			filterFile, _ := cmd.Flags().GetString("filter-file")
 			clean, _ := cmd.Flags().GetBool("clean")
 			if err = c.aem.ContentManager().Download(instance, targetFile, clean, pkg.PackageCreateOpts{
-				PID:         pid,
+				PID:         targetPID,
 				FilterRoots: filterRoots,
 				FilterFile:  filterFile,
 			}); err != nil {
@@ -96,13 +94,15 @@ func (c *CLI) contentDownloadCmd() *cobra.Command {
 			c.Changed("content downloaded")
 		},
 	}
-	cmd.Flags().String("pid", "", "ID (group:name:version) for downloaded package")
-	cmd.Flags().StringP("target-file", "t", "", "Target file path for downloaded package")
+	defaultTargetPID := fmt.Sprintf("aemc:content-download:%s-SNAPSHOT", timex.FileTimestampForNow())
+	cmd.Flags().StringP("target-pid", "p", defaultTargetPID, "ID (group:name:version) for downloaded package")
+	cmd.Flags().StringP("target-file", "t", "", "File path for downloaded package")
 	_ = cmd.MarkFlagRequired("target-file")
-	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
-	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
+	cmd.Flags().StringSliceP("filter-roots", "k", []string{}, "Vault filter root paths")
+	cmd.Flags().StringP("filter-file", "l", "", "Vault filter file path")
 	cmd.MarkFlagsOneRequired("filter-roots", "filter-file")
-	cmd.Flags().Bool("clean", false, "Normalize content after downloading")
+	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
+	cmd.Flags().BoolP("clean", "c", false, "Normalize content after downloading")
 	return cmd
 }
 
@@ -157,14 +157,15 @@ func (c *CLI) contentPullCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringP("dir", "d", "", "JCR root path")
-	cmd.Flags().String("file", "", "Local file path")
+	cmd.Flags().StringP("file", "f", "", "Local file path")
 	cmd.Flags().StringP("path", "p", "", "JCR root path or local file path")
+	cmd.MarkFlagsOneRequired("dir", "file", "path")
 	cmd.MarkFlagsMutuallyExclusive("dir", "file", "path")
-	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
-	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
+	cmd.Flags().StringSliceP("filter-roots", "k", []string{}, "Vault filter root paths")
+	cmd.Flags().StringP("filter-file", "l", "", "Vault filter file path")
 	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
-	cmd.Flags().Bool("clean", false, "Normalize content after downloading")
-	cmd.Flags().Bool("replace", false, "Replace content after downloading")
+	cmd.Flags().BoolP("clean", "c", false, "Normalize content after downloading")
+	cmd.Flags().BoolP("replace", "r", false, "Replace content after downloading")
 	return cmd
 }
 
@@ -200,7 +201,7 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 			filterRoots := determineFilterRoots(cmd)
 			filterRootExcludes := determineFilterRootExcludes(cmd)
 			clean, _ := cmd.Flags().GetBool("clean")
-			filterMode := determineFilterMode(cmd)
+			filterMode, _ := cmd.Flags().GetString("filter-mode")
 			if err = c.aem.ContentManager().Push(instances, clean, pkg.PackageCreateOpts{
 				PID:                fmt.Sprintf("aemc:content-push:%s-SNAPSHOT", timex.FileTimestampForNow()),
 				FilterRoots:        filterRoots,
@@ -223,8 +224,9 @@ func (c *CLI) contentPushCmd() *cobra.Command {
 	cmd.Flags().StringP("file", "f", "", "Local file path")
 	cmd.Flags().StringP("path", "p", "", "JCR root path or local file path")
 	cmd.MarkFlagsOneRequired("dir", "file", "path")
-	cmd.Flags().Bool("clean", false, "Normalize content while uploading")
-	cmd.Flags().Bool("update", false, "Existing content on running instance is updated, new content is added and none is deleted")
+	cmd.MarkFlagsMutuallyExclusive("dir", "file", "path")
+	cmd.Flags().BoolP("clean", "c", false, "Normalize content while uploading")
+	cmd.Flags().StringP("filter-mode", "m", "", "Override default filter mode")
 	return cmd
 }
 
@@ -261,10 +263,12 @@ func (c *CLI) contentCopyCmd() *cobra.Command {
 	cmd.Flags().StringSliceP("instance-target-url", "u", []string{}, "Destination instance URL")
 	cmd.Flags().StringSliceP("instance-target-id", "i", []string{}, "Destination instance ID")
 	cmd.MarkFlagsOneRequired("instance-target-url", "instance-target-id")
-	cmd.Flags().StringSliceP("filter-roots", "r", []string{}, "Vault filter root paths")
-	cmd.Flags().StringP("filter-file", "f", "", "Vault filter file path")
+	cmd.MarkFlagsMutuallyExclusive("instance-target-url", "instance-target-id")
+	cmd.Flags().StringSliceP("filter-roots", "k", []string{}, "Vault filter root paths")
+	cmd.Flags().StringP("filter-file", "l", "", "Vault filter file path")
 	cmd.MarkFlagsOneRequired("filter-roots", "filter-file")
-	cmd.Flags().Bool("clean", false, "Normalize content while copying")
+	cmd.MarkFlagsMutuallyExclusive("filter-roots", "filter-file")
+	cmd.Flags().BoolP("clean", "c", false, "Normalize content while copying")
 	return cmd
 }
 
@@ -372,12 +376,4 @@ func determineFilterRootExcludes(cmd *cobra.Command) []string {
 		}
 	}
 	return filterRootExcludes
-}
-
-func determineFilterMode(cmd *cobra.Command) string {
-	update, _ := cmd.Flags().GetBool("update")
-	if update {
-		return "update"
-	}
-	return ""
 }

@@ -17,8 +17,8 @@ func NewOakRun(vendorManager *VendorManager) *OakRun {
 	return &OakRun{
 		vendorManager: vendorManager,
 
-		DownloadURL: cv.GetString("instance.local.oak_run.download_url"),
-		StorePath:   cv.GetString("instance.local.oak_run.store_path"),
+		DownloadURL: cv.GetString("vendor.oak_run.download_url"),
+		StorePath:   cv.GetString("vendor.oak_run.store_path"),
 	}
 }
 

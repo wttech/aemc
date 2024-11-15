@@ -95,8 +95,8 @@ func NewQuickstart(manager *VendorManager) *Quickstart {
 	cfg := manager.aem.config.Values()
 
 	return &Quickstart{
-		DistFile:    cfg.GetString("instance.local.quickstart.dist_file"),
-		LicenseFile: cfg.GetString("instance.local.quickstart.license_file"),
+		DistFile:    cfg.GetString("vendor.quickstart.dist_file"),
+		LicenseFile: cfg.GetString("vendor.quickstart.license_file"),
 	}
 }
 

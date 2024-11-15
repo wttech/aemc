@@ -19,7 +19,7 @@ func NewVaultCLI(vendorManager *VendorManager) *VaultCLI {
 	return &VaultCLI{
 		vendorManager: vendorManager,
 
-		DownloadURL: cv.GetString("vault.download_url"),
+		DownloadURL: cv.GetString("vendor.vault.download_url"),
 	}
 }
 

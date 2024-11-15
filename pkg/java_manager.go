@@ -31,10 +31,10 @@ func NewJavaManager(manager *VendorManager) *JavaManager {
 	return &JavaManager{
 		vendorManager: manager,
 
-		HomeDir:                 cv.GetString("java.home_dir"),
-		DownloadURL:             cv.GetString("java.download.url"),
-		DownloadURLReplacements: cv.GetStringMapString("java.download.replacements"),
-		VersionConstraints:      cv.GetString("java.version_constraints"),
+		HomeDir:                 cv.GetString("vendor.java.home_dir"),
+		DownloadURL:             cv.GetString("vendor.java.download.url"),
+		DownloadURLReplacements: cv.GetStringMapString("vendor.java.download.replacements"),
+		VersionConstraints:      cv.GetString("vendor.java.version_constraints"),
 	}
 }
 

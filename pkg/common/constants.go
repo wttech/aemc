@@ -24,6 +24,10 @@ const (
 	DefaultDirName    = "default"
 	DefaultDir        = MainDir + "/" + DefaultDirName
 	DispatcherHomeDir = "dispatcher/home"
+
+	QuickstartDistFile        = LibDir + "/{aem-sdk,cq-quickstart}-*.{zip,jar}"
+	QuickstartLicenseFile     = LibDir + "/" + QuickstartLicenseFilename
+	QuickstartLicenseFilename = "license.properties"
 )
 
 const (

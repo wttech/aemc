@@ -6,23 +6,12 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
-	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/timex"
 	"os"
 	"strings"
 	"time"
-)
-
-const (
-	UnpackDir   = common.VarDir + "/instance"
-	BackupDir   = common.VarDir + "/backup"
-	OverrideDir = common.DefaultDir + "/" + common.VarDirName + "/instance"
-
-	DistFile        = common.LibDir + "/{aem-sdk,cq-quickstart}-*.{zip,jar}"
-	LicenseFile     = common.LibDir + "/" + LicenseFilename
-	LicenseFilename = "license.properties"
 )
 
 type LocalOpts struct {

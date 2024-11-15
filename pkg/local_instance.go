@@ -178,7 +178,7 @@ func (li LocalInstance) binCbpExecutable() string {
 }
 
 func (li LocalInstance) LicenseFile() string {
-	return pathx.Canonical(li.Dir() + "/" + LicenseFilename)
+	return pathx.Canonical(li.Dir() + "/" + common.QuickstartLicenseFilename)
 }
 
 var (

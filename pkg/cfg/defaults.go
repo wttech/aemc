@@ -32,8 +32,8 @@ func (c *Config) setDefaults() {
 	v.SetDefault("output.log.mode", OutputLogConsole)
 	v.SetDefault("output.query", "")
 
-	v.SetDefault("vendor.quickstart.dist_file", common.LibDir+"/{aem-sdk,cq-quickstart}-*.{zip,jar}")
-	v.SetDefault("vendor.quickstart.license_file", common.LibDir+"/license.properties")
+	v.SetDefault("vendor.quickstart.dist_file", common.QuickstartDistFile)
+	v.SetDefault("vendor.quickstart.license_file", common.QuickstartLicenseFile)
 
 	v.SetDefault("vendor.java.home_dir", "")
 	v.SetDefault("vendor.java.version_constraints", ">= 11, < 12")

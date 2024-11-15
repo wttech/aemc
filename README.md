@@ -138,31 +138,29 @@ Supported project types:
 
 ---
 
-Run command below to initialize the AEM Compose tool in your project:
+Run command below to install the AEM Compose tool in your project:
 
 ```shell
-curl https://raw.githubusercontent.com/wttech/aemc/main/project-init.sh | sh
+curl https://raw.githubusercontent.com/wttech/aemc/main/project-install.sh | sh
 ```
 
-and then:
-
-```shell
-sh aemw init
-```
-
-After successful initialization, remember to always use the tool via wrapper script in the following way:
+After successful installation, remember to always use the tool via wrapper script in the following way:
 
 ```shell
 sh aemw [command]
 ```
 
-For example:
+Next scaffold the AEM Compose files in the project:
 
 ```shell
-sh aemw version
+sh aemw project scaffold
 ```
 
-Project initialization sets up ready-to-use tasks powered by [Task tool](https://taskfile.dev/) which are aggregating one or many AEM Compose CLI commands into useful procedures.
+Project scaffolding:
+
+- sets up ready-to-use tasks powered by [Task tool](https://taskfile.dev/), which aggregate one or many AEM Compose CLI commands into useful procedures.
+- provides configuration for provisioning AEM instances (installing service pack, setting replication agents, etc.).
+- provides configuration for running AEM Dispatcher on [Podman](https://podman-desktop.io/) or [Docker](https://www.docker.com/products/docker-desktop/).
 
 To list all available tasks, run:
 
@@ -174,19 +172,6 @@ For example:
 
 ```shell
 sh taskw setup
-```
-
-Some tasks like `aem:build` may accept parameters.
-For example, to build AEM application with:
-
-- Applying frontend development mode Maven profile
-- Unit tests skipping 
-- UI tests skipping
-
-Simply run command with appending [task variable](https://taskfile.dev/usage/#variables) to the end:
-
-```shell
-sh taskw aem:build AEM_BUILD_ARGS="-PfedDev -DskipTests -pl '!ui.tests'"
 ```
 
 ## IaaC Providers

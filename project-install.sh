@@ -19,7 +19,7 @@ chmod +x "${AEM_WRAPPER}"
 sh ${AEM_WRAPPER} version
 
 echo ""
-echo "Success! Now initialize the project files by running command below:"
+echo "Success! Now scaffold the AEM Compose files in the project by running command below:"
 echo ""
 
-echo "sh ${AEM_WRAPPER} init"
+echo "sh ${AEM_WRAPPER} project scaffold"

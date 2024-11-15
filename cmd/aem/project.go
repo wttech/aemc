@@ -21,42 +21,6 @@ func (c *CLI) projectCmd() *cobra.Command {
 
 const projectKindFlag = "project-kind"
 
-func (c *CLI) projectInitCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "init",
-		Aliases: []string{"initialize"},
-		Short:   "Initializes AEMC in the project",
-		Run: func(cmd *cobra.Command, args []string) {
-			if !c.aem.Project().IsScaffolded() {
-				c.Fail(fmt.Sprintf("project need to be set up before running initialization"))
-				return
-			}
-
-			vendorPrepared, err := c.aem.VendorManager().PrepareWithChanged()
-			if err != nil {
-				c.Error(err)
-				return
-			}
-			c.SetOutput("vendorPrepared", vendorPrepared)
-
-			gettingStarted, err := c.aem.Project().GettingStarted()
-			if err != nil {
-				c.Error(err)
-				return
-			}
-			c.SetOutput("gettingStarted", gettingStarted)
-
-			if vendorPrepared {
-				c.Changed("initialized")
-			} else {
-				c.Ok("nothing to initialize")
-			}
-		},
-	}
-	cmd.Flags().String(projectKindFlag, project.KindAuto, fmt.Sprintf("Type of AEM to work with (%s)", strings.Join(project.KindStrings(), "|")))
-	return cmd
-}
-
 func (c *CLI) projectScaffoldCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "scaffold",
@@ -94,5 +58,41 @@ func (c *CLI) projectScaffoldCmd() *cobra.Command {
 			}
 		},
 	}
+	return cmd
+}
+
+func (c *CLI) projectInitCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "init",
+		Aliases: []string{"initialize"},
+		Short:   "Initializes AEMC in the project",
+		Run: func(cmd *cobra.Command, args []string) {
+			if !c.aem.Project().IsScaffolded() {
+				c.Fail(fmt.Sprintf("project need to be set up before running initialization"))
+				return
+			}
+
+			vendorPrepared, err := c.aem.VendorManager().PrepareWithChanged()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("vendorPrepared", vendorPrepared)
+
+			gettingStarted, err := c.aem.Project().GettingStarted()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("gettingStarted", gettingStarted)
+
+			if vendorPrepared {
+				c.Changed("initialized")
+			} else {
+				c.Ok("nothing to initialize")
+			}
+		},
+	}
+	cmd.Flags().String(projectKindFlag, project.KindAuto, fmt.Sprintf("Type of AEM to work with (%s)", strings.Join(project.KindStrings(), "|")))
 	return cmd
 }

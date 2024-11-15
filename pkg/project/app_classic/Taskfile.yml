@@ -8,6 +8,8 @@ env:
   AEM_ENV: '{{.AEM_ENV | default "local"}}'
   AEM_INSTANCE_PROCESSING_MODE: auto
   AEM_OUTPUT_VALUE: NONE
+  JAVA_HOME:
+    sh: sh aemw vendor list --output-value javaHome
 
 dotenv:
   - '.env'              # VCS-ignored, user-specific
@@ -18,8 +20,7 @@ tasks:
   init:
     desc: initialize project
     cmds:
-      - sh aemw init
-      - sh aemw instance init
+      - sh aemw project init
 
   status:
     desc: check status of AEM instances and dispatcher
@@ -192,9 +193,13 @@ tasks:
       - all/target/*.all-*.zip
     vars:
       ARGS: -PfedDev {{.AEM_BUILD_ARGS}}
-      JAVA_HOME:
-        sh: sh aemw instance init --output-value javaHome
-    cmd: JAVA_HOME={{.JAVA_HOME}} mvn clean package {{.ARGS}}
+    cmd: sh mvnw clean package {{.ARGS}}
+
+  aem:build:version:
+    desc: check build tool versions
+    cmds:
+      - echo "JAVA_HOME=${JAVA_HOME}"
+      - sh mvnw -version
 
   aem:deploy:
     desc: deploy AEM application

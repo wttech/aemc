@@ -33,24 +33,17 @@ func (vm *VendorManager) InstanceJar() (string, error) {
 }
 
 func (vm *VendorManager) PrepareWithChanged() (bool, error) {
-	// validation phase (quick feedback)
-	sdk, err := vm.quickstart.IsDistSDK()
-	if err != nil {
-		return false, err
-	}
-	// preparation phase (slow feedback)
 	changed := false
-
-	baseChanged, err := vm.aem.BaseOpts().Prepare()
-	changed = changed || baseChanged
-	if err != nil {
-		return changed, err
-	}
 
 	javaChanged, err := vm.javaManager.PrepareWithChanged()
 	changed = changed || javaChanged
 	if err != nil {
 		return changed, err
+	}
+
+	sdk, err := vm.quickstart.IsDistSDK()
+	if err != nil {
+		return false, err
 	}
 	if sdk {
 		sdkChanged, err := vm.sdk.PrepareWithChanged()
@@ -59,16 +52,19 @@ func (vm *VendorManager) PrepareWithChanged() (bool, error) {
 			return changed, err
 		}
 	}
+
 	oakRunChanged, err := vm.oakRun.PrepareWithChanged()
 	changed = changed || oakRunChanged
 	if err != nil {
 		return changed, err
 	}
+
 	vaultCLIChanged, err := vm.vaultCLI.PrepareWithChanged()
 	changed = changed || vaultCLIChanged
 	if err != nil {
 		return changed, err
 	}
+
 	return changed, nil
 }
 

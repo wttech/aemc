@@ -3,6 +3,7 @@ package main
 import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 func (c *CLI) vendorCmd() *cobra.Command {
@@ -23,19 +24,22 @@ func (c *CLI) vendorListCmd() *cobra.Command {
 		Short:   "List vendor tools available",
 		Aliases: []string{"ls"},
 		Run: func(cmd *cobra.Command, args []string) {
-			errored := false
+			verbose, _ := cmd.Flags().GetBool("verbose")
 
 			javaHome, err := c.aem.VendorManager().JavaManager().FindHomeDir()
 			if err != nil {
-				errored = true
-				log.Warnf("java home not available: %s", err)
+				javaHome = os.Getenv("JAVA_HOME")
+				if verbose {
+					log.Warnf("java home not available: %s", err)
+				}
 			}
 			c.SetOutput("javaHome", javaHome)
 
 			javaExecutable, err := c.aem.VendorManager().JavaManager().Executable()
 			if err != nil {
-				errored = true
-				log.Warnf("java executable not available: %s", err)
+				if verbose {
+					log.Warnf("java executable not available: %s", err)
+				}
 			}
 			c.SetOutput("javaExecutable", javaExecutable)
 
@@ -45,13 +49,10 @@ func (c *CLI) vendorListCmd() *cobra.Command {
 			oakRunJar := c.aem.VendorManager().OakRun().JarFile()
 			c.setOutput("oakRunJar", oakRunJar)
 
-			if errored {
-				c.Fail("vendor tool listed with errors")
-			} else {
-				c.Ok("vendor tools listed")
-			}
+			c.Ok("vendor tools listed")
 		},
 	}
+	cmd.Flags().BoolP("verbose", "v", false, "Log errors")
 	return cmd
 }
 

@@ -17,6 +17,7 @@ func (c *Config) setDefaults() {
 	v.SetDefault("log.timestamp_format", "2006-01-02 15:04:05")
 	v.SetDefault("log.full_timestamp", true)
 
+	v.SetDefault("base.lib_dir", common.LibDir)
 	v.SetDefault("base.tmp_dir", common.TmpDir)
 	v.SetDefault("base.tool_dir", common.ToolDir)
 	v.SetDefault("base.cache_dir", common.CacheDir)

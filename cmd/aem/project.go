@@ -44,12 +44,7 @@ func (c *CLI) projectScaffoldCmd() *cobra.Command {
 				return
 			}
 
-			gettingStarted, err := c.aem.Project().GettingStarted()
-			if err != nil {
-				c.Error(err)
-				return
-			}
-			c.SetOutput("gettingStarted", gettingStarted)
+			c.SetOutput("gettingStarted", c.aem.Project().ScaffoldGettingStarted())
 
 			if changed {
 				c.Changed("project files scaffolded")
@@ -68,31 +63,45 @@ func (c *CLI) projectInitCmd() *cobra.Command {
 		Short:   "Initializes AEMC in the project",
 		Run: func(cmd *cobra.Command, args []string) {
 			if !c.aem.Project().IsScaffolded() {
-				c.Fail(fmt.Sprintf("project need to be set up before running initialization"))
+				c.Fail(fmt.Sprintf("project need to be scaffolded before running initialization"))
 				return
 			}
 
+			changed := false
+
+			c.SetOutput("gettingStarted", c.aem.Project().InitGettingStartedError())
+
+			baseChanged, err := c.aem.BaseOpts().PrepareWithChanged()
+			changed = changed || baseChanged
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("baseChanged", baseChanged)
+
+			// Download and prepare vendor tools (including JDK and AEM SDK)
 			vendorPrepared, err := c.aem.VendorManager().PrepareWithChanged()
+			changed = changed || vendorPrepared
 			if err != nil {
 				c.Error(err)
 				return
 			}
 			c.SetOutput("vendorPrepared", vendorPrepared)
 
-			gettingStarted, err := c.aem.Project().GettingStarted()
-			if err != nil {
+			// Validate AEM instance files and prepared SDK
+			if err := c.aem.InstanceManager().LocalOpts.Validate(); err != nil {
 				c.Error(err)
 				return
 			}
-			c.SetOutput("gettingStarted", gettingStarted)
 
-			if vendorPrepared {
-				c.Changed("initialized")
+			c.SetOutput("gettingStarted", c.aem.Project().InitGettingStartedSuccess())
+
+			if changed {
+				c.Changed("project initialized")
 			} else {
-				c.Ok("nothing to initialize")
+				c.Ok("project already initialized")
 			}
 		},
 	}
-	cmd.Flags().String(projectKindFlag, project.KindAuto, fmt.Sprintf("Type of AEM to work with (%s)", strings.Join(project.KindStrings(), "|")))
 	return cmd
 }

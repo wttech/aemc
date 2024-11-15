@@ -8,6 +8,8 @@ env:
   AEM_ENV: '{{.AEM_ENV | default "local"}}'
   AEM_INSTANCE_PROCESSING_MODE: auto
   AEM_OUTPUT_VALUE: NONE
+  JAVA_HOME:
+    sh: sh aemw vendor list --output-value javaHome
 
 dotenv:
   - '.env'              # VCS-ignored, user-specific
@@ -18,8 +20,7 @@ tasks:
   init:
     desc: initialize project
     cmds:
-      - sh aemw init
-      - sh aemw instance init
+      - sh aemw project init
 
   setup:
     desc: start and provision AEM instances

@@ -93,9 +93,6 @@ func (p Project) ScaffoldWithChanged(kind Kind) (bool, error) {
 }
 
 func (p Project) Scaffold(kind Kind) error {
-	if err := p.scaffoldConventionalDirs(); err != nil {
-		return err
-	}
 	if err := p.scaffoldDefaultFiles(kind); err != nil {
 		return err
 	}
@@ -103,17 +100,6 @@ func (p Project) Scaffold(kind Kind) error {
 		return err
 	}
 	if err := p.scaffoldLocalEnvFile(kind); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (p Project) scaffoldConventionalDirs() error {
-	log.Infof("ensuring conventional project directories")
-	if err := pathx.Ensure(common.LibDir); err != nil {
-		return err
-	}
-	if err := pathx.Ensure(common.TmpDir); err != nil {
 		return err
 	}
 	return nil
@@ -273,14 +259,12 @@ func (p Project) DirsIgnored() []string {
 	return []string{common.HomeDir, common.DispatcherHomeDir}
 }
 
-func (p Project) GettingStarted() (string, error) {
+func (p Project) ScaffoldGettingStarted() string {
 	text := fmt.Sprintf(strings.Join([]string{
 		"As a next step provide AEM files (JAR or sdk ZIP, license, service packs) to directory '" + common.LibDir + "'.",
 		"Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '" + cfg.FileDefault + "'.",
 		"",
-		fmt.Sprintf("Make sure to exclude the directories from VCS versioning and IDE indexing: %s", strings.Join(p.DirsIgnored(), ", ")),
-		"",
-		"Finally, use tasks to manage AEM instances and more:",
+		"Use tasks to manage AEM instances and more:",
 		"",
 		"sh taskw --list",
 		"",
@@ -289,5 +273,30 @@ func (p Project) GettingStarted() (string, error) {
 		"",
 		"sh aemw --help",
 	}, "\n"))
-	return text, nil
+	return text
+}
+
+func (p Project) InitGettingStartedError() string {
+	text := fmt.Sprintf(strings.Join([]string{
+		"Be sure to provide AEM files (JAR or sdk ZIP, license, service packs) to directory '" + common.LibDir + "'.",
+	}, "\n"))
+	return text
+}
+
+func (p Project) InitGettingStartedSuccess() string {
+	text := fmt.Sprintf(strings.Join([]string{
+		"AEM Compose project is ready to use.",
+		"",
+		fmt.Sprintf("Make sure to exclude the directories from VCS versioning and IDE indexing: %s", strings.Join(p.DirsIgnored(), ", ")),
+		"",
+		"Use tasks to manage AEM instances and more:",
+		"",
+		"sh taskw --list",
+		"",
+		"It is also possible to run individual AEM Compose CLI commands separately.",
+		"Discover available commands by running:",
+		"",
+		"sh aemw --help",
+	}, "\n"))
+	return text
 }

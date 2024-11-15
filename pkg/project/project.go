@@ -268,7 +268,7 @@ func (p Project) GettingStarted(kind Kind) (string, error) {
 		dirsIgnored = []string{common.HomeDir, common.DispatcherHomeDir}
 	}
 	text := fmt.Sprintf(strings.Join([]string{
-		"As a next step provide AEM files (JAR or SDK ZIP, license, service packs) to directory '" + common.LibDir + "'.",
+		"As a next step provide AEM files (JAR or sdk ZIP, license, service packs) to directory '" + common.LibDir + "'.",
 		"Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '" + cfg.FileDefault + "'.",
 		"",
 		fmt.Sprintf("Make sure to exclude the directories from VCS versioning and IDE indexing: %s", strings.Join(dirsIgnored, ", ")),

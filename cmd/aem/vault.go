@@ -10,8 +10,8 @@ func (c *CLI) vaultCmd() *cobra.Command {
 		Use:   "vlt",
 		Short: "Executes Vault commands",
 		Run: func(cmd *cobra.Command, args []string) {
-			argsWithVlt := os.Args[1:]                     // TODO why not 'args' from the Run function?
-			_ = c.aem.VaultCLI().CommandShell(argsWithVlt) // TODO proper error handling
+			argsWithVlt := os.Args[1:]                                     // TODO why not 'args' from the Run function?
+			_ = c.aem.VendorManager().VaultCLI().CommandShell(argsWithVlt) // TODO proper error handling
 		},
 		Args: cobra.ArbitraryArgs,
 		FParseErrWhitelist: cobra.FParseErrWhitelist{
@@ -19,7 +19,7 @@ func (c *CLI) vaultCmd() *cobra.Command {
 		},
 	}
 	cmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		_ = c.aem.VaultCLI().CommandShell(args)
+		_ = c.aem.VendorManager().VaultCLI().CommandShell(args)
 	})
 	return cmd
 }

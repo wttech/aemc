@@ -13,18 +13,18 @@ import (
 	"strings"
 )
 
-func NewVaultCLI(aem *AEM) *VaultCLI {
-	cv := aem.baseOpts.Config().Values()
+func NewVaultCLI(vendorManager *VendorManager) *VaultCLI {
+	cv := vendorManager.aem.baseOpts.Config().Values()
 
 	return &VaultCLI{
-		aem: aem,
+		vendorManager: vendorManager,
 
 		DownloadURL: cv.GetString("vault.download_url"),
 	}
 }
 
 type VaultCLI struct {
-	aem *AEM
+	vendorManager *VendorManager
 
 	DownloadURL string
 }
@@ -34,15 +34,19 @@ type VaultCLILock struct {
 }
 
 func (v VaultCLI) dir() string {
-	if v.aem.Detached() {
+	if v.vendorManager.aem.Detached() {
 		return filepath.Join(os.TempDir(), "vault-cli")
 	}
-	return filepath.Join(v.aem.baseOpts.ToolDir, "vault-cli")
+	return filepath.Join(v.vendorManager.aem.baseOpts.ToolDir, "vault-cli")
 }
 
 func (v VaultCLI) execDir() string {
 	vaultDir, _, _ := strings.Cut(filepath.Base(v.DownloadURL), "-bin")
 	return filepath.Join(v.dir(), vaultDir, "bin")
+}
+
+func (v VaultCLI) JarFile() string {
+	return "<path>/bin/vlt" // TODO c.aem.VaultCLI().JarFile()
 }
 
 func (v VaultCLI) lock() osx.Lock[VaultCLILock] {
@@ -102,7 +106,7 @@ func (v VaultCLI) CommandShell(args []string) error {
 	}
 	cmd := execx.CommandShell(args)
 	cmd.Dir = v.execDir() // TODO do not change dir, but prepend with absolute executable; so args should skip 'vlt'
-	v.aem.CommandOutput(cmd)
+	v.vendorManager.aem.CommandOutput(cmd)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot run Vault command: %w", err)
 	}

@@ -10,16 +10,16 @@ import (
 	"path/filepath"
 )
 
-func NewSDK(localOpts *LocalOpts) *SDK {
-	return &SDK{localOpts: localOpts}
+func NewSDK(vendorManager *VendorManager) *SDK {
+	return &SDK{vendorManager: vendorManager}
 }
 
 type SDK struct {
-	localOpts *LocalOpts
+	vendorManager *VendorManager
 }
 
 func (s SDK) Dir() string {
-	return fmt.Sprintf("%s/%s", s.localOpts.manager.aem.baseOpts.ToolDir, "sdk")
+	return fmt.Sprintf("%s/%s", s.vendorManager.aem.baseOpts.ToolDir, "sdk")
 }
 
 type SDKLock struct {
@@ -33,7 +33,7 @@ func (s SDK) lock(zipFile string) osx.Lock[SDKLock] {
 }
 
 func (s SDK) Prepare() error {
-	zipFile, err := s.localOpts.Quickstart.FindDistFile()
+	zipFile, err := s.vendorManager.quickstart.FindDistFile()
 	if err != nil {
 		return err
 	}
@@ -80,12 +80,12 @@ func (s SDK) prepare(zipFile string) error {
 }
 
 func (s SDK) unpackSdk(zipFile string) error {
-	log.Infof("unpacking SDK ZIP '%s' to dir '%s'", zipFile, s.Dir())
+	log.Infof("unpacking sdk ZIP '%s' to dir '%s'", zipFile, s.Dir())
 	err := filex.Unarchive(zipFile, s.Dir())
 	if err != nil {
-		return fmt.Errorf("cannot unpack SDK ZIP '%s' to dir '%s': %w", zipFile, s.Dir(), err)
+		return fmt.Errorf("cannot unpack sdk ZIP '%s' to dir '%s': %w", zipFile, s.Dir(), err)
 	}
-	log.Infof("unpacked SDK ZIP '%s' to dir '%s'", zipFile, s.Dir())
+	log.Infof("unpacked sdk ZIP '%s' to dir '%s'", zipFile, s.Dir())
 	return nil
 }
 
@@ -123,9 +123,9 @@ func (s SDK) unpackDispatcher() error {
 		if err != nil {
 			return err
 		}
-		log.Infof("unpacking SDK dispatcher tools ZIP '%s' to dir '%s'", zip, s.DispatcherDir())
+		log.Infof("unpacking sdk dispatcher tools ZIP '%s' to dir '%s'", zip, s.DispatcherDir())
 		err = filex.Unarchive(zip, s.DispatcherDir())
-		log.Infof("unpacked SDK dispatcher tools ZIP '%s' to dir '%s'", zip, s.DispatcherDir())
+		log.Infof("unpacked sdk dispatcher tools ZIP '%s' to dir '%s'", zip, s.DispatcherDir())
 		if err != nil {
 			return err
 		}
@@ -134,13 +134,13 @@ func (s SDK) unpackDispatcher() error {
 		if err != nil {
 			return err
 		}
-		log.Infof("unpacking SDK dispatcher tools using script '%s' to dir '%s'", script, s.DispatcherDir())
+		log.Infof("unpacking sdk dispatcher tools using script '%s' to dir '%s'", script, s.DispatcherDir())
 		cmd := execx.CommandShell([]string{script, "--target", s.DispatcherDir()})
-		s.localOpts.manager.aem.CommandOutput(cmd)
+		s.vendorManager.aem.CommandOutput(cmd)
 		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("cannot run SDK dispatcher tools unpacking script '%s': %w", script, err)
+			return fmt.Errorf("cannot run sdk dispatcher tools unpacking script '%s': %w", script, err)
 		}
-		log.Infof("unpacked SDK dispatcher tools using script '%s' to dir '%s'", script, s.DispatcherDir())
+		log.Infof("unpacked sdk dispatcher tools using script '%s' to dir '%s'", script, s.DispatcherDir())
 	}
 	return nil
 }

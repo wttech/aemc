@@ -57,29 +57,29 @@ func (c *CLI) prepareCmd() *cobra.Command {
 		Aliases: []string{"prep"},
 		Short:   "Prepare vendor tools",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := c.aem.Prepare(); err != nil {
+			if err := c.aem.VendorManager().Prepare(); err != nil {
 				c.Error(err)
 				return
 			}
 
-			javaHome, err := c.aem.JavaOpts().FindHomeDir()
+			javaHome, err := c.aem.VendorManager().JavaManager().FindHomeDir()
 			if err != nil {
 				c.Error(err)
 				return
 			}
 			c.SetOutput("javaHome", javaHome)
 
-			javaExecutable, err := c.aem.JavaOpts().Executable()
+			javaExecutable, err := c.aem.VendorManager().JavaManager().Executable()
 			if err != nil {
 				c.Error(err)
 				return
 			}
 			c.SetOutput("javaExecutable", javaExecutable)
 
-			vaultJar := "<path>/bin/vlt" // TODO c.aem.VaultCLI().JarFile()
+			vaultJar := c.aem.VendorManager().VaultCLI().JarFile()
 			c.setOutput("vaultJar", vaultJar)
 
-			oakRunJar := c.aem.InstanceManager().LocalOpts.OakRun.JarFile()
+			oakRunJar := c.aem.VendorManager().OakRun().JarFile()
 			c.setOutput("oakRunJar", oakRunJar)
 
 			c.SetOutput("prepared", true)

@@ -23,7 +23,7 @@ func (c *CLI) instanceCmd() *cobra.Command {
 	cmd.AddCommand(c.instanceListCmd())
 	cmd.AddCommand(c.instanceAwaitCmd())
 	cmd.AddCommand(c.instanceBackupCmd())
-	cmd.AddCommand(c.instanceInitCmd())
+	cmd.AddCommand(c.instanceValidateCmd())
 	cmd.AddCommand(c.instanceImportCmd())
 	return cmd
 }
@@ -335,19 +335,19 @@ func (c *CLI) instanceListCmd() *cobra.Command {
 	}
 }
 
-func (c *CLI) instanceInitCmd() *cobra.Command {
+func (c *CLI) instanceValidateCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:     "init",
-		Aliases: []string{"initialize"},
-		Short:   "Init prerequisites for AEM instance(s)",
+		Use:     "validate",
+		Aliases: []string{"verify"},
+		Short:   "Validate prerequisites for AEM instance(s)",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := c.aem.InstanceManager().LocalOpts.Initialize(); err != nil {
+			if err := c.aem.InstanceManager().LocalOpts.Validate(); err != nil {
 				c.Error(err)
 				return
 			}
 
-			c.SetOutput("initialized", true)
-			c.Changed("initialized prerequisites for instance(s)")
+			c.SetOutput("validated", true)
+			c.Changed("Validated prerequisites for instance(s)")
 		},
 	}
 }

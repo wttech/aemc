@@ -46,7 +46,7 @@ func NewLocalOpts(manager *InstanceManager) *LocalOpts {
 	return result
 }
 
-func (o *LocalOpts) Initialize() error {
+func (o *LocalOpts) Validate() error {
 	// validate phase (fast feedback)
 	if err := o.validateUnpackDir(); err != nil {
 		return err
@@ -127,7 +127,7 @@ func (im *InstanceManager) CreateAll() ([]Instance, error) {
 
 func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 	created := []Instance{}
-	if err := im.LocalOpts.Initialize(); err != nil {
+	if err := im.LocalOpts.Validate(); err != nil {
 		return created, err
 	}
 	log.Info(InstancesMsg(instances, "creating"))
@@ -202,7 +202,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		log.Debugf("no instances to start")
 		return []Instance{}, nil
 	}
-	if err := im.LocalOpts.Initialize(); err != nil {
+	if err := im.LocalOpts.Validate(); err != nil {
 		return []Instance{}, err
 	}
 

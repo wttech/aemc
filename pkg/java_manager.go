@@ -58,37 +58,40 @@ func (jm *JavaManager) jdkDir() string {
 	return fmt.Sprintf("%s/%s", jm.toolDir(), "jdk")
 }
 
-func (jm *JavaManager) Prepare() error {
+func (jm *JavaManager) PrepareWithChanged() (bool, error) {
+	changed := false
 	if jm.HomeDir == "" && jm.DownloadURL != "" {
-		if err := jm.download(); err != nil {
-			return err
+		downloaded, err := jm.download()
+		changed = downloaded
+		if err != nil {
+			return downloaded, err
 		}
 	}
 	if err := jm.checkVersion(); err != nil {
-		return err
+		return changed, err
 	}
-	return nil
+	return changed, nil
 }
 
-func (jm *JavaManager) download() error {
+func (jm *JavaManager) download() (bool, error) {
 	lock := jm.downloadLock()
 	check, err := lock.State()
 	if err != nil {
-		return err
+		return false, err
 	}
 	if check.UpToDate {
 		log.Debugf("existing JDK '%s' is up-to-date", check.Locked.Source)
-		return nil
+		return false, nil
 	}
 	log.Infof("preparing new JDK at dir '%s'", jm.jdkDir())
 	if err = jm.prepare(err); err != nil {
-		return err
+		return false, err
 	}
 	if err := lock.Lock(); err != nil {
-		return err
+		return false, err
 	}
 	log.Infof("prepared new JDK at dir '%s'", jm.jdkDir())
-	return nil
+	return true, nil
 }
 
 func (jm *JavaManager) prepare(err error) error {

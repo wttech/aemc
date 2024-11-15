@@ -12,17 +12,13 @@ type VendorManager struct {
 }
 
 func NewVendorManager(aem *AEM) *VendorManager {
-	result := new(VendorManager)
-
-	return &VendorManager{
-		aem: aem,
-
-		javaManager: NewJavaManager(result),
-		vaultCLI:    NewVaultCLI(result),
-		quickstart:  NewQuickstart(result),
-		oakRun:      NewOakRun(result),
-		sdk:         NewSDK(result),
-	}
+	result := &VendorManager{aem: aem}
+	result.javaManager = NewJavaManager(result)
+	result.sdk = NewSDK(result)
+	result.quickstart = NewQuickstart(result)
+	result.oakRun = NewOakRun(result)
+	result.vaultCLI = NewVaultCLI(result)
+	return result
 }
 
 func (vm *VendorManager) InstanceJar() (string, error) {
@@ -36,32 +32,44 @@ func (vm *VendorManager) InstanceJar() (string, error) {
 	return vm.quickstart.FindDistFile()
 }
 
-// TODO make this method idempotent
-func (vm *VendorManager) Prepare() error {
+func (vm *VendorManager) PrepareWithChanged() (bool, error) {
 	// validation phase (quick feedback)
 	sdk, err := vm.quickstart.IsDistSDK()
 	if err != nil {
-		return err
+		return false, err
 	}
 	// preparation phase (slow feedback)
-	if err := vm.aem.BaseOpts().Prepare(); err != nil {
-		return err
+	changed := false
+
+	baseChanged, err := vm.aem.BaseOpts().Prepare()
+	changed = changed || baseChanged
+	if err != nil {
+		return changed, err
 	}
-	if err := vm.javaManager.Prepare(); err != nil {
-		return err
+
+	javaChanged, err := vm.javaManager.PrepareWithChanged()
+	changed = changed || javaChanged
+	if err != nil {
+		return changed, err
 	}
 	if sdk {
-		if err := vm.sdk.Prepare(); err != nil {
-			return err
+		sdkChanged, err := vm.sdk.PrepareWithChanged()
+		changed = changed || sdkChanged
+		if err != nil {
+			return changed, err
 		}
 	}
-	if err := vm.oakRun.Prepare(); err != nil {
-		return err
+	oakRunChanged, err := vm.oakRun.PrepareWithChanged()
+	changed = changed || oakRunChanged
+	if err != nil {
+		return changed, err
 	}
-	if err := vm.vaultCLI.Prepare(); err != nil {
-		return err
+	vaultCLIChanged, err := vm.vaultCLI.PrepareWithChanged()
+	changed = changed || vaultCLIChanged
+	if err != nil {
+		return changed, err
 	}
-	return nil
+	return changed, nil
 }
 
 func (vm *VendorManager) JavaManager() *JavaManager {

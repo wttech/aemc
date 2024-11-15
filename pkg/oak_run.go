@@ -41,28 +41,28 @@ func (or OakRun) lock() osx.Lock[OakRunLock] {
 	return osx.NewLock(or.Dir()+"/lock/create.yml", func() (OakRunLock, error) { return OakRunLock{DownloadURL: or.DownloadURL}, nil })
 }
 
-func (or OakRun) Prepare() error {
+func (or OakRun) PrepareWithChanged() (bool, error) {
 	lock := or.lock()
 	check, err := lock.State()
 	if err != nil {
-		return err
+		return false, err
 	}
 	if check.UpToDate {
 		log.Debugf("existing OakRun '%s' is up-to-date", or.DownloadURL)
-		return nil
+		return false, nil
 	}
 	log.Infof("preparing new OakRun '%s'", or.DownloadURL)
 	err = or.prepare()
 	if err != nil {
-		return err
+		return false, err
 	}
 	err = lock.Lock()
 	if err != nil {
-		return err
+		return false, err
 	}
 	log.Infof("prepared new OakRun '%s'", or.DownloadURL)
 
-	return nil
+	return true, nil
 }
 
 func (or OakRun) JarFile() string {

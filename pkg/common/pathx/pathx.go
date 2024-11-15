@@ -89,6 +89,21 @@ func Ensure(path string) error {
 	return nil
 }
 
+func EnsureWithChanged(path string) (bool, error) {
+	exists, err := ExistsStrict(path)
+	if err != nil {
+		return false, err
+	}
+	if exists {
+		return false, nil
+	}
+	err = Ensure(path)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func Ext(path string) string {
 	return strings.TrimPrefix(filepath.Ext(path), ".")
 }

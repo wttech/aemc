@@ -29,12 +29,15 @@ func (o *Opts) Config() *cfg.Config {
 	return o.config
 }
 
-func (o *Opts) Prepare() error {
-	if err := pathx.Ensure(o.TmpDir); err != nil {
-		return err
+func (o *Opts) Prepare() (bool, error) {
+	changed := false
+	dirs := []string{o.TmpDir, o.ToolDir, o.CacheDir}
+	for _, dir := range dirs {
+		dirEnsured, err := pathx.EnsureWithChanged(dir)
+		changed = changed || dirEnsured
+		if err != nil {
+			return changed, err
+		}
 	}
-	if err := pathx.Ensure(o.ToolDir); err != nil {
-		return err
-	}
-	return nil
+	return changed, nil
 }

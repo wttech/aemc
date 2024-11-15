@@ -53,28 +53,28 @@ func (v VaultCLI) lock() osx.Lock[VaultCLILock] {
 	return osx.NewLock(v.dir()+"/lock/create.yml", func() (VaultCLILock, error) { return VaultCLILock{DownloadURL: v.DownloadURL}, nil })
 }
 
-func (v VaultCLI) Prepare() error {
+func (v VaultCLI) PrepareWithChanged() (bool, error) {
 	lock := v.lock()
 	check, err := lock.State()
 	if err != nil {
-		return err
+		return false, err
 	}
 	if check.UpToDate {
 		log.Debugf("existing Vault '%s' is up-to-date", v.DownloadURL)
-		return nil
+		return false, nil
 	}
 	log.Infof("preparing new Vault '%s'", v.DownloadURL)
 	err = v.prepare()
 	if err != nil {
-		return err
+		return false, err
 	}
 	err = lock.Lock()
 	if err != nil {
-		return err
+		return false, err
 	}
 	log.Infof("prepared new Vault '%s'", v.DownloadURL)
 
-	return nil
+	return true, nil
 }
 
 func (v VaultCLI) archiveFile() string {
@@ -101,9 +101,8 @@ func (v VaultCLI) prepare() error {
 }
 
 func (v VaultCLI) CommandShell(args []string) error {
-	if err := v.Prepare(); err != nil {
-		return fmt.Errorf("cannot prepare Vault before running command: %w", err)
-	}
+	// TODO check if vault is prepared
+
 	cmd := execx.CommandShell(args)
 	cmd.Dir = v.execDir() // TODO do not change dir, but prepend with absolute executable; so args should skip 'vlt'
 	v.vendorManager.aem.CommandOutput(cmd)

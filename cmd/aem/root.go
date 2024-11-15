@@ -20,8 +20,8 @@ func (c *CLI) rootCmd() *cobra.Command {
 	}
 	cmd.AddCommand(c.versionCmd())
 	cmd.AddCommand(c.initCmd())
-	cmd.AddCommand(c.prepareCmd())
 
+	cmd.AddCommand(c.vendorCmd())
 	cmd.AddCommand(c.configCmd())
 	cmd.AddCommand(c.instanceCmd())
 	cmd.AddCommand(c.osgiCmd())
@@ -38,6 +38,7 @@ func (c *CLI) rootCmd() *cobra.Command {
 	cmd.AddCommand(c.vaultCmd())
 
 	c.rootFlags(cmd)
+
 	return cmd
 }
 

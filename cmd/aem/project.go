@@ -29,17 +29,28 @@ func (c *CLI) initCmd() *cobra.Command {
 				c.Fail(fmt.Sprintf("project kind cannot be determined; specify it with flag '--%s=[%s]'", projectKindFlag, strings.Join(project.KindStrings(), "|")))
 				return
 			}
-			changed, err := c.aem.Project().InitializeWithChanged(kind)
+
+			changed := false
+			projectChanged, err := c.aem.Project().InitializeWithChanged(kind)
+			changed = changed || projectChanged
 			if err != nil {
 				c.Error(err)
 				return
 			}
+			vendorChanged, err := c.aem.VendorManager().PrepareWithChanged()
+			changed = changed || vendorChanged
+			if err != nil {
+				c.Error(err)
+				return
+			}
+
 			gettingStarted, err := c.aem.Project().GettingStarted(kind)
 			if err != nil {
 				c.Error(err)
 				return
 			}
 			c.SetOutput("gettingStarted", gettingStarted)
+
 			if changed {
 				c.Changed("project initialized")
 			} else {
@@ -48,51 +59,5 @@ func (c *CLI) initCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().String(projectKindFlag, project.KindAuto, fmt.Sprintf("Type of AEM to work with (%s)", strings.Join(project.KindStrings(), "|")))
-	return cmd
-}
-
-func (c *CLI) prepareCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "prepare",
-		Aliases: []string{"prep"},
-		Short:   "Prepare vendor tools",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := c.aem.VendorManager().Prepare(); err != nil {
-				c.Error(err)
-				return
-			}
-
-			javaHome, err := c.aem.VendorManager().JavaManager().FindHomeDir()
-			if err != nil {
-				c.Error(err)
-				return
-			}
-			c.SetOutput("javaHome", javaHome)
-
-			javaExecutable, err := c.aem.VendorManager().JavaManager().Executable()
-			if err != nil {
-				c.Error(err)
-				return
-			}
-			c.SetOutput("javaExecutable", javaExecutable)
-
-			vaultJar := c.aem.VendorManager().VaultCLI().JarFile()
-			c.setOutput("vaultJar", vaultJar)
-
-			oakRunJar := c.aem.VendorManager().OakRun().JarFile()
-			c.setOutput("oakRunJar", oakRunJar)
-
-			c.SetOutput("prepared", true)
-			c.Ok("prepared vendor tools")
-
-			/* TODO implement if possible
-			if changed {
-				c.Changed("project prepared")
-			} else {
-				c.Ok("project already prepared")
-			}
-			*/
-		},
-	}
 	return cmd
 }

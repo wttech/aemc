@@ -32,38 +32,38 @@ func (s SDK) lock(zipFile string) osx.Lock[SDKLock] {
 	})
 }
 
-func (s SDK) Prepare() error {
+func (s SDK) PrepareWithChanged() (bool, error) {
 	zipFile, err := s.vendorManager.quickstart.FindDistFile()
 	if err != nil {
-		return err
+		return false, err
 	}
 	lock := s.lock(zipFile)
 	check, err := lock.State()
 	if err != nil {
-		return err
+		return false, err
 	}
 	if check.UpToDate {
 		log.Debugf("existing SDK '%s' is up-to-date", zipFile)
-		return nil
+		return false, nil
 	}
 	log.Infof("preparing new SDK '%s'", zipFile)
 	err = s.prepare(zipFile)
 	if err != nil {
-		return err
+		return false, err
 	}
 	err = lock.Lock()
 	if err != nil {
-		return err
+		return false, err
 	}
 	log.Infof("prepared new SDK '%s'", zipFile)
 
 	jar, err := s.QuickstartJar()
 	if err != nil {
-		return err
+		return false, err
 	}
 	log.Debugf("found JAR '%s' in unpacked SDK '%s'", jar, zipFile)
 
-	return nil
+	return true, nil
 }
 
 func (s SDK) prepare(zipFile string) error {

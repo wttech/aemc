@@ -33,10 +33,10 @@ func (c *Config) setDefaults() {
 
 	v.SetDefault("java.home_dir", "")
 	v.SetDefault("java.version_constraints", ">= 11, < 12")
-	v.SetDefault("java.download.url", c.tplString("https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.18_10.[[.ArchiveExt]]"))
+	v.SetDefault("java.download.url", c.tplString("https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.25_9.[[.ArchiveExt]]"))
 	v.SetDefault("java.download.replacements", map[string]string{"darwin": "mac", "x86_64": "x64", "amd64": "x64", "386": "x86-32", "arm64": "x64", "aarch64": "x64"})
 
-	v.SetDefault("vault.download_url", "https://repo1.maven.org/maven2/org/apache/jackrabbit/vault/vault-cli/3.7.2/vault-cli-3.7.2-bin.tar.gz")
+	v.SetDefault("vault.download_url", "https://repo1.maven.org/maven2/org/apache/jackrabbit/vault/vault-cli/3.8.2/vault-cli-3.8.2-bin.tar.gz")
 
 	v.SetDefault("instance.processing_mode", instance.ProcessingAuto)
 
@@ -93,7 +93,7 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.local.await_strict", true)
 	v.SetDefault("instance.local.service_mode", false)
 
-	v.SetDefault("instance.local.oak_run.download_url", "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.44.0/oak-run-1.44.0.jar")
+	v.SetDefault("instance.local.oak_run.download_url", "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.72.0/oak-run-1.72.0.jar")
 	v.SetDefault("instance.local.oak_run.store_path", "crx-quickstart/repository/segmentstore")
 
 	v.SetDefault("instance.status.timeout", time.Millisecond*500)

@@ -45,8 +45,6 @@ func (c *CLI) vendorListCmd() *cobra.Command {
 			c.Ok("vendors listed")
 		},
 	}
-	replActivationFlags(cmd)
-
 	return cmd
 }
 
@@ -69,6 +67,5 @@ func (c *CLI) vendorPrepareCmd() *cobra.Command {
 			}
 		},
 	}
-	replActivationFlags(cmd)
 	return cmd
 }

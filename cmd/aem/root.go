@@ -19,8 +19,7 @@ func (c *CLI) rootCmd() *cobra.Command {
 		},
 	}
 	cmd.AddCommand(c.versionCmd())
-	cmd.AddCommand(c.initCmd())
-
+	cmd.AddCommand(c.projectCmd())
 	cmd.AddCommand(c.vendorCmd())
 	cmd.AddCommand(c.configCmd())
 	cmd.AddCommand(c.instanceCmd())

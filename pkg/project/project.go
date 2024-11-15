@@ -78,30 +78,48 @@ var appClassicFiles embed.FS
 //go:embed app_cloud
 var appCloudFiles embed.FS
 
-func (p Project) InitializeWithChanged(kind Kind) (bool, error) {
-	if p.config.TemplateFileExists() {
+func (p Project) IsScaffolded() bool {
+	return p.config.TemplateFileExists()
+}
+
+func (p Project) ScaffoldWithChanged(kind Kind) (bool, error) {
+	if p.IsScaffolded() {
 		return false, nil
 	}
-	if err := p.initialize(kind); err != nil {
+	if err := p.Scaffold(kind); err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-func (p Project) initialize(kind Kind) error {
-	if err := p.prepareDefaultFiles(kind); err != nil {
+func (p Project) Scaffold(kind Kind) error {
+	if err := p.scaffoldConventionalDirs(); err != nil {
 		return err
 	}
-	if err := p.prepareGitIgnore(kind); err != nil {
+	if err := p.scaffoldDefaultFiles(kind); err != nil {
 		return err
 	}
-	if err := p.prepareLocalEnvFile(kind); err != nil {
+	if err := p.scaffoldGitIgnore(kind); err != nil {
+		return err
+	}
+	if err := p.scaffoldLocalEnvFile(kind); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (p Project) prepareDefaultFiles(kind Kind) error {
+func (p Project) scaffoldConventionalDirs() error {
+	log.Infof("ensuring conventional project directories")
+	if err := pathx.Ensure(common.LibDir); err != nil {
+		return err
+	}
+	if err := pathx.Ensure(common.TmpDir); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p Project) scaffoldDefaultFiles(kind Kind) error {
 	log.Infof("preparing default files for project of kind '%s'", kind)
 	switch kind {
 	case KindInstance:
@@ -148,7 +166,7 @@ func copyEmbedFiles(efs *embed.FS, dirPrefix string) error {
 }
 
 // need to be in sync with osx.EnvVarsLoad()
-func (p Project) prepareGitIgnore(kind Kind) error {
+func (p Project) scaffoldGitIgnore(kind Kind) error {
 	switch kind {
 	case KindAppClassic, KindAppCloud:
 		return filex.AppendString(GitIgnoreFile, osx.LineSep()+strings.Join([]string{
@@ -174,7 +192,7 @@ func (p Project) prepareGitIgnore(kind Kind) error {
 	}
 }
 
-func (p Project) prepareLocalEnvFile(kind Kind) error {
+func (p Project) scaffoldLocalEnvFile(kind Kind) error {
 	if p.IsAppKind(kind) && p.HasProps() {
 		prop, err := p.Prop(PackagePropName)
 		if err != nil {
@@ -211,17 +229,6 @@ func (p Project) KindDetermine(name string) (Kind, error) {
 		kind = kindCandidate
 	}
 	return kind, nil
-}
-
-func (p Project) EnsureDirs() error {
-	log.Infof("ensuring conventional project directories")
-	if err := pathx.Ensure(common.LibDir); err != nil {
-		return err
-	}
-	if err := pathx.Ensure(common.TmpDir); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (p Project) HasProps() bool {
@@ -262,16 +269,16 @@ func (p Project) KindInfer() (Kind, error) {
 	return KindUnknown, nil
 }
 
-func (p Project) GettingStarted(kind Kind) (string, error) {
-	dirsIgnored := []string{common.HomeDir}
-	if kind == KindAppCloud || kind == KindAppClassic {
-		dirsIgnored = []string{common.HomeDir, common.DispatcherHomeDir}
-	}
+func (p Project) DirsIgnored() []string {
+	return []string{common.HomeDir, common.DispatcherHomeDir}
+}
+
+func (p Project) GettingStarted() (string, error) {
 	text := fmt.Sprintf(strings.Join([]string{
 		"As a next step provide AEM files (JAR or sdk ZIP, license, service packs) to directory '" + common.LibDir + "'.",
 		"Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '" + cfg.FileDefault + "'.",
 		"",
-		fmt.Sprintf("Make sure to exclude the directories from VCS versioning and IDE indexing: %s", strings.Join(dirsIgnored, ", ")),
+		fmt.Sprintf("Make sure to exclude the directories from VCS versioning and IDE indexing: %s", strings.Join(p.DirsIgnored(), ", ")),
 		"",
 		"Finally, use tasks to manage AEM instances and more:",
 		"",

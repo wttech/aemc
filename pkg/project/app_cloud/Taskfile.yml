@@ -235,19 +235,20 @@ tasks:
     aliases: [ dispatcher:up ]
     dir: dispatcher
     cmds:
-      - 'command -v docker || { echo "Docker is not installed! Visit: https://www.docker.com/products/docker-desktop"; exit 1; }'
+      - 'command -v {{.DOCKER_COMMAND}} || { echo "Docker or Podman is not installed!"; exit 1; }'
       - 'test -d ../aem/home/opt/sdk/dispatcher || { echo "Dispatcher SDK is not available. Try providing AEM SDK ZIP instead of JAR to directory: aem/home/lib"; exit 1; }'
       - test -d home/sdk || (rm -fr home/sdk && mkdir -p home && cp -r ../aem/home/opt/sdk/dispatcher home/sdk)
       # - sh home/sdk/bin/validate.sh src > ../aem/home/var/log/dispatcher-validate.log
-      - docker tag "$(docker load --input "home/sdk/lib/dispatcher-publish-{{ARCH}}.tar.gz" | tail -n 1 | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"
+      # TODO fix syntax of below / while testing
+      - '{{.DOCKER_COMMAND}} tag "$({{.DOCKER_COMMAND}} load --input "home/sdk/lib/dispatcher-publish-{{ARCH}}.tar.gz" | tail -n 1 | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"'
       - mkdir -p home/sdk/logs home/sdk/cache
-      - docker compose up -d
+      - '{{.DOCKER_COMPOSE_COMMAND}} up -d'
 
   dispatcher:stop:
     desc: stop AEM dispatcher
     aliases: [ dispatcher:down ]
     dir: dispatcher
-    cmd: docker compose down
+    cmd: '{{.DOCKER_COMPOSE_COMMAND}} down'
 
   dispatcher:restart:
     desc: restart AEM dispatcher
@@ -259,19 +260,19 @@ tasks:
     desc: check status of AEM dispatcher
     dir: dispatcher
     cmds:
-      - docker compose ps
-      - docker compose logs --tail 20
+      - '{{.DOCKER_COMPOSE_COMMAND}} ps'
+      - '{{.DOCKER_COMPOSE_COMMAND}} logs --tail 20'
 
   dispatcher:login:
     desc: login to AEM dispatcher shell
-    cmd: docker exec -it dispatcher bash
+    cmd: '{{.DOCKER_COMMAND}} exec -it dispatcher bash'
     ignore_error: true
 
   dispatcher:destroy:
     desc: destroy AEM dispatcher
     dir: dispatcher
     cmds:
-      - docker compose rm -fsv
+      - '{{.DOCKER_COMPOSE_COMMAND}} down -v --remove-orphans'
       - rm -fr home
 
   dispatcher:hosts:

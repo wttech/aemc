@@ -209,6 +209,8 @@ instance:
         delay: 10s
 
 base:
+  # Location of library files (AEM SDK ZIP, Quickstart JAR & License, Crypto keys, service packs, additional packages, etc.)
+  lib_dir: aem/home/lib
   # Location of temporary files (downloaded AEM packages, etc)
   tmp_dir: aem/home/tmp
   # Location of supportive tools (downloaded Java, OakRun, unpacked AEM SDK)

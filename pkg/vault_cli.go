@@ -40,9 +40,13 @@ func (v VaultCli) dir() string {
 	return filepath.Join(v.aem.baseOpts.ToolDir, "vault-cli")
 }
 
-func (v VaultCli) execDir() string {
+func (v VaultCli) execFile() string {
 	vaultDir, _, _ := strings.Cut(filepath.Base(v.DownloadURL), "-bin")
-	return filepath.Join(v.dir(), vaultDir, "bin")
+	execDir := filepath.Join(v.dir(), vaultDir, "bin")
+	if osx.IsWindows() {
+		return pathx.Canonical(execDir + "/vlt.bat")
+	}
+	return pathx.Canonical(execDir + "/vlt")
 }
 
 func (v VaultCli) lock() osx.Lock[VaultCliLock] {
@@ -60,12 +64,10 @@ func (v VaultCli) Prepare() error {
 		return nil
 	}
 	log.Infof("preparing new Vault '%s'", v.DownloadURL)
-	err = v.prepare()
-	if err != nil {
+	if err = v.prepare(); err != nil {
 		return err
 	}
-	err = lock.Lock()
-	if err != nil {
+	if err = lock.Lock(); err != nil {
 		return err
 	}
 	log.Infof("prepared new Vault '%s'", v.DownloadURL)
@@ -100,11 +102,10 @@ func (v VaultCli) CommandShell(args []string) error {
 	if err := v.Prepare(); err != nil {
 		return fmt.Errorf("cannot prepare Vault before running command: %w", err)
 	}
-	cmd := execx.CommandShell(args)
-	cmd.Dir = v.execDir()
+	vaultCliArgs := append([]string{v.execFile()}, args...)
+	cmd := execx.CommandShell(vaultCliArgs)
 	v.aem.CommandOutput(cmd)
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot run Vault command: %w", err)
 	}
 	return nil

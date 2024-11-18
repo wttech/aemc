@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg"
-	"os"
 )
 
 func (c *CLI) vaultCmd() *cobra.Command {
@@ -12,8 +11,10 @@ func (c *CLI) vaultCmd() *cobra.Command {
 		Short: "Executes Vault commands",
 		Run: func(cmd *cobra.Command, args []string) {
 			vaultCli := pkg.NewVaultCli(c.aem)
-			vaultCliArgs := os.Args[1:]
-			_ = vaultCli.CommandShell(vaultCliArgs)
+			if err := vaultCli.CommandShell(args); err != nil {
+				c.Error(err)
+				return
+			}
 		},
 		Args: cobra.ArbitraryArgs,
 		FParseErrWhitelist: cobra.FParseErrWhitelist{

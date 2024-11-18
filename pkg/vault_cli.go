@@ -40,13 +40,13 @@ func (v VaultCLI) dir() string {
 	return filepath.Join(v.vendorManager.aem.baseOpts.ToolDir, "vault-cli")
 }
 
-func (v VaultCLI) execDir() string {
+func (v VaultCLI) VltFile() string {
 	vaultDir, _, _ := strings.Cut(filepath.Base(v.DownloadURL), "-bin")
-	return filepath.Join(v.dir(), vaultDir, "bin")
-}
-
-func (v VaultCLI) JarFile() string {
-	return "<path>/bin/vlt" // TODO c.aem.VaultCLI().JarFile()
+	execDir := filepath.Join(v.dir(), vaultDir, "bin")
+	if osx.IsWindows() {
+		return pathx.Canonical(execDir + "/vlt.bat")
+	}
+	return pathx.Canonical(execDir + "/vlt")
 }
 
 func (v VaultCLI) lock() osx.Lock[VaultCLILock] {
@@ -64,12 +64,10 @@ func (v VaultCLI) PrepareWithChanged() (bool, error) {
 		return false, nil
 	}
 	log.Infof("preparing new Vault '%s'", v.DownloadURL)
-	err = v.prepare()
-	if err != nil {
+	if err = v.prepare(); err != nil {
 		return false, err
 	}
-	err = lock.Lock()
-	if err != nil {
+	if err = lock.Lock(); err != nil {
 		return false, err
 	}
 	log.Infof("prepared new Vault '%s'", v.DownloadURL)
@@ -101,12 +99,14 @@ func (v VaultCLI) prepare() error {
 }
 
 func (v VaultCLI) CommandShell(args []string) error {
-	// TODO check if vault is prepared
-
-	cmd := execx.CommandShell(args)
-	cmd.Dir = v.execDir() // TODO do not change dir, but prepend with absolute executable; so args should skip 'vlt'
+	_, err := v.PrepareWithChanged()
+	if err != nil {
+		return fmt.Errorf("cannot prepare Vault before running command: %w", err)
+	}
+	vaultCliArgs := append([]string{v.VltFile()}, args...)
+	cmd := execx.CommandShell(vaultCliArgs)
 	v.vendorManager.aem.CommandOutput(cmd)
-	if err := cmd.Run(); err != nil {
+	if err = cmd.Run(); err != nil {
 		return fmt.Errorf("cannot run Vault command: %w", err)
 	}
 	return nil

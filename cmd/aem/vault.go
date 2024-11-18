@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/spf13/cobra"
-	"os"
 )
 
 func (c *CLI) vaultCmd() *cobra.Command {
@@ -10,8 +9,10 @@ func (c *CLI) vaultCmd() *cobra.Command {
 		Use:   "vlt",
 		Short: "Executes Vault commands",
 		Run: func(cmd *cobra.Command, args []string) {
-			argsWithVlt := os.Args[1:]                                     // TODO why not 'args' from the Run function?
-			_ = c.aem.VendorManager().VaultCLI().CommandShell(argsWithVlt) // TODO proper error handling
+			if err := c.aem.VendorManager().VaultCLI().CommandShell(args); err != nil {
+				c.Error(err)
+				return
+			}
 		},
 		Args: cobra.ArbitraryArgs,
 		FParseErrWhitelist: cobra.FParseErrWhitelist{

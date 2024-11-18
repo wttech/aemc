@@ -1,12 +1,11 @@
-package base
+package pkg
 
 import (
-	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common/pathx"
 )
 
-type Opts struct {
-	config *cfg.Config
+type BaseOpts struct {
+	aem *AEM
 
 	LibDir   string
 	TmpDir   string
@@ -14,11 +13,11 @@ type Opts struct {
 	CacheDir string
 }
 
-func NewOpts(config *cfg.Config) *Opts {
-	cv := config.Values()
+func NewBaseOpts(aem *AEM) *BaseOpts {
+	cv := aem.config.Values()
 
-	return &Opts{
-		config: config,
+	return &BaseOpts{
+		aem: aem,
 
 		LibDir:   cv.GetString("base.lib_dir"),
 		TmpDir:   cv.GetString("base.tmp_dir"),
@@ -27,11 +26,7 @@ func NewOpts(config *cfg.Config) *Opts {
 	}
 }
 
-func (o *Opts) Config() *cfg.Config {
-	return o.config
-}
-
-func (o *Opts) PrepareWithChanged() (bool, error) {
+func (o *BaseOpts) PrepareWithChanged() (bool, error) {
 	changed := false
 	dirs := []string{o.LibDir, o.TmpDir, o.ToolDir, o.CacheDir}
 	for _, dir := range dirs {

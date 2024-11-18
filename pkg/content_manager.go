@@ -15,26 +15,18 @@ const (
 )
 
 type ContentManager struct {
-	aem            *AEM
-	contentManager *content.Manager
+	aem    *AEM
+	editor *content.Editor
 }
 
 func NewContentManager(aem *AEM) *ContentManager {
-	return &ContentManager{
-		aem:            aem,
-		contentManager: content.NewManager(aem.baseOpts),
-	}
-}
-
-func (cm *ContentManager) tmpDir() string {
-	if cm.aem.Detached() {
-		return os.TempDir()
-	}
-	return cm.aem.baseOpts.TmpDir
+	result := &ContentManager{aem: aem}
+	result.editor = content.NewEditor(result.aem.config)
+	return result
 }
 
 func (cm *ContentManager) Clean(path string) error {
-	return cm.contentManager.Clean(path)
+	return cm.editor.Clean(path)
 }
 
 func (cm *ContentManager) Download(instance *Instance, localFile string, clean bool, opts PackageCreateOpts) error {
@@ -65,7 +57,7 @@ func (cm *ContentManager) PullDir(instance *Instance, dir string, clean bool, re
 		return err
 	}
 	if replace {
-		if err := cm.contentManager.DeleteDir(dir); err != nil {
+		if err := cm.editor.DeleteDir(dir); err != nil {
 			return err
 		}
 	}
@@ -89,7 +81,7 @@ func (cm *ContentManager) PullFile(instance *Instance, file string, clean bool, 
 	}
 	syncFile := DetermineSyncFile(workDir, file)
 	if file != syncFile || replace {
-		if err := cm.contentManager.DeleteFile(file, nil); err != nil {
+		if err := cm.editor.DeleteFile(file, nil); err != nil {
 			return err
 		}
 	}
@@ -193,4 +185,11 @@ func (cm *ContentManager) pushContent(instances []Instance, pkgFile string) erro
 		return err
 	}
 	return nil
+}
+
+func (cm *ContentManager) tmpDir() string {
+	if cm.aem.Detached() {
+		return os.TempDir()
+	}
+	return cm.aem.baseOpts.TmpDir
 }

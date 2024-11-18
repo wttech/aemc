@@ -5,7 +5,7 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
-	"github.com/wttech/aemc/pkg/base"
+	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"io/fs"
@@ -39,9 +39,7 @@ func init() {
 	fileWithNamespacePatternRegex = regexp.MustCompile(FileWithNamespacePattern)
 }
 
-type Manager struct {
-	baseOpts *base.Opts
-
+type Editor struct {
 	FilesDeleted      []PathRule
 	FilesFlattened    []string
 	PropertiesSkipped []PathRule
@@ -49,12 +47,10 @@ type Manager struct {
 	NamespacesSkipped bool
 }
 
-func NewManager(baseOpts *base.Opts) *Manager {
-	cv := baseOpts.Config().Values()
+func NewEditor(config *cfg.Config) *Editor {
+	cv := config.Values()
 
-	return &Manager{
-		baseOpts: baseOpts,
-
+	return &Editor{
 		FilesDeleted:      determinePathRules(cv.Get("content.clean.files_deleted")),
 		FilesFlattened:    cv.GetStringSlice("content.clean.files_flattened"),
 		PropertiesSkipped: determinePathRules(cv.Get("content.clean.properties_skipped")),
@@ -63,7 +59,7 @@ func NewManager(baseOpts *base.Opts) *Manager {
 	}
 }
 
-func (c Manager) Clean(path string) error {
+func (c Editor) Clean(path string) error {
 	if pathx.IsDir(path) {
 		log.Infof("cleaning directory '%s'", path)
 		if err := c.cleanDotContents(path); err != nil {
@@ -107,13 +103,13 @@ func eachFiles(root string, processFileFunc func(string) error) error {
 	})
 }
 
-func (c Manager) cleanDotContents(root string) error {
+func (c Editor) cleanDotContents(root string) error {
 	return eachFiles(root, func(path string) error {
 		return c.cleanDotContentFile(path)
 	})
 }
 
-func (c Manager) cleanDotContentFile(path string) error {
+func (c Editor) cleanDotContentFile(path string) error {
 	if !strings.HasSuffix(path, XmlFileSuffix) {
 		return nil
 	}
@@ -127,7 +123,7 @@ func (c Manager) cleanDotContentFile(path string) error {
 	return writeLines(path, outputLines)
 }
 
-func (c Manager) filterLines(path string, lines []string) []string {
+func (c Editor) filterLines(path string, lines []string) []string {
 	var result []string
 	for _, line := range lines {
 		flag, processedLine := c.lineProcess(path, line)
@@ -148,7 +144,7 @@ func (c Manager) filterLines(path string, lines []string) []string {
 	return c.cleanNamespaces(path, result)
 }
 
-func (c Manager) cleanNamespaces(path string, lines []string) []string {
+func (c Editor) cleanNamespaces(path string, lines []string) []string {
 	if !c.NamespacesSkipped {
 		return lines
 	}
@@ -183,7 +179,7 @@ func (c Manager) cleanNamespaces(path string, lines []string) []string {
 	return result
 }
 
-func (c Manager) lineProcess(path string, line string) (bool, string) {
+func (c Editor) lineProcess(path string, line string) (bool, string) {
 	groups := propPatternRegex.FindStringSubmatch(line)
 	if strings.TrimSpace(line) == "" {
 		return true, ""
@@ -197,7 +193,7 @@ func (c Manager) lineProcess(path string, line string) (bool, string) {
 	return false, line
 }
 
-func (c Manager) normalizeMixins(path string, line string, propValue string, lineSuffix string) (bool, string) {
+func (c Editor) normalizeMixins(path string, line string, propValue string, lineSuffix string) (bool, string) {
 	normalizedValue := strings.Trim(propValue, "[]")
 	var resultValues []string
 	for _, value := range strings.Split(normalizedValue, ",") {
@@ -211,13 +207,13 @@ func (c Manager) normalizeMixins(path string, line string, propValue string, lin
 	return false, strings.ReplaceAll(line, normalizedValue, strings.Join(resultValues, ","))
 }
 
-func (c Manager) flattenFiles(root string) error {
+func (c Editor) flattenFiles(root string) error {
 	return eachFiles(root, func(path string) error {
 		return c.flattenFile(path)
 	})
 }
 
-func (c Manager) flattenFile(path string) error {
+func (c Editor) flattenFile(path string) error {
 	if !matchString(path, c.FilesFlattened) {
 		return nil
 	}
@@ -231,7 +227,7 @@ func (c Manager) flattenFile(path string) error {
 	return os.Rename(path, dest)
 }
 
-func (c Manager) deleteFiles(root string) error {
+func (c Editor) deleteFiles(root string) error {
 	return eachFiles(root, func(path string) error {
 		return c.DeleteFile(path, func() bool {
 			return matchAnyRule(path, path, c.FilesDeleted)
@@ -239,7 +235,7 @@ func (c Manager) deleteFiles(root string) error {
 	})
 }
 
-func (c Manager) DeleteDir(path string) error {
+func (c Editor) DeleteDir(path string) error {
 	if !pathx.Exists(path) {
 		return nil
 	}
@@ -247,7 +243,7 @@ func (c Manager) DeleteDir(path string) error {
 	return os.RemoveAll(path)
 }
 
-func (c Manager) DeleteFile(path string, allowedFunc func() bool) error {
+func (c Editor) DeleteFile(path string, allowedFunc func() bool) error {
 	if !pathx.Exists(path) || allowedFunc != nil && !allowedFunc() {
 		return nil
 	}

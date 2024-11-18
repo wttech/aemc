@@ -1,88 +1,37 @@
-package project
+package pkg
 
 import (
 	"embed"
 	"fmt"
 	"github.com/magiconair/properties"
-	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
+	"github.com/wttech/aemc/pkg/project"
 	"io/fs"
 	"strings"
 )
 
 type Project struct {
-	config *cfg.Config
+	aem *AEM
 }
 
-func New(config *cfg.Config) *Project {
-	return &Project{config}
+func NewProject(aem *AEM) *Project {
+	return &Project{aem}
 }
 
-type Kind string
-
-const (
-	KindAuto       = "auto"
-	KindInstance   = "instance"
-	KindAppClassic = "app_classic"
-	KindAppCloud   = "app_cloud"
-	KindUnknown    = "unknown"
-
-	KindPropName          = "aemVersion"
-	KindPropCloudValue    = "cloud"
-	KindPropClassicPrefix = "6."
-
-	GitIgnoreFile   = ".gitignore"
-	PropFile        = "archetype.properties"
-	PackagePropName = "package"
-)
-
-func Kinds() []Kind {
-	return []Kind{KindInstance, KindAppCloud, KindAppClassic}
+func (p Project) IsAppKind(kind project.Kind) bool {
+	return kind == project.KindAppClassic || kind == project.KindAppCloud
 }
-
-func KindStrings() []string {
-	return lo.Map(Kinds(), func(k Kind, _ int) string { return string(k) })
-}
-
-func KindOf(name string) (Kind, error) {
-	if name == KindAuto {
-		return KindAuto, nil
-	} else if name == KindInstance {
-		return KindInstance, nil
-	} else if name == KindAppCloud {
-		return KindAppCloud, nil
-	} else if name == KindAppClassic {
-		return KindAppClassic, nil
-	}
-	return "", fmt.Errorf("project kind '%s' is not supported", name)
-}
-
-func (p Project) IsAppKind(kind Kind) bool {
-	return kind == KindAppClassic || kind == KindAppCloud
-}
-
-//go:embed common
-var commonFiles embed.FS
-
-//go:embed instance
-var instanceFiles embed.FS
-
-//go:embed app_classic
-var appClassicFiles embed.FS
-
-//go:embed app_cloud
-var appCloudFiles embed.FS
 
 func (p Project) IsScaffolded() bool {
-	return p.config.TemplateFileExists()
+	return p.aem.config.TemplateFileExists()
 }
 
-func (p Project) ScaffoldWithChanged(kind Kind) (bool, error) {
+func (p Project) ScaffoldWithChanged(kind project.Kind) (bool, error) {
 	if p.IsScaffolded() {
 		return false, nil
 	}
@@ -92,7 +41,7 @@ func (p Project) ScaffoldWithChanged(kind Kind) (bool, error) {
 	return true, nil
 }
 
-func (p Project) Scaffold(kind Kind) error {
+func (p Project) Scaffold(kind project.Kind) error {
 	if err := p.scaffoldDefaultFiles(kind); err != nil {
 		return err
 	}
@@ -105,28 +54,28 @@ func (p Project) Scaffold(kind Kind) error {
 	return nil
 }
 
-func (p Project) scaffoldDefaultFiles(kind Kind) error {
+func (p Project) scaffoldDefaultFiles(kind project.Kind) error {
 	log.Infof("preparing default files for project of kind '%s'", kind)
 	switch kind {
-	case KindInstance:
-		if err := copyEmbedFiles(&commonFiles, "common/"); err != nil {
+	case project.KindInstance:
+		if err := copyEmbedFiles(&project.CommonFiles, "common/"); err != nil {
 			return err
 		}
-		if err := copyEmbedFiles(&instanceFiles, "instance/"); err != nil {
+		if err := copyEmbedFiles(&project.InstanceFiles, "instance/"); err != nil {
 			return err
 		}
-	case KindAppClassic:
-		if err := copyEmbedFiles(&commonFiles, "common/"); err != nil {
+	case project.KindAppClassic:
+		if err := copyEmbedFiles(&project.CommonFiles, "common/"); err != nil {
 			return err
 		}
-		if err := copyEmbedFiles(&appClassicFiles, "app_classic/"); err != nil {
+		if err := copyEmbedFiles(&project.AppClassicFiles, "app_classic/"); err != nil {
 			return err
 		}
-	case KindAppCloud:
-		if err := copyEmbedFiles(&commonFiles, "common/"); err != nil {
+	case project.KindAppCloud:
+		if err := copyEmbedFiles(&project.CommonFiles, "common/"); err != nil {
 			return err
 		}
-		if err := copyEmbedFiles(&appCloudFiles, "app_cloud/"); err != nil {
+		if err := copyEmbedFiles(&project.AppCloudFiles, "app_cloud/"); err != nil {
 			return err
 		}
 	default:
@@ -152,10 +101,10 @@ func copyEmbedFiles(efs *embed.FS, dirPrefix string) error {
 }
 
 // need to be in sync with osx.EnvVarsLoad()
-func (p Project) scaffoldGitIgnore(kind Kind) error {
+func (p Project) scaffoldGitIgnore(kind project.Kind) error {
 	switch kind {
-	case KindAppClassic, KindAppCloud:
-		return filex.AppendString(GitIgnoreFile, osx.LineSep()+strings.Join([]string{
+	case project.KindAppClassic, project.KindAppCloud:
+		return filex.AppendString(project.GitIgnoreFile, osx.LineSep()+strings.Join([]string{
 			"",
 			"# " + common.AppName,
 			common.HomeDir + "/",
@@ -166,7 +115,7 @@ func (p Project) scaffoldGitIgnore(kind Kind) error {
 			"",
 		}, osx.LineSep()))
 	default:
-		return filex.AppendString(GitIgnoreFile, osx.LineSep()+strings.Join([]string{
+		return filex.AppendString(project.GitIgnoreFile, osx.LineSep()+strings.Join([]string{
 			"",
 			"# " + common.AppName,
 			common.HomeDir + "/",
@@ -178,9 +127,9 @@ func (p Project) scaffoldGitIgnore(kind Kind) error {
 	}
 }
 
-func (p Project) scaffoldLocalEnvFile(kind Kind) error {
+func (p Project) scaffoldLocalEnvFile(kind project.Kind) error {
 	if p.IsAppKind(kind) && p.HasProps() {
-		prop, err := p.Prop(PackagePropName)
+		prop, err := p.Prop(project.PackagePropName)
 		if err != nil {
 			return err
 		}
@@ -198,16 +147,16 @@ func (p Project) scaffoldLocalEnvFile(kind Kind) error {
 	return nil
 }
 
-func (p Project) KindDetermine(name string) (Kind, error) {
-	var kind Kind = KindAuto
+func (p Project) KindDetermine(name string) (project.Kind, error) {
+	var kind project.Kind = project.KindAuto
 	if name != "" {
-		kindCandidate, err := KindOf(name)
+		kindCandidate, err := project.KindOf(name)
 		if err != nil {
 			return "", err
 		}
 		kind = kindCandidate
 	}
-	if kind == KindAuto {
+	if kind == project.KindAuto {
 		kindCandidate, err := p.KindInfer()
 		if err != nil {
 			return "", err
@@ -218,7 +167,7 @@ func (p Project) KindDetermine(name string) (Kind, error) {
 }
 
 func (p Project) HasProps() bool {
-	return pathx.Exists(PropFile)
+	return pathx.Exists(project.PropFile)
 }
 
 func (p Project) Prop(name string) (string, error) {
@@ -226,33 +175,33 @@ func (p Project) Prop(name string) (string, error) {
 		Encoding:         properties.ISO_8859_1,
 		DisableExpansion: true,
 	}
-	props, err := propLoader.LoadFile(PropFile)
+	props, err := propLoader.LoadFile(project.PropFile)
 	if err != nil {
-		return "", fmt.Errorf("cannot read project property '%s' from file '%s': %w", name, PropFile, err)
+		return "", fmt.Errorf("cannot read project property '%s' from file '%s': %w", name, project.PropFile, err)
 	}
 	propValue := props.GetString(name, "")
 	return propValue, nil
 }
 
-func (p Project) KindInfer() (Kind, error) {
+func (p Project) KindInfer() (project.Kind, error) {
 	if p.HasProps() {
-		log.Infof("inferring project kind basing on file '%s' and property '%s'", PropFile, KindPropName)
-		propValue, err := p.Prop(KindPropName)
+		log.Infof("inferring project kind basing on file '%s' and property '%s'", project.PropFile, project.KindPropName)
+		propValue, err := p.Prop(project.KindPropName)
 		if err != nil {
 			return "", err
 		}
-		var kind Kind
-		if propValue == KindPropCloudValue {
-			kind = KindAppCloud
-		} else if strings.HasPrefix(propValue, KindPropClassicPrefix) {
-			kind = KindAppClassic
+		var kind project.Kind
+		if propValue == project.KindPropCloudValue {
+			kind = project.KindAppCloud
+		} else if strings.HasPrefix(propValue, project.KindPropClassicPrefix) {
+			kind = project.KindAppClassic
 		} else {
-			return "", fmt.Errorf("cannot infer project kind as value '%s' of property '%s' in file '%s' is not recognized", propValue, KindPropName, PropFile)
+			return "", fmt.Errorf("cannot infer project kind as value '%s' of property '%s' in file '%s' is not recognized", propValue, project.KindPropName, project.PropFile)
 		}
-		log.Infof("inferred project kind basing on file '%s' and property '%s' is '%s'", PropFile, KindPropName, kind)
+		log.Infof("inferred project kind basing on file '%s' and property '%s' is '%s'", project.PropFile, project.KindPropName, kind)
 		return kind, nil
 	}
-	return KindUnknown, nil
+	return project.KindUnknown, nil
 }
 
 func (p Project) DirsIgnored() []string {
@@ -260,8 +209,10 @@ func (p Project) DirsIgnored() []string {
 }
 
 func (p Project) ScaffoldGettingStarted() string {
+	libDir := p.aem.BaseOpts().LibDir
+
 	text := fmt.Sprintf(strings.Join([]string{
-		"As a next step provide AEM files (JAR or sdk ZIP, license, service packs) to directory '" + common.LibDir + "'.",
+		"As a next step provide AEM files (JAR or sdk ZIP, license, service packs) to directory '" + libDir + "'.",
 		"Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '" + cfg.FileDefault + "'.",
 		"",
 		"Use tasks to manage AEM instances and more:",
@@ -277,8 +228,9 @@ func (p Project) ScaffoldGettingStarted() string {
 }
 
 func (p Project) InitGettingStartedError() string {
+	libDir := p.aem.BaseOpts().LibDir
 	text := fmt.Sprintf(strings.Join([]string{
-		"Be sure to provide AEM files (JAR or sdk ZIP, license, service packs) to directory '" + common.LibDir + "'.",
+		"Be sure to provide AEM files (JAR or sdk ZIP, license, service packs) to directory '" + libDir + "'.",
 	}, "\n"))
 	return text
 }

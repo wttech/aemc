@@ -14,7 +14,7 @@ import (
 )
 
 func NewVaultCLI(vendorManager *VendorManager) *VaultCLI {
-	cv := vendorManager.aem.baseOpts.Config().Values()
+	cv := vendorManager.aem.Config().Values()
 
 	return &VaultCLI{
 		vendorManager: vendorManager,

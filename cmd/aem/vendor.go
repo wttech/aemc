@@ -43,9 +43,6 @@ func (c *CLI) vendorListCmd() *cobra.Command {
 			}
 			c.SetOutput("javaExecutable", javaExecutable)
 
-			vaultExecutable := c.aem.VendorManager().VaultCLI().VltFile()
-			c.setOutput("vaultExecutable", vaultExecutable)
-
 			oakRunJar := c.aem.VendorManager().OakRun().JarFile()
 			c.setOutput("oakRunJar", oakRunJar)
 

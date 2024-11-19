@@ -456,9 +456,6 @@ java:
       "arm64": "x64"
       "aarch64": "x64"
 
-vault:
-  "download_url": "https://repo1.maven.org/maven2/org/apache/jackrabbit/vault/vault-cli/3.8.2/vault-cli-3.8.2-bin.tar.gz"
-
 base:
   # Location of temporary files (downloaded AEM packages, etc)
   tmp_dir: aem/home/tmp

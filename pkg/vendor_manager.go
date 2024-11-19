@@ -8,7 +8,6 @@ type VendorManager struct {
 	oakRun      *OakRun
 	quickstart  *Quickstart
 	sdk         *SDK
-	vaultCLI    *VaultCLI
 }
 
 func NewVendorManager(aem *AEM) *VendorManager {
@@ -17,7 +16,6 @@ func NewVendorManager(aem *AEM) *VendorManager {
 	result.sdk = NewSDK(result)
 	result.quickstart = NewQuickstart(result)
 	result.oakRun = NewOakRun(result)
-	result.vaultCLI = NewVaultCLI(result)
 	return result
 }
 
@@ -59,12 +57,6 @@ func (vm *VendorManager) PrepareWithChanged() (bool, error) {
 		return changed, err
 	}
 
-	vaultCLIChanged, err := vm.vaultCLI.PrepareWithChanged()
-	changed = changed || vaultCLIChanged
-	if err != nil {
-		return changed, err
-	}
-
 	return changed, nil
 }
 
@@ -82,8 +74,4 @@ func (vm *VendorManager) Quickstart() *Quickstart {
 
 func (vm *VendorManager) SDK() *SDK {
 	return vm.sdk
-}
-
-func (vm *VendorManager) VaultCLI() *VaultCLI {
-	return vm.vaultCLI
 }

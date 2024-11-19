@@ -267,10 +267,6 @@ vendor:
     download_url: "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.72.0/oak-run-1.72.0.jar"
     store_path: "crx-quickstart/repository/segmentstore"
 
-  # Jackrabbit Vault tool (repository content management tool)
-  vault:
-    download_url: "https://repo1.maven.org/maven2/org/apache/jackrabbit/vault/vault-cli/3.8.2/vault-cli-3.8.2-bin.tar.gz"
-
 # Content-related options
 content:
   clean:

@@ -239,8 +239,7 @@ tasks:
       - 'test -d ../aem/home/opt/sdk/dispatcher || { echo "Dispatcher SDK is not available. Try providing AEM SDK ZIP instead of JAR to directory: aem/home/lib"; exit 1; }'
       - test -d home/sdk || (rm -fr home/sdk && mkdir -p home && cp -r ../aem/home/opt/sdk/dispatcher home/sdk)
       # - sh home/sdk/bin/validate.sh src > ../aem/home/var/log/dispatcher-validate.log
-      # TODO fix syntax of below / while testing
-      - '{{.DOCKER_COMMAND}} tag "$({{.DOCKER_COMMAND}} load --input "home/sdk/lib/dispatcher-publish-{{ARCH}}.tar.gz" | tail -n 1 | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"'
+      - "{{.DOCKER_COMMAND}} tag \"$({{.DOCKER_COMMAND}} load --input 'home/sdk/lib/dispatcher-publish-{{ARCH}}.tar.gz' | tail -n 1 | awk -v 'FS= ' '{print $3}')\" \"adobe/aem-ethos/dispatcher-publish:latest\""
       - mkdir -p home/sdk/logs home/sdk/cache
       - '{{.DOCKER_COMPOSE_COMMAND}} up -d'
 

@@ -7,8 +7,9 @@ import (
 
 func (c *CLI) vaultCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "vlt",
-		Short: "Executes Vault commands",
+		Use:    "vlt",
+		Short:  "Executes Vault commands",
+		Hidden: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := c.aem.VendorManager().VaultCLI().CommandShell(args); err != nil {
 				c.Fail("command failed")

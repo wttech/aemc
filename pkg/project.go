@@ -137,6 +137,8 @@ func (p Project) scaffoldLocalEnvFile(kind project.Kind) error {
 		if propTrimmed != "" {
 			if err := filex.AppendString(osx.EnvLocalFile, osx.LineSep()+strings.Join([]string{
 				"",
+				"# AEM Application",
+				"",
 				"AEM_PACKAGE=" + prop,
 				"",
 			}, osx.LineSep())); err != nil {

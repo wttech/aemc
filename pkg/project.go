@@ -93,7 +93,7 @@ func copyEmbedFiles(efs *embed.FS, dirPrefix string) error {
 		if err != nil {
 			return err
 		}
-		if err := filex.Write(strings.TrimPrefix(path, dirPrefix), bytes); err != nil {
+		if err := filex.Write(strings.TrimPrefix(strings.ReplaceAll(path, "$", ""), dirPrefix), bytes); err != nil {
 			return err
 		}
 		return nil

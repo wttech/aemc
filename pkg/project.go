@@ -214,7 +214,7 @@ func (p Project) ScaffoldGettingStarted() string {
 	libDir := p.aem.BaseOpts().LibDir
 
 	text := fmt.Sprintf(strings.Join([]string{
-		"As a next step provide AEM files (JAR or sdk ZIP, license, service packs) to directory '" + libDir + "'.",
+		"As a next step provide AEM files (JAR or SDK ZIP, license, service packs) to directory '" + libDir + "'.",
 		"Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '" + cfg.FileDefault + "'.",
 		"",
 		"Use tasks to manage AEM instances and more:",
@@ -232,7 +232,7 @@ func (p Project) ScaffoldGettingStarted() string {
 func (p Project) InitGettingStartedError() string {
 	libDir := p.aem.BaseOpts().LibDir
 	text := fmt.Sprintf(strings.Join([]string{
-		"Be sure to provide AEM files (JAR or sdk ZIP, license, service packs) to directory '" + libDir + "'.",
+		"Be sure to provide AEM files (JAR or SDK ZIP, license, service packs) to directory '" + libDir + "'.",
 	}, "\n"))
 	return text
 }

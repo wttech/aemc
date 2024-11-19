@@ -53,6 +53,7 @@ func (c *CLI) projectScaffoldCmd() *cobra.Command {
 			}
 		},
 	}
+	cmd.Flags().String(projectKindFlag, project.KindAuto, fmt.Sprintf("Type of AEM to work with (%s)", strings.Join(project.KindStrings(), "|")))
 	return cmd
 }
 

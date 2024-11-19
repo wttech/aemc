@@ -105,6 +105,11 @@ func (v VaultCLI) CommandShell(args []string) error {
 	}
 	vaultCliArgs := append([]string{v.VltFile()}, args...)
 	cmd := execx.CommandShell(vaultCliArgs)
+	env, err := v.vendorManager.JavaManager().Env()
+	if err != nil {
+		return err
+	}
+	cmd.Env = env
 	v.vendorManager.aem.CommandOutput(cmd)
 	if err = cmd.Run(); err != nil {
 		return fmt.Errorf("cannot run Vault command: %w", err)

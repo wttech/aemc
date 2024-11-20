@@ -12,7 +12,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/instance"
-	"github.com/wttech/aemc/pkg/java"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -103,8 +102,12 @@ func (li LocalInstance) LocalOpts() *LocalOpts {
 	return li.instance.manager.LocalOpts
 }
 
-func (li LocalInstance) JavaOpts() *java.Opts {
-	return li.instance.manager.aem.javaOpts
+func (li LocalInstance) JavaManager() *JavaManager {
+	return li.instance.manager.aem.VendorManager().JavaManager()
+}
+
+func (li LocalInstance) VendorManager() *VendorManager {
+	return li.instance.manager.aem.VendorManager()
 }
 
 func (li LocalInstance) Name() string {
@@ -175,7 +178,7 @@ func (li LocalInstance) binCbpExecutable() string {
 }
 
 func (li LocalInstance) LicenseFile() string {
-	return pathx.Canonical(li.Dir() + "/" + LicenseFilename)
+	return pathx.Canonical(li.Dir() + "/" + common.QuickstartLicenseFilename)
 }
 
 var (
@@ -257,7 +260,7 @@ func (li LocalInstance) Import() error {
 func (li LocalInstance) createLock() osx.Lock[localInstanceCreateLock] {
 	return osx.NewLock(fmt.Sprintf("%s/create.yml", li.StateDir()), func() (localInstanceCreateLock, error) {
 		var zero localInstanceCreateLock
-		jar, err := li.LocalOpts().Jar()
+		jar, err := li.VendorManager().InstanceJar()
 		if err != nil {
 			return zero, err
 		}
@@ -271,11 +274,11 @@ type localInstanceCreateLock struct {
 
 func (li LocalInstance) unpackJarFile() error {
 	log.Infof("%s > unpacking files", li.instance.IDColor())
-	jar, err := li.LocalOpts().Jar()
+	jar, err := li.VendorManager().InstanceJar()
 	if err != nil {
 		return err
 	}
-	cmd, err := li.JavaOpts().Command(
+	cmd, err := li.JavaManager().Command(
 		"-Djava.awt.headless=true",
 		"-jar", pathx.Canonical(jar), "-unpack",
 	)
@@ -295,14 +298,14 @@ func (li LocalInstance) unpackJarFile() error {
 }
 
 func (li LocalInstance) copyLicenseFile() error {
-	sdk, err := li.LocalOpts().Quickstart.IsDistSDK()
+	sdk, err := li.VendorManager().Quickstart().IsDistSDK()
 	if err != nil {
 		return err
 	}
 	if sdk {
 		return nil
 	}
-	source := pathx.Canonical(li.LocalOpts().Quickstart.LicenseFile)
+	source := pathx.Canonical(li.VendorManager().Quickstart().LicenseFile)
 	dest := pathx.Canonical(li.LicenseFile())
 	log.Infof("%s > copying license file from '%s' to '%s'", li.instance.IDColor(), source, dest)
 	if err := filex.Copy(source, dest, true); err != nil {
@@ -456,7 +459,7 @@ func (li LocalInstance) update() error {
 }
 
 func (li LocalInstance) setPassword() error {
-	return li.LocalOpts().OakRun.SetPassword(li.Dir(), LocalInstanceUser, li.instance.password)
+	return li.VendorManager().OakRun().SetPassword(li.Dir(), LocalInstanceUser, li.instance.password)
 }
 
 func (li LocalInstance) copyOverrideDirs() error {
@@ -813,7 +816,7 @@ func (li LocalInstance) binScriptCommand(name string, verbose bool) (*exec.Cmd, 
 	}
 	cmd := execx.CommandShell(args)
 	cmd.Dir = li.Dir()
-	env, err := li.JavaOpts().Env()
+	env, err := li.JavaManager().Env()
 	if err != nil {
 		return nil, err
 	}

@@ -138,31 +138,29 @@ Supported project types:
 
 ---
 
-Run command below to initialize the AEM Compose tool in your project:
+Run command below to install the AEM Compose tool in your project:
 
 ```shell
-curl https://raw.githubusercontent.com/wttech/aemc/main/project-init.sh | sh
+curl https://raw.githubusercontent.com/wttech/aemc/main/project-install.sh | sh
 ```
 
-and then:
-
-```shell
-sh aemw init
-```
-
-After successful initialization, remember to always use the tool via wrapper script in the following way:
+After successful installation, remember to always use the tool via wrapper script in the following way:
 
 ```shell
 sh aemw [command]
 ```
 
-For example:
+Next scaffold the AEM Compose files in the project:
 
 ```shell
-sh aemw version
+sh aemw project scaffold
 ```
 
-Project initialization sets up ready-to-use tasks powered by [Task tool](https://taskfile.dev/) which are aggregating one or many AEM Compose CLI commands into useful procedures.
+Project scaffolding:
+
+- sets up ready-to-use tasks powered by [Task tool](https://taskfile.dev/), which aggregate one or many AEM Compose CLI commands into useful procedures.
+- provides configuration for provisioning AEM instances (installing service pack, setting replication agents, etc.).
+- provides configuration for running AEM Dispatcher on [Podman](https://podman-desktop.io/) or [Docker](https://www.docker.com/products/docker-desktop/).
 
 To list all available tasks, run:
 
@@ -174,19 +172,6 @@ For example:
 
 ```shell
 sh taskw setup
-```
-
-Some tasks like `aem:build` may accept parameters.
-For example, to build AEM application with:
-
-- Applying frontend development mode Maven profile
-- Unit tests skipping 
-- UI tests skipping
-
-Simply run command with appending [task variable](https://taskfile.dev/usage/#variables) to the end:
-
-```shell
-sh taskw aem:build AEM_BUILD_ARGS="-PfedDev -DskipTests -pl '!ui.tests'"
 ```
 
 ## IaaC Providers
@@ -378,7 +363,7 @@ instance:
 
     # Oak Run tool options (offline instance management)
     oak_run:
-      download_url: "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.44.0/oak-run-1.44.0.jar"
+      download_url: "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.72.0/oak-run-1.72.0.jar"
       store_path: "crx-quickstart/repository/segmentstore"
 
     # Source files
@@ -458,7 +443,7 @@ java:
   # Auto-installed JDK options
   download:
     # Source URL with template vars support
-    url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.18%2B10/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.18_10.[[.ArchiveExt]]"
+    url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.25_9.[[.ArchiveExt]]"
     # Map source URL template vars to be compatible with Adoptium Java
     replacements:
       # Var 'Os' (GOOS)
@@ -470,9 +455,6 @@ java:
       # enforce non-ARM Java as some AEM features are not working on ARM (e.g Scene7)
       "arm64": "x64"
       "aarch64": "x64"
-
-vault:
-  "download_url": "https://repo1.maven.org/maven2/org/apache/jackrabbit/vault/vault-cli/3.7.2/vault-cli-3.7.2-bin.tar.gz"
 
 base:
   # Location of temporary files (downloaded AEM packages, etc)

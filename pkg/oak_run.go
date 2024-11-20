@@ -11,19 +11,19 @@ import (
 	"path/filepath"
 )
 
-func NewOakRun(localOpts *LocalOpts) *OakRun {
-	cv := localOpts.manager.aem.Config().Values()
+func NewOakRun(vendorManager *VendorManager) *OakRun {
+	cv := vendorManager.aem.Config().Values()
 
 	return &OakRun{
-		localOpts: localOpts,
+		vendorManager: vendorManager,
 
-		DownloadURL: cv.GetString("instance.local.oak_run.download_url"),
-		StorePath:   cv.GetString("instance.local.oak_run.store_path"),
+		DownloadURL: cv.GetString("vendor.oak_run.download_url"),
+		StorePath:   cv.GetString("vendor.oak_run.store_path"),
 	}
 }
 
 type OakRun struct {
-	localOpts *LocalOpts
+	vendorManager *VendorManager
 
 	DownloadURL string
 	StorePath   string
@@ -34,35 +34,35 @@ type OakRunLock struct {
 }
 
 func (or OakRun) Dir() string {
-	return or.localOpts.manager.aem.baseOpts.ToolDir + "/oak-run"
+	return or.vendorManager.aem.baseOpts.ToolDir + "/oak-run"
 }
 
 func (or OakRun) lock() osx.Lock[OakRunLock] {
 	return osx.NewLock(or.Dir()+"/lock/create.yml", func() (OakRunLock, error) { return OakRunLock{DownloadURL: or.DownloadURL}, nil })
 }
 
-func (or OakRun) Prepare() error {
+func (or OakRun) PrepareWithChanged() (bool, error) {
 	lock := or.lock()
 	check, err := lock.State()
 	if err != nil {
-		return err
+		return false, err
 	}
 	if check.UpToDate {
 		log.Debugf("existing OakRun '%s' is up-to-date", or.DownloadURL)
-		return nil
+		return false, nil
 	}
 	log.Infof("preparing new OakRun '%s'", or.DownloadURL)
 	err = or.prepare()
 	if err != nil {
-		return err
+		return false, err
 	}
 	err = lock.Lock()
 	if err != nil {
-		return err
+		return false, err
 	}
 	log.Infof("prepared new OakRun '%s'", or.DownloadURL)
 
-	return nil
+	return true, nil
 }
 
 func (or OakRun) JarFile() string {
@@ -99,8 +99,8 @@ func (or OakRun) SetPassword(instanceDir string, user string, password string) e
 
 func (or OakRun) RunScript(instanceDir string, scriptFile string) error {
 	storeDir := fmt.Sprintf("%s/%s", instanceDir, or.StorePath)
-	cmd, err := or.localOpts.manager.aem.javaOpts.Command(
-		"-Djava.io.tmpdir="+pathx.Canonical(or.localOpts.manager.aem.baseOpts.TmpDir),
+	cmd, err := or.vendorManager.javaManager.Command(
+		"-Djava.io.tmpdir="+pathx.Canonical(or.vendorManager.aem.baseOpts.TmpDir),
 		"-jar", or.JarFile(),
 		"console", storeDir, "--read-write", fmt.Sprintf(":load %s", scriptFile),
 	)

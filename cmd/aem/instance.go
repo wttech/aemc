@@ -23,7 +23,6 @@ func (c *CLI) instanceCmd() *cobra.Command {
 	cmd.AddCommand(c.instanceListCmd())
 	cmd.AddCommand(c.instanceAwaitCmd())
 	cmd.AddCommand(c.instanceBackupCmd())
-	cmd.AddCommand(c.instanceInitCmd())
 	cmd.AddCommand(c.instanceImportCmd())
 	return cmd
 }
@@ -331,37 +330,6 @@ func (c *CLI) instanceListCmd() *cobra.Command {
 			}
 			c.SetOutput("instances", instances)
 			c.Ok("instance(s) listed")
-		},
-	}
-}
-
-func (c *CLI) instanceInitCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:     "init",
-		Aliases: []string{"initialize"},
-		Short:   "Init prerequisites for AEM instance(s)",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := c.aem.InstanceManager().LocalOpts.Initialize(); err != nil {
-				c.Error(err)
-				return
-			}
-
-			javaHome, err := c.aem.JavaOpts().FindHomeDir()
-			if err != nil {
-				c.Error(err)
-				return
-			}
-			c.SetOutput("javaHome", javaHome)
-
-			javaExecutable, err := c.aem.JavaOpts().Executable()
-			if err != nil {
-				c.Error(err)
-				return
-			}
-			c.SetOutput("javaExecutable", javaExecutable)
-
-			c.SetOutput("initialized", true)
-			c.Changed("initialized prerequisites for instance(s)")
 		},
 	}
 }

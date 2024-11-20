@@ -1,4 +1,3 @@
-version: "3"
 services:
   dispatcher:
     container_name: dispatcher
@@ -24,3 +23,7 @@ services:
       # Enable previewing logs and caches directly on host
       - ./home/sdk/logs:/var/log/apache2
       - ./home/sdk/cache:/mnt/var/www
+    sysctls:
+      # Fixes: "Permission denied: AH00072: make_sock: could not bind to address [::]:80"
+      # See: https://documentation.suse.com/smart/container/html/rootless-podman/index.html#rootless-podman-configure-port-below-1024
+      net.ipv4.ip_unprivileged_port_start: 0

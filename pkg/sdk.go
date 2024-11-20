@@ -10,16 +10,16 @@ import (
 	"path/filepath"
 )
 
-func NewSDK(localOpts *LocalOpts) *SDK {
-	return &SDK{localOpts: localOpts}
+func NewSDK(vendorManager *VendorManager) *SDK {
+	return &SDK{vendorManager: vendorManager}
 }
 
 type SDK struct {
-	localOpts *LocalOpts
+	vendorManager *VendorManager
 }
 
 func (s SDK) Dir() string {
-	return fmt.Sprintf("%s/%s", s.localOpts.manager.aem.baseOpts.ToolDir, "sdk")
+	return fmt.Sprintf("%s/%s", s.vendorManager.aem.baseOpts.ToolDir, "sdk")
 }
 
 type SDKLock struct {
@@ -32,38 +32,38 @@ func (s SDK) lock(zipFile string) osx.Lock[SDKLock] {
 	})
 }
 
-func (s SDK) Prepare() error {
-	zipFile, err := s.localOpts.Quickstart.FindDistFile()
+func (s SDK) PrepareWithChanged() (bool, error) {
+	zipFile, err := s.vendorManager.quickstart.FindDistFile()
 	if err != nil {
-		return err
+		return false, err
 	}
 	lock := s.lock(zipFile)
 	check, err := lock.State()
 	if err != nil {
-		return err
+		return false, err
 	}
 	if check.UpToDate {
 		log.Debugf("existing SDK '%s' is up-to-date", zipFile)
-		return nil
+		return false, nil
 	}
 	log.Infof("preparing new SDK '%s'", zipFile)
 	err = s.prepare(zipFile)
 	if err != nil {
-		return err
+		return false, err
 	}
 	err = lock.Lock()
 	if err != nil {
-		return err
+		return false, err
 	}
 	log.Infof("prepared new SDK '%s'", zipFile)
 
 	jar, err := s.QuickstartJar()
 	if err != nil {
-		return err
+		return false, err
 	}
 	log.Debugf("found JAR '%s' in unpacked SDK '%s'", jar, zipFile)
 
-	return nil
+	return true, nil
 }
 
 func (s SDK) prepare(zipFile string) error {
@@ -136,7 +136,7 @@ func (s SDK) unpackDispatcher() error {
 		}
 		log.Infof("unpacking SDK dispatcher tools using script '%s' to dir '%s'", script, s.DispatcherDir())
 		cmd := execx.CommandShell([]string{script, "--target", s.DispatcherDir()})
-		s.localOpts.manager.aem.CommandOutput(cmd)
+		s.vendorManager.aem.CommandOutput(cmd)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("cannot run SDK dispatcher tools unpacking script '%s': %w", script, err)
 		}

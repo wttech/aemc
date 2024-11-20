@@ -6,23 +6,12 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
-	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/timex"
 	"os"
 	"strings"
 	"time"
-)
-
-const (
-	UnpackDir   = common.VarDir + "/instance"
-	BackupDir   = common.VarDir + "/backup"
-	OverrideDir = common.DefaultDir + "/" + common.VarDirName + "/instance"
-
-	DistFile        = common.LibDir + "/{aem-sdk,cq-quickstart}-*.{zip,jar}"
-	LicenseFile     = common.LibDir + "/" + LicenseFilename
-	LicenseFilename = "license.properties"
 )
 
 type LocalOpts struct {
@@ -32,9 +21,6 @@ type LocalOpts struct {
 	BackupDir   string
 	OverrideDir string
 	ServiceMode bool
-	OakRun      *OakRun
-	Quickstart  *Quickstart
-	SDK         *SDK
 }
 
 func NewLocalOpts(manager *InstanceManager) *LocalOpts {
@@ -45,24 +31,21 @@ func NewLocalOpts(manager *InstanceManager) *LocalOpts {
 	result.BackupDir = cfg.GetString("instance.local.backup_dir")
 	result.OverrideDir = cfg.GetString("instance.local.override_dir")
 	result.ServiceMode = cfg.GetBool("instance.local.service_mode")
-	result.Quickstart = NewQuickstart(result)
-	result.SDK = NewSDK(result)
-	result.OakRun = NewOakRun(result)
 
 	return result
 }
 
-func (o *LocalOpts) Initialize() error {
+func (o *LocalOpts) Validate() error {
 	// validate phase (fast feedback)
 	if err := o.validateUnpackDir(); err != nil {
 		return err
 	}
-	sdk, err := o.Quickstart.IsDistSDK()
+	sdk, err := o.manager.aem.vendorManager.Quickstart().IsDistSDK()
 	if err != nil {
 		return err
 	}
 	if !sdk {
-		_, err = o.Quickstart.FindLicenseFile()
+		_, err = o.manager.aem.vendorManager.Quickstart().FindLicenseFile()
 		if err != nil {
 			return err
 		}
@@ -73,22 +56,8 @@ func (o *LocalOpts) Initialize() error {
 		}
 	}
 	// preparation phase
-	if err := o.manager.aem.baseOpts.Prepare(); err != nil {
-		return err
-	}
-	if err := o.manager.aem.javaOpts.Prepare(); err != nil {
-		return err
-	}
-	if sdk {
-		if err := o.SDK.Prepare(); err != nil {
-			return err
-		}
-	}
-	if err := o.OakRun.Prepare(); err != nil {
-		return err
-	}
 	for _, instance := range o.manager.Locals() {
-		if err := instance.Local().CheckRecreationNeeded(); err != nil { // depends on SDK prepare
+		if err := instance.Local().CheckRecreationNeeded(); err != nil { // depends on sdk prepare
 			return err
 		}
 	}
@@ -111,23 +80,12 @@ func (o *LocalOpts) validateUnpackDir() error {
 	return nil
 }
 
-func (o *LocalOpts) Jar() (string, error) {
-	sdk, err := o.Quickstart.IsDistSDK()
-	if err != nil {
-		return "", err
-	}
-	if sdk {
-		return o.SDK.QuickstartJar()
-	}
-	return o.Quickstart.FindDistFile()
-}
-
-func NewQuickstart(localOpts *LocalOpts) *Quickstart {
-	cfg := localOpts.manager.aem.config.Values()
+func NewQuickstart(manager *VendorManager) *Quickstart {
+	cfg := manager.aem.config.Values()
 
 	return &Quickstart{
-		DistFile:    cfg.GetString("instance.local.quickstart.dist_file"),
-		LicenseFile: cfg.GetString("instance.local.quickstart.license_file"),
+		DistFile:    cfg.GetString("vendor.quickstart.dist_file"),
+		LicenseFile: cfg.GetString("vendor.quickstart.license_file"),
 	}
 }
 
@@ -158,7 +116,7 @@ func (im *InstanceManager) CreateAll() ([]Instance, error) {
 
 func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 	created := []Instance{}
-	if err := im.LocalOpts.Initialize(); err != nil {
+	if err := im.LocalOpts.Validate(); err != nil {
 		return created, err
 	}
 	log.Info(InstancesMsg(instances, "creating"))
@@ -233,7 +191,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		log.Debugf("no instances to start")
 		return []Instance{}, nil
 	}
-	if err := im.LocalOpts.Initialize(); err != nil {
+	if err := im.LocalOpts.Validate(); err != nil {
 		return []Instance{}, err
 	}
 

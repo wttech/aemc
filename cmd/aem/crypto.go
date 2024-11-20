@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg"
-	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/mapsx"
 )
 
@@ -59,8 +58,9 @@ func (c *CLI) cryptoSetupCmd() *cobra.Command {
 			}
 		},
 	}
-	cmd.Flags().String("hmac-file", common.LibDir+"/crypto/data/hmac", "Path to file 'hmac'")
-	cmd.Flags().String("master-file", common.LibDir+"/crypto/data/master", "Path to file 'master'")
+	libDir := c.config.Values().GetString("base.lib_dir")
+	cmd.Flags().String("hmac-file", libDir+"/crypto/data/hmac", "Path to file 'hmac'")
+	cmd.Flags().String("master-file", libDir+"/crypto/data/master", "Path to file 'master'")
 	return cmd
 }
 

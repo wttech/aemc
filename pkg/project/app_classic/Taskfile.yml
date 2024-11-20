@@ -8,6 +8,8 @@ env:
   AEM_ENV: '{{.AEM_ENV | default "local"}}'
   AEM_INSTANCE_PROCESSING_MODE: auto
   AEM_OUTPUT_VALUE: NONE
+  JAVA_HOME:
+    sh: sh aemw vendor list --output-value javaHome
 
 dotenv:
   - '.env'              # VCS-ignored, user-specific
@@ -18,8 +20,7 @@ tasks:
   init:
     desc: initialize project
     cmds:
-      - sh aemw init
-      - sh aemw instance init
+      - sh aemw project init
 
   status:
     desc: check status of AEM instances and dispatcher
@@ -192,9 +193,13 @@ tasks:
       - all/target/*.all-*.zip
     vars:
       ARGS: -PfedDev {{.AEM_BUILD_ARGS}}
-      JAVA_HOME:
-        sh: sh aemw instance init --output-value javaHome
-    cmd: JAVA_HOME={{.JAVA_HOME}} mvn clean package {{.ARGS}}
+    cmd: sh mvnw clean package {{.ARGS}}
+
+  aem:build:version:
+    desc: check build tool versions
+    cmds:
+      - echo "JAVA_HOME=${JAVA_HOME}"
+      - sh mvnw -version
 
   aem:deploy:
     desc: deploy AEM application
@@ -237,12 +242,12 @@ tasks:
       # dereference symbolic links causing problems on Windows
       - rm -fr home/src && mkdir -p home && cp -rL src home/src
       # enforce typical architecture to avoid problems on M1/ARM Mac
-      - docker build --platform linux/amd64 -t acme/aem-ams/dispatcher-publish .
+      - '{{.DOCKER_COMMAND}} build --platform linux/amd64 -t acme/aem-ams/dispatcher-publish .'
 
   dispatcher:test:
     desc: test AEM dispatcher image
     dir: dispatcher
-    cmd: docker run --rm -it --entrypoint bash acme/aem-ams/dispatcher-publish:latest
+    cmd: '{{.DOCKER_COMMAND}} run --rm -it --entrypoint bash acme/aem-ams/dispatcher-publish:latest'
 
   dispatcher:start:
     desc: start AEM dispatcher using custom image
@@ -251,13 +256,13 @@ tasks:
     dir: dispatcher
     cmds:
       - mkdir -p home/docker/httpd/logs home/docker/httpd/cache/author home/docker/httpd/cache/publish
-      - docker compose up -d
+      - '{{.DOCKER_COMPOSE_COMMAND}} up -d'
 
   dispatcher:stop:
     desc: stop AEM dispatcher
     aliases: [ dispatcher:down ]
     dir: dispatcher
-    cmd: docker compose down
+    cmd: '{{.DOCKER_COMPOSE_COMMAND}} down'
 
   dispatcher:restart:
     desc: restart AEM dispatcher
@@ -269,19 +274,19 @@ tasks:
     desc: check status of AEM dispatcher
     dir: dispatcher
     cmds:
-      - docker compose ps
-      - docker compose logs --tail 20
+      - '{{.DOCKER_COMPOSE_COMMAND}} ps'
+      - '{{.DOCKER_COMPOSE_COMMAND}} logs --tail 20'
 
   dispatcher:login:
     desc: login to AEM dispatcher shell
-    cmd: docker exec -it dispatcher bash
+    cmd: '{{.DOCKER_COMMAND}} exec -it dispatcher bash'
     ignore_error: true
 
   dispatcher:destroy:
     desc: destroy AEM dispatcher
     dir: dispatcher
     cmds:
-      - docker compose rm -fsv
+      - '{{.DOCKER_COMPOSE_COMMAND}} down -v --remove-orphans'
       - rm -fr target/docker target/src
 
   dispatcher:hosts:

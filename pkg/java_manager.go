@@ -1,4 +1,4 @@
-package java
+package pkg
 
 import (
 	"fmt"
@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
-	"github.com/wttech/aemc/pkg/base"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/httpx"
 	"github.com/wttech/aemc/pkg/common/osx"
@@ -17,8 +16,8 @@ import (
 	"github.com/wttech/aemc/pkg/common/stringsx"
 )
 
-type Opts struct {
-	baseOpts *base.Opts
+type JavaManager struct {
+	vendorManager *VendorManager
 
 	HomeDir                 string
 	DownloadURL             string
@@ -26,16 +25,16 @@ type Opts struct {
 	VersionConstraints      string
 }
 
-func NewOpts(baseOpts *base.Opts) *Opts {
-	cv := baseOpts.Config().Values()
+func NewJavaManager(manager *VendorManager) *JavaManager {
+	cv := manager.aem.Config().Values()
 
-	return &Opts{
-		baseOpts: baseOpts,
+	return &JavaManager{
+		vendorManager: manager,
 
-		HomeDir:                 cv.GetString("java.home_dir"),
-		DownloadURL:             cv.GetString("java.download.url"),
-		DownloadURLReplacements: cv.GetStringMapString("java.download.replacements"),
-		VersionConstraints:      cv.GetString("java.version_constraints"),
+		HomeDir:                 cv.GetString("vendor.java.home_dir"),
+		DownloadURL:             cv.GetString("vendor.java.download.url"),
+		DownloadURLReplacements: cv.GetStringMapString("vendor.java.download.replacements"),
+		VersionConstraints:      cv.GetString("vendor.java.version_constraints"),
 	}
 }
 
@@ -43,108 +42,111 @@ type DownloadLock struct {
 	Source string `yaml:"source"`
 }
 
-func (o *Opts) toolDir() string {
-	return fmt.Sprintf("%s/%s", o.baseOpts.ToolDir, "java")
+func (jm *JavaManager) toolDir() string {
+	return fmt.Sprintf("%s/%s", jm.vendorManager.aem.baseOpts.ToolDir, "java")
 }
 
-func (o *Opts) archiveDir() string {
-	return fmt.Sprintf("%s/%s", o.toolDir(), "archive")
+func (jm *JavaManager) archiveDir() string {
+	return fmt.Sprintf("%s/%s", jm.toolDir(), "archive")
 }
 
-func (o *Opts) downloadLock() osx.Lock[DownloadLock] {
-	return osx.NewLock(fmt.Sprintf("%s/lock/create.yml", o.toolDir()), func() (DownloadLock, error) { return DownloadLock{Source: o.DownloadURL}, nil })
+func (jm *JavaManager) downloadLock() osx.Lock[DownloadLock] {
+	return osx.NewLock(fmt.Sprintf("%s/lock/create.yml", jm.toolDir()), func() (DownloadLock, error) { return DownloadLock{Source: jm.DownloadURL}, nil })
 }
 
-func (o *Opts) jdkDir() string {
-	return fmt.Sprintf("%s/%s", o.toolDir(), "jdk")
+func (jm *JavaManager) jdkDir() string {
+	return fmt.Sprintf("%s/%s", jm.toolDir(), "jdk")
 }
 
-func (o *Opts) Prepare() error {
-	if o.HomeDir == "" && o.DownloadURL != "" {
-		if err := o.download(); err != nil {
-			return err
+func (jm *JavaManager) PrepareWithChanged() (bool, error) {
+	changed := false
+	if jm.HomeDir == "" && jm.DownloadURL != "" {
+		downloaded, err := jm.download()
+		changed = downloaded
+		if err != nil {
+			return downloaded, err
 		}
 	}
-	if err := o.checkVersion(); err != nil {
-		return err
+	if err := jm.checkVersion(); err != nil {
+		return changed, err
 	}
-	return nil
+	return changed, nil
 }
 
-func (o *Opts) download() error {
-	lock := o.downloadLock()
+func (jm *JavaManager) download() (bool, error) {
+	lock := jm.downloadLock()
 	check, err := lock.State()
 	if err != nil {
-		return err
+		return false, err
 	}
 	if check.UpToDate {
 		log.Debugf("existing JDK '%s' is up-to-date", check.Locked.Source)
-		return nil
+		return false, nil
 	}
-	log.Infof("preparing new JDK at dir '%s'", o.jdkDir())
-	if err = o.prepare(err); err != nil {
-		return err
+	log.Infof("preparing new JDK at dir '%s'", jm.jdkDir())
+	if err = jm.prepare(err); err != nil {
+		return false, err
 	}
 	if err := lock.Lock(); err != nil {
-		return err
+		return false, err
 	}
-	log.Infof("prepared new JDK at dir '%s'", o.jdkDir())
-	return nil
+	log.Infof("prepared new JDK at dir '%s'", jm.jdkDir())
+	return true, nil
 }
 
-func (o *Opts) prepare(err error) error {
-	if err := pathx.DeleteIfExists(o.jdkDir()); err != nil {
+func (jm *JavaManager) prepare(err error) error {
+	if err := pathx.DeleteIfExists(jm.jdkDir()); err != nil {
 		return err
 	}
-	url := o.DownloadURL
-	for search, replace := range o.DownloadURLReplacements {
+	url := jm.DownloadURL
+	for search, replace := range jm.DownloadURLReplacements {
 		url = strings.ReplaceAll(url, search, replace)
 	}
-	archiveFile := fmt.Sprintf("%s/%s", o.archiveDir(), httpx.FileNameFromURL(url))
+	archiveFile := fmt.Sprintf("%s/%s", jm.archiveDir(), httpx.FileNameFromURL(url))
 	log.Infof("downloading new JDK from URL '%s' to file '%s'", url, archiveFile)
 	if err := httpx.DownloadOnce(url, archiveFile); err != nil {
 		return err
 	}
 	log.Infof("downloaded new JDK from URL '%s' to file '%s'", url, archiveFile)
-	if _, err = filex.UnarchiveWithChanged(archiveFile, o.jdkDir()); err != nil {
+	if _, err = filex.UnarchiveWithChanged(archiveFile, jm.jdkDir()); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (o *Opts) checkVersion() error {
-	currentVersion, err := o.CurrentVersion()
+func (jm *JavaManager) checkVersion() error {
+	currentVersion, err := jm.CurrentVersion()
 	if err != nil {
 		return err
 	}
-	if o.VersionConstraints != "" {
-		versionConstraints, err := version.NewConstraint(o.VersionConstraints)
+	if jm.VersionConstraints != "" {
+		versionConstraints, err := version.NewConstraint(jm.VersionConstraints)
 		if err != nil {
-			return fmt.Errorf("java version constraint '%s' is invalid: %w", o.VersionConstraints, err)
+			return fmt.Errorf("java version constraint '%s' is invalid: %w", jm.VersionConstraints, err)
 		}
 		if !versionConstraints.Check(currentVersion) {
-			return fmt.Errorf("java current version '%s' does not meet contraints '%s'", currentVersion, o.VersionConstraints)
+			return fmt.Errorf("java current version '%s' does not meet contraints '%s'", currentVersion, jm.VersionConstraints)
 		}
 	}
 	return nil
 }
 
-func (o *Opts) FindHomeDir() (string, error) {
+func (jm *JavaManager) FindHomeDir() (string, error) {
 	var homeDir string
-	if o.HomeDir == "" {
-		files, err := os.ReadDir(o.jdkDir())
+	if jm.HomeDir == "" {
+		files, err := os.ReadDir(jm.jdkDir())
 		if err != nil {
 			return "", err
 		}
 		var dir string
 		for _, file := range files {
 			if file.IsDir() && strings.HasPrefix(file.Name(), "jdk") {
-				dir = fmt.Sprintf("%s/%s", o.jdkDir(), file.Name())
+				dir = fmt.Sprintf("%s/%s", jm.jdkDir(), file.Name())
 				break
 			}
 		}
 		if dir == "" {
-			return "", fmt.Errorf("java home dir cannot be found in unarchived JDK contents under path '%s'", o.archiveDir())
+			return "", fmt.Errorf("java home dir cannot be found in unarchived JDK contents under path '%s'", jm.archiveDir())
 		}
 		if err != nil {
 			return "", err
@@ -155,7 +157,7 @@ func (o *Opts) FindHomeDir() (string, error) {
 			homeDir = dir
 		}
 	} else {
-		homeDir = o.HomeDir
+		homeDir = jm.HomeDir
 	}
 	homeDir = pathx.Canonical(homeDir)
 	if !pathx.Exists(homeDir) {
@@ -164,8 +166,8 @@ func (o *Opts) FindHomeDir() (string, error) {
 	return homeDir, nil
 }
 
-func (o *Opts) Executable() (string, error) {
-	homeDir, err := o.FindHomeDir()
+func (jm *JavaManager) Executable() (string, error) {
+	homeDir, err := jm.FindHomeDir()
 	if err != nil {
 		return "", err
 	}
@@ -175,8 +177,8 @@ func (o *Opts) Executable() (string, error) {
 	return pathx.Canonical(homeDir + "/bin/java"), nil
 }
 
-func (o *Opts) Env() ([]string, error) {
-	homeDir, err := o.FindHomeDir()
+func (jm *JavaManager) Env() ([]string, error) {
+	homeDir, err := jm.FindHomeDir()
 	if err != nil {
 		return nil, err
 	}
@@ -190,13 +192,13 @@ func (o *Opts) Env() ([]string, error) {
 	return envFinal, nil
 }
 
-func (o *Opts) Command(args ...string) (*exec.Cmd, error) {
-	executable, err := o.Executable()
+func (jm *JavaManager) Command(args ...string) (*exec.Cmd, error) {
+	executable, err := jm.Executable()
 	if err != nil {
 		return nil, err
 	}
 	cmd := exec.Command(executable, args...)
-	env, err := o.Env()
+	env, err := jm.Env()
 	if err != nil {
 		return nil, err
 	}
@@ -204,8 +206,8 @@ func (o *Opts) Command(args ...string) (*exec.Cmd, error) {
 	return cmd, nil
 }
 
-func (o *Opts) CurrentVersion() (*version.Version, error) {
-	currentText, err := o.readCurrentVersion()
+func (jm *JavaManager) CurrentVersion() (*version.Version, error) {
+	currentText, err := jm.readCurrentVersion()
 	if err != nil {
 		return nil, err
 	}
@@ -216,8 +218,8 @@ func (o *Opts) CurrentVersion() (*version.Version, error) {
 	return current, nil
 }
 
-func (o *Opts) readCurrentVersion() (string, error) {
-	cmd, err := o.Command("-version")
+func (jm *JavaManager) readCurrentVersion() (string, error) {
+	cmd, err := jm.Command("-version")
 	if err != nil {
 		return "", err
 	}

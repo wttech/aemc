@@ -122,4 +122,7 @@ export MSYS2_ENV_CONV_EXCL="*"
 # https://taskfile.dev/api/#env
 export TASK_COLOR_GREEN=35
 
+# https://taskfile.dev/experiments/env-precedence
+export TASK_X_ENV_PRECEDENCE=1
+
 "./${BIN_EXEC_FILE}" "$@"

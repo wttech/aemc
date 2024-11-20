@@ -2,10 +2,7 @@
 package pkg
 
 import (
-	"github.com/wttech/aemc/pkg/base"
 	"github.com/wttech/aemc/pkg/cfg"
-	"github.com/wttech/aemc/pkg/java"
-	"github.com/wttech/aemc/pkg/project"
 	"io"
 	"os"
 	"os/exec"
@@ -13,13 +10,14 @@ import (
 
 // AEM is a facade to access AEM-related API
 type AEM struct {
-	output          io.Writer
-	config          *cfg.Config
-	project         *project.Project
-	baseOpts        *base.Opts
-	javaOpts        *java.Opts
-	contentManager  *ContentManager
+	output   io.Writer
+	config   *cfg.Config
+	project  *Project
+	baseOpts *BaseOpts
+
+	vendorManager   *VendorManager
 	instanceManager *InstanceManager
+	contentManager  *ContentManager
 }
 
 func DefaultAEM() *AEM {
@@ -30,11 +28,11 @@ func NewAEM(config *cfg.Config) *AEM {
 	result := new(AEM)
 	result.output = os.Stdout
 	result.config = config
-	result.project = project.New(result.config)
-	result.baseOpts = base.NewOpts(result.config)
-	result.javaOpts = java.NewOpts(result.baseOpts)
-	result.contentManager = NewContentManager(result)
+	result.project = NewProject(result)
+	result.baseOpts = NewBaseOpts(result)
+	result.vendorManager = NewVendorManager(result)
 	result.instanceManager = NewInstanceManager(result)
+	result.contentManager = NewContentManager(result)
 	return result
 }
 
@@ -55,24 +53,24 @@ func (a *AEM) Config() *cfg.Config {
 	return a.config
 }
 
-func (a *AEM) BaseOpts() *base.Opts {
+func (a *AEM) BaseOpts() *BaseOpts {
 	return a.baseOpts
 }
 
-func (a *AEM) JavaOpts() *java.Opts {
-	return a.javaOpts
+func (a *AEM) VendorManager() *VendorManager {
+	return a.vendorManager
 }
 
 func (a *AEM) InstanceManager() *InstanceManager {
 	return a.instanceManager
 }
 
-func (a *AEM) Project() *project.Project {
-	return a.project
-}
-
 func (a *AEM) ContentManager() *ContentManager {
 	return a.contentManager
+}
+
+func (a *AEM) Project() *Project {
+	return a.project
 }
 
 func (a *AEM) Detached() bool {

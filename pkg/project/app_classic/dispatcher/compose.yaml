@@ -1,0 +1,14 @@
+services:
+  dispatcher:
+    container_name: dispatcher
+    image: acme/aem-ams/dispatcher-publish:latest
+    platform: linux/amd64
+    ports:
+      - "80:80"
+    volumes:
+      - ./home/docker/httpd/logs:/etc/httpd/logs
+      - ./home/docker/httpd/cache:/var/www/cache
+    sysctls:
+      # Fixes: "Permission denied: AH00072: make_sock: could not bind to address [::]:80"
+      # See: https://documentation.suse.com/smart/container/html/rootless-podman/index.html#rootless-podman-configure-port-below-1024
+      net.ipv4.ip_unprivileged_port_start: 0

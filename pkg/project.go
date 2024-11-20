@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/magiconair/properties"
 	log "github.com/sirupsen/logrus"
-	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/osx"
@@ -211,46 +210,42 @@ func (p Project) DirsIgnored() []string {
 }
 
 func (p Project) ScaffoldGettingStarted() string {
-	libDir := p.aem.BaseOpts().LibDir
-
 	text := fmt.Sprintf(strings.Join([]string{
-		"As a next step provide AEM files (JAR or SDK ZIP, license, service packs) to directory '" + libDir + "'.",
-		"Alternatively, instruct the tool where these files are located by adjusting properties: 'dist_file', 'license_file' in configuration file '" + cfg.FileDefault + "'.",
+		"AEM Compose project now contains required files.",
 		"",
-		"Use tasks to manage AEM instances and more:",
+		"Consider saving the project to VCS repository.",
+		"The next step is to initialize the project by running:",
 		"",
-		"sh taskw --list",
-		"",
-		"It is also possible to run individual AEM Compose CLI commands separately.",
-		"Discover available commands by running:",
-		"",
-		"sh aemw --help",
+		"sh taskw init",
 	}, "\n"))
 	return text
 }
 
 func (p Project) InitGettingStartedError() string {
-	libDir := p.aem.BaseOpts().LibDir
 	text := fmt.Sprintf(strings.Join([]string{
-		"Be sure to provide AEM files (JAR or SDK ZIP, license, service packs) to directory '" + libDir + "'.",
+		"AEM Compose project is not yet ready to use!",
+		"",
+		"Be sure to provide AEM files (SDK ZIP or Quickstart JAR + License + Service Packs) to directory '" + p.aem.BaseOpts().LibDir + "'.",
 	}, "\n"))
 	return text
 }
 
 func (p Project) InitGettingStartedSuccess() string {
 	text := fmt.Sprintf(strings.Join([]string{
-		"AEM Compose project is ready to use.",
+		"AEM Compose project is ready to use!",
 		"",
-		fmt.Sprintf("Make sure to exclude the directories from VCS versioning and IDE indexing: %s", strings.Join(p.DirsIgnored(), ", ")),
-		"",
-		"Use tasks to manage AEM instances and more:",
-		"",
-		"sh taskw --list",
-		"",
-		"It is also possible to run individual AEM Compose CLI commands separately.",
+		fmt.Sprintf("Consider excluding the directories from VCS versioning and IDE indexing: %s", strings.Join(p.DirsIgnored(), ", ")),
 		"Discover available commands by running:",
 		"",
 		"sh aemw --help",
+		"",
+		"Multiple commands are usually organized into tasks. Discover them by running:",
+		"",
+		"sh taskw --list",
+		"",
+		"Now it is a time to setup AEM environment then build and deploy the AEM application. Typically it is done by running:",
+		"",
+		"sh taskw setup",
 	}, "\n"))
 	return text
 }

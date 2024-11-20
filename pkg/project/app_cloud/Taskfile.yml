@@ -239,7 +239,7 @@ tasks:
       - |
         if [ "{{OS}}" = "windows" ]; then
           HOST_IP=$(powershell -command "Get-NetIpAddress | where { \$_.InterfaceAlias -Like '*WSL*' -and \$_.AddressFamily -EQ 'IPv4' } | select -ExpandProperty IPAddress")
-          echo "EXTRA_HOST=host.containers.internal:$HOST_IP" > .env
+          echo "EXTRA_HOST=host.docker.internal:$HOST_IP" > .env
         else
           echo "EXTRA_HOST=localhost.dummy:127.0.0.1" > .env
         fi

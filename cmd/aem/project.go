@@ -61,36 +61,17 @@ func (c *CLI) projectInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "init",
 		Aliases: []string{"initialize"},
-		Short:   "Initializes AEMC in the project",
+		Short:   "Prepare vendor tools for the project",
 		Run: func(cmd *cobra.Command, args []string) {
 			if !c.aem.Project().IsScaffolded() {
 				c.Fail(fmt.Sprintf("project need to be scaffolded before running initialization"))
 				return
 			}
 
-			changed := false
-
 			c.SetOutput("gettingStarted", c.aem.Project().InitGettingStartedError())
 
-			baseChanged, err := c.aem.BaseOpts().PrepareWithChanged()
-			changed = changed || baseChanged
+			changed, err := c.aem.Project().InitWithChanged()
 			if err != nil {
-				c.Error(err)
-				return
-			}
-			c.SetOutput("baseChanged", baseChanged)
-
-			// Download and prepare vendor tools (including JDK and AEM SDK)
-			vendorPrepared, err := c.aem.VendorManager().PrepareWithChanged()
-			changed = changed || vendorPrepared
-			if err != nil {
-				c.Error(err)
-				return
-			}
-			c.SetOutput("vendorPrepared", vendorPrepared)
-
-			// Validate AEM instance files and prepared SDK
-			if err := c.aem.InstanceManager().LocalOpts.Validate(); err != nil {
 				c.Error(err)
 				return
 			}

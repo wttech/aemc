@@ -35,17 +35,17 @@ func NewLocalOpts(manager *InstanceManager) *LocalOpts {
 	return result
 }
 
-func (o *LocalOpts) Validate() error {
-	// validate phase (fast feedback)
+func (o *LocalOpts) Initialize() error {
+	// pre-validation phase (fast feedback)
 	if err := o.validateUnpackDir(); err != nil {
 		return err
 	}
-	sdk, err := o.manager.aem.vendorManager.Quickstart().IsDistSDK()
+	sdk, err := o.manager.aem.vendorManager.quickstart.IsDistSDK()
 	if err != nil {
 		return err
 	}
 	if !sdk {
-		_, err = o.manager.aem.vendorManager.Quickstart().FindLicenseFile()
+		_, err = o.manager.aem.vendorManager.quickstart.FindLicenseFile()
 		if err != nil {
 			return err
 		}
@@ -55,9 +55,24 @@ func (o *LocalOpts) Validate() error {
 			return err
 		}
 	}
-	// preparation phase
+	// initialization phase (heavy work)
+	if _, err := o.manager.aem.baseOpts.PrepareWithChanged(); err != nil {
+		return err
+	}
+	if _, err := o.manager.aem.vendorManager.javaManager.PrepareWithChanged(); err != nil {
+		return err
+	}
+	if sdk {
+		if _, err := o.manager.aem.vendorManager.sdk.PrepareWithChanged(); err != nil {
+			return err
+		}
+	}
+	if _, err := o.manager.aem.vendorManager.oakRun.PrepareWithChanged(); err != nil {
+		return err
+	}
+	// post-validation phase
 	for _, instance := range o.manager.Locals() {
-		if err := instance.Local().CheckRecreationNeeded(); err != nil { // depends on sdk prepare
+		if err := instance.Local().CheckRecreationNeeded(); err != nil { // depends on SDK prepare
 			return err
 		}
 	}
@@ -116,7 +131,7 @@ func (im *InstanceManager) CreateAll() ([]Instance, error) {
 
 func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 	created := []Instance{}
-	if err := im.LocalOpts.Validate(); err != nil {
+	if err := im.LocalOpts.Initialize(); err != nil {
 		return created, err
 	}
 	log.Info(InstancesMsg(instances, "creating"))
@@ -191,7 +206,7 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		log.Debugf("no instances to start")
 		return []Instance{}, nil
 	}
-	if err := im.LocalOpts.Validate(); err != nil {
+	if err := im.LocalOpts.Initialize(); err != nil {
 		return []Instance{}, err
 	}
 

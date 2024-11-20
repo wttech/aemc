@@ -249,3 +249,21 @@ func (p Project) InitGettingStartedSuccess() string {
 	}, "\n"))
 	return text
 }
+
+func (p Project) InitWithChanged() (bool, error) {
+	changed := false
+
+	baseChanged, err := p.aem.BaseOpts().PrepareWithChanged()
+	changed = changed || baseChanged
+	if err != nil {
+		return changed, err
+	}
+
+	vendorPrepared, err := p.aem.VendorManager().PrepareWithChanged()
+	changed = changed || vendorPrepared
+	if err != nil {
+		return changed, err
+	}
+
+	return changed, nil
+}

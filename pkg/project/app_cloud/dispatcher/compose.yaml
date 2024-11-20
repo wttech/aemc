@@ -17,9 +17,6 @@ services:
       - ./home/sdk/lib/import_sdk_config.sh:/docker_entrypoint.d/zzz-import-sdk-config.sh:ro
       # Enable invalidation by any client
       - ./home/sdk/lib/overwrite_cache_invalidation.sh:/docker_entrypoint.d/zzz-overwrite_cache_invalidation.sh:ro
-      # Enable hot reload
-      #- ./home/sdk/lib/httpd-reload-monitor:/usr/sbin/httpd-reload-monitor:ro
-      #- ./home/sdk/bin/validator-linux-amd64:/usr/sbin/validator:ro
       # Enable previewing logs and caches directly on host
       - ./home/sdk/logs:/var/log/apache2
       - ./home/sdk/cache:/mnt/var/www
@@ -27,3 +24,7 @@ services:
       # Fixes: "Permission denied: AH00072: make_sock: could not bind to address [::]:80"
       # See: https://documentation.suse.com/smart/container/html/rootless-podman/index.html#rootless-podman-configure-port-below-1024
       net.ipv4.ip_unprivileged_port_start: 0
+    extra_hosts:
+      # Fixes: "Sleeping for 5s to wait until port 4503 on host.containers.internal is available"
+      # See: https://stackoverflow.com/questions/79098571/podman-container-cannot-connect-to-windows-host
+      - "${EXTRA_HOST}"

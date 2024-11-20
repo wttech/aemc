@@ -12,3 +12,7 @@ services:
       # Fixes: "Permission denied: AH00072: make_sock: could not bind to address [::]:80"
       # See: https://documentation.suse.com/smart/container/html/rootless-podman/index.html#rootless-podman-configure-port-below-1024
       net.ipv4.ip_unprivileged_port_start: 0
+    extra_hosts:
+      # Fixes: "Sleeping for 5s to wait until port 4503 on host.containers.internal is available"
+      # See: https://stackoverflow.com/questions/79098571/podman-container-cannot-connect-to-windows-host
+      - "${EXTRA_HOST}"

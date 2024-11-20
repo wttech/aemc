@@ -235,7 +235,14 @@ tasks:
     aliases: [ dispatcher:up ]
     dir: dispatcher
     cmds:
-      - 'command -v {{.DOCKER_COMMAND}} || { echo "Docker or Podman is not installed!"; exit 1; }'
+      - 'command -v {{.DOCKER_COMMAND}} || { echo "Podman or Docker is not installed!"; exit 1; }'
+      - |
+        if [ "{{OS}}" = "windows" ]; then
+          HOST_IP=$(powershell -command "Get-NetIpAddress | where { \$_.InterfaceAlias -Like '*WSL*' -and \$_.AddressFamily -EQ 'IPv4' } | select -ExpandProperty IPAddress")
+          echo "EXTRA_HOST=host.containers.internal:$HOST_IP" > .env
+        else
+          echo "EXTRA_HOST=localhost.dummy:127.0.0.1" > .env
+        fi
       - 'test -d ../aem/home/opt/sdk/dispatcher || { echo "Dispatcher SDK is not available. Try providing AEM SDK ZIP instead of JAR to directory: aem/home/lib"; exit 1; }'
       - test -d home/sdk || (rm -fr home/sdk && mkdir -p home && cp -r ../aem/home/opt/sdk/dispatcher home/sdk)
       # - sh home/sdk/bin/validate.sh src > ../aem/home/var/log/dispatcher-validate.log

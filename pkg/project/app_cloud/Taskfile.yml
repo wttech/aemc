@@ -237,8 +237,12 @@ tasks:
     cmds:
       - 'command -v {{.DOCKER_COMMAND}} || { echo "Podman or Docker is not installed!"; exit 1; }'
       - |
-        if [ "{{OS}}" = "windows" ]; then
+        if [ "{{OS}}" = "windows" ] && [ "{{.DOCKER_COMMAND}}" = "podman" ]; then
           HOST_IP=$(powershell -command "Get-NetIpAddress | where { \$_.InterfaceAlias -Like '*WSL*' -and \$_.AddressFamily -EQ 'IPv4' } | select -ExpandProperty IPAddress")
+          if [ -z "$HOST_IP" ]; then
+            echo "Host IP cannot be determined! WSL cannot run in mirrored networking mode."
+            exit 1
+          fi
           echo "EXTRA_HOST=host.docker.internal:$HOST_IP" > .env
         else
           echo "EXTRA_HOST=localhost.dummy:127.0.0.1" > .env

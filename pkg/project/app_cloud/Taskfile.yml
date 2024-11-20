@@ -9,7 +9,7 @@ env:
   AEM_INSTANCE_PROCESSING_MODE: auto
   AEM_OUTPUT_VALUE: NONE
   JAVA_HOME:
-    sh: sh aemw vendor list --output-value javaHome
+    sh: sh aemw vendor list -V javaHome
 
 dotenv:
   - '.env'              # VCS-ignored, user-specific
@@ -20,7 +20,7 @@ tasks:
   init:
     desc: initialize project
     cmds:
-      - sh aemw project init
+      - sh aemw project init -V ALL
 
   status:
     desc: check status of AEM instances and dispatcher

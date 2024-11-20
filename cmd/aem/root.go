@@ -52,14 +52,14 @@ func (c *CLI) rootFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().String("input-string", cv.GetString("input.string"), "Provides input as string")
 	_ = cv.BindPFlag("input.string", cmd.PersistentFlags().Lookup("input-string"))
 
-	cmd.PersistentFlags().String("output-value", cv.GetString("output.value"),
+	cmd.PersistentFlags().StringP("output-value", "V", cv.GetString("output.value"),
 		"Limits output to single variable")
 	_ = cv.BindPFlag("output.value", cmd.PersistentFlags().Lookup("output-value"))
 
 	cmd.PersistentFlags().String("output-format", cv.GetString("output.format"), "Controls output format ("+strings.Join(cfg.OutputFormats(), "|")+")")
 	_ = cv.BindPFlag("output.format", cmd.PersistentFlags().Lookup("output-format"))
 
-	cmd.PersistentFlags().String("output-query", cv.GetString("output.query"), "Filters output using JMESPath query (only JSON and YML formats)")
+	cmd.PersistentFlags().StringP("output-query", "Q", cv.GetString("output.query"), "Filters output using JMESPath query (only JSON and YML formats)")
 	_ = cv.BindPFlag("output.query", cmd.PersistentFlags().Lookup("output-query"))
 
 	cmd.PersistentFlags().String("output-log-file", cv.GetString("output.log.file"), "Controls output file path")

@@ -160,7 +160,7 @@ Project scaffolding:
 
 - sets up ready-to-use tasks powered by [Task tool](https://taskfile.dev/), which aggregate one or many AEM Compose CLI commands into useful procedures.
 - provides configuration for provisioning AEM instances (installing service pack, setting replication agents, etc.).
-- provides configuration for running AEM Dispatcher on [Podman](https://podman-desktop.io/) or [Docker](https://www.docker.com/products/docker-desktop/).
+- provides configuration for running AEM Dispatcher on [Podman](https://podman-desktop.io/) or [Docker](https://www.docker.com/products/docker-desktop/) (remember to install one of these tools before running the setup task).
 
 To list all available tasks, run:
 
@@ -168,9 +168,10 @@ To list all available tasks, run:
 sh taskw --list
 ```
 
-For example:
+Usually, the first steps to take are:
 
 ```shell
+sh taskw init
 sh taskw setup
 ```
 

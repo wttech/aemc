@@ -50,6 +50,8 @@ if [ -z "$MAVEN_SKIP_RC" ] ; then
 fi
 
 # OS specific support.  $var _must_ be set to either true or false.
+# TODO Workaround for: https://issues.apache.org/jira/browse/MWRAPPER-122 ;
+# TODO A few 'if' statements are amended to apply the 'cygpath' conversion also for 'mingw'
 cygwin=false;
 darwin=false;
 mingw=false
@@ -206,7 +208,7 @@ else
     done < "$MAVEN_PROJECTBASEDIR/.mvn/wrapper/maven-wrapper.properties"
     log "Downloading from: $wrapperUrl"
 
-    if $cygwin; then
+    if [ "$cygwin" = true ] || [ "$mingw" = true ]; then
       wrapperJarPath=$(cygpath --path --windows "$wrapperJarPath")
     fi
 
@@ -231,7 +233,7 @@ else
         javaSource="$MAVEN_PROJECTBASEDIR/.mvn/wrapper/MavenWrapperDownloader.java"
         javaClass="$MAVEN_PROJECTBASEDIR/.mvn/wrapper/MavenWrapperDownloader.class"
         # For Cygwin, switch paths to Windows format before running javac
-        if $cygwin; then
+        if [ "$cygwin" = true ] || [ "$mingw" = true ]; then
           javaSource=$(cygpath --path --windows "$javaSource")
           javaClass=$(cygpath --path --windows "$javaClass")
         fi
@@ -283,7 +285,7 @@ fi
 MAVEN_OPTS="$(concat_lines "$MAVEN_PROJECTBASEDIR/.mvn/jvm.config") $MAVEN_OPTS"
 
 # For Cygwin, switch paths to Windows format before running java
-if $cygwin; then
+if [ "$cygwin" = true ] || [ "$mingw" = true ]; then
   [ -n "$JAVA_HOME" ] &&
     JAVA_HOME=$(cygpath --path --windows "$JAVA_HOME")
   [ -n "$CLASSPATH" ] &&

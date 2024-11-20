@@ -5,7 +5,7 @@ services:
     ports:
       - "80:80"
     environment:
-      - AEM_HOST=host.docker.internal
+      - AEM_HOST=host.containers.internal
       - AEM_IP=*.*.*.*
       - AEM_PORT=4503
       - DISP_LOG_LEVEL=Warn
@@ -18,8 +18,8 @@ services:
       # Enable invalidation by any client
       - ./home/sdk/lib/overwrite_cache_invalidation.sh:/docker_entrypoint.d/zzz-overwrite_cache_invalidation.sh:ro
       # Enable hot reload
-      - ./home/sdk/lib/httpd-reload-monitor:/usr/sbin/httpd-reload-monitor:ro
-      - ./home/sdk/bin/validator-linux-amd64:/usr/sbin/validator:ro
+      #- ./home/sdk/lib/httpd-reload-monitor:/usr/sbin/httpd-reload-monitor:ro
+      #- ./home/sdk/bin/validator-linux-amd64:/usr/sbin/validator:ro
       # Enable previewing logs and caches directly on host
       - ./home/sdk/logs:/var/log/apache2
       - ./home/sdk/cache:/mnt/var/www

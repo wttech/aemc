@@ -239,15 +239,16 @@ tasks:
     desc: build AEM dispatcher image
     dir: dispatcher
     cmds:
+      - 'command -v {{.CONTAINER_COMMAND}} || { echo "Container engine \"{{.CONTAINER_COMMAND}}\" is not installed!"; exit 1; }'
       # dereference symbolic links causing problems on Windows
       - rm -fr home/src && mkdir -p home && cp -rL src home/src
       # enforce typical architecture to avoid problems on M1/ARM Mac
-      - '{{.DOCKER_COMMAND}} build --platform linux/amd64 -t acme/aem-ams/dispatcher-publish .'
+      - '{{.CONTAINER_COMMAND}} build --platform linux/amd64 -t acme/aem-ams/dispatcher-publish .'
 
   dispatcher:test:
     desc: test AEM dispatcher image
     dir: dispatcher
-    cmd: '{{.DOCKER_COMMAND}} run --rm -it --entrypoint bash acme/aem-ams/dispatcher-publish:latest'
+    cmd: '{{.CONTAINER_COMMAND}} run --rm -it --entrypoint bash acme/aem-ams/dispatcher-publish:latest'
 
   dispatcher:start:
     desc: start AEM dispatcher using custom image
@@ -255,8 +256,9 @@ tasks:
     deps: [ dispatcher:build ]
     dir: dispatcher
     cmds:
+      - 'command -v {{.CONTAINER_COMMAND}} || { echo "Container engine \"{{.CONTAINER_COMMAND}}\" is not installed!"; exit 1; }'
       - |
-        if [ "{{OS}}" = "windows" ] && [ "{{.DOCKER_COMMAND}}" = "podman" ]; then
+        if [ "{{OS}}" = "windows" ] && [ "{{.CONTAINER_COMMAND}}" = "podman" ]; then
           HOST_IP=$(powershell -command "Get-NetIpAddress | where { \$_.InterfaceAlias -Like '*WSL*' -and \$_.AddressFamily -EQ 'IPv4' } | select -ExpandProperty IPAddress")
           if [ -z "$HOST_IP" ]; then
             echo "Host IP cannot be determined! WSL cannot run in mirrored networking mode."
@@ -267,13 +269,13 @@ tasks:
           echo "EXTRA_HOST=localhost.dummy:127.0.0.1" > .env
         fi
       - mkdir -p home/docker/httpd/logs home/docker/httpd/cache/author home/docker/httpd/cache/publish
-      - '{{.DOCKER_COMPOSE_COMMAND}} up -d'
+      - '{{.CONTAINER_COMPOSE_COMMAND}} up -d'
 
   dispatcher:stop:
     desc: stop AEM dispatcher
     aliases: [ dispatcher:down ]
     dir: dispatcher
-    cmd: '{{.DOCKER_COMPOSE_COMMAND}} down'
+    cmd: '{{.CONTAINER_COMPOSE_COMMAND}} down'
 
   dispatcher:restart:
     desc: restart AEM dispatcher
@@ -285,19 +287,19 @@ tasks:
     desc: check status of AEM dispatcher
     dir: dispatcher
     cmds:
-      - '{{.DOCKER_COMPOSE_COMMAND}} ps'
-      - '{{.DOCKER_COMPOSE_COMMAND}} logs --tail 20'
+      - '{{.CONTAINER_COMPOSE_COMMAND}} ps'
+      - '{{.CONTAINER_COMPOSE_COMMAND}} logs --tail 20'
 
   dispatcher:login:
     desc: login to AEM dispatcher shell
-    cmd: '{{.DOCKER_COMMAND}} exec -it dispatcher bash'
+    cmd: '{{.CONTAINER_COMMAND}} exec -it dispatcher bash'
     ignore_error: true
 
   dispatcher:destroy:
     desc: destroy AEM dispatcher
     dir: dispatcher
     cmds:
-      - '{{.DOCKER_COMPOSE_COMMAND}} down -v --remove-orphans'
+      - '{{.CONTAINER_COMPOSE_COMMAND}} down -v --remove-orphans'
       - rm -fr target/docker target/src
 
   dispatcher:hosts:

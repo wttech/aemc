@@ -235,9 +235,9 @@ tasks:
     aliases: [ dispatcher:up ]
     dir: dispatcher
     cmds:
-      - 'command -v {{.DOCKER_COMMAND}} || { echo "Podman or Docker is not installed!"; exit 1; }'
+      - 'command -v {{.CONTAINER_COMMAND}} || { echo "Container engine \"{{.CONTAINER_COMMAND}}\" is not installed!"; exit 1; }'
       - |
-        if [ "{{OS}}" = "windows" ] && [ "{{.DOCKER_COMMAND}}" = "podman" ]; then
+        if [ "{{OS}}" = "windows" ] && [ "{{.CONTAINER_COMMAND}}" = "podman" ]; then
           HOST_IP=$(powershell -command "Get-NetIpAddress | where { \$_.InterfaceAlias -Like '*WSL*' -and \$_.AddressFamily -EQ 'IPv4' } | select -ExpandProperty IPAddress")
           if [ -z "$HOST_IP" ]; then
             echo "Host IP cannot be determined! WSL cannot run in mirrored networking mode."
@@ -250,15 +250,15 @@ tasks:
       - 'test -d ../aem/home/opt/sdk/dispatcher || { echo "Dispatcher SDK is not available. Try providing AEM SDK ZIP instead of JAR to directory: aem/home/lib"; exit 1; }'
       - test -d home/sdk || (rm -fr home/sdk && mkdir -p home && cp -r ../aem/home/opt/sdk/dispatcher home/sdk)
       # - sh home/sdk/bin/validate.sh src > ../aem/home/var/log/dispatcher-validate.log
-      - "{{.DOCKER_COMMAND}} tag \"$({{.DOCKER_COMMAND}} load --input 'home/sdk/lib/dispatcher-publish-{{ARCH}}.tar.gz' | tail -n 1 | awk -v 'FS= ' '{print $3}')\" \"adobe/aem-ethos/dispatcher-publish:latest\""
+      - "{{.CONTAINER_COMMAND}} tag \"$({{.CONTAINER_COMMAND}} load --input 'home/sdk/lib/dispatcher-publish-{{ARCH}}.tar.gz' | tail -n 1 | awk -v 'FS= ' '{print $3}')\" \"adobe/aem-ethos/dispatcher-publish:latest\""
       - mkdir -p home/sdk/logs home/sdk/cache
-      - '{{.DOCKER_COMPOSE_COMMAND}} up -d'
+      - '{{.CONTAINER_COMPOSE_COMMAND}} up -d'
 
   dispatcher:stop:
     desc: stop AEM dispatcher
     aliases: [ dispatcher:down ]
     dir: dispatcher
-    cmd: '{{.DOCKER_COMPOSE_COMMAND}} down'
+    cmd: '{{.CONTAINER_COMPOSE_COMMAND}} down'
 
   dispatcher:restart:
     desc: restart AEM dispatcher
@@ -270,19 +270,19 @@ tasks:
     desc: check status of AEM dispatcher
     dir: dispatcher
     cmds:
-      - '{{.DOCKER_COMPOSE_COMMAND}} ps'
-      - '{{.DOCKER_COMPOSE_COMMAND}} logs --tail 20'
+      - '{{.CONTAINER_COMPOSE_COMMAND}} ps'
+      - '{{.CONTAINER_COMPOSE_COMMAND}} logs --tail 20'
 
   dispatcher:login:
     desc: login to AEM dispatcher shell
-    cmd: '{{.DOCKER_COMMAND}} exec -it dispatcher bash'
+    cmd: '{{.CONTAINER_COMMAND}} exec -it dispatcher bash'
     ignore_error: true
 
   dispatcher:destroy:
     desc: destroy AEM dispatcher
     dir: dispatcher
     cmds:
-      - '{{.DOCKER_COMPOSE_COMMAND}} down -v --remove-orphans'
+      - '{{.CONTAINER_COMPOSE_COMMAND}} down -v --remove-orphans'
       - rm -fr home
 
   dispatcher:hosts:

@@ -190,7 +190,7 @@ func (im *InstanceManager) filter(instances []Instance) []Instance {
 		}
 	} else {
 		for _, i := range instances {
-			filterLocation := im.FilterAuthors && i.IsAuthor() || im.FilterPublishes && i.IsPublish()
+			filterLocation := im.FilterAuthors && i.IsAuthor() || im.FilterPublishes && i.IsPublish() || i.IsAdHoc()
 			filterRole := im.FilterLocals && i.IsLocal() || im.FilterRemotes && i.IsRemote()
 			filterClassifier := strings.HasPrefix(i.IDInfo().Classifier, im.FilterClassifierPrefix)
 			if filterLocation && filterRole && filterClassifier {

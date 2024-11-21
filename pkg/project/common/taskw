@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-VERSION=${TASK_VERSION:-"3.33.1"}
+VERSION=${TASK_VERSION:-"3.40.0"}
 
 # Define API
 # ==========

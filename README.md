@@ -132,8 +132,8 @@ Supported project types:
   |-------------|------------------------|
   | >= 1.2.0    | 41, 42, 43, 47, 48, 51 |
 
-- with any type of structure, however afterwards only a little customizations in *Taskfile.yml* need to be done to reflect configuration related to built AEM application artifact path and AEM dispatcher files location
-- empty folder; the project kind will be needed to be specified explicitly during initialization
+- with any type of structure, however afterwards only a little customizations in *Taskfile.yml* need to be done to reflect configuration related to built AEM application artifact path and AEM dispatcher files location,
+- empty folder; the project kind will be needed to be specified explicitly during scaffolding.
 
 ---
 
@@ -361,18 +361,6 @@ instance:
     # Archived runtime dir (AEM backup files '*.aemb.zst')
     backup_dir: "aem/home/var/backup"
 
-    # Oak Run tool options (offline instance management)
-    oak_run:
-      download_url: "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.72.0/oak-run-1.72.0.jar"
-      store_path: "crx-quickstart/repository/segmentstore"
-
-    # Source files
-    quickstart:
-      # AEM SDK ZIP or JAR
-      dist_file: "aem/home/lib/{aem-sdk,cq-quickstart}-*.{zip,jar}"
-      # AEM License properties file
-      license_file: "aem/home/lib/license.properties"
-
   # Status discovery (timezone, AEM version, etc)
   status:
     timeout: 500ms
@@ -478,6 +466,52 @@ output:
     file: aem/home/var/log/aem.log
     # Controls where outputs and logs should be written to when format is 'text' (console|file|both)
     mode: console
+
+vendor:
+  # AEM instance source files
+  quickstart:
+    # AEM SDK ZIP or JAR
+    dist_file: 'aem/home/lib/{aem-sdk,cq-quickstart}-*.{zip,jar}'
+    # AEM License properties file
+    license_file: "aem/home/lib/license.properties"
+
+  # JDK used to: run AEM instances, build OSGi bundles, assemble AEM packages
+  java:
+    # Require following versions before e.g running AEM instances
+    version_constraints: ">= 11, < 12"
+
+    # Pre-installed local JDK dir
+    # a) keep it empty to download open source Java automatically for current OS and architecture
+    # b) set it to absolute path or to env var '[[.Env.JAVA_HOME]]' to indicate where closed source Java like Oracle is installed
+    home_dir: ""
+
+    # Auto-installed JDK options
+    download:
+      # Source URL with template vars support
+      url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.25_9.[[.ArchiveExt]]"
+      # Map source URL template vars to be compatible with Adoptium Java
+      replacements:
+        # Var 'Os' (GOOS)
+        "darwin": "mac"
+        # Var 'Arch' (GOARCH)
+        "x86_64": "x64"
+        "amd64": "x64"
+        "386": "x86-32"
+        # enforce non-ARM Java as some AEM features are not working on ARM (e.g Scene7)
+        "arm64": "x64"
+        "aarch64": "x64"
+
+  # Oak Run tool options (offline instance management)
+  oak_run:
+    download_url: "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.72.0/oak-run-1.72.0.jar"
+    store_path: "crx-quickstart/repository/segmentstore"
+
+# Source files
+quickstart:
+  # AEM SDK ZIP or JAR
+  dist_file: "aem/home/lib/{aem-sdk,cq-quickstart}-*.{zip,jar}"
+  # AEM License properties file
+  license_file: "aem/home/lib/license.properties"
 
 # Content clean options
 content:

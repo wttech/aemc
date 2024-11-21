@@ -71,16 +71,27 @@ func (c *CLI) rootFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringSliceP("instance-url", "U", cv.GetStringSlice("instance.adhoc_url"), "Use only AEM instance(s) at ad-hoc specified URL(s)")
 	_ = cv.BindPFlag("instance.adhoc_url", cmd.PersistentFlags().Lookup("instance-url"))
 
-	cmd.PersistentFlags().StringP("instance-id", "I", cv.GetString("instance.filter.id"), "Use only AEM instance configured with the exact ID")
+	cmd.PersistentFlags().StringSliceP("instance-id", "I", cv.GetStringSlice("instance.filter.id"), "Use only AEM instance(s) configured with the exact ID")
 	_ = cv.BindPFlag("instance.filter.id", cmd.PersistentFlags().Lookup("instance-id"))
 
-	cmd.PersistentFlags().BoolP("instance-author", "A", cv.GetBool("instance.filter.authors"), "Use only AEM author instance")
+	cmd.PersistentFlags().BoolP("instance-author", "A", cv.GetBool("instance.filter.authors"), "Use only AEM author instance(s)")
 	_ = cv.BindPFlag("instance.filter.authors", cmd.PersistentFlags().Lookup("instance-author"))
 
-	cmd.PersistentFlags().BoolP("instance-publish", "P", cv.GetBool("instance.filter.publishes"), "Use only AEM publish instance")
+	cmd.PersistentFlags().BoolP("instance-publish", "P", cv.GetBool("instance.filter.publishes"), "Use only AEM publish instance(s)")
 	_ = cv.BindPFlag("instance.filter.publishes", cmd.PersistentFlags().Lookup("instance-publish"))
 
-	cmd.MarkFlagsMutuallyExclusive("instance-author", "instance-publish")
+	cmd.PersistentFlags().BoolP("instance-local", "L", cv.GetBool("instance.filter.locals"), "Use only AEM local instance(s)")
+	_ = cv.BindPFlag("instance.filter.locals", cmd.PersistentFlags().Lookup("instance-local"))
+
+	cmd.PersistentFlags().BoolP("instance-remote", "R", cv.GetBool("instance.filter.remotes"), "Use only AEM remote instance(s)")
+	_ = cv.BindPFlag("instance.filter.remotes", cmd.PersistentFlags().Lookup("instance-remote"))
+
+	cmd.PersistentFlags().StringP("instance-classifier-prefix", "C", cv.GetString("instance.filter.classifier-prefix"), "Use only AEM instance(s) with proper classifier prefix")
+	_ = cv.BindPFlag("instance.filter.classifier-prefix", cmd.PersistentFlags().Lookup("instance-classifier-prefix"))
+
+	cmd.MarkFlagsMutuallyExclusive("instance-url", "instance-id", "instance-author", "instance-publish")
+	cmd.MarkFlagsMutuallyExclusive("instance-url", "instance-id", "instance-local", "instance-remote")
+	cmd.MarkFlagsMutuallyExclusive("instance-url", "instance-id", "instance-classifier-prefix")
 
 	cmd.PersistentFlags().String("instance-processing", cv.GetString("instance.processing_mode"), "Controls processing mode for instances ("+(strings.Join(instance.ProcessingModes(), "|")+")"))
 	_ = cv.BindPFlag("instance.processing_mode", cmd.PersistentFlags().Lookup("instance-processing"))

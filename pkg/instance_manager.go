@@ -21,10 +21,13 @@ type InstanceManager struct {
 
 	AdHocURLs []string
 
-	FilterID        string
-	FilterAuthors   bool
-	FilterPublishes bool
-	ProcessingMode  string
+	FilterIDs              []string
+	FilterAuthors          bool
+	FilterPublishes        bool
+	FilterLocals           bool
+	FilterRemotes          bool
+	FilterClassifierPrefix string
+	ProcessingMode         string
 }
 
 func NewInstanceManager(aem *AEM) *InstanceManager {
@@ -35,9 +38,20 @@ func NewInstanceManager(aem *AEM) *InstanceManager {
 
 	result.AdHocURLs = cv.GetStringSlice("instance.adhoc_url")
 
-	result.FilterID = cv.GetString("instance.filter.id")
+	result.FilterIDs = cv.GetStringSlice("instance.filter.id")
 	result.FilterAuthors = cv.GetBool("instance.filter.authors")
 	result.FilterPublishes = cv.GetBool("instance.filter.publishes")
+	if !result.FilterAuthors && !result.FilterPublishes {
+		result.FilterAuthors = true
+		result.FilterPublishes = true
+	}
+	result.FilterLocals = cv.GetBool("instance.filter.locals")
+	result.FilterRemotes = cv.GetBool("instance.filter.remotes")
+	if !result.FilterLocals && !result.FilterRemotes {
+		result.FilterLocals = true
+		result.FilterRemotes = true
+	}
+	result.FilterClassifierPrefix = cv.GetString("instance.filter.classifier-prefix")
 	result.ProcessingMode = cv.GetString("instance.processing_mode")
 
 	result.LocalOpts = NewLocalOpts(result)
@@ -165,33 +179,26 @@ func (im *InstanceManager) newFromConfig(id string) *Instance {
 
 func (im *InstanceManager) filter(instances []Instance) []Instance {
 	result := []Instance{}
-	if im.FilterID != "" {
+	if len(im.FilterIDs) > 0 {
 		for _, i := range instances {
-			if i.id == im.FilterID {
-				result = append(result, i)
-				break
+			for _, filterID := range im.FilterIDs {
+				if i.id == filterID {
+					result = append(result, i)
+					break
+				}
 			}
 		}
 	} else {
-		if im.FilterAuthors == im.FilterPublishes {
-			result = instances
-		} else {
-			if im.FilterAuthors {
-				for _, i := range instances {
-					if i.IsAuthor() {
-						result = append(result, i)
-					}
-				}
-			}
-			if im.FilterPublishes {
-				for _, i := range instances {
-					if i.IsPublish() {
-						result = append(result, i)
-					}
-				}
+		for _, i := range instances {
+			filterLocation := im.FilterAuthors && i.IsAuthor() || im.FilterPublishes && i.IsPublish()
+			filterRole := im.FilterLocals && i.IsLocal() || im.FilterRemotes && i.IsRemote()
+			filterClassifier := strings.HasPrefix(i.IDInfo().Classifier, im.FilterClassifierPrefix)
+			if filterLocation && filterRole && filterClassifier {
+				result = append(result, i)
 			}
 		}
 	}
+
 	sort.SliceStable(result, func(i, j int) bool {
 		return strings.Compare(result[i].id, result[j].id) < 0
 	})

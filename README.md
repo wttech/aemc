@@ -117,8 +117,7 @@ Package commands:
 Setup task:
 
 - AEM instances are provisioned only when the configuration is changed
-- Maven AEM application build executed only when there are code changes
-- AEM dispatcher set up using Docker Compose, redeployed only when there are configuration changes as well
+- AEM dispatcher set up using container engine, redeployed only when there are configuration changes as well
 - Health checks executed to confirm the stability of the environment as a whole
 
 <img src="docs/cli-demo-short.gif" alt="CLI Demo"/>
@@ -160,7 +159,7 @@ Project scaffolding:
 
 - sets up ready-to-use tasks powered by [Task tool](https://taskfile.dev/), which aggregate one or many AEM Compose CLI commands into useful procedures.
 - provides configuration for provisioning AEM instances (installing service pack, setting replication agents, etc.).
-- provides configuration for running AEM Dispatcher on [Podman](https://podman-desktop.io/) or [Docker](https://www.docker.com/products/docker-desktop/) (remember to install one of these tools before running the setup task).
+- provides configuration for running AEM Dispatcher on [Podman](https://podman-desktop.io/) (by default) or [Docker](https://www.docker.com/products/docker-desktop/) (remember to install one of these tools before running the setup task).
 
 To list all available tasks, run:
 

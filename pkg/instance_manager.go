@@ -198,7 +198,6 @@ func (im *InstanceManager) filter(instances []Instance) []Instance {
 			}
 		}
 	}
-
 	sort.SliceStable(result, func(i, j int) bool {
 		return strings.Compare(result[i].id, result[j].id) < 0
 	})

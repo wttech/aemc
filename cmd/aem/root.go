@@ -81,7 +81,6 @@ func (c *CLI) rootFlags(cmd *cobra.Command) {
 	_ = cv.BindPFlag("instance.filter.publishes", cmd.PersistentFlags().Lookup("instance-publish"))
 
 	cmd.MarkFlagsMutuallyExclusive("instance-url", "instance-id")
-	cmd.MarkFlagsMutuallyExclusive("instance-author", "instance-publish")
 	cmd.MarkFlagsMutuallyExclusive("instance-id", "instance-author", "instance-publish")
 
 	cmd.PersistentFlags().String("instance-processing", cv.GetString("instance.processing_mode"), "Controls processing mode for instances ("+(strings.Join(instance.ProcessingModes(), "|")+")"))

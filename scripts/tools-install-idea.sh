@@ -55,8 +55,12 @@ TASKS_YAML_CONTENT=$(cat <<'EOF'
       fi
 
       FILE_PATH="{{.CLI_ARGS | splitArgs | last }}"
-      if [ ! -f "$FILE_PATH" ]; then
+      if [ ! -e "$FILE_PATH" ]; then
         echo "File not found: $FILE_PATH"
+        exit 1
+      fi
+      if [[ "$FILE_PATH" != *"/jcr_root/"* ]]; then
+        echo "Path must contain '/jcr_root/' but got '$FILE_PATH'"
         exit 1
       fi
       FILE_PATH="${FILE_PATH/.content.xml/jcr:content}"

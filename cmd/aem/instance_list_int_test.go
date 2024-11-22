@@ -4,18 +4,12 @@ package main
 
 import (
 	"github.com/wttech/aemc/pkg"
-	"github.com/wttech/aemc/pkg/cfg"
-	"os"
 	"sort"
 	"strings"
 	"testing"
 )
 
 func testInstanceList(t *testing.T, args []string, expectedResult bool, expectedIDs []string) {
-	if err := os.Setenv(cfg.FileEnvVar, "../../test/resources/aem.yml"); err != nil {
-		t.Fatal(err)
-	}
-
 	cli := NewCLI()
 	cmd := cli.cmd
 	cmd.SetArgs(args)
@@ -51,69 +45,45 @@ func testInstanceList(t *testing.T, args []string, expectedResult bool, expected
 }
 
 func TestAllInstances(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list"}, true, []string{"local_author", "local_publish", "remote_author_dev-auth", "remote_publish_dev-pub1", "remote_publish_dev-pub2"})
+	testInstanceList(t, []string{"instance", "list", "--output-value", "NONE"}, true, []string{"local_author", "local_publish"})
 }
 
 func TestAuthorInstances(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-A"}, true, []string{"local_author", "remote_author_dev-auth"})
+	testInstanceList(t, []string{"instance", "list", "-A", "--output-value", "NONE"}, true, []string{"local_author"})
 }
 
 func TestPublishInstances(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-P"}, true, []string{"local_publish", "remote_publish_dev-pub1", "remote_publish_dev-pub2"})
-}
-
-func TestLocalInstances(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-L"}, true, []string{"local_author", "local_publish"})
-}
-
-func TestLocalAuthorInstances(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-L", "-A"}, true, []string{"local_author"})
-}
-
-func TestRemoteInstances(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-R"}, true, []string{"remote_author_dev-auth", "remote_publish_dev-pub1", "remote_publish_dev-pub2"})
-}
-
-func TestRemotePublishInstances(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-R", "-P"}, true, []string{"remote_publish_dev-pub1", "remote_publish_dev-pub2"})
-}
-
-func TestDevInstances(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-C", "dev"}, true, []string{"remote_author_dev-auth", "remote_publish_dev-pub1", "remote_publish_dev-pub2"})
-}
-
-func TestPublishDevInstances(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-P", "-C", "dev"}, true, []string{"remote_publish_dev-pub1", "remote_publish_dev-pub2"})
+	testInstanceList(t, []string{"instance", "list", "-P", "--output-value", "NONE"}, true, []string{"local_publish"})
 }
 
 func TestInstanceByID(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-I", "local_author", "-I", "remote_publish_dev-pub2"}, true, []string{"local_author", "remote_publish_dev-pub2"})
+	testInstanceList(t, []string{"instance", "list", "-I", "local_author", "-I", "local_publish", "--output-value", "NONE"}, true, []string{"local_author", "local_publish"})
 }
 
 func TestInstanceByURL(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-U", "http://admin:admin@127.0.0.1:4502", "-U", "http://admin:admin@127.0.0.1:4503", "-U", "test_author=http://admin:admin@127.0.0.1:4502"}, true, []string{"remote_adhoc_1", "remote_adhoc_2", "test_author"})
+	testInstanceList(t, []string{"instance", "list", "-U", "http://admin:admin@127.0.0.1:4502", "-U", "http://admin:admin@127.0.0.1:4503", "-U", "test_author=http://admin:admin@127.0.0.1:4502", "--output-value", "NONE"}, true, []string{"remote_adhoc_1", "remote_adhoc_2", "test_author"})
 }
 
-func TestConflictByIDAndAuthor(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-I", "local_author", "-A"}, false, []string{})
+func TestAuthorInstanceByURL(t *testing.T) {
+	testInstanceList(t, []string{"instance", "list", "-U", "dev-auth_author=http://admin:admin@127.0.0.1:4502", "-U", "dev-pub1_publish=http://admin:admin@127.0.0.1:4503", "-U", "dev-pub2_publish=http://admin:admin@127.0.0.1:4504", "-A", "--output-value", "NONE"}, true, []string{"dev-auth_author"})
 }
 
-func TestConflictByIDAndLocal(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-I", "local_author", "-L"}, false, []string{})
-}
-
-func TestConflictByIDAndClassifier(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-I", "local_author", "-C", "dev"}, false, []string{})
-}
-
-func TestConflictIDAndURL(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-I", "local_author", "-U", "http://admin:admin@127.0.0.1:4502"}, false, []string{})
+func TestPublishInstanceByURL(t *testing.T) {
+	testInstanceList(t, []string{"instance", "list", "-U", "dev-auth_author=http://admin:admin@127.0.0.1:4502", "-U", "dev-pub1_publish=http://admin:admin@127.0.0.1:4503", "-U", "dev-pub2_publish=http://admin:admin@127.0.0.1:4504", "-P", "--output-value", "NONE"}, true, []string{"dev-pub1_publish", "dev-pub2_publish"})
 }
 
 func TestConflictAuthorAndPublish(t *testing.T) {
 	testInstanceList(t, []string{"instance", "list", "-A", "-P"}, false, []string{})
 }
 
-func TestConflictAndLocalAndRemote(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-L", "-R"}, false, []string{})
+func TestConflictByIDAndAuthor(t *testing.T) {
+	testInstanceList(t, []string{"instance", "list", "-I", "local_author", "-A"}, false, []string{})
+}
+
+func TestConflictByIDAndPublish(t *testing.T) {
+	testInstanceList(t, []string{"instance", "list", "-I", "local_author", "-P"}, false, []string{})
+}
+
+func TestConflictIDAndURL(t *testing.T) {
+	testInstanceList(t, []string{"instance", "list", "-I", "local_author", "-U", "http://admin:admin@127.0.0.1:4502"}, false, []string{})
 }

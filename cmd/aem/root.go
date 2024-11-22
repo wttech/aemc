@@ -80,18 +80,9 @@ func (c *CLI) rootFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().BoolP("instance-publish", "P", cv.GetBool("instance.filter.publishes"), "Use only AEM publish instance(s)")
 	_ = cv.BindPFlag("instance.filter.publishes", cmd.PersistentFlags().Lookup("instance-publish"))
 
-	cmd.PersistentFlags().BoolP("instance-local", "L", cv.GetBool("instance.filter.locals"), "Use only AEM local instance(s)")
-	_ = cv.BindPFlag("instance.filter.locals", cmd.PersistentFlags().Lookup("instance-local"))
-
-	cmd.PersistentFlags().BoolP("instance-remote", "R", cv.GetBool("instance.filter.remotes"), "Use only AEM remote instance(s)")
-	_ = cv.BindPFlag("instance.filter.remotes", cmd.PersistentFlags().Lookup("instance-remote"))
-
-	cmd.PersistentFlags().StringP("instance-classifier-prefix", "C", cv.GetString("instance.filter.classifier-prefix"), "Use only AEM instance(s) with proper classifier prefix")
-	_ = cv.BindPFlag("instance.filter.classifier-prefix", cmd.PersistentFlags().Lookup("instance-classifier-prefix"))
-
-	cmd.MarkFlagsMutuallyExclusive("instance-url", "instance-id", "instance-author", "instance-publish")
-	cmd.MarkFlagsMutuallyExclusive("instance-url", "instance-id", "instance-local", "instance-remote")
-	cmd.MarkFlagsMutuallyExclusive("instance-url", "instance-id", "instance-classifier-prefix")
+	cmd.MarkFlagsMutuallyExclusive("instance-url", "instance-id")
+	cmd.MarkFlagsMutuallyExclusive("instance-author", "instance-publish")
+	cmd.MarkFlagsMutuallyExclusive("instance-id", "instance-author", "instance-publish")
 
 	cmd.PersistentFlags().String("instance-processing", cv.GetString("instance.processing_mode"), "Controls processing mode for instances ("+(strings.Join(instance.ProcessingModes(), "|")+")"))
 	_ = cv.BindPFlag("instance.processing_mode", cmd.PersistentFlags().Lookup("instance-processing"))

@@ -21,13 +21,10 @@ type InstanceManager struct {
 
 	AdHocURLs []string
 
-	FilterIDs              []string
-	FilterAuthors          bool
-	FilterPublishes        bool
-	FilterLocals           bool
-	FilterRemotes          bool
-	FilterClassifierPrefix string
-	ProcessingMode         string
+	FilterIDs       []string
+	FilterAuthors   bool
+	FilterPublishes bool
+	ProcessingMode  string
 }
 
 func NewInstanceManager(aem *AEM) *InstanceManager {
@@ -45,13 +42,6 @@ func NewInstanceManager(aem *AEM) *InstanceManager {
 		result.FilterAuthors = true
 		result.FilterPublishes = true
 	}
-	result.FilterLocals = cv.GetBool("instance.filter.locals")
-	result.FilterRemotes = cv.GetBool("instance.filter.remotes")
-	if !result.FilterLocals && !result.FilterRemotes {
-		result.FilterLocals = true
-		result.FilterRemotes = true
-	}
-	result.FilterClassifierPrefix = cv.GetString("instance.filter.classifier-prefix")
 	result.ProcessingMode = cv.GetString("instance.processing_mode")
 
 	result.LocalOpts = NewLocalOpts(result)
@@ -190,10 +180,7 @@ func (im *InstanceManager) filter(instances []Instance) []Instance {
 		}
 	} else {
 		for _, i := range instances {
-			filterLocation := im.FilterAuthors && i.IsAuthor() || im.FilterPublishes && i.IsPublish() || i.IsAdHoc()
-			filterRole := im.FilterLocals && i.IsLocal() || im.FilterRemotes && i.IsRemote()
-			filterClassifier := strings.HasPrefix(i.IDInfo().Classifier, im.FilterClassifierPrefix)
-			if filterLocation && filterRole && filterClassifier {
+			if im.FilterAuthors && i.IsAuthor() || im.FilterPublishes && i.IsPublish() || i.IsAdHoc() {
 				result = append(result, i)
 			}
 		}

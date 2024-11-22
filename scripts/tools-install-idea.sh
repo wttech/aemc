@@ -6,15 +6,28 @@ fi
 
 # Define content to be appended to 'Taskfile.yaml'
 TASKS_YAML_CONTENT=$(cat <<'EOF'
-  groovy:author:
-    desc: execute Groovy script on AEM author instance
+  groovy:execute:
+    desc: execute Groovy script on AEM instance
     cmd: |
-      SCRIPT="{{.CLI_ARGS}}"
+      INSTANCE="{{.CLI_ARGS | splitArgs | first }}"
+      if [ "$INSTANCE" = "author" ]; then
+        INSTANCE_URL="{{.AEM_AUTHOR_HTTP_URL}}"
+        INSTANCE_CREDENTIALS="{{.AEM_AUTHOR_USER}}:{{.AEM_AUTHOR_PASSWORD}}"
+      elif [ "$INSTANCE" = "publish" ]; then
+        INSTANCE_URL="{{.AEM_PUBLISH_HTTP_URL}}"
+        INSTANCE_CREDENTIALS="{{.AEM_PUBLISH_USER}}:{{.AEM_PUBLISH_PASSWORD}}"
+      else
+        echo "Instance type supported are 'author' or 'publish' but got '$INSTANCE'"
+        exit 1
+      fi
+
+      SCRIPT="{{.CLI_ARGS | splitArgs | last }}"
       if [[ ! -f "${SCRIPT}" ]] || [[ "${SCRIPT: -7}" != ".groovy" ]]; then
         echo "Groovy script not found or the file is not a Groovy script: '${SCRIPT}'"
         exit 1
       fi
-      RESPONSE=$(curl -u "{{.AEM_AUTHOR_USER}}:{{.AEM_AUTHOR_PASSWORD}}" -k -F "script=@${SCRIPT}" -X POST "{{.AEM_AUTHOR_HTTP_URL}}/bin/groovyconsole/post.json")
+
+      RESPONSE=$(curl -u "${INSTANCE_CREDENTIALS}" -k -F "script=@${SCRIPT}" -X POST "${INSTANCE_URL}/bin/groovyconsole/post.json")
       EXCEPTION=$(echo "$RESPONSE" | jq -r '.exceptionStackTrace')
       if [[ $EXCEPTION != "" ]]; then
         echo ""
@@ -28,60 +41,37 @@ TASKS_YAML_CONTENT=$(cat <<'EOF'
       echo -e "${OUTPUT}"
       echo ""
 
-  groovy:publish:
-    desc: execute Groovy script on AEM publish instance
+  crxde:open:
+    desc: open CRX/DE on AEM instance
     cmd: |
-      SCRIPT="{{.CLI_ARGS}}"
-      if [[ ! -f "${SCRIPT}" ]] || [[ "${SCRIPT: -7}" != ".groovy" ]]; then
-        echo "Groovy script not found or the file is not a Groovy script: '${SCRIPT}'"
+      INSTANCE="{{.CLI_ARGS | splitArgs | first }}"
+      if [ "$INSTANCE" = "author" ]; then
+        INSTANCE_URL="{{.AEM_AUTHOR_HTTP_URL}}"
+      elif [ "$INSTANCE" = "publish" ]; then
+        INSTANCE_URL="{{.AEM_PUBLISH_HTTP_URL}}"
+      else
+        echo "Instance type supported are 'author' or 'publish' but got '$INSTANCE'"
         exit 1
       fi
-      RESPONSE=$(curl -u "{{.AEM_PUBLISH_USER}}:{{.AEM_PUBLISH_PASSWORD}}" -k -F "script=@${SCRIPT}" -X POST "{{.AEM_PUBLISH_HTTP_URL}}/bin/groovyconsole/post.json")
-      EXCEPTION=$(echo "$RESPONSE" | jq -r '.exceptionStackTrace')
-      if [[ $EXCEPTION != "" ]]; then
-        echo ""
-        echo "Groovy script exception:"
-        echo -e "${EXCEPTION}"
-        echo ""
-      fi
-      echo ""
-      echo "Groovy script output:"
-      OUTPUT=$(echo "${RESPONSE}" | jq -r '.output')
-      echo -e "${OUTPUT}"
-      echo ""
 
-  crxde:author:
-    desc: open CRX/DE on AEM author instance
-    cmd: |
-      FILE_PATH="{{.CLI_ARGS}}"
+      FILE_PATH="{{.CLI_ARGS | splitArgs | last }}"
+      if [ ! -f "$FILE_PATH" ]; then
+        echo "File not found: $FILE_PATH"
+        exit 1
+      fi
       FILE_PATH="${FILE_PATH/.content.xml/jcr:content}"
       FILE_PATH="${FILE_PATH%.xml}"
       REPO_PATH="${FILE_PATH#*jcr_root}"
       REPO_PATH=$(echo "$REPO_PATH" | sed 's/ /%20/g; s/:/%3A/g')
-      if [ "{{OS}}" = "windows" ]; then
-        start "" "{{.AEM_AUTHOR_HTTP_URL}}/crx/de#${REPO_PATH}"
-      elif [ "{{OS}}" = "darwin" ]; then
-        open "{{.AEM_AUTHOR_HTTP_URL}}/crx/de#${REPO_PATH}"
-      else
-        xdg-open "{{.AEM_AUTHOR_HTTP_URL}}/crx/de#${REPO_PATH}"
-      fi
 
-  crxde:publish:
-    desc: open CRX/DE on AEM publish instance
-    cmd: |
-      FILE_PATH="{{.CLI_ARGS}}"
-      FILE_PATH="${FILE_PATH/.content.xml/jcr:content}"
-      FILE_PATH="${FILE_PATH%.xml}"
-      REPO_PATH="${FILE_PATH#*jcr_root}"
-      REPO_PATH=$(echo "$REPO_PATH" | sed 's/ /%20/g; s/:/%3A/g')
+      CRXDE_URL="${INSTANCE_URL}/crx/de#${REPO_PATH}"
       if [ "{{OS}}" = "windows" ]; then
-        start "" "{{.AEM_PUBLISH_HTTP_URL}}/crx/de#${REPO_PATH}"
+        start "" "$CRXDE_URL"
       elif [ "{{OS}}" = "darwin" ]; then
-        open "{{.AEM_PUBLISH_HTTP_URL}}/crx/de#${REPO_PATH}"
+        open "$CRXDE_URL"
       else
-        xdg-open "{{.AEM_PUBLISH_HTTP_URL}}/crx/de#${REPO_PATH}"
+        xdg-open "$CRXDE_URL"
       fi
-
 EOF
 )
 
@@ -112,14 +102,14 @@ AEM_XML_CONTENT=$(cat <<'EOF'
   <tool name="Groovy Console [author]" description="Run currently opened Groovy Script in editor on author instance" showInMainMenu="false" showInEditor="false" showInProject="false" showInSearchPopup="false" disabled="false" useConsole="true" showConsoleOnStdOut="false" showConsoleOnStdErr="false" synchronizeAfterRun="true">
     <exec>
       <option name="COMMAND" value="$ProjectFileDir$/taskw" />
-      <option name="PARAMETERS" value="groovy:author -- $FilePath$" />
+      <option name="PARAMETERS" value="groovy:execute -- author $FilePath$" />
       <option name="WORKING_DIRECTORY" value="$ProjectFileDir$" />
     </exec>
   </tool>
   <tool name="Groovy Console [publish]" description="Run currently opened Groovy Script in editor on publish instance" showInMainMenu="false" showInEditor="false" showInProject="false" showInSearchPopup="false" disabled="false" useConsole="true" showConsoleOnStdOut="false" showConsoleOnStdErr="false" synchronizeAfterRun="true">
     <exec>
       <option name="COMMAND" value="$ProjectFileDir$/taskw" />
-      <option name="PARAMETERS" value="groovy:publish -- $FilePath$" />
+      <option name="PARAMETERS" value="groovy:execute -- publish $FilePath$" />
       <option name="WORKING_DIRECTORY" value="$ProjectFileDir$" />
     </exec>
   </tool>
@@ -140,14 +130,14 @@ AEM_XML_CONTENT=$(cat <<'EOF'
   <tool name="CRXDE Open [author]" showInMainMenu="false" showInEditor="false" showInProject="false" showInSearchPopup="false" disabled="false" useConsole="false" showConsoleOnStdOut="false" showConsoleOnStdErr="false" synchronizeAfterRun="false">
     <exec>
       <option name="COMMAND" value="$ProjectFileDir$/taskw" />
-      <option name="PARAMETERS" value="crxde:author -- $FilePath$" />
+      <option name="PARAMETERS" value="crxde:open -- author $FilePath$" />
       <option name="WORKING_DIRECTORY" value="$ProjectFileDir$" />
     </exec>
   </tool>
   <tool name="CRXDE Open [publish]" showInMainMenu="false" showInEditor="false" showInProject="false" showInSearchPopup="false" disabled="false" useConsole="false" showConsoleOnStdOut="false" showConsoleOnStdErr="false" synchronizeAfterRun="false">
     <exec>
       <option name="COMMAND" value="$ProjectFileDir$/taskw" />
-      <option name="PARAMETERS" value="crxde:publish -- $FilePath$" />
+      <option name="PARAMETERS" value="crxde:open -- publish $FilePath$" />
       <option name="WORKING_DIRECTORY" value="$ProjectFileDir$" />
     </exec>
   </tool>

@@ -38,10 +38,6 @@ func NewInstanceManager(aem *AEM) *InstanceManager {
 	result.FilterIDs = cv.GetStringSlice("instance.filter.id")
 	result.FilterAuthors = cv.GetBool("instance.filter.authors")
 	result.FilterPublishes = cv.GetBool("instance.filter.publishes")
-	if !result.FilterAuthors && !result.FilterPublishes {
-		result.FilterAuthors = true
-		result.FilterPublishes = true
-	}
 	result.ProcessingMode = cv.GetString("instance.processing_mode")
 
 	result.LocalOpts = NewLocalOpts(result)
@@ -180,7 +176,7 @@ func (im *InstanceManager) filter(instances []Instance) []Instance {
 		}
 	} else {
 		for _, i := range instances {
-			if im.FilterAuthors && i.IsAuthor() || im.FilterPublishes && i.IsPublish() || i.IsAdHoc() {
+			if im.FilterAuthors == im.FilterPublishes || im.FilterAuthors && i.IsAuthor() || im.FilterPublishes && i.IsPublish() {
 				result = append(result, i)
 			}
 		}

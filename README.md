@@ -140,7 +140,7 @@ Supported project types:
 Run command below to install the AEM Compose tool in your project:
 
 ```shell
-curl https://raw.githubusercontent.com/wttech/aemc/main/project-install.sh | sh
+curl https://raw.githubusercontent.com/wttech/aemc/main/scripts/project-install.sh | sh
 ```
 
 After successful installation, remember to always use the tool via wrapper script in the following way:

@@ -84,8 +84,8 @@ func (im *InstanceManager) All() []Instance {
 }
 
 func (im *InstanceManager) newAdHocOrFromConfig() []Instance {
+	var result []Instance
 	if len(im.AdHocURLs) > 0 {
-		var result []Instance
 		for adHocIndex, adHocValue := range im.AdHocURLs {
 			iURL, err := im.newAdhoc(adHocValue, adHocIndex, len(im.AdHocURLs))
 			if err != nil {
@@ -93,24 +93,36 @@ func (im *InstanceManager) newAdHocOrFromConfig() []Instance {
 			}
 			result = append(result, *iURL)
 		}
-		return result
 	}
+	var instances []Instance
 	cv := im.aem.config.Values()
 	configIDs := maps.Keys(cv.GetStringMap("instance.config"))
 	if len(configIDs) > 0 {
-		var result []Instance
 		for _, id := range configIDs {
 			cv.SetDefault(fmt.Sprintf("instance.config.%s.active", id), true)
 			active := cv.GetBool(fmt.Sprintf("instance.config.%s.active", id))
 			if active {
 				if i := im.newFromConfig(id); i != nil {
-					result = append(result, *i)
+					instances = append(instances, *i)
 				}
 			}
 		}
-		return result
+	} else {
+		instances = im.NewLocalPair()
 	}
-	return im.NewLocalPair()
+	if len(im.FilterIDs) > 0 {
+		for _, i := range instances {
+			for _, filterID := range im.FilterIDs {
+				if i.id == filterID {
+					result = append(result, i)
+					break
+				}
+			}
+		}
+	} else if len(im.AdHocURLs) == 0 {
+		result = instances
+	}
+	return result
 }
 
 func (im *InstanceManager) newAdhoc(value string, current int, total int) (*Instance, error) {
@@ -165,20 +177,9 @@ func (im *InstanceManager) newFromConfig(id string) *Instance {
 
 func (im *InstanceManager) filter(instances []Instance) []Instance {
 	result := []Instance{}
-	if len(im.FilterIDs) > 0 {
-		for _, i := range instances {
-			for _, filterID := range im.FilterIDs {
-				if i.id == filterID {
-					result = append(result, i)
-					break
-				}
-			}
-		}
-	} else {
-		for _, i := range instances {
-			if im.FilterAuthors == im.FilterPublishes || im.FilterAuthors && i.IsAuthor() || im.FilterPublishes && i.IsPublish() {
-				result = append(result, i)
-			}
+	for _, i := range instances {
+		if im.FilterAuthors == im.FilterPublishes || im.FilterAuthors && i.IsAuthor() || im.FilterPublishes && i.IsPublish() {
+			result = append(result, i)
 		}
 	}
 	sort.SliceStable(result, func(i, j int) bool {

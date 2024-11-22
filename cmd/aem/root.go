@@ -80,9 +80,6 @@ func (c *CLI) rootFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().BoolP("instance-publish", "P", cv.GetBool("instance.filter.publishes"), "Use only AEM publish instance(s)")
 	_ = cv.BindPFlag("instance.filter.publishes", cmd.PersistentFlags().Lookup("instance-publish"))
 
-	cmd.MarkFlagsMutuallyExclusive("instance-url", "instance-id")
-	cmd.MarkFlagsMutuallyExclusive("instance-id", "instance-author", "instance-publish")
-
 	cmd.PersistentFlags().String("instance-processing", cv.GetString("instance.processing_mode"), "Controls processing mode for instances ("+(strings.Join(instance.ProcessingModes(), "|")+")"))
 	_ = cv.BindPFlag("instance.processing_mode", cmd.PersistentFlags().Lookup("instance-processing"))
 }

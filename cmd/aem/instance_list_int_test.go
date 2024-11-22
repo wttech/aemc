@@ -57,11 +57,15 @@ func TestPublishInstances(t *testing.T) {
 }
 
 func TestInstanceByID(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-I", "local_author", "-I", "local_publish", "--output-value", "NONE"}, true, []string{"local_author", "local_publish"})
+	testInstanceList(t, []string{"instance", "list", "-I", "local_author", "--output-value", "NONE"}, true, []string{"local_author"})
 }
 
 func TestInstanceByURL(t *testing.T) {
 	testInstanceList(t, []string{"instance", "list", "-U", "http://admin:admin@127.0.0.1:4502", "-U", "http://admin:admin@127.0.0.1:4503", "-U", "test_author=http://admin:admin@127.0.0.1:4502", "--output-value", "NONE"}, true, []string{"remote_adhoc_1", "remote_adhoc_2", "test_author"})
+}
+
+func TestInstanceByIDOrURL(t *testing.T) {
+	testInstanceList(t, []string{"instance", "list", "-I", "local_publish", "-U", "http://admin:admin@127.0.0.1:4502", "--output-value", "NONE"}, true, []string{"local_publish", "remote_adhoc"})
 }
 
 func TestAuthorInstanceByURL(t *testing.T) {
@@ -70,20 +74,4 @@ func TestAuthorInstanceByURL(t *testing.T) {
 
 func TestPublishInstanceByURL(t *testing.T) {
 	testInstanceList(t, []string{"instance", "list", "-U", "dev-auth_author=http://admin:admin@127.0.0.1:4502", "-U", "dev-pub1_publish=http://admin:admin@127.0.0.1:4503", "-U", "dev-pub2_publish=http://admin:admin@127.0.0.1:4504", "-P", "--output-value", "NONE"}, true, []string{"dev-pub1_publish", "dev-pub2_publish"})
-}
-
-func TestConflictAuthorAndPublish(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-A", "-P"}, false, []string{})
-}
-
-func TestConflictByIDAndAuthor(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-I", "local_author", "-A"}, false, []string{})
-}
-
-func TestConflictByIDAndPublish(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-I", "local_author", "-P"}, false, []string{})
-}
-
-func TestConflictIDAndURL(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-I", "local_author", "-U", "http://admin:admin@127.0.0.1:4502"}, false, []string{})
 }

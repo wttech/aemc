@@ -52,16 +52,12 @@ func TestPublishInstances(t *testing.T) {
 	testInstanceList(t, []string{"instance", "list", "-P", "--output-value", "NONE"}, []string{"local_publish"})
 }
 
-func TestInstanceByID(t *testing.T) {
+func TestIDInstance(t *testing.T) {
 	testInstanceList(t, []string{"instance", "list", "-I", "local_author", "--output-value", "NONE"}, []string{"local_author"})
 }
 
 func TestInstanceByURL(t *testing.T) {
 	testInstanceList(t, []string{"instance", "list", "-U", "http://admin:admin@127.0.0.1:4502", "-U", "http://admin:admin@127.0.0.1:4503", "-U", "test_author=http://admin:admin@127.0.0.1:4502", "--output-value", "NONE"}, []string{"remote_adhoc_1", "remote_adhoc_2", "test_author"})
-}
-
-func TestInstanceByIDOrURL(t *testing.T) {
-	testInstanceList(t, []string{"instance", "list", "-I", "local_publish", "-U", "http://admin:admin@127.0.0.1:4502", "--output-value", "NONE"}, []string{"local_publish", "remote_adhoc"})
 }
 
 func TestAuthorInstanceByURL(t *testing.T) {
@@ -70,4 +66,16 @@ func TestAuthorInstanceByURL(t *testing.T) {
 
 func TestPublishInstanceByURL(t *testing.T) {
 	testInstanceList(t, []string{"instance", "list", "-U", "dev-auth_author=http://admin:admin@127.0.0.1:4502", "-U", "dev-pub1_publish=http://admin:admin@127.0.0.1:4503", "-U", "dev-pub2_publish=http://admin:admin@127.0.0.1:4504", "-P", "--output-value", "NONE"}, []string{"dev-pub1_publish", "dev-pub2_publish"})
+}
+
+func TestAuthorIDInstanceByURL(t *testing.T) {
+	testInstanceList(t, []string{"instance", "list", "-U", "dev-auth_author=http://admin:admin@127.0.0.1:4502", "-U", "dev-pub1_publish=http://admin:admin@127.0.0.1:4503", "-U", "dev-pub2_publish=http://admin:admin@127.0.0.1:4504", "-A", "-I", "dev-auth_author", "--output-value", "NONE"}, []string{"dev-auth_author"})
+}
+
+func TestPublishIDInstanceByURL(t *testing.T) {
+	testInstanceList(t, []string{"instance", "list", "-U", "dev-auth_author=http://admin:admin@127.0.0.1:4502", "-U", "dev-pub1_publish=http://admin:admin@127.0.0.1:4503", "-U", "dev-pub2_publish=http://admin:admin@127.0.0.1:4504", "-P", "-I", "dev-pub1_publish", "--output-value", "NONE"}, []string{"dev-pub1_publish"})
+}
+
+func TestIDInstanceByURL(t *testing.T) {
+	testInstanceList(t, []string{"instance", "list", "-U", "dev-auth_author=http://admin:admin@127.0.0.1:4502", "-U", "dev-pub1_publish=http://admin:admin@127.0.0.1:4503", "-U", "dev-pub2_publish=http://admin:admin@127.0.0.1:4504", "-I", "dev-auth_author", "-I", "dev-pub1_publish", "--output-value", "NONE"}, []string{"dev-auth_author", "dev-pub1_publish"})
 }

@@ -84,8 +84,8 @@ func (im *InstanceManager) All() []Instance {
 }
 
 func (im *InstanceManager) newAdHocOrFromConfig() []Instance {
-	var result []Instance
 	if len(im.AdHocURLs) > 0 {
+		var result []Instance
 		for adHocIndex, adHocValue := range im.AdHocURLs {
 			iURL, err := im.newAdhoc(adHocValue, adHocIndex, len(im.AdHocURLs))
 			if err != nil {
@@ -93,36 +93,24 @@ func (im *InstanceManager) newAdHocOrFromConfig() []Instance {
 			}
 			result = append(result, *iURL)
 		}
+		return result
 	}
-	var instances []Instance
 	cv := im.aem.config.Values()
 	configIDs := maps.Keys(cv.GetStringMap("instance.config"))
 	if len(configIDs) > 0 {
+		var result []Instance
 		for _, id := range configIDs {
 			cv.SetDefault(fmt.Sprintf("instance.config.%s.active", id), true)
 			active := cv.GetBool(fmt.Sprintf("instance.config.%s.active", id))
 			if active {
 				if i := im.newFromConfig(id); i != nil {
-					instances = append(instances, *i)
+					result = append(result, *i)
 				}
 			}
 		}
-	} else {
-		instances = im.NewLocalPair()
+		return result
 	}
-	if len(im.FilterIDs) > 0 {
-		for _, i := range instances {
-			for _, filterID := range im.FilterIDs {
-				if i.id == filterID {
-					result = append(result, i)
-					break
-				}
-			}
-		}
-	} else if len(im.AdHocURLs) == 0 {
-		result = instances
-	}
-	return result
+	return im.NewLocalPair()
 }
 
 func (im *InstanceManager) newAdhoc(value string, current int, total int) (*Instance, error) {
@@ -179,7 +167,16 @@ func (im *InstanceManager) filter(instances []Instance) []Instance {
 	result := []Instance{}
 	for _, i := range instances {
 		if im.FilterAuthors == im.FilterPublishes || im.FilterAuthors && i.IsAuthor() || im.FilterPublishes && i.IsPublish() {
-			result = append(result, i)
+			if len(im.FilterIDs) == 0 {
+				result = append(result, i)
+			} else {
+				for _, filterID := range im.FilterIDs {
+					if i.id == filterID {
+						result = append(result, i)
+						break
+					}
+				}
+			}
 		}
 	}
 	sort.SliceStable(result, func(i, j int) bool {

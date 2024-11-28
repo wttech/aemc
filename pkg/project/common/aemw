@@ -124,5 +124,4 @@ export MSYS2_ENV_CONV_EXCL="*"
 # Execute AEM Compose CLI
 # =======================
 
-AEM=$(whereis aem | awk '{print $2}')
-${AEM} "$@"
+aem "$@"

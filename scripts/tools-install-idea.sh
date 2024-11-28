@@ -80,9 +80,9 @@ TASKS_YML_CONTENT=$(cat <<'EOF'
 EOF
 )
 
-# Define IDEA's 'tools/AEMC.xml' content
-AEMC_XML_CONTENT=$(cat <<'EOF'
-<toolSet name="AEMC">
+# Define IDEA's 'tools/AEM.xml' content
+AEM_XML_CONTENT=$(cat <<'EOF'
+<toolSet name="AEM">
   <tool name="Content Clean" showInMainMenu="false" showInEditor="false" showInProject="false" showInSearchPopup="false" disabled="false" useConsole="true" showConsoleOnStdOut="false" showConsoleOnStdErr="false" synchronizeAfterRun="true">
     <exec>
       <option name="COMMAND" value="$ProjectFileDir$/aemw" />
@@ -150,23 +150,23 @@ AEMC_XML_CONTENT=$(cat <<'EOF'
 EOF
 )
 
-# Function to create 'tools/AEMC.xml' in IntelliJ installations
-create_aemc_xml() {
+# Function to create 'tools/AEM.xml' in IntelliJ installations
+create_aem_xml() {
   local intellij_dirs=(
     "$HOME/Library/Application Support/JetBrains/IntelliJIdea"*/tools
   )
 
   for dir in "${intellij_dirs[@]}"; do
     if [ -d "$dir" ]; then
-      local aem_file="$dir/AEMC.xml"
-      echo "Creating AEMC.xml in $aem_file"
-      echo "$AEMC_XML_CONTENT" > "$aem_file"
+      local aem_file="$dir/AEM.xml"
+      echo "Creating AEM.xml in $aem_file"
+      echo "$AEM_XML_CONTENT" > "$aem_file"
     fi
   done
 }
 
-# Create AEMC.xml in IntelliJ installations
-create_aemc_xml
+# Create AEM.xml in IntelliJ installations
+create_aem_xml
 
 # Append tasks.yml content to Taskfile.yml
 echo "Appending tasks.yml content to Taskfile.yml"

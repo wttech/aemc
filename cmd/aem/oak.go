@@ -224,6 +224,5 @@ func (c *CLI) oakCompactCmd() *cobra.Command {
 			c.Changed("store compacted")
 		},
 	}
-	oakIndexDefineFlags(cmd)
 	return cmd
 }

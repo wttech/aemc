@@ -129,9 +129,8 @@ func (or OakRun) Compact(instanceDir string) error {
 	if err != nil {
 		return err
 	}
-	bytes, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Error(string(bytes))
+	or.vendorManager.aem.CommandOutput(cmd)
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cannot run Oak Run compact command for instance dir '%s': %w", instanceDir, err)
 	}
 	return nil

@@ -97,8 +97,12 @@ func (or OakRun) SetPassword(instanceDir string, user string, password string) e
 	return nil
 }
 
+func (or OakRun) StoreDir(instanceDir string) string {
+	return fmt.Sprintf("%s/%s", instanceDir, or.StorePath)
+}
+
 func (or OakRun) RunScript(instanceDir string, scriptFile string) error {
-	storeDir := fmt.Sprintf("%s/%s", instanceDir, or.StorePath)
+	storeDir := or.StoreDir(instanceDir)
 	cmd, err := or.vendorManager.javaManager.Command(
 		"-Djava.io.tmpdir="+pathx.Canonical(or.vendorManager.aem.baseOpts.TmpDir),
 		"-jar", or.JarFile(),
@@ -111,6 +115,23 @@ func (or OakRun) RunScript(instanceDir string, scriptFile string) error {
 	if err != nil {
 		log.Error(string(bytes))
 		return fmt.Errorf("cannot run Oak Run script '%s': %w", scriptFile, err)
+	}
+	return nil
+}
+
+func (or OakRun) Compact(instanceDir string) error {
+	storeDir := or.StoreDir(instanceDir)
+	cmd, err := or.vendorManager.javaManager.Command(
+		"-Djava.io.tmpdir="+pathx.Canonical(or.vendorManager.aem.baseOpts.TmpDir),
+		"-jar", or.JarFile(),
+		"compact", storeDir,
+	)
+	if err != nil {
+		return err
+	}
+	or.vendorManager.aem.CommandOutput(cmd)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("cannot run Oak Run compact command for instance dir '%s': %w", instanceDir, err)
 	}
 	return nil
 }

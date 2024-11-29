@@ -14,6 +14,7 @@ func (c *CLI) oakCmd() *cobra.Command {
 		Short: "Manages OAK repository",
 	}
 	cmd.AddCommand(c.oakIndexCmd())
+	cmd.AddCommand(c.oakCompactCmd())
 	return cmd
 }
 
@@ -194,4 +195,34 @@ func oakIndexByFlags(cmd *cobra.Command, i pkg.Instance) (*pkg.OAKIndex, error) 
 		return &index, nil
 	}
 	return nil, fmt.Errorf("flag 'name' is required")
+}
+
+func (c *CLI) oakCompactCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "compact",
+		Short: "Compact OAK store",
+		Run: func(cmd *cobra.Command, args []string) {
+			instances, err := c.aem.InstanceManager().Some()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			compacted, err := pkg.InstanceProcess(c.aem, instances, func(instance pkg.Instance) (map[string]any, error) {
+				if err := instance.OAK().Compact(); err != nil {
+					return nil, err
+				}
+				return map[string]any{
+					OutputChanged: true,
+					"instance":    instance,
+				}, nil
+			})
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("compacted", compacted)
+			c.Changed("store compacted")
+		},
+	}
+	return cmd
 }

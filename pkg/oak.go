@@ -18,3 +18,11 @@ func NewOAK(instance *Instance) *OAK {
 func (o *OAK) IndexManager() *OAKIndexManager {
 	return o.indexManager
 }
+
+func (o *OAK) oakRun() *OakRun {
+	return o.instance.manager.aem.vendorManager.oakRun
+}
+
+func (o *OAK) Compact() error {
+	return o.instance.manager.aem.vendorManager.oakRun.Compact(o.instance.local.Dir())
+}

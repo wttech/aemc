@@ -38,3 +38,7 @@ func (o *BaseOpts) PrepareWithChanged() (bool, error) {
 	}
 	return changed, nil
 }
+
+func (o *BaseOpts) HasLibs() bool {
+	return pathx.Exists(o.LibDir)
+}

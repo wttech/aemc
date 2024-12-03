@@ -259,7 +259,7 @@ func (p Project) InitWithChanged() (bool, error) {
 		return changed, err
 	}
 
-	vendorPrepared, err := p.aem.VendorManager().PrepareWithChanged()
+	vendorPrepared, err := p.aem.VendorManager().PrepareWithChanged(true)
 	changed = changed || vendorPrepared
 	if err != nil {
 		return changed, err

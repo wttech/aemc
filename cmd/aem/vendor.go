@@ -59,7 +59,7 @@ func (c *CLI) vendorPrepareCmd() *cobra.Command {
 		Short:   "Prepare vendor tools",
 		Aliases: []string{"prep", "download", "dw"},
 		Run: func(cmd *cobra.Command, args []string) {
-			changed, err := c.aem.VendorManager().PrepareWithChanged()
+			changed, err := c.aem.VendorManager().PrepareWithChanged(false)
 			if err != nil {
 				c.Error(err)
 				return

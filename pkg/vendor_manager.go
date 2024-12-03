@@ -30,7 +30,7 @@ func (vm *VendorManager) InstanceJar() (string, error) {
 	return vm.quickstart.FindDistFile()
 }
 
-func (vm *VendorManager) PrepareWithChanged() (bool, error) {
+func (vm *VendorManager) PrepareWithChanged(requireLibs bool) (bool, error) {
 	changed := false
 
 	javaChanged, err := vm.javaManager.PrepareWithChanged()
@@ -39,15 +39,17 @@ func (vm *VendorManager) PrepareWithChanged() (bool, error) {
 		return changed, err
 	}
 
-	sdk, err := vm.quickstart.IsDistSDK()
-	if err != nil {
-		return false, err
-	}
-	if sdk {
-		sdkChanged, err := vm.sdk.PrepareWithChanged()
-		changed = changed || sdkChanged
+	if requireLibs || vm.aem.baseOpts.HasLibs() {
+		sdk, err := vm.quickstart.IsDistSDK()
 		if err != nil {
-			return changed, err
+			return false, err
+		}
+		if sdk {
+			sdkChanged, err := vm.sdk.PrepareWithChanged()
+			changed = changed || sdkChanged
+			if err != nil {
+				return changed, err
+			}
 		}
 	}
 

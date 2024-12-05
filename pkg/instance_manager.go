@@ -21,7 +21,7 @@ type InstanceManager struct {
 
 	AdHocURLs []string
 
-	FilterID        string
+	FilterIDs       []string
 	FilterAuthors   bool
 	FilterPublishes bool
 	ProcessingMode  string
@@ -35,7 +35,7 @@ func NewInstanceManager(aem *AEM) *InstanceManager {
 
 	result.AdHocURLs = cv.GetStringSlice("instance.adhoc_url")
 
-	result.FilterID = cv.GetString("instance.filter.id")
+	result.FilterIDs = cv.GetStringSlice("instance.filter.id")
 	result.FilterAuthors = cv.GetBool("instance.filter.authors")
 	result.FilterPublishes = cv.GetBool("instance.filter.publishes")
 	result.ProcessingMode = cv.GetString("instance.processing_mode")
@@ -165,28 +165,15 @@ func (im *InstanceManager) newFromConfig(id string) *Instance {
 
 func (im *InstanceManager) filter(instances []Instance) []Instance {
 	result := []Instance{}
-	if im.FilterID != "" {
-		for _, i := range instances {
-			if i.id == im.FilterID {
+	for _, i := range instances {
+		if im.FilterAuthors == im.FilterPublishes || im.FilterAuthors && i.IsAuthor() || im.FilterPublishes && i.IsPublish() {
+			if len(im.FilterIDs) == 0 {
 				result = append(result, i)
-				break
-			}
-		}
-	} else {
-		if im.FilterAuthors == im.FilterPublishes {
-			result = instances
-		} else {
-			if im.FilterAuthors {
-				for _, i := range instances {
-					if i.IsAuthor() {
+			} else {
+				for _, filterID := range im.FilterIDs {
+					if i.id == filterID {
 						result = append(result, i)
-					}
-				}
-			}
-			if im.FilterPublishes {
-				for _, i := range instances {
-					if i.IsPublish() {
-						result = append(result, i)
+						break
 					}
 				}
 			}

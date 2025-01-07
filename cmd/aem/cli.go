@@ -115,6 +115,9 @@ func (c *CLI) onStart() {
 	if c.outputValue != common.OutputValueNone && c.outputValue != common.OutputValueAll {
 		c.outputFormat = fmtx.Text
 	}
+	if c.outputQuery != "" && c.outputFormat == fmtx.Text {
+		c.outputFormat = fmtx.YML
+	}
 
 	noColor := cv.GetBool("output.no_color")
 	if c.outputFormat != fmtx.Text || c.outputLogMode != cfg.OutputLogConsole {
@@ -299,15 +302,16 @@ func (c *CLI) printOutputDataIndented(writer *textio.PrefixWriter, value any, ke
 }
 
 func (c *CLI) printOutputMarshaled() {
-	if c.outputValue == common.OutputValueNone {
+	if c.outputQuery != "" {
+		c.printOutputMarshaledValue(c.queryOutputResponse())
 		return
 	}
-
-	if c.outputQuery == "" {
+	if c.outputValue != common.OutputValueNone {
 		c.printOutputMarshaledValue(c.outputResponse)
-		return
 	}
+}
 
+func (c *CLI) queryOutputResponse() any {
 	// JMESPath bug workaround, see: https://github.com/jmespath/go-jmespath/issues/32)
 	cloned, err := c.outputResponse.Clone()
 	if err != nil {
@@ -317,8 +321,7 @@ func (c *CLI) printOutputMarshaled() {
 	if err != nil {
 		log.Fatalf("cannot perform query '%s' on CLI output data: %s", c.outputQuery, err)
 	}
-
-	c.printOutputMarshaledValue(queried)
+	return queried
 }
 
 func (c *CLI) printOutputMarshaledValue(value any) {

@@ -56,7 +56,7 @@ func (c *CLI) rootFlags(cmd *cobra.Command) {
 		"Limits output to single variable")
 	_ = cv.BindPFlag("output.value", cmd.PersistentFlags().Lookup("output-value"))
 
-	cmd.PersistentFlags().String("output-format", cv.GetString("output.format"), "Controls output format ("+strings.Join(cfg.OutputFormats(), "|")+")")
+	cmd.PersistentFlags().StringP("output-format", "F", cv.GetString("output.format"), "Controls output format ("+strings.Join(cfg.OutputFormats(), "|")+")")
 	_ = cv.BindPFlag("output.format", cmd.PersistentFlags().Lookup("output-format"))
 
 	cmd.PersistentFlags().StringP("output-query", "Q", cv.GetString("output.query"), "Filters output using JMESPath query (only JSON and YML formats)")

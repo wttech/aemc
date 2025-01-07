@@ -116,7 +116,7 @@ func (c *CLI) onStart() {
 		c.outputFormat = fmtx.Text
 	}
 	if c.outputQuery != "" && c.outputFormat == fmtx.Text {
-		c.outputFormat = fmtx.YML
+		log.Fatalf("unsupported CLI output format detected '%s'! when query is provided supported ones are: %s", c.outputFormat, strings.Join([]string{fmtx.JSON, fmtx.YML}, ", "))
 	}
 
 	noColor := cv.GetBool("output.no_color")

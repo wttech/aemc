@@ -21,7 +21,7 @@ Universal tool to manage AEM instances everywhere!
    
 3. Setup IDE:
    - IntelliJ IDEA
-     - Install [Go Plugin]
+     - Install [Go Plugin](https://plugins.jetbrains.com/plugin/9568-go)
      - Remember to  "Enable Go Modules" in settings to fix syntax highlighting and autocompletion.
 
 ## Building & OS-wide installation

@@ -14,10 +14,15 @@ Universal tool to manage AEM instances everywhere!
 1. Install Go: <https://go.dev/doc/install>,
 2. Set up shell, append lines *~/.zshrc* with content below then restart IDE/terminals,
 
-```shell
-export GOPATH="$HOME/go"
-export PATH="$GOPATH/bin:$PATH"
-```
+    ```shell
+    export GOPATH="$HOME/go"
+    export PATH="$GOPATH/bin:$PATH"
+    ```
+   
+3. Setup IDE:
+   - IntelliJ IDEA
+     - Install [Go Plugin]
+     - Remember to  "Enable Go Modules" in settings to fix syntax highlighting and autocompletion.
 
 ## Building & OS-wide installation
 

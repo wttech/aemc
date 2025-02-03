@@ -108,7 +108,6 @@ tasks:
     desc: tail logs of AEM publish instance
     cmd: tail -f aem/home/var/instance/publish/crx-quickstart/logs/{stdout,error}.log
 
-
   aem:provision:
     desc: provision AEM instances by installing packages and applying configurations
     aliases: [ aem:configure ]

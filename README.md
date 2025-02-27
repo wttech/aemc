@@ -770,6 +770,28 @@ In case of error when running task dispatcher:start or dispatcher:setup:
 Check if there is a broken symlink/file in `dispatcher/src/variables/default.vars`. If the file exists, delete it and
 run the task again.
 
+## Exception while unpacking dispatcher on Linux
+
+If you're setting up your instance for the first time on a Linux OS (i.e. Ubuntu with Gnome Shell), you may stumble upon the following error:
+
+```
+INFO[2025-02-27 13:17:09] preparing new SDK 'aem/home/lib/aem-sdk-2025.2.19687.20250225T164325Z-250100.zip'
+INFO[2025-02-27 13:17:09] unpacking SDK ZIP 'aem/home/lib/aem-sdk-2025.2.19687.20250225T164325Z-250100.zip' to dir 'aem/home/opt/sdk'
+INFO[2025-02-27 13:17:09] unpacked SDK ZIP 'aem/home/lib/aem-sdk-2025.2.19687.20250225T164325Z-250100.zip' to dir 'aem/home/opt/sdk'
+INFO[2025-02-27 13:17:09] unpacking SDK dispatcher tools using script 'aem/home/opt/sdk/aem-sdk-dispatcher-tools-2.0.235-unix.sh' to dir 'aem/home/opt/sdk/dispatcher'
+# Failed to parse arguments: Unknown option -title
+ERRO[2025-02-27 13:17:10] cannot run SDK dispatcher tools unpacking script 'aem/home/opt/sdk/aem-sdk-dispatcher-tools-2.0.235-unix.sh': exit status 1
+getting started
+  AEM Compose project is not yet ready to use!
+
+  Be sure to provide AEM files (SDK ZIP or Quickstart JAR + License + Service Packs) to directory 'aem/home/lib'.
+task: Failed to run task "init": exit status 1
+```
+
+Important line is `Unknown option -title`.
+
+To fix this, **make sure that `xterm` is installed and available on your system**, and re-run the task.
+
 # Contributing
 
 Issues reported or pull requests created will be very appreciated.

@@ -22,7 +22,7 @@ type JavaManager struct {
 	HomeDir                 string
 	DownloadURL             string
 	DownloadURLReplacements map[string]string
-	VersionConstraints      string
+	VersionConstraints      []string
 }
 
 func NewJavaManager(manager *VendorManager) *JavaManager {
@@ -34,7 +34,7 @@ func NewJavaManager(manager *VendorManager) *JavaManager {
 		HomeDir:                 cv.GetString("vendor.java.home_dir"),
 		DownloadURL:             cv.GetString("vendor.java.download.url"),
 		DownloadURLReplacements: cv.GetStringMapString("vendor.java.download.replacements"),
-		VersionConstraints:      cv.GetString("vendor.java.version_constraints"),
+		VersionConstraints:      cv.GetStringSlice("vendor.java.version_constraints"),
 	}
 }
 
@@ -119,16 +119,19 @@ func (jm *JavaManager) checkVersion() error {
 	if err != nil {
 		return err
 	}
-	if jm.VersionConstraints != "" {
-		versionConstraints, err := version.NewConstraint(jm.VersionConstraints)
+	if len(jm.VersionConstraints) == 0 {
+		return nil
+	}
+	for _, vc := range jm.VersionConstraints {
+		vco, err := version.NewConstraint(vc)
 		if err != nil {
-			return fmt.Errorf("java version constraint '%s' is invalid: %w", jm.VersionConstraints, err)
+			return fmt.Errorf("java version constraint '%s' is invalid: %w", vc, err)
 		}
-		if !versionConstraints.Check(currentVersion) {
-			return fmt.Errorf("java current version '%s' does not meet contraints '%s'", currentVersion, jm.VersionConstraints)
+		if vco.Check(currentVersion) {
+			return nil
 		}
 	}
-	return nil
+	return fmt.Errorf("java current version '%s' does not meet contraints '%s'", currentVersion, strings.Join(jm.VersionConstraints, " || "))
 }
 
 func (jm *JavaManager) FindHomeDir() (string, error) {

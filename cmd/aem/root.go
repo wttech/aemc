@@ -71,13 +71,13 @@ func (c *CLI) rootFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringSliceP("instance-url", "U", cv.GetStringSlice("instance.adhoc_url"), "Use only AEM instance(s) at ad-hoc specified URL(s)")
 	_ = cv.BindPFlag("instance.adhoc_url", cmd.PersistentFlags().Lookup("instance-url"))
 
-	cmd.PersistentFlags().StringP("instance-id", "I", cv.GetString("instance.filter.id"), "Use only AEM instance configured with the exact ID")
+	cmd.PersistentFlags().StringSliceP("instance-id", "I", cv.GetStringSlice("instance.filter.id"), "Use only AEM instance(s) configured with the exact ID")
 	_ = cv.BindPFlag("instance.filter.id", cmd.PersistentFlags().Lookup("instance-id"))
 
-	cmd.PersistentFlags().BoolP("instance-author", "A", cv.GetBool("instance.filter.authors"), "Use only AEM author instance")
+	cmd.PersistentFlags().BoolP("instance-author", "A", cv.GetBool("instance.filter.authors"), "Use only AEM author instance(s)")
 	_ = cv.BindPFlag("instance.filter.authors", cmd.PersistentFlags().Lookup("instance-author"))
 
-	cmd.PersistentFlags().BoolP("instance-publish", "P", cv.GetBool("instance.filter.publishes"), "Use only AEM publish instance")
+	cmd.PersistentFlags().BoolP("instance-publish", "P", cv.GetBool("instance.filter.publishes"), "Use only AEM publish instance(s)")
 	_ = cv.BindPFlag("instance.filter.publishes", cmd.PersistentFlags().Lookup("instance-publish"))
 
 	cmd.MarkFlagsMutuallyExclusive("instance-author", "instance-publish")

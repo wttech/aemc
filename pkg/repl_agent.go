@@ -2,9 +2,9 @@ package pkg
 
 import (
 	"fmt"
-	"github.com/wttech/aemc/pkg/common"
-	"golang.org/x/exp/maps"
 	"strings"
+
+	"github.com/wttech/aemc/pkg/common"
 )
 
 type ReplAgent struct {
@@ -47,12 +47,17 @@ func (ra ReplAgent) Setup(props map[string]any) (bool, error) {
 		return changed, fmt.Errorf("%s > cannot read replication agent '%s' exist: %w", ra.Instance().IDColor(), pageContent.Path(), err)
 	}
 	if !pageContentState.Exists {
-		maps.Copy(props, map[string]any{
+		defaultProps := map[string]any{
 			"jcr:primaryType":    "nt:unstructured",
 			"jcr:title":          strings.ToTitle(ra.Name()),
 			"sling:resourceType": "cq/replication/components/agent",
 			"cq:template":        "/libs/cq/replication/templates/agent",
-		})
+		}
+		for k, v := range defaultProps {
+			if _, exists := props[k]; !exists {
+				props[k] = v
+			}
+		}
 		err = pageContent.Save(props)
 		if err != nil {
 			return changed, fmt.Errorf("%s > cannot create replication agent '%s': %w", ra.Instance().IDColor(), pageContent.Path(), err)

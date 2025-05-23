@@ -3,7 +3,6 @@ package pkg
 import (
 	"fmt"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/wttech/aemc/pkg/keystore"
 	"github.com/wttech/aemc/pkg/user"
 )
@@ -103,17 +102,15 @@ func (um *UserManager) UserPasswordSet(scope string, id string, password string)
 
 	userPath := UsersPath + "/" + scope + "/" + id
 
-	passwordCheckResponse, passwordCheckError := um.instance.http.Client().
-		SetRedirectPolicy(resty.NoRedirectPolicy()).
-		R().
+	passwordCheckResponse, passwordCheckError := um.instance.http.Request().
 		SetBasicAuth(userStatus.AuthorizableID, password).
-		Get(userPath)
+		Get(userPath + ".json")
 
 	if passwordCheckError != nil {
-		if passwordCheckResponse != nil && !passwordCheckResponse.IsError() {
-			return false, nil
-		}
 		return false, fmt.Errorf("%s > cannot check user password: %w", um.instance.IDColor(), passwordCheckError)
+	}
+	if passwordCheckError == nil && passwordCheckResponse != nil && !passwordCheckResponse.IsError() {
+		return false, nil
 	}
 
 	props := map[string]any{

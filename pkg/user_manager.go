@@ -2,7 +2,10 @@ package pkg
 
 import (
 	"fmt"
+
+	"github.com/go-resty/resty/v2"
 	"github.com/wttech/aemc/pkg/keystore"
+	"github.com/wttech/aemc/pkg/user"
 )
 
 type UserManager struct {
@@ -65,6 +68,65 @@ func (um *UserManager) KeystoreCreate(scope, id, keystorePassword string) (bool,
 
 	if postResponse.IsError() {
 		return false, fmt.Errorf("%s > cannot create user keystore: %s", um.instance.IDColor(), postResponse.Status())
+	}
+
+	return true, nil
+}
+
+func (um *UserManager) UserStatus(scope string, id string) (*user.Status, error) {
+	userPath := UsersPath + "/" + scope + "/" + id
+
+	response, err := um.instance.http.Request().Get(userPath + ".json")
+
+	if err != nil {
+		return nil, fmt.Errorf("%s > cannot read user: %w", um.instance.IDColor(), err)
+	}
+	if response.IsError() {
+		return nil, fmt.Errorf("%s > cannot read user: %s", um.instance.IDColor(), response.Status())
+	}
+
+	result, err := user.UnmarshalStatus(response.RawBody())
+
+	if err != nil {
+		return nil, fmt.Errorf("%s > cannot parse user status response: %w", um.instance.IDColor(), err)
+	}
+
+	return result, nil
+}
+
+func (um *UserManager) UserPasswordSet(scope string, id string, password string) (bool, error) {
+	userStatus, err := um.UserStatus(scope, id)
+
+	if err != nil {
+		return false, err
+	}
+
+	userPath := UsersPath + "/" + scope + "/" + id
+
+	passwordCheckResponse, passwordCheckError := um.instance.http.Client().
+		SetRedirectPolicy(resty.NoRedirectPolicy()).
+		R().
+		SetBasicAuth(userStatus.AuthorizableID, password).
+		Get(userPath)
+
+	if passwordCheckError != nil {
+		if passwordCheckResponse != nil && !passwordCheckResponse.IsError() {
+			return false, nil
+		}
+		return false, fmt.Errorf("%s > cannot check user password: %w", um.instance.IDColor(), passwordCheckError)
+	}
+
+	props := map[string]any{
+		"rep:password": password,
+	}
+
+	postResponse, postError := um.instance.http.RequestFormData(props).Post(userPath)
+
+	if postError != nil {
+		return false, fmt.Errorf("%s > cannot set user password: %w", um.instance.IDColor(), postError)
+	}
+	if postResponse.IsError() {
+		return false, fmt.Errorf("%s > cannot set user password: %s", um.instance.IDColor(), postResponse.Status())
 	}
 
 	return true, nil

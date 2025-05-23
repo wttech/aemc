@@ -1,6 +1,10 @@
 package main
 
-import "github.com/spf13/cobra"
+import (
+	"fmt"
+
+	"github.com/spf13/cobra"
+)
 
 func (c *CLI) userCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -9,6 +13,7 @@ func (c *CLI) userCmd() *cobra.Command {
 		Aliases: []string{"usr"},
 	}
 	cmd.AddCommand(c.userKeyStore())
+	cmd.AddCommand(c.userPassword())
 	return cmd
 }
 
@@ -21,6 +26,16 @@ func (c *CLI) userKeyStore() *cobra.Command {
 	}
 	cmd.AddCommand(c.KeystoreStatus())
 	cmd.AddCommand(c.KeystoreCreate())
+	return cmd
+}
+
+func (c *CLI) userPassword() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "password",
+		Short:   "User password management",
+		Aliases: []string{"pwd"},
+	}
+	cmd.AddCommand(c.UserPasswordSet())
 	return cmd
 }
 
@@ -93,5 +108,48 @@ func (c *CLI) KeystoreCreate() *cobra.Command {
 	_ = cmd.MarkFlagRequired("scope")
 	cmd.Flags().String("keystore-password", "", "keystore password")
 	_ = cmd.MarkFlagRequired("keystore-password")
+	return cmd
+}
+
+func (c *CLI) UserPasswordSet() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "set",
+		Short:   "Set user password",
+		Aliases: []string{"update", "change"},
+		Run: func(cmd *cobra.Command, args []string) {
+			instances, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+
+			id, _ := cmd.Flags().GetString("id")
+			scope, _ := cmd.Flags().GetString("scope")
+
+			var password string
+			if err := c.ReadInput(&password); err != nil {
+				c.Fail(fmt.Sprintf("error reading password from input: %s", err))
+				return
+			}
+
+			changed, err := instances.Auth().UserManager().UserPasswordSet(scope, id, password)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+
+			if changed {
+				c.Changed("User password changed")
+			} else {
+				c.Ok("User password already set")
+			}
+		},
+	}
+
+	cmd.Flags().String("id", "", "user id")
+	_ = cmd.MarkFlagRequired("id")
+	cmd.Flags().String("scope", "", "user scope")
+	_ = cmd.MarkFlagRequired("scope")
+
 	return cmd
 }

@@ -109,7 +109,7 @@ func (um *UserManager) UserPasswordSet(scope string, id string, password string)
 	if passwordCheckError != nil {
 		return false, fmt.Errorf("%s > cannot check user password: %w", um.instance.IDColor(), passwordCheckError)
 	}
-	if passwordCheckError == nil && passwordCheckResponse != nil && !passwordCheckResponse.IsError() {
+	if !passwordCheckResponse.IsError() {
 		return false, nil
 	}
 

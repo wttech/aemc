@@ -37,7 +37,6 @@ func (um *UserManager) KeystoreStatus(scope, id string) (*keystore.Status, error
 	}
 
 	result, err := keystore.UnmarshalStatus(response.RawBody())
-
 	if err != nil {
 		return nil, fmt.Errorf("%s > cannot parse user Keystore status response: %w", um.instance.IDColor(), err)
 	}
@@ -47,7 +46,6 @@ func (um *UserManager) KeystoreStatus(scope, id string) (*keystore.Status, error
 
 func (um *UserManager) KeystoreCreate(scope, id, keystorePassword string) (bool, error) {
 	statusResponse, statusError := um.KeystoreStatus(scope, id)
-
 	if statusError != nil {
 		return false, statusError
 	}
@@ -93,7 +91,6 @@ func (um *UserManager) AddKeystoreKey(scope, id, keystoreFilePath, keystoreFileP
 	}
 
 	aliases := readKeystore.Aliases()
-
 	if aliases == nil {
 		return false, fmt.Errorf("%s > keystore does not contain any aliases", um.instance.IDColor())
 	}
@@ -101,26 +98,13 @@ func (um *UserManager) AddKeystoreKey(scope, id, keystoreFilePath, keystoreFileP
 		return false, fmt.Errorf("%s > keystore does not contain alias: %s", um.instance.IDColor(), privateKeyAlias)
 	}
 
-	keystorePath := assembleUserPath(scope, id) + ".ks.html"
-	keystoreStatusPath := assembleUserPath(scope, id) + ".ks.json"
-
-	statusResponse, err := um.instance.http.Request().Get(keystoreStatusPath)
-
+	status, err := um.KeystoreStatus(scope, id)
 	if err != nil {
-		return false, fmt.Errorf("%s > cannot read user Keystore: %w", um.instance.IDColor(), err)
+		return false, err
 	}
 
-	if statusResponse.IsError() {
-		return false, fmt.Errorf("%s > cannot read user keystore: %s", um.instance.IDColor(), statusResponse.Status())
-	}
-
-	status, err := keystore.UnmarshalStatus(statusResponse.RawBody())
-
-	if err != nil {
-		return false, fmt.Errorf("%s > cannot parse user Keystore status response: %w", um.instance.IDColor(), err)
-	}
 	if status == nil || !status.Created {
-		return false, fmt.Errorf("%s > cannot delete keystore key: keystore does not exist", um.instance.IDColor())
+		return false, fmt.Errorf("%s > cannot add keystore key: keystore does not exist", um.instance.IDColor())
 	}
 	if status.HasAlias(privateKeyAlias) {
 		return false, nil
@@ -130,6 +114,7 @@ func (um *UserManager) AddKeystoreKey(scope, id, keystoreFilePath, keystoreFileP
 		"keyStore": keystoreFilePath,
 	}
 
+	keystorePath := assembleUserPath(scope, id) + ".ks.html"
 	formData := map[string]string{
 		"keyStorePass": keystoreFilePassword,
 		"alias":        privateKeyAlias,
@@ -150,28 +135,14 @@ func (um *UserManager) AddKeystoreKey(scope, id, keystoreFilePath, keystoreFileP
 		return false, fmt.Errorf("%s > cannot add keystore key: %s", um.instance.IDColor(), response.Status())
 	}
 	return true, nil
-
 }
 
 func (um *UserManager) DeleteKeystoreKey(scope, id, privateKeyAlias string) (bool, error) {
-	userKeystorePath := assembleUserPath(scope, id) + ".ks.html"
-	userKeystoreStatusPath := assembleUserPath(scope, id) + ".ks.json"
-
-	statusResponse, err := um.instance.http.Request().Get(userKeystoreStatusPath)
-
+	status, err := um.KeystoreStatus(scope, id)
 	if err != nil {
-		return false, fmt.Errorf("%s > cannot read user Keystore: %w", um.instance.IDColor(), err)
+		return false, err
 	}
 
-	if statusResponse.IsError() {
-		return false, fmt.Errorf("%s > cannot read user keystore: %s", um.instance.IDColor(), statusResponse.Status())
-	}
-
-	status, err := keystore.UnmarshalStatus(statusResponse.RawBody())
-
-	if err != nil {
-		return false, fmt.Errorf("%s > cannot parse user Keystore status response: %w", um.instance.IDColor(), err)
-	}
 	if status == nil || !status.Created {
 		return false, fmt.Errorf("%s > cannot delete keystore key: keystore does not exist", um.instance.IDColor())
 	}
@@ -183,6 +154,7 @@ func (um *UserManager) DeleteKeystoreKey(scope, id, privateKeyAlias string) (boo
 		"removeAlias": privateKeyAlias,
 	}
 
+	userKeystorePath := assembleUserPath(scope, id) + ".ks.html"
 	response, err := um.instance.http.Request().
 		SetFormData(formData).
 		Post(userKeystorePath)
@@ -210,7 +182,6 @@ func (um *UserManager) ReadState(scope string, id string) (*user.Status, error) 
 	}
 
 	result, err := user.UnmarshalStatus(response.RawBody())
-
 	if err != nil {
 		return nil, fmt.Errorf("%s > cannot parse user status response: %w", um.instance.IDColor(), err)
 	}
@@ -220,13 +191,11 @@ func (um *UserManager) ReadState(scope string, id string) (*user.Status, error) 
 
 func (um *UserManager) SetPassword(scope string, id string, password string) (bool, error) {
 	userStatus, err := um.ReadState(scope, id)
-
 	if err != nil {
 		return false, err
 	}
 
 	userPath := assembleUserPath(scope, id)
-
 	passwordCheckResponse, err := um.instance.http.Request().
 		SetBasicAuth(userStatus.AuthorizableID, password).
 		Get(userPath + ".json")
@@ -243,7 +212,6 @@ func (um *UserManager) SetPassword(scope string, id string, password string) (bo
 	}
 
 	postResponse, err := um.instance.http.RequestFormData(props).Post(userPath)
-
 	if err != nil {
 		return false, fmt.Errorf("%s > cannot set user password: %w", um.instance.IDColor(), err)
 	}

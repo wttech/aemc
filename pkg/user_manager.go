@@ -72,7 +72,7 @@ func (um *UserManager) KeystoreCreate(scope, id, keystorePassword string) (bool,
 	return true, nil
 }
 
-func (um *UserManager) UserStatus(scope string, id string) (*user.Status, error) {
+func (um *UserManager) ReadState(scope string, id string) (*user.Status, error) {
 	userPath := UsersPath + "/" + scope + "/" + id
 
 	response, err := um.instance.http.Request().Get(userPath + ".json")
@@ -93,8 +93,8 @@ func (um *UserManager) UserStatus(scope string, id string) (*user.Status, error)
 	return result, nil
 }
 
-func (um *UserManager) UserPasswordSet(scope string, id string, password string) (bool, error) {
-	userStatus, err := um.UserStatus(scope, id)
+func (um *UserManager) PasswordSet(scope string, id string, password string) (bool, error) {
+	userStatus, err := um.ReadState(scope, id)
 
 	if err != nil {
 		return false, err
@@ -102,11 +102,11 @@ func (um *UserManager) UserPasswordSet(scope string, id string, password string)
 
 	userPath := UsersPath + "/" + scope + "/" + id
 
-	passwordCheckResponse, passwordCheckError := um.instance.http.Request().
+	passwordCheckResponse, err := um.instance.http.Request().
 		SetBasicAuth(userStatus.AuthorizableID, password).
 		Get(userPath + ".json")
 
-	if passwordCheckError != nil {
+	if err != nil {
 		return false, fmt.Errorf("%s > cannot check user password: %w", um.instance.IDColor(), passwordCheckError)
 	}
 	if !passwordCheckResponse.IsError() {
@@ -117,9 +117,9 @@ func (um *UserManager) UserPasswordSet(scope string, id string, password string)
 		"rep:password": password,
 	}
 
-	postResponse, postError := um.instance.http.RequestFormData(props).Post(userPath)
+	postResponse, err := um.instance.http.RequestFormData(props).Post(userPath)
 
-	if postError != nil {
+	if err != nil {
 		return false, fmt.Errorf("%s > cannot set user password: %w", um.instance.IDColor(), postError)
 	}
 	if postResponse.IsError() {

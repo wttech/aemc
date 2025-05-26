@@ -8,29 +8,27 @@ import (
 )
 
 type Status struct {
-	Type           string
-	AuthorizableID string
+	Type           string `json:"jcr:primaryType"`
+	AuthorizableID string `json:"rep:authorizableId"`
 }
 
 func UnmarshalStatus(readCloser io.ReadCloser) (*Status, error) {
-	var aux struct {
-		JcrPrimaryType    string `json:"jcr:primaryType"`
-		RepAuthorizableID string `json:"rep:authorizableId"`
+	var status = Status{
+		Type:           "rep:User",
+		AuthorizableID: "",
 	}
-	if err := fmtx.UnmarshalJSON(readCloser, &aux); err != nil {
+	if err := fmtx.UnmarshalJSON(readCloser, &status); err != nil {
 		return nil, err
 	}
 
-	status := &Status{}
-	switch aux.JcrPrimaryType {
+	switch status.Type {
 	case "rep:User":
 		status.Type = "user"
 	case "rep:SystemUser":
 		status.Type = "systemUser"
 	default:
-		return nil, fmt.Errorf("unknown user type: %s", aux.JcrPrimaryType)
+		return nil, fmt.Errorf("unknown user type: %s", status.Type)
 	}
 
-	status.AuthorizableID = aux.RepAuthorizableID
-	return status, nil
+	return &status, nil
 }

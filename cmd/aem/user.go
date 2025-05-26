@@ -132,7 +132,7 @@ func (c *CLI) UserPasswordSet() *cobra.Command {
 				return
 			}
 
-			changed, err := instances.Auth().UserManager().UserPasswordSet(scope, id, password)
+			changed, err := instances.Auth().UserManager().PasswordSet(scope, id, password)
 			if err != nil {
 				c.Error(err)
 				return

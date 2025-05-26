@@ -20,7 +20,7 @@ const (
 )
 
 func (um *UserManager) KeystoreStatus(scope, id string) (*keystore.Status, error) {
-	userKeystorePath := generateUserPath(scope, id) + ".ks.json"
+	userKeystorePath := assembleUserPath(scope, id) + ".ks.json"
 
 	response, err := um.instance.http.Request().Get(userKeystorePath)
 
@@ -58,7 +58,7 @@ func (um *UserManager) KeystoreCreate(scope, id, keystorePassword string) (bool,
 		":operation":  "createStore",
 	}
 
-	userKeystoreCreatePath := generateUserPath(scope, id) + ".ks.html"
+	userKeystoreCreatePath := assembleUserPath(scope, id) + ".ks.html"
 	postResponse, postError := um.instance.http.Request().SetQueryParams(pathParams).Post(userKeystoreCreatePath)
 
 	if postError != nil {
@@ -73,7 +73,7 @@ func (um *UserManager) KeystoreCreate(scope, id, keystorePassword string) (bool,
 }
 
 func (um *UserManager) ReadState(scope string, id string) (*user.Status, error) {
-	userPath := generateUserPath(scope, id)
+	userPath := assembleUserPath(scope, id)
 
 	response, err := um.instance.http.Request().Get(userPath + ".json")
 
@@ -100,7 +100,7 @@ func (um *UserManager) SetPassword(scope string, id string, password string) (bo
 		return false, err
 	}
 
-	userPath := generateUserPath(scope, id)
+	userPath := assembleUserPath(scope, id)
 
 	passwordCheckResponse, err := um.instance.http.Request().
 		SetBasicAuth(userStatus.AuthorizableID, password).
@@ -129,7 +129,7 @@ func (um *UserManager) SetPassword(scope string, id string, password string) (bo
 	return true, nil
 }
 
-func generateUserPath(scope string, id string) string {
+func assembleUserPath(scope string, id string) string {
 	if scope == "" {
 		return UsersPath + "/" + id
 	}

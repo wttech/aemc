@@ -7,6 +7,16 @@ import (
 	"github.com/wttech/aemc/pkg/common/fmtx"
 )
 
+const (
+	// Repository user types (as stored in JCR)
+	RepUserType       = "rep:User"
+	RepSystemUserType = "rep:SystemUser"
+
+	// Maped user types
+	UserType       = "user"
+	SystemUserType = "systemUser"
+)
+
 type Status struct {
 	Type           string `json:"jcr:primaryType"`
 	AuthorizableID string `json:"rep:authorizableId"`
@@ -22,10 +32,10 @@ func UnmarshalStatus(readCloser io.ReadCloser) (*Status, error) {
 	}
 
 	switch status.Type {
-	case "rep:User":
-		status.Type = "user"
-	case "rep:SystemUser":
-		status.Type = "systemUser"
+	case RepUserType:
+		status.Type = UserType
+	case RepSystemUserType:
+		status.Type = SystemUserType
 	default:
 		return nil, fmt.Errorf("unknown user type: %s", status.Type)
 	}

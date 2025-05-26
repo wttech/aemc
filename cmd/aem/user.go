@@ -105,7 +105,6 @@ func (c *CLI) KeystoreCreate() *cobra.Command {
 	cmd.Flags().String("id", "", "user id")
 	_ = cmd.MarkFlagRequired("id")
 	cmd.Flags().String("scope", "", "user scope")
-	_ = cmd.MarkFlagRequired("scope")
 	cmd.Flags().String("keystore-password", "", "keystore password")
 	_ = cmd.MarkFlagRequired("keystore-password")
 	return cmd
@@ -114,7 +113,7 @@ func (c *CLI) KeystoreCreate() *cobra.Command {
 func (c *CLI) UserPasswordSet() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "set",
-		Short:   "Set user password",
+		Short:   "Set user password. Password is read from input.",
 		Aliases: []string{"update", "change"},
 		Run: func(cmd *cobra.Command, args []string) {
 			instances, err := c.aem.InstanceManager().One()
@@ -132,7 +131,7 @@ func (c *CLI) UserPasswordSet() *cobra.Command {
 				return
 			}
 
-			changed, err := instances.Auth().UserManager().PasswordSet(scope, id, password)
+			changed, err := instances.Auth().UserManager().SetPassword(scope, id, password)
 			if err != nil {
 				c.Error(err)
 				return
@@ -149,7 +148,6 @@ func (c *CLI) UserPasswordSet() *cobra.Command {
 	cmd.Flags().String("id", "", "user id")
 	_ = cmd.MarkFlagRequired("id")
 	cmd.Flags().String("scope", "", "user scope")
-	_ = cmd.MarkFlagRequired("scope")
 
 	return cmd
 }

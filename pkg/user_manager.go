@@ -20,7 +20,7 @@ const (
 )
 
 func (um *UserManager) KeystoreStatus(scope, id string) (*keystore.Status, error) {
-	userKeystorePath := UsersPath + "/" + scope + "/" + id + ".ks.json"
+	userKeystorePath := generateUserPath(scope, id) + ".ks.json"
 
 	response, err := um.instance.http.Request().Get(userKeystorePath)
 
@@ -48,7 +48,7 @@ func (um *UserManager) KeystoreCreate(scope, id, keystorePassword string) (bool,
 		return false, statusError
 	}
 
-	if statusResponse.Created == true {
+	if statusResponse.Created {
 		return false, nil
 	}
 
@@ -58,7 +58,7 @@ func (um *UserManager) KeystoreCreate(scope, id, keystorePassword string) (bool,
 		":operation":  "createStore",
 	}
 
-	userKeystoreCreatePath := UsersPath + "/" + scope + "/" + id + ".ks.html"
+	userKeystoreCreatePath := generateUserPath(scope, id) + ".ks.html"
 	postResponse, postError := um.instance.http.Request().SetQueryParams(pathParams).Post(userKeystoreCreatePath)
 
 	if postError != nil {
@@ -73,7 +73,7 @@ func (um *UserManager) KeystoreCreate(scope, id, keystorePassword string) (bool,
 }
 
 func (um *UserManager) ReadState(scope string, id string) (*user.Status, error) {
-	userPath := UsersPath + "/" + scope + "/" + id
+	userPath := generateUserPath(scope, id)
 
 	response, err := um.instance.http.Request().Get(userPath + ".json")
 
@@ -93,14 +93,14 @@ func (um *UserManager) ReadState(scope string, id string) (*user.Status, error) 
 	return result, nil
 }
 
-func (um *UserManager) PasswordSet(scope string, id string, password string) (bool, error) {
+func (um *UserManager) SetPassword(scope string, id string, password string) (bool, error) {
 	userStatus, err := um.ReadState(scope, id)
 
 	if err != nil {
 		return false, err
 	}
 
-	userPath := UsersPath + "/" + scope + "/" + id
+	userPath := generateUserPath(scope, id)
 
 	passwordCheckResponse, err := um.instance.http.Request().
 		SetBasicAuth(userStatus.AuthorizableID, password).
@@ -127,4 +127,11 @@ func (um *UserManager) PasswordSet(scope string, id string, password string) (bo
 	}
 
 	return true, nil
+}
+
+func generateUserPath(scope string, id string) string {
+	if scope == "" {
+		return UsersPath + "/" + id
+	}
+	return UsersPath + "/" + scope + "/" + id
 }

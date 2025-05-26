@@ -26,6 +26,7 @@ func (c *CLI) userKeyStore() *cobra.Command {
 	}
 	cmd.AddCommand(c.KeystoreStatus())
 	cmd.AddCommand(c.KeystoreCreate())
+	cmd.AddCommand(c.KeystoreKey())
 	return cmd
 }
 
@@ -107,6 +108,105 @@ func (c *CLI) KeystoreCreate() *cobra.Command {
 	cmd.Flags().String("scope", "", "user scope")
 	cmd.Flags().String("keystore-password", "", "keystore password")
 	_ = cmd.MarkFlagRequired("keystore-password")
+	return cmd
+}
+
+func (c *CLI) KeystoreKey() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "key",
+		Short:   "Manage user Keystore keys",
+		Aliases: []string{"keys"},
+	}
+	cmd.AddCommand(c.KeystoreKeyAdd())
+	cmd.AddCommand(c.KeystoreKeyDelete())
+	return cmd
+}
+
+func (c *CLI) KeystoreKeyAdd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "add",
+		Short:   "Create user Keystore key",
+		Aliases: []string{"create", "new"},
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+
+			changed, err := instance.Auth().UserManager().AddKeystoreKey(
+				cmd.Flag("scope").Value.String(),
+				cmd.Flag("id").Value.String(),
+				cmd.Flag("keystore-file").Value.String(),
+				cmd.Flag("keystore-password").Value.String(),
+				cmd.Flag("key-alias").Value.String(),
+				cmd.Flag("key-password").Value.String(),
+				cmd.Flag("new-alias").Value.String(),
+			)
+
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			if changed {
+				c.Changed("User Keystore key added")
+			} else {
+				c.Ok("User Keystore key already exists")
+			}
+		},
+	}
+
+	cmd.Flags().String("id", "", "user id")
+	_ = cmd.MarkFlagRequired("id")
+	cmd.Flags().String("scope", "", "user scope")
+	cmd.Flags().String("keystore-file", "", "path to keystore file")
+	_ = cmd.MarkFlagRequired("keystore-file")
+	cmd.Flags().String("keystore-password", "", "keystore password")
+	_ = cmd.MarkFlagRequired("keystore-password")
+	cmd.Flags().String("key-alias", "", "key alias")
+	_ = cmd.MarkFlagRequired("key-alias")
+	cmd.Flags().String("key-password", "", "key password")
+	cmd.Flags().String("new-alias", "", "new key alias (optional)")
+
+	return cmd
+}
+
+func (c *CLI) KeystoreKeyDelete() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "delete",
+		Short:   "Delete user Keystore key",
+		Aliases: []string{"remove", "rm"},
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+
+			changed, err := instance.Auth().UserManager().DeleteKeystoreKey(
+				cmd.Flag("scope").Value.String(),
+				cmd.Flag("id").Value.String(),
+				cmd.Flag("key-alias").Value.String(),
+			)
+
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			if changed {
+				c.Changed("User Keystore key deleted")
+			} else {
+				c.Ok("User Keystore key does not exist")
+			}
+		},
+	}
+
+	cmd.Flags().String("id", "", "user id")
+	_ = cmd.MarkFlagRequired("id")
+	cmd.Flags().String("scope", "", "user scope")
+	cmd.Flags().String("key-alias", "", "key alias")
+	_ = cmd.MarkFlagRequired("key-alias")
+
 	return cmd
 }
 

@@ -107,7 +107,7 @@ func (um *UserManager) PasswordSet(scope string, id string, password string) (bo
 		Get(userPath + ".json")
 
 	if err != nil {
-		return false, fmt.Errorf("%s > cannot check user password: %w", um.instance.IDColor(), passwordCheckError)
+		return false, fmt.Errorf("%s > cannot check user password: %w", um.instance.IDColor(), err)
 	}
 	if !passwordCheckResponse.IsError() {
 		return false, nil
@@ -120,7 +120,7 @@ func (um *UserManager) PasswordSet(scope string, id string, password string) (bo
 	postResponse, err := um.instance.http.RequestFormData(props).Post(userPath)
 
 	if err != nil {
-		return false, fmt.Errorf("%s > cannot set user password: %w", um.instance.IDColor(), postError)
+		return false, fmt.Errorf("%s > cannot set user password: %w", um.instance.IDColor(), err)
 	}
 	if postResponse.IsError() {
 		return false, fmt.Errorf("%s > cannot set user password: %s", um.instance.IDColor(), postResponse.Status())

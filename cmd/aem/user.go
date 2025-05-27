@@ -66,7 +66,7 @@ func (c *CLI) KeystoreStatus() *cobra.Command {
 			id, _ := cmd.Flags().GetString("id")
 			scope, _ := cmd.Flags().GetString("scope")
 
-			result, err := instance.Auth().UserManager().KeystoreStatus(scope, id)
+			result, err := instance.Auth().UserManager().Keystore().Status(scope, id)
 
 			if err != nil {
 				c.Error(err)
@@ -98,7 +98,7 @@ func (c *CLI) KeystoreCreate() *cobra.Command {
 			id, _ := cmd.Flags().GetString("id")
 			scope, _ := cmd.Flags().GetString("scope")
 			password, _ := cmd.Flags().GetString("keystore-password")
-			changed, err := instance.Auth().UserManager().KeystoreCreate(scope, id, password)
+			changed, err := instance.Auth().UserManager().Keystore().Create(scope, id, password)
 
 			if err != nil {
 				c.Error(err)
@@ -133,7 +133,7 @@ func (c *CLI) userKeyAdd() *cobra.Command {
 				return
 			}
 
-			changed, err := instance.Auth().UserManager().AddKeystoreKey(
+			changed, err := instance.Auth().UserManager().Keystore().AddKey(
 				cmd.Flag("scope").Value.String(),
 				cmd.Flag("id").Value.String(),
 				cmd.Flag("keystore-file").Value.String(),
@@ -182,7 +182,7 @@ func (c *CLI) userKeyDelete() *cobra.Command {
 				return
 			}
 
-			changed, err := instance.Auth().UserManager().DeleteKeystoreKey(
+			changed, err := instance.Auth().UserManager().Keystore().DeleteKey(
 				cmd.Flag("scope").Value.String(),
 				cmd.Flag("id").Value.String(),
 				cmd.Flag("key-alias").Value.String(),

@@ -13,6 +13,7 @@ func (c *CLI) userCmd() *cobra.Command {
 		Aliases: []string{"usr"},
 	}
 	cmd.AddCommand(c.userKeyStore())
+	cmd.AddCommand(c.userKey())
 	cmd.AddCommand(c.userPassword())
 	return cmd
 }
@@ -26,14 +27,24 @@ func (c *CLI) userKeyStore() *cobra.Command {
 	}
 	cmd.AddCommand(c.KeystoreStatus())
 	cmd.AddCommand(c.KeystoreCreate())
-	cmd.AddCommand(c.KeystoreKey())
+	return cmd
+}
+
+func (c *CLI) userKey() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "key",
+		Short:   "Private keys management",
+		Aliases: []string{"keys"},
+	}
+	cmd.AddCommand(c.userKeyAdd())
+	cmd.AddCommand(c.userKeyDelete())
 	return cmd
 }
 
 func (c *CLI) userPassword() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "password",
-		Short:   "User password management",
+		Short:   "Password management",
 		Aliases: []string{"pwd"},
 	}
 	cmd.AddCommand(c.UserPasswordSet())
@@ -43,7 +54,7 @@ func (c *CLI) userPassword() *cobra.Command {
 func (c *CLI) KeystoreStatus() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "status",
-		Short:   "Get status of keystore",
+		Short:   "Get status of a user's keystore",
 		Aliases: []string{"show", "get", "read", "describe", "ls"},
 		Run: func(cmd *cobra.Command, args []string) {
 			instance, err := c.aem.InstanceManager().One()
@@ -69,14 +80,13 @@ func (c *CLI) KeystoreStatus() *cobra.Command {
 	cmd.Flags().String("id", "", "user id")
 	_ = cmd.MarkFlagRequired("id")
 	cmd.Flags().String("scope", "", "user scope")
-	_ = cmd.MarkFlagRequired("scope")
 	return cmd
 }
 
 func (c *CLI) KeystoreCreate() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "create",
-		Short:   "Create user Keystore",
+		Short:   "Create user's keystore",
 		Aliases: []string{"make", "new"},
 		Run: func(cmd *cobra.Command, args []string) {
 			instance, err := c.aem.InstanceManager().One()
@@ -111,21 +121,10 @@ func (c *CLI) KeystoreCreate() *cobra.Command {
 	return cmd
 }
 
-func (c *CLI) KeystoreKey() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "key",
-		Short:   "Manage user Keystore keys",
-		Aliases: []string{"keys"},
-	}
-	cmd.AddCommand(c.KeystoreKeyAdd())
-	cmd.AddCommand(c.KeystoreKeyDelete())
-	return cmd
-}
-
-func (c *CLI) KeystoreKeyAdd() *cobra.Command {
+func (c *CLI) userKeyAdd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "add",
-		Short:   "Create user Keystore key",
+		Short:   "Add user's private key to their keystore",
 		Aliases: []string{"create", "new"},
 		Run: func(cmd *cobra.Command, args []string) {
 			instance, err := c.aem.InstanceManager().One()
@@ -171,10 +170,10 @@ func (c *CLI) KeystoreKeyAdd() *cobra.Command {
 	return cmd
 }
 
-func (c *CLI) KeystoreKeyDelete() *cobra.Command {
+func (c *CLI) userKeyDelete() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "delete",
-		Short:   "Delete user Keystore key",
+		Short:   "Delete user's private key from their keystore",
 		Aliases: []string{"remove", "rm"},
 		Run: func(cmd *cobra.Command, args []string) {
 			instance, err := c.aem.InstanceManager().One()

@@ -106,9 +106,9 @@ func (c *CLI) KeystoreCreate() *cobra.Command {
 			}
 
 			if changed {
-				c.Changed("User Keystore created")
+				c.Changed("User keystore created")
 			} else {
-				c.Ok("User Keystore already exists")
+				c.Ok("User keystore already exists")
 			}
 		},
 	}
@@ -148,9 +148,9 @@ func (c *CLI) userKeyAdd() *cobra.Command {
 				return
 			}
 			if changed {
-				c.Changed("User Keystore key added")
+				c.Changed("User key added")
 			} else {
-				c.Ok("User Keystore key already exists")
+				c.Ok("User key already exists")
 			}
 		},
 	}
@@ -193,9 +193,9 @@ func (c *CLI) userKeyDelete() *cobra.Command {
 				return
 			}
 			if changed {
-				c.Changed("User Keystore key deleted")
+				c.Changed("User key deleted")
 			} else {
-				c.Ok("User Keystore key does not exist")
+				c.Ok("User key does not exist")
 			}
 		},
 	}

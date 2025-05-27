@@ -2,9 +2,10 @@ package keystore
 
 import (
 	"bytes"
+	"io"
+
 	"github.com/samber/lo"
 	"github.com/wttech/aemc/pkg/common/fmtx"
-	"io"
 )
 
 type Status struct {
@@ -33,4 +34,10 @@ func (s *Status) MarshalText() string {
 		return map[string]any{"alias": c.Alias}
 	})))
 	return bs.String()
+}
+
+func (s *Status) HasAlias(privateKeyAlias string) bool {
+	return lo.ContainsBy(s.PrivateKeys, func(c PrivateKey) bool {
+		return c.Alias == privateKeyAlias
+	})
 }

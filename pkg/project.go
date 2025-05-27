@@ -3,6 +3,9 @@ package pkg
 import (
 	"embed"
 	"fmt"
+	"io/fs"
+	"strings"
+
 	"github.com/magiconair/properties"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common"
@@ -10,8 +13,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/project"
-	"io/fs"
-	"strings"
 )
 
 type Project struct {
@@ -210,7 +211,7 @@ func (p Project) DirsIgnored() []string {
 }
 
 func (p Project) ScaffoldGettingStarted() string {
-	text := fmt.Sprintf(strings.Join([]string{
+	text := fmt.Sprint(strings.Join([]string{
 		"AEM Compose project now contains required files.",
 		"",
 		"Consider saving the project to VCS repository.",
@@ -222,7 +223,7 @@ func (p Project) ScaffoldGettingStarted() string {
 }
 
 func (p Project) InitGettingStartedError() string {
-	text := fmt.Sprintf(strings.Join([]string{
+	text := fmt.Sprint(strings.Join([]string{
 		"AEM Compose project is not yet ready to use!",
 		"",
 		"Be sure to provide AEM files (SDK ZIP or Quickstart JAR + License + Service Packs) to directory '" + p.aem.BaseOpts().LibDir + "'.",
@@ -231,7 +232,7 @@ func (p Project) InitGettingStartedError() string {
 }
 
 func (p Project) InitGettingStartedSuccess() string {
-	text := fmt.Sprintf(strings.Join([]string{
+	text := fmt.Sprint(strings.Join([]string{
 		"AEM Compose project is ready to use!",
 		"",
 		fmt.Sprintf("Consider excluding the directories from VCS versioning and IDE indexing: %s", strings.Join(p.DirsIgnored(), ", ")),

@@ -5,6 +5,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"path"
+	"reflect"
+	"sort"
+	"strings"
+	"time"
+
 	"github.com/fatih/color"
 	"github.com/iancoleman/strcase"
 	"github.com/jmespath-community/go-jmespath"
@@ -18,13 +26,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
-	"io"
-	"os"
-	"path"
-	"reflect"
-	"sort"
-	"strings"
-	"time"
 )
 
 const (
@@ -206,7 +207,7 @@ func (c *CLI) openOutputLogFile() *os.File {
 	}
 	file, err := os.OpenFile(c.outputLogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatalf(fmt.Sprintf("cannot open/create CLI output file '%s': %s", c.outputLogFile, err))
+		log.Fatalf("cannot open/create CLI output file '%s': %s", c.outputLogFile, err)
 	}
 	return file
 }
@@ -231,13 +232,13 @@ func (c *CLI) printCommandResult() {
 	if c.outputNoColor {
 		entry := log.WithField("changed", r.Changed).WithField("elapsed", r.Elapsed)
 		if r.Failed {
-			entry.Errorf(msg)
+			entry.Error(msg)
 		} else {
-			entry.Infof(msg)
+			entry.Info(msg)
 		}
 	} else {
 		if r.Failed {
-			log.Errorf(color.RedString(msg))
+			log.Error(color.RedString(msg))
 		} else {
 			if r.Changed {
 				log.Info(color.YellowString(msg))

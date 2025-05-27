@@ -1,6 +1,6 @@
 module github.com/wttech/aemc
 
-go 1.20
+go 1.24
 
 require (
 	github.com/Masterminds/goutils v1.1.1

@@ -2,9 +2,7 @@ package pkg
 
 import (
 	"fmt"
-	"os"
 
-	jks "github.com/pavlo-v-chernykh/keystore-go/v4"
 	"github.com/wttech/aemc/pkg/user"
 )
 
@@ -82,20 +80,4 @@ func composeUserPath(scope string, id string) string {
 		return UsersPath + "/" + id
 	}
 	return UsersPath + "/" + scope + "/" + id
-}
-
-func readKeyStore(filename string, password []byte) (*jks.KeyStore, error) {
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-
-	defer f.Close()
-
-	ks := jks.New()
-	if err := ks.Load(f, password); err != nil {
-		return nil, err
-	}
-
-	return &ks, nil
 }

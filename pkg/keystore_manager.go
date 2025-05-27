@@ -2,8 +2,10 @@ package pkg
 
 import (
 	"fmt"
+	"os"
 	"slices"
 
+	jks "github.com/pavlo-v-chernykh/keystore-go/v4"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/keystore"
 )
@@ -13,7 +15,7 @@ type KeystoreManager struct {
 }
 
 func (km *KeystoreManager) Status(scope, id string) (*keystore.Status, error) {
-	userKeystorePath := composeUserPath(scope, id) + ".ks.json"
+	userKeystorePath := composeKeystoreStatusPath(scope, id)
 
 	response, err := km.instance.http.Request().Get(userKeystorePath)
 
@@ -49,7 +51,7 @@ func (km *KeystoreManager) Create(scope, id, keystorePassword string) (bool, err
 		":operation":  "createStore",
 	}
 
-	userKeystoreCreatePath := composeUserPath(scope, id) + ".ks.html"
+	userKeystoreCreatePath := composeKeystoreOperationsPath(scope, id)
 	postResponse, postError := km.instance.http.Request().SetQueryParams(pathParams).Post(userKeystoreCreatePath)
 
 	if postError != nil {
@@ -103,7 +105,7 @@ func (km *KeystoreManager) AddKey(scope, id, keystoreFilePath, keystoreFilePassw
 		"keyStore": keystoreFilePath,
 	}
 
-	keystorePath := composeUserPath(scope, id) + ".ks.html"
+	keystorePath := composeKeystoreOperationsPath(scope, id)
 	formData := map[string]string{
 		"keyStorePass": keystoreFilePassword,
 		"alias":        privateKeyAlias,
@@ -143,7 +145,7 @@ func (km *KeystoreManager) DeleteKey(scope, id, privateKeyAlias string) (bool, e
 		"removeAlias": privateKeyAlias,
 	}
 
-	userKeystorePath := composeUserPath(scope, id) + ".ks.html"
+	userKeystorePath := composeKeystoreOperationsPath(scope, id)
 	response, err := km.instance.http.Request().
 		SetFormData(formData).
 		Post(userKeystorePath)
@@ -156,4 +158,28 @@ func (km *KeystoreManager) DeleteKey(scope, id, privateKeyAlias string) (bool, e
 	}
 
 	return true, nil
+}
+
+func composeKeystoreStatusPath(scope, id string) string {
+	return composeUserPath(scope, id) + ".ks.json"
+}
+
+func composeKeystoreOperationsPath(scope, id string) string {
+	return composeUserPath(scope, id) + ".ks.html"
+}
+
+func readKeyStore(filename string, password []byte) (*jks.KeyStore, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	defer f.Close()
+
+	ks := jks.New()
+	if err := ks.Load(f, password); err != nil {
+		return nil, err
+	}
+
+	return &ks, nil
 }

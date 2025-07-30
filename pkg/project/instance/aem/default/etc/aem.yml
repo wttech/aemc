@@ -165,6 +165,8 @@ instance:
     install_dependency_handling: required
     # Controls how 'rep:policy' nodes are handled during import
     install_ac_handling: ''
+    # Determines whether a copy of the package is created during installation (saves disk space but prevents uninstallation)
+    install_extract_only: snapshot
 
   # 'SSL By Default'
   ssl:

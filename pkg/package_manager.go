@@ -40,6 +40,7 @@ type PackageManager struct {
 	InstallSaveThreshold      int
 	InstallACHandling         string
 	InstallDependencyHandling string
+	InstallExtractOnly        string
 	InstallHTMLEnabled        bool
 	InstallHTMLConsole        bool
 	InstallHTMLStrict         bool
@@ -60,6 +61,7 @@ func NewPackageManager(res *Instance) *PackageManager {
 		InstallSaveThreshold:      cv.GetInt("instance.package.install_save_threshold"),
 		InstallACHandling:         cv.GetString("instance.package.install_ac_handling"),
 		InstallDependencyHandling: cv.GetString("instance.package.install_dependency_handling"),
+		InstallExtractOnly:        cv.GetString("instance.package.install_extract_only"),
 		InstallHTMLEnabled:        cv.GetBool("instance.package.install_html.enabled"),
 		InstallHTMLConsole:        cv.GetBool("instance.package.install_html.console"),
 		InstallHTMLStrict:         cv.GetBool("instance.package.install_html.strict"),
@@ -503,7 +505,7 @@ func (pm *PackageManager) Install(remotePath string) error {
 
 func (pm *PackageManager) installJSON(remotePath string) error {
 	log.Infof("%s > installing package '%s'", pm.instance.IDColor(), remotePath)
-	response, err := pm.instance.http.Request().SetFormData(pm.installParams()).Post(ServiceJsonPath + remotePath)
+	response, err := pm.instance.http.Request().SetFormData(pm.installParams(remotePath)).Post(ServiceJsonPath + remotePath)
 	if err != nil {
 		return fmt.Errorf("%s > cannot install package '%s': %w", pm.instance.IDColor(), remotePath, err)
 	} else if response.IsError() {
@@ -523,7 +525,7 @@ func (pm *PackageManager) installJSON(remotePath string) error {
 func (pm *PackageManager) installHTML(remotePath string) error {
 	log.Infof("%s > installing package '%s'", pm.instance.IDColor(), remotePath)
 
-	response, err := pm.instance.http.Request().SetFormData(pm.installParams()).Post(ServiceHtmlPath + remotePath)
+	response, err := pm.instance.http.Request().SetFormData(pm.installParams(remotePath)).Post(ServiceHtmlPath + remotePath)
 	if err != nil {
 		return fmt.Errorf("%s > cannot install package '%s': %w", pm.instance.IDColor(), remotePath, err)
 	} else if response.IsError() {
@@ -586,14 +588,25 @@ func (pm *PackageManager) installHTML(remotePath string) error {
 	return nil
 }
 
-func (pm *PackageManager) installParams() map[string]string {
+func (pm *PackageManager) installParams(remotePath string) map[string]string {
 	return map[string]string{
 		"cmd":                "install",
 		"recursive":          fmt.Sprintf("%v", pm.InstallRecursive),
 		"autosave":           fmt.Sprintf("%d", pm.InstallSaveThreshold),
 		"acHandling":         pm.InstallACHandling,
 		"dependencyHandling": pm.InstallDependencyHandling,
+		"extractOnly":        pm.determineInstallExtractOnly(remotePath),
 	}
+}
+
+func (pm *PackageManager) determineInstallExtractOnly(remotePath string) string {
+	var extractOnly string
+	if pm.InstallExtractOnly == pkg.InstallExtractOnlySnapshot {
+		extractOnly = fmt.Sprintf("%v", pm.IsSnapshot(remotePath))
+	} else {
+		extractOnly = pm.InstallExtractOnly
+	}
+	return extractOnly
 }
 
 func (pm *PackageManager) DeployWithChanged(localPath string) (bool, error) {

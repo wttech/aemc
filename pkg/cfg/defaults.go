@@ -6,6 +6,7 @@ import (
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/instance"
+	"github.com/wttech/aemc/pkg/pkg"
 	"time"
 )
 
@@ -104,6 +105,7 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.package.install_save_threshold", 1024)
 	v.SetDefault("instance.package.install_ac_handling", "")
 	v.SetDefault("instance.package.install_dependency_handling", "required")
+	v.SetDefault("instance.package.install_extract_only", pkg.InstallExtractOnlySnapshot)
 
 	v.SetDefault("instance.package.install_html.enabled", false)
 	v.SetDefault("instance.package.install_html.strict", true)

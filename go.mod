@@ -1,6 +1,6 @@
 module github.com/wttech/aemc
 
-go 1.20
+go 1.24
 
 require (
 	github.com/Masterminds/goutils v1.1.1
@@ -23,6 +23,7 @@ require (
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/otiai10/copy v1.14.0
+	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/samber/lo v1.39.0
 	github.com/segmentio/textio v1.2.0

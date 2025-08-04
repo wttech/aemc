@@ -2,7 +2,8 @@ package pkg
 
 import (
 	"fmt"
-	"github.com/wttech/aemc/pkg/keystore"
+
+	"github.com/wttech/aemc/pkg/user"
 )
 
 type UserManager struct {
@@ -17,55 +18,66 @@ const (
 	UsersPath = "/home/users"
 )
 
-func (um *UserManager) KeystoreStatus(scope, id string) (*keystore.Status, error) {
-	userKeystorePath := UsersPath + "/" + scope + "/" + id + ".ks.json"
+func (um *UserManager) Keystore() *KeystoreManager {
+	return &KeystoreManager{instance: um.instance}
+}
 
-	response, err := um.instance.http.Request().Get(userKeystorePath)
+func (um *UserManager) ReadState(scope string, id string) (*user.Status, error) {
+	userPath := composeUserPath(scope, id)
+
+	response, err := um.instance.http.Request().Get(userPath + ".json")
 
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot read user Keystore: %w", um.instance.IDColor(), err)
+		return nil, fmt.Errorf("%s > cannot read user: %w", um.instance.IDColor(), err)
 	}
-
 	if response.IsError() {
-		return nil, fmt.Errorf("%s > cannot read user keystore: %s", um.instance.IDColor(), response.Status())
+		return nil, fmt.Errorf("%s > cannot read user: %s", um.instance.IDColor(), response.Status())
 	}
 
-	result, err := keystore.UnmarshalStatus(response.RawBody())
-
+	result, err := user.UnmarshalStatus(response.RawBody())
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot parse user Keystore status response: %w", um.instance.IDColor(), err)
+		return nil, fmt.Errorf("%s > cannot parse user status response: %w", um.instance.IDColor(), err)
 	}
 
 	return result, nil
 }
 
-func (um *UserManager) KeystoreCreate(scope, id, keystorePassword string) (bool, error) {
-	statusResponse, statusError := um.KeystoreStatus(scope, id)
-
-	if statusError != nil {
-		return false, statusError
+func (um *UserManager) SetPassword(scope string, id string, password string) (bool, error) {
+	userStatus, err := um.ReadState(scope, id)
+	if err != nil {
+		return false, err
 	}
 
-	if statusResponse.Created == true {
+	userPath := composeUserPath(scope, id)
+	passwordCheckResponse, err := um.instance.http.Request().
+		SetBasicAuth(userStatus.AuthorizableID, password).
+		Get(userPath + ".json")
+
+	if err != nil {
+		return false, fmt.Errorf("%s > cannot check user password: %w", um.instance.IDColor(), err)
+	}
+	if !passwordCheckResponse.IsError() {
 		return false, nil
 	}
 
-	pathParams := map[string]string{
-		"newPassword": keystorePassword,
-		"rePassword":  keystorePassword,
-		":operation":  "createStore",
+	props := map[string]any{
+		"rep:password": password,
 	}
 
-	userKeystoreCreatePath := UsersPath + "/" + scope + "/" + id + ".ks.html"
-	postResponse, postError := um.instance.http.Request().SetQueryParams(pathParams).Post(userKeystoreCreatePath)
-
-	if postError != nil {
-		return false, fmt.Errorf("%s > cannot create user keystore: %w", um.instance.IDColor(), postError)
+	postResponse, err := um.instance.http.RequestFormData(props).Post(userPath)
+	if err != nil {
+		return false, fmt.Errorf("%s > cannot set user password: %w", um.instance.IDColor(), err)
 	}
-
 	if postResponse.IsError() {
-		return false, fmt.Errorf("%s > cannot create user keystore: %s", um.instance.IDColor(), postResponse.Status())
+		return false, fmt.Errorf("%s > cannot set user password: %s", um.instance.IDColor(), postResponse.Status())
 	}
 
 	return true, nil
+}
+
+func composeUserPath(scope string, id string) string {
+	if scope == "" {
+		return UsersPath + "/" + id
+	}
+	return UsersPath + "/" + scope + "/" + id
 }

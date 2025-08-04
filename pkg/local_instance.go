@@ -533,11 +533,16 @@ func (li LocalInstance) updateLock() osx.Lock[localInstanceUpdateLock] {
 		if err != nil {
 			return zero, err
 		}
+		javaHomeDir, err := li.JavaManager().FindHomeDir()
+		if err != nil {
+			return zero, err
+		}
 		return localInstanceUpdateLock{
 			Version:    li.Version,
 			HTTPPort:   li.instance.HTTP().Port(),
 			RunModes:   strings.Join(li.RunModes, ","),
 			JVMOpts:    strings.Join(li.JvmOpts, " "),
+			JavaHome:   javaHomeDir,
 			Password:   cryptox.HashString(li.instance.password),
 			EnvVars:    strings.Join(li.EnvVars, ","),
 			SecretVars: cryptox.HashString(strings.Join(li.SecretVars, ",")),
@@ -550,6 +555,7 @@ func (li LocalInstance) updateLock() osx.Lock[localInstanceUpdateLock] {
 type localInstanceUpdateLock struct {
 	Version    string `yaml:"version"`
 	JVMOpts    string `yaml:"jvm_opts"`
+	JavaHome   string `yaml:"java_home"`
 	RunModes   string `yaml:"run_modes"`
 	HTTPPort   string `yaml:"http_port"`
 	Password   string `yaml:"password"`

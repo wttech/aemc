@@ -11,6 +11,8 @@ import (
 	"strings"
 )
 
+// TODO upgrade to v1.x of tablewriter
+
 func TblProps(props map[string]any) string {
 	return TblMap("properties", "name", "value", props)
 }

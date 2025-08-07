@@ -24,7 +24,7 @@ const (
 )
 
 var (
-	aemVersionRegex = regexp.MustCompile("<td>Adobe Experience Manager \\((.*)\\)<\\/td>")
+	aemVersionRegex = regexp.MustCompile(`<td>Adobe Experience Manager \(([^)]+)\)</td>`)
 )
 
 type Status struct {

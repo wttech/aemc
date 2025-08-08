@@ -223,3 +223,4 @@ $RECYCLE.BIN/
 dist/
 **/aem/home/
 !pkg/instance/resource
+/var

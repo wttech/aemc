@@ -8,7 +8,10 @@ import (
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/tplx"
 	"github.com/wttech/aemc/pkg/instance"
+	"io"
+	"os"
 	"path/filepath"
+	"strings"
 )
 
 func NewOakRun(vendorManager *VendorManager) *OakRun {
@@ -74,11 +77,41 @@ func (or OakRun) prepare() error {
 		return err
 	}
 	jarFile := or.JarFile()
-	log.Infof("downloading Oak Run JAR from URL '%s' to file '%s'", or.DownloadURL, jarFile)
-	if err := httpx.DownloadOnce(or.DownloadURL, jarFile); err != nil {
+	downloadURL := or.DownloadURL
+
+	// Check if DownloadURL is a local file path (absolute or file://)
+	isLocal := strings.HasPrefix(downloadURL, "/") || strings.HasPrefix(downloadURL, "file://")
+	if isLocal {
+		localPath := downloadURL
+		if strings.HasPrefix(localPath, "file://") {
+			localPath = strings.TrimPrefix(localPath, "file://")
+		}
+		log.Infof("copying Oak Run JAR from local file '%s' to '%s'", localPath, jarFile)
+		if err := pathx.Ensure(filepath.Dir(jarFile)); err != nil {
+			return err
+		}
+		src, err := os.Open(localPath)
+		if err != nil {
+			return fmt.Errorf("cannot open local Oak Run JAR '%s': %w", localPath, err)
+		}
+		defer src.Close()
+		dst, err := os.Create(jarFile)
+		if err != nil {
+			return fmt.Errorf("cannot create destination Oak Run JAR '%s': %w", jarFile, err)
+		}
+		defer dst.Close()
+		if _, err := io.Copy(dst, src); err != nil {
+			return fmt.Errorf("cannot copy Oak Run JAR from '%s' to '%s': %w", localPath, jarFile, err)
+		}
+		log.Infof("copied Oak Run JAR from local file '%s' to '%s'", localPath, jarFile)
+		return nil
+	}
+
+	log.Infof("downloading Oak Run JAR from URL '%s' to file '%s'", downloadURL, jarFile)
+	if err := httpx.DownloadOnce(downloadURL, jarFile); err != nil {
 		return err
 	}
-	log.Infof("downloaded Oak Run JAR from URL '%s' to file '%s'", or.DownloadURL, jarFile)
+	log.Infof("downloaded Oak Run JAR from URL '%s' to file '%s'", downloadURL, jarFile)
 	return nil
 }
 

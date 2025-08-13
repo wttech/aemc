@@ -17,7 +17,7 @@ func NewOakRun(vendorManager *VendorManager) *OakRun {
 	return &OakRun{
 		vendorManager: vendorManager,
 		DownloadURL:   cv.GetString("vendor.oak_run.download_url"),
-		LocalJar:      cv.GetString("vendor.oak_run.local_jar"),
+		JarFile:       cv.GetString("vendor.oak_run.jar_file"),
 		StorePath:     cv.GetString("vendor.oak_run.store_path"),
 	}
 }
@@ -25,13 +25,13 @@ func NewOakRun(vendorManager *VendorManager) *OakRun {
 type OakRun struct {
 	vendorManager *VendorManager
 	DownloadURL   string
-	LocalJar      string
+	JarFile       string
 	StorePath     string
 }
 
 type OakRunLock struct {
 	DownloadURL string `yaml:"download_url"`
-	LocalJar    string `yaml:"local_jar"`
+	JarFile     string `yaml:"jar_file"`
 }
 
 func (or OakRun) Dir() string {
@@ -42,7 +42,7 @@ func (or OakRun) lock() osx.Lock[OakRunLock] {
 	return osx.NewLock(or.Dir()+"/lock/create.yml", func() (OakRunLock, error) {
 		return OakRunLock{
 			DownloadURL: or.DownloadURL,
-			LocalJar:    or.LocalJar,
+			JarFile:     or.JarFile,
 		}, nil
 	})
 }
@@ -53,11 +53,18 @@ func (or OakRun) PrepareWithChanged() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if check.UpToDate {
-		log.Debugf("existing OakRun (url: '%s', local: '%s') is up-to-date", or.DownloadURL, or.LocalJar)
+
+	if or.JarFile != "" {
+		// No preparation needed if using a local JAR
+		log.Infof("using Oak Run JAR from local file '%s'", or.JarFile)
 		return false, nil
 	}
-	log.Infof("preparing new OakRun (url: '%s', local: '%s')", or.DownloadURL, or.LocalJar)
+
+	if check.UpToDate {
+		log.Debugf("existing OakRun '%s is up-to-date", or.DownloadURL)
+		return false, nil
+	}
+	log.Infof("preparing new OakRun '%s'", or.DownloadURL)
 	err = or.prepare()
 	if err != nil {
 		return false, err
@@ -66,29 +73,24 @@ func (or OakRun) PrepareWithChanged() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	log.Infof("prepared new OakRun (url: '%s', local: '%s')", or.DownloadURL, or.LocalJar)
+	log.Infof("prepared new OakRun '%s'", or.DownloadURL)
 
 	return true, nil
 }
 
-func (or OakRun) JarFile() string {
-	if or.LocalJar != "" {
-		return pathx.Canonical(or.LocalJar)
+func (or OakRun) JarFilePath() string {
+	if or.JarFile != "" {
+		return pathx.Canonical(or.JarFile)
 	}
 	base := or.DownloadURL
 	return pathx.Canonical(fmt.Sprintf("%s/%s", or.Dir(), filepath.Base(base)))
 }
 
 func (or OakRun) prepare() error {
-	if or.LocalJar != "" {
-		// No preparation needed if using a local JAR
-		log.Infof("using Oak Run JAR from local file '%s'", or.LocalJar)
-		return nil
-	}
 	if err := pathx.DeleteIfExists(or.Dir()); err != nil {
 		return err
 	}
-	jarFile := or.JarFile()
+	jarFile := or.JarFilePath()
 	log.Infof("downloading Oak Run JAR from URL '%s' to file '%s'", or.DownloadURL, jarFile)
 	if err := httpx.DownloadOnce(or.DownloadURL, jarFile); err != nil {
 		return err
@@ -120,7 +122,7 @@ func (or OakRun) RunScript(instanceDir string, scriptFile string) error {
 	storeDir := or.StoreDir(instanceDir)
 	cmd, err := or.vendorManager.javaManager.Command(
 		"-Djava.io.tmpdir="+pathx.Canonical(or.vendorManager.aem.baseOpts.TmpDir),
-		"-jar", or.JarFile(),
+		"-jar", or.JarFilePath(),
 		"console", storeDir, "--read-write", fmt.Sprintf(":load %s", scriptFile),
 	)
 	if err != nil {
@@ -138,7 +140,7 @@ func (or OakRun) Compact(instanceDir string) error {
 	storeDir := or.StoreDir(instanceDir)
 	cmd, err := or.vendorManager.javaManager.Command(
 		"-Djava.io.tmpdir="+pathx.Canonical(or.vendorManager.aem.baseOpts.TmpDir),
-		"-jar", or.JarFile(),
+		"-jar", or.JarFilePath(),
 		"compact", storeDir,
 	)
 	if err != nil {

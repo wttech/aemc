@@ -31,7 +31,6 @@ type OakRun struct {
 
 type OakRunLock struct {
 	DownloadURL string `yaml:"download_url"`
-	JarFile     string `yaml:"jar_file"`
 }
 
 func (or OakRun) Dir() string {
@@ -42,7 +41,6 @@ func (or OakRun) lock() osx.Lock[OakRunLock] {
 	return osx.NewLock(or.Dir()+"/lock/create.yml", func() (OakRunLock, error) {
 		return OakRunLock{
 			DownloadURL: or.DownloadURL,
-			JarFile:     or.JarFile,
 		}, nil
 	})
 }

@@ -58,7 +58,7 @@ func (bm *OSGiBundleManager) ByFile(localPath string) (*OSGiBundle, error) {
 func (bm *OSGiBundleManager) Find(symbolicName string) (*osgi.BundleListItem, error) {
 	bundles, err := bm.List()
 	if err != nil {
-		return nil, fmt.Errorf("%s > cannot find bundle '%s'", bm.instance.IDColor(), symbolicName)
+		return nil, fmt.Errorf("%s > cannot find bundle '%s': %w", bm.instance.IDColor(), symbolicName, err)
 	}
 	item, found := lo.Find(bundles.List, func(i osgi.BundleListItem) bool { return symbolicName == i.SymbolicName })
 	if found {

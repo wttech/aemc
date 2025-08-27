@@ -14,6 +14,7 @@ func (c *CLI) vendorCmd() *cobra.Command {
 	}
 	cmd.AddCommand(c.vendorListCmd())
 	cmd.AddCommand(c.vendorPrepareCmd())
+	cmd.AddCommand(c.vendorCleanCmd())
 
 	return cmd
 }
@@ -69,6 +70,27 @@ func (c *CLI) vendorPrepareCmd() *cobra.Command {
 				c.Changed("vendor tools prepared")
 			} else {
 				c.Ok("vendor tools already prepared")
+			}
+		},
+	}
+	return cmd
+}
+
+func (c *CLI) vendorCleanCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "clean",
+		Short:   "Clean vendor tools",
+		Aliases: []string{"cl"},
+		Run: func(cmd *cobra.Command, args []string) {
+			changed, err := c.aem.VendorManager().CleanWithChanged()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			if changed {
+				c.Changed("vendor tools cleaned")
+			} else {
+				c.Ok("vendor tools already cleaned")
 			}
 		},
 	}

@@ -7,6 +7,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/instance"
 	"github.com/wttech/aemc/pkg/pkg"
+	"github.com/wttech/aemc/pkg/sdk"
 	"time"
 )
 
@@ -35,6 +36,8 @@ func (c *Config) setDefaults() {
 
 	v.SetDefault("vendor.quickstart.dist_file", common.QuickstartDistFile)
 	v.SetDefault("vendor.quickstart.license_file", common.QuickstartLicenseFile)
+
+	v.SetDefault("vendor.sdk.os", sdk.OSAuto)
 
 	v.SetDefault("vendor.java.home_dir", "")
 	v.SetDefault("vendor.java.version_constraints", []string{"=> 1.8, < 1.9", "=> 11, < 12", ">= 17, < 18", "=> 21, < 22"})

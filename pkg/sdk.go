@@ -2,20 +2,31 @@ package pkg
 
 import (
 	"fmt"
+	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/execx"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
+	"github.com/wttech/aemc/pkg/sdk"
 	"path/filepath"
+	"strings"
 )
 
 func NewSDK(vendorManager *VendorManager) *SDK {
-	return &SDK{vendorManager: vendorManager}
+	cv := vendorManager.aem.Config().Values()
+
+	return &SDK{
+		vendorManager: vendorManager,
+
+		OS: cv.GetString("vendor.sdk.os"),
+	}
 }
 
 type SDK struct {
 	vendorManager *VendorManager
+
+	OS string
 }
 
 func (s SDK) Dir() string {
@@ -118,7 +129,12 @@ func (s SDK) findFile(pattern string) (string, error) {
 }
 
 func (s SDK) unpackDispatcher() error {
-	if osx.IsWindows() {
+	os, err := s.determineOs()
+	if err != nil {
+		return err
+	}
+
+	if os == sdk.OSWindows {
 		zip, err := s.dispatcherToolsWindowsZip()
 		if err != nil {
 			return err
@@ -143,6 +159,20 @@ func (s SDK) unpackDispatcher() error {
 		log.Infof("unpacked SDK dispatcher tools using script '%s' to dir '%s'", script, s.DispatcherDir())
 	}
 	return nil
+}
+
+func (s SDK) determineOs() (string, error) {
+	os := s.OS
+	if !lo.Contains(sdk.OsTypes(), os) {
+		return "", fmt.Errorf("unsupported SDK OS type '%s', supported types are: %s", os, strings.Join(sdk.OsTypes(), ", "))
+	}
+	if os != sdk.OSAuto {
+		return os, nil
+	}
+	if osx.IsWindows() {
+		return sdk.OSWindows, nil
+	}
+	return sdk.OSUnix, nil
 }
 
 func (s SDK) Destroy() error {

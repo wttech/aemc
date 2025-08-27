@@ -243,6 +243,11 @@ vendor:
     # AEM License properties file
     license_file: "aem/home/lib/license.properties"
 
+  # AEM SDK source files
+  sdk:
+    # Controls which distribution of dispatcher is unpacked (auto|unix|windows)
+    os: auto
+
   # JDK used to: run AEM instances, build OSGi bundles, assemble AEM packages
   java:
     # Require following versions before e.g running AEM instances

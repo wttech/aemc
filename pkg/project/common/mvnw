@@ -19,6 +19,35 @@
 # ----------------------------------------------------------------------------
 
 # ----------------------------------------------------------------------------
+# AEM Compose - Ensure Java is vendored and prepared
+# ----------------------------------------------------------------------------
+AEM_JAVA_ENABLED=${AEM_JAVA_ENABLED:-true}
+if [ "${AEM_JAVA_ENABLED}" = true ]; then
+  AEM_JAVA_HOME="$(sh aemw vendor list -V javaHome 2>/dev/null || true)"
+
+  if [ -z "$AEM_JAVA_HOME" ] || [ ! -d "$AEM_JAVA_HOME" ] || [ ! -x "$AEM_JAVA_HOME/bin/java" ]; then
+    echo "AEM Compose - Vendor tools not prepared (Java). Preparing now..."
+    if ! sh aemw vendor prepare; then
+      rc=$?
+      echo "AEM Compose - Vendor tools cannot be prepared (exit $rc). Cannot continue!"
+      echo "Run command 'sh aemw vendor prepare' and inspect the error."
+      exit $rc
+    fi
+
+    AEM_JAVA_HOME="$(sh aemw vendor list -V javaHome 2>/dev/null || true)"
+    if [ -z "$AEM_JAVA_HOME" ] || [ ! -d "$AEM_JAVA_HOME" ] || [ ! -x "$AEM_JAVA_HOME/bin/java" ]; then
+      echo "AEM Compose - Vendor tools cannot be prepared. Cannot continue!"
+      echo "Run command 'sh aemw vendor prepare' and inspect the error."
+      exit 1
+    fi
+
+    echo "AEM Compose - Vendor tools prepared. Java available at '${AEM_JAVA_HOME}'"
+  fi
+
+  JAVA_HOME="$AEM_JAVA_HOME"; export JAVA_HOME
+fi
+
+# ----------------------------------------------------------------------------
 # Apache Maven Wrapper startup batch script, version 3.2.0
 #
 # Required ENV vars:

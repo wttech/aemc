@@ -44,7 +44,7 @@ func (c *CLI) vendorListCmd() *cobra.Command {
 			}
 			c.SetOutput("javaExecutable", javaExecutable)
 
-			oakRunJar := c.aem.VendorManager().OakRun().JarFile()
+			oakRunJar := c.aem.VendorManager().OakRun().JarFilePath()
 			c.setOutput("oakRunJar", oakRunJar)
 
 			c.Ok("vendor tools listed")

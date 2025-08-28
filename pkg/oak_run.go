@@ -39,9 +39,7 @@ func (or OakRun) Dir() string {
 
 func (or OakRun) lock() osx.Lock[OakRunLock] {
 	return osx.NewLock(or.Dir()+"/lock/create.yml", func() (OakRunLock, error) {
-		return OakRunLock{
-			DownloadURL: or.DownloadURL,
-		}, nil
+		return OakRunLock{DownloadURL: or.DownloadURL}, nil
 	})
 }
 
@@ -53,13 +51,12 @@ func (or OakRun) PrepareWithChanged() (bool, error) {
 	}
 
 	if or.JarFile != "" {
-		// No preparation needed if using a local JAR
-		log.Infof("using Oak Run JAR from local file '%s'", or.JarFile)
+		log.Debugf("using OakRun from JAR file '%s'", or.JarFile)
 		return false, nil
 	}
 
 	if check.UpToDate {
-		log.Debugf("existing OakRun '%s is up-to-date", or.DownloadURL)
+		log.Debugf("existing OakRun '%s' is up-to-date", or.DownloadURL)
 		return false, nil
 	}
 	log.Infof("preparing new OakRun '%s'", or.DownloadURL)

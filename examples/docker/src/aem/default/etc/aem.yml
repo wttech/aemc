@@ -277,6 +277,11 @@ vendor:
     download_url: "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.72.0/oak-run-1.72.0.jar"
     store_path: "crx-quickstart/repository/segmentstore"
 
+    # Pre-installed local JAR file
+    # a) keep it empty to download it automatically
+    # b) set it to an absolute path to skip downloading
+    jar_file: ""
+
 # Content clean options
 content:
   clean:

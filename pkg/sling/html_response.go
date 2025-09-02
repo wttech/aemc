@@ -1,9 +1,10 @@
 package sling
 
 import (
+	"strings"
+
 	"github.com/PuerkitoBio/goquery"
 	"github.com/spf13/cast"
-	"strings"
 )
 
 type HTMLData struct {

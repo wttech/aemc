@@ -2,11 +2,12 @@ package pkg
 
 import (
 	"fmt"
+	"io"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
 	"github.com/wttech/aemc/pkg/replication"
 	"github.com/wttech/aemc/pkg/sling"
-	"io"
 )
 
 type Replication struct {
@@ -63,16 +64,16 @@ func (r Replication) replicate(cmd string, path string) error {
 	} else if response.IsError() {
 		return fmt.Errorf("%s > cannot do replication command '%s' for path '%s': %s", r.instance.IDColor(), cmd, path, response.Status())
 	}
-	htmlBytes, err := io.ReadAll(response.RawBody())
+	jsonBytes, err := io.ReadAll(response.RawBody())
 	if err != nil {
 		return fmt.Errorf("%s > cannot read replication command '%s' response for path '%s': %w", r.instance.IDColor(), cmd, path, err)
 	}
-	htmlData, err := sling.HtmlData(string(htmlBytes))
+	jsonData, err := sling.JsonData(string(jsonBytes))
 	if err != nil {
-		return fmt.Errorf("%s > cannot parse replication command '%s' response for path '%s': %w", r.instance.IDColor(), cmd, path, err)
+		return fmt.Errorf("%s > cannot parse replication command '%s' JSON response for path '%s': %w", r.instance.IDColor(), cmd, path, err)
 	}
-	if htmlData.IsError() {
-		return fmt.Errorf("%s > cannot do replication command '%s' for path '%s': %s", r.instance.IDColor(), cmd, path, htmlData.Message)
+	if jsonData.IsError() {
+		return fmt.Errorf("%s > replication command '%s' failed for path '%s': %s", r.instance.IDColor(), cmd, path, jsonData.Message)
 	}
 	return nil
 }

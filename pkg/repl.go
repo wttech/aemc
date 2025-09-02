@@ -53,6 +53,7 @@ func (r Replication) Deactivate(path string) error {
 	return nil
 }
 
+// replicate a path to a specific agent; respect response format (older AEM uses HTML, newer uses JSON)
 func (r Replication) replicate(cmd string, path string) error {
 	response, err := r.instance.http.Request().
 		SetFormData(map[string]string{
@@ -66,48 +67,26 @@ func (r Replication) replicate(cmd string, path string) error {
 		return fmt.Errorf("%s > cannot do replication command '%s' for path '%s': %s", r.instance.IDColor(), cmd, path, response.Status())
 	}
 
-	seBytes, err := io.ReadAll(response.RawBody())
+	responseBytes, err := io.ReadAll(response.RawBody())
 	if err != nil {
 		return fmt.Errorf("%s > cannot read replication command '%s' response for path '%s': %w", r.instance.IDColor(), cmd, path, err)
 	}
 
 	contentType := response.Header().Get("Content-Type")
-	responseBody := string(seBytes)
+	responseBody := string(responseBytes)
 
-	// Older AEM versions use HTML, newer use JSON
-	if r.isJSONResponse(contentType, responseBody) {
-		return r.handleJSONResponse(cmd, path, responseBody)
+	var responseData sling.ResponseData
+	if strings.Contains(strings.ToLower(contentType), "application/json") ||
+		(strings.HasPrefix(strings.TrimSpace(responseBody), "{") && strings.HasSuffix(strings.TrimSpace(responseBody), "}")) {
+		responseData, err = sling.JsonData(responseBody)
 	} else {
-		return r.handleHTMLResponse(cmd, path, responseBody)
+		responseData, err = sling.HtmlData(responseBody)
 	}
-}
-
-func (r Replication) isJSONResponse(contentType, responseBody string) bool {
-	if strings.Contains(strings.ToLower(contentType), "application/json") {
-		return true
-	}
-	trimmed := strings.TrimSpace(responseBody)
-	return strings.HasPrefix(trimmed, "{") && strings.HasSuffix(trimmed, "}")
-}
-
-func (r Replication) handleJSONResponse(cmd, path, responseBody string) error {
-	jsonData, err := sling.JsonData(responseBody)
 	if err != nil {
-		return fmt.Errorf("%s > cannot parse replication command '%s' JSON response for path '%s': %w", r.instance.IDColor(), cmd, path, err)
+		return fmt.Errorf("%s > cannot parse replication command '%s' response for path '%s': %w", r.instance.IDColor(), cmd, path, err)
 	}
-	if jsonData.IsError() {
-		return fmt.Errorf("%s > replication command '%s' failed for path '%s': %s", r.instance.IDColor(), cmd, path, jsonData.Message)
-	}
-	return nil
-}
-
-func (r Replication) handleHTMLResponse(cmd, path, responseBody string) error {
-	htmlData, err := sling.HtmlData(responseBody)
-	if err != nil {
-		return fmt.Errorf("%s > cannot parse replication command '%s' HTML response for path '%s': %w", r.instance.IDColor(), cmd, path, err)
-	}
-	if htmlData.IsError() {
-		return fmt.Errorf("%s > replication command '%s' failed for path '%s': %s", r.instance.IDColor(), cmd, path, htmlData.Message)
+	if responseData.IsError() {
+		return fmt.Errorf("%s > replication command '%s' failed for path '%s': %s", r.instance.IDColor(), cmd, path, responseData.GetMessage())
 	}
 	return nil
 }

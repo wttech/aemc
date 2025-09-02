@@ -32,3 +32,7 @@ func JsonData(jsonStr string) (data JSONData, err error) {
 func (d JSONData) IsError() bool {
 	return d.Status <= 0 || d.Status > 399
 }
+
+func (d JSONData) GetMessage() string {
+	return d.Message
+}

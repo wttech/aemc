@@ -38,6 +38,10 @@ func (d HTMLData) IsError() bool {
 	return d.Status <= 0 || d.Status > 399
 }
 
+func (d HTMLData) GetMessage() string {
+	return d.Message
+}
+
 func htmlElementText(doc *goquery.Document, selector string, defaultValue string) string {
 	selection := doc.Find(selector)
 	if len(selection.Nodes) > 0 {

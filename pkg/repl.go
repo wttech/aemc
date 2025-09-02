@@ -3,6 +3,7 @@ package pkg
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
@@ -64,16 +65,49 @@ func (r Replication) replicate(cmd string, path string) error {
 	} else if response.IsError() {
 		return fmt.Errorf("%s > cannot do replication command '%s' for path '%s': %s", r.instance.IDColor(), cmd, path, response.Status())
 	}
-	jsonBytes, err := io.ReadAll(response.RawBody())
+
+	seBytes, err := io.ReadAll(response.RawBody())
 	if err != nil {
 		return fmt.Errorf("%s > cannot read replication command '%s' response for path '%s': %w", r.instance.IDColor(), cmd, path, err)
 	}
-	jsonData, err := sling.JsonData(string(jsonBytes))
+
+	contentType := response.Header().Get("Content-Type")
+	responseBody := string(seBytes)
+
+	// Older AEM versions use HTML, newer use JSON
+	if r.isJSONResponse(contentType, responseBody) {
+		return r.handleJSONResponse(cmd, path, responseBody)
+	} else {
+		return r.handleHTMLResponse(cmd, path, responseBody)
+	}
+}
+
+func (r Replication) isJSONResponse(contentType, responseBody string) bool {
+	if strings.Contains(strings.ToLower(contentType), "application/json") {
+		return true
+	}
+	trimmed := strings.TrimSpace(responseBody)
+	return strings.HasPrefix(trimmed, "{") && strings.HasSuffix(trimmed, "}")
+}
+
+func (r Replication) handleJSONResponse(cmd, path, responseBody string) error {
+	jsonData, err := sling.JsonData(responseBody)
 	if err != nil {
 		return fmt.Errorf("%s > cannot parse replication command '%s' JSON response for path '%s': %w", r.instance.IDColor(), cmd, path, err)
 	}
 	if jsonData.IsError() {
 		return fmt.Errorf("%s > replication command '%s' failed for path '%s': %s", r.instance.IDColor(), cmd, path, jsonData.Message)
+	}
+	return nil
+}
+
+func (r Replication) handleHTMLResponse(cmd, path, responseBody string) error {
+	htmlData, err := sling.HtmlData(responseBody)
+	if err != nil {
+		return fmt.Errorf("%s > cannot parse replication command '%s' HTML response for path '%s': %w", r.instance.IDColor(), cmd, path, err)
+	}
+	if htmlData.IsError() {
+		return fmt.Errorf("%s > replication command '%s' failed for path '%s': %s", r.instance.IDColor(), cmd, path, htmlData.Message)
 	}
 	return nil
 }

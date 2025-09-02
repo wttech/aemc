@@ -23,24 +23,37 @@
 # ----------------------------------------------------------------------------
 AEM_JAVA_ENABLED=${AEM_JAVA_ENABLED:-true}
 if [ "${AEM_JAVA_ENABLED}" = true ]; then
-  AEM_JAVA_HOME="$(sh aemw vendor list -V javaHome 2>/dev/null || true)"
-
-  if [ -z "$AEM_JAVA_HOME" ] || [ ! -d "$AEM_JAVA_HOME" ] || [ ! -x "$AEM_JAVA_HOME/bin/java" ]; then
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  is_java_valid() {
+    [ -n "$1" ] && [ -d "$1" ] && [ -x "$1/bin/java" ]
+  }
+  get_java_home() {
+    (cd "${SCRIPT_DIR}" && sh aemw vendor list -V javaHome 2>/dev/null) || true
+  }
+  prepare_java() {
+    (cd "${SCRIPT_DIR}" && sh aemw vendor prepare)
+  }
+  show_prep_error() {
+    if [ -n "$1" ]; then
+      echo "AEM Compose - Vendor tools cannot be prepared (exit $1). Cannot continue!"
+    else
+      echo "AEM Compose - Vendor tools cannot be prepared. Cannot continue!"
+    fi
+    echo "Run command 'sh aemw vendor prepare' from the main project directory and inspect the error."
+  }
+  AEM_JAVA_HOME="$(get_java_home)"
+  if ! is_java_valid "$AEM_JAVA_HOME"; then
     echo "AEM Compose - Vendor tools not prepared (Java). Preparing now..."
-    if ! sh aemw vendor prepare; then
+    if ! prepare_java; then
       rc=$?
-      echo "AEM Compose - Vendor tools cannot be prepared (exit $rc). Cannot continue!"
-      echo "Run command 'sh aemw vendor prepare' and inspect the error."
+      show_prep_error $rc
       exit $rc
     fi
-
-    AEM_JAVA_HOME="$(sh aemw vendor list -V javaHome 2>/dev/null || true)"
-    if [ -z "$AEM_JAVA_HOME" ] || [ ! -d "$AEM_JAVA_HOME" ] || [ ! -x "$AEM_JAVA_HOME/bin/java" ]; then
-      echo "AEM Compose - Vendor tools cannot be prepared. Cannot continue!"
-      echo "Run command 'sh aemw vendor prepare' and inspect the error."
+    AEM_JAVA_HOME="$(get_java_home)"
+    if ! is_java_valid "$AEM_JAVA_HOME"; then
+      show_prep_error
       exit 1
     fi
-
     echo "AEM Compose - Vendor tools prepared. Java available at '${AEM_JAVA_HOME}'"
   fi
 

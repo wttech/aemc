@@ -1,0 +1,74 @@
+# Task tool documentation:
+# 1) Basics: https://taskfile.dev/usage
+# 2) Naming conventions: https://taskfile.dev/styleguide
+
+version: '3'
+
+env:
+  AEM_ENV: '{{.AEM_ENV | default "local"}}'
+  AEM_INSTANCE_PROCESSING_MODE: auto
+  AEM_OUTPUT_VALUE: NONE
+  JAVA_HOME:
+    sh: sh aemw vendor list --output-value javaHome
+
+dotenv:
+  - '.env'              # VCS-ignored, user-specific
+  - '.env.{{.AEM_ENV}}' # VCS-ignored, env-specific
+  - '{{.AEM_ENV}}.env'  # VCS-tracked, env-specific
+
+tasks:
+
+  release:
+    desc: Release a new version
+    vars:
+      VERSION: ""
+    cmds:
+      - |
+        set -e
+
+        VERSION="{{.CLI_ARGS | default ""}}"
+        VERSION_TAG="v$VERSION"
+
+        VERSION_CURRENT_TAG=$(git describe --tags --abbrev=0 || echo "v0.0.0")
+        VERSION_CURRENT_TAG="${VERSION_CURRENT_TAG#v}" # remove leading 'v', preserve leading zeros
+
+        if [ -z "$VERSION" ]; then
+            echo "Release version is not specified!"
+            echo "Last released: ${VERSION_CURRENT_TAG}"
+            exit 1
+        fi
+
+        GIT_STAT=$(git diff --stat || true)
+
+        if [ "$GIT_STAT" != '' ]; then
+            echo "Unable to release. Uncommitted changes detected!"
+            exit 1
+        fi
+
+        echo ""
+        echo "Releasing $VERSION_TAG"
+        echo ""
+
+        echo "Bumping version in files"
+        bump_version() {
+            local file="$1"
+            if [ "$(uname)" = "Darwin" ]; then
+                sed -i '' 's/AEM_CLI_VERSION:-"[^\"]*"/AEM_CLI_VERSION:-"'"$VERSION"'"/g' "$file"
+                # shellcheck disable=SC2016
+                sed -i '' 's/aem\@v[^\`]*\`/aem@v'"$VERSION"\`'/g' "$file"
+            else
+                sed -i 's/AEM_CLI_VERSION:-"[^\"]*"/AEM_CLI_VERSION:-"'"$VERSION"'"/g' "$file"
+                # shellcheck disable=SC2016
+                sed -i 's/aem\@v[^\`]*\`/aem@v'"$VERSION"\`'/g' "$file"
+            fi
+        }
+        bump_version "README.MD"
+        bump_version "pkg/project/common/aemw"
+
+        echo "Pushing version bump"
+        git commit -a -m "Release $VERSION_TAG" || echo "No changes to commit"
+        git push || echo "Nothing to push"
+
+        echo "Pushing release tag '$VERSION_TAG'"
+        git tag "$VERSION_TAG"
+        git push origin "$VERSION_TAG" || echo "Tag already exists or cannot push"

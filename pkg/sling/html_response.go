@@ -1,9 +1,10 @@
 package sling
 
 import (
+	"strings"
+
 	"github.com/PuerkitoBio/goquery"
 	"github.com/spf13/cast"
-	"strings"
 )
 
 type HTMLData struct {
@@ -34,7 +35,11 @@ func HtmlData(html string) (data HTMLData, err error) {
 }
 
 func (d HTMLData) IsError() bool {
-	return d.Status <= 0 || d.Status > 399
+	return d.Status < 200 || d.Status >= 400
+}
+
+func (d HTMLData) GetMessage() string {
+	return d.Message
 }
 
 func htmlElementText(doc *goquery.Document, selector string, defaultValue string) string {

@@ -2,11 +2,13 @@ package pkg
 
 import (
 	"fmt"
+	"io"
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
 	"github.com/wttech/aemc/pkg/replication"
 	"github.com/wttech/aemc/pkg/sling"
-	"io"
 )
 
 type Replication struct {
@@ -51,6 +53,7 @@ func (r Replication) Deactivate(path string) error {
 	return nil
 }
 
+// replicate a path to a specific agent; respect response format (older AEM uses HTML, newer uses JSON)
 func (r Replication) replicate(cmd string, path string) error {
 	response, err := r.instance.http.Request().
 		SetFormData(map[string]string{
@@ -63,16 +66,27 @@ func (r Replication) replicate(cmd string, path string) error {
 	} else if response.IsError() {
 		return fmt.Errorf("%s > cannot do replication command '%s' for path '%s': %s", r.instance.IDColor(), cmd, path, response.Status())
 	}
-	htmlBytes, err := io.ReadAll(response.RawBody())
+
+	responseBytes, err := io.ReadAll(response.RawBody())
 	if err != nil {
 		return fmt.Errorf("%s > cannot read replication command '%s' response for path '%s': %w", r.instance.IDColor(), cmd, path, err)
 	}
-	htmlData, err := sling.HtmlData(string(htmlBytes))
+
+	contentType := response.Header().Get("Content-Type")
+	responseBody := string(responseBytes)
+
+	var responseData sling.ResponseData
+	if strings.Contains(strings.ToLower(contentType), "application/json") ||
+		(strings.HasPrefix(strings.TrimSpace(responseBody), "{") && strings.HasSuffix(strings.TrimSpace(responseBody), "}")) {
+		responseData, err = sling.JsonData(responseBody)
+	} else {
+		responseData, err = sling.HtmlData(responseBody)
+	}
 	if err != nil {
 		return fmt.Errorf("%s > cannot parse replication command '%s' response for path '%s': %w", r.instance.IDColor(), cmd, path, err)
 	}
-	if htmlData.IsError() {
-		return fmt.Errorf("%s > cannot do replication command '%s' for path '%s': %s", r.instance.IDColor(), cmd, path, htmlData.Message)
+	if responseData.IsError() {
+		return fmt.Errorf("%s > replication command '%s' failed for path '%s': %s", r.instance.IDColor(), cmd, path, responseData.GetMessage())
 	}
 	return nil
 }

@@ -159,6 +159,7 @@ func (im *InstanceManager) newFromConfig(id string) *Instance {
 		i.local.SecretVars = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.secret_vars", id))
 		i.local.SlingProps = cv.GetStringSlice(fmt.Sprintf("instance.config.%s.sling_props", id))
 		i.local.UnpackDir = cv.GetString(fmt.Sprintf("instance.config.%s.unpack_dir", id))
+		i.local.AllowInPlaceUpgrade = cv.GetBool(fmt.Sprintf("instance.config.%s.allow_in_place_upgrade", id))
 	}
 	return i
 }

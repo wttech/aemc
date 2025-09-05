@@ -72,7 +72,7 @@ func (o *LocalOpts) Initialize() error {
 	}
 	// post-validation phase
 	for _, instance := range o.manager.Locals() {
-		if err := instance.Local().CheckRecreationNeeded(); err != nil { // depends on SDK prepare
+		if _, err := instance.Local().CheckUpgradeNeeded(); err != nil { // depends on SDK prepare
 			return err
 		}
 	}
@@ -129,6 +129,10 @@ func (im *InstanceManager) CreateAll() ([]Instance, error) {
 	return im.Create(im.Locals())
 }
 
+func (im *InstanceManager) UpgradeAll() ([]Instance, error) {
+	return im.Upgrade(im.Locals())
+}
+
 func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 	created := []Instance{}
 	if err := im.LocalOpts.Initialize(); err != nil {
@@ -145,6 +149,26 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 		}
 	}
 	return created, nil
+}
+
+func (im *InstanceManager) Upgrade(instances []Instance) ([]Instance, error) {
+	upgraded := []Instance{}
+	if err := im.LocalOpts.Initialize(); err != nil {
+		return upgraded, err
+	}
+	log.Info(InstancesMsg(instances, "upgrading"))
+	for _, i := range instances {
+		if !i.local.IsCreated() {
+			return nil, fmt.Errorf("instance not yet created: %s", i.IDColor())
+		} else if upgradeNeeded, _ := i.local.CheckUpgradeNeeded(); upgradeNeeded {
+			err := i.local.Upgrade()
+			if err != nil {
+				return nil, err
+			}
+			upgraded = append(upgraded, i)
+		}
+	}
+	return upgraded, nil
 }
 
 func (im *InstanceManager) Import(instances []Instance) ([]Instance, error) {

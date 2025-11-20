@@ -141,22 +141,32 @@ func (s SDK) unpackDispatcher() error {
 		}
 		log.Infof("unpacking SDK dispatcher tools ZIP '%s' to dir '%s'", zip, s.DispatcherDir())
 		err = filex.Unarchive(zip, s.DispatcherDir())
-		log.Infof("unpacked SDK dispatcher tools ZIP '%s' to dir '%s'", zip, s.DispatcherDir())
 		if err != nil {
 			return err
 		}
+		log.Infof("unpacked SDK dispatcher tools ZIP '%s' to dir '%s'", zip, s.DispatcherDir())
 	} else {
 		script, err := s.dispatcherToolsUnixScript()
 		if err != nil {
 			return err
 		}
-		log.Infof("unpacking SDK dispatcher tools using script '%s' to dir '%s'", script, s.DispatcherDir())
-		cmd := execx.CommandShell([]string{script, "--target", s.DispatcherDir()})
-		s.vendorManager.aem.CommandOutput(cmd)
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("cannot run SDK dispatcher tools unpacking script '%s': %w", script, err)
+		
+		// On Windows host, we cannot execute .sh script, so extract archive manually
+		if osx.IsWindows() {
+			log.Infof("extracting SDK dispatcher tools from Makeself script '%s' to dir '%s'", script, s.DispatcherDir())
+			if err := filex.UnarchiveMakeself(script, s.DispatcherDir()); err != nil {
+				return fmt.Errorf("cannot extract SDK dispatcher tools from Makeself script '%s': %w", script, err)
+			}
+			log.Infof("extracted SDK dispatcher tools from Makeself script '%s' to dir '%s'", script, s.DispatcherDir())
+		} else {
+			log.Infof("unpacking SDK dispatcher tools using script '%s' to dir '%s'", script, s.DispatcherDir())
+			cmd := execx.CommandShell([]string{script, "--target", s.DispatcherDir()})
+			s.vendorManager.aem.CommandOutput(cmd)
+			if err := cmd.Run(); err != nil {
+				return fmt.Errorf("cannot run SDK dispatcher tools unpacking script '%s': %w", script, err)
+			}
+			log.Infof("unpacked SDK dispatcher tools using script '%s' to dir '%s'", script, s.DispatcherDir())
 		}
-		log.Infof("unpacked SDK dispatcher tools using script '%s' to dir '%s'", script, s.DispatcherDir())
 	}
 	return nil
 }

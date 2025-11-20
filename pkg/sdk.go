@@ -150,12 +150,12 @@ func (s SDK) unpackDispatcher() error {
 		if err != nil {
 			return err
 		}
-		
-		log.Infof("extracting SDK dispatcher tools from self-extracting script '%s' to dir '%s'", script, s.DispatcherDir())
+
+		log.Infof("extracting SDK dispatcher tools from Makeself script '%s' to dir '%s'", script, s.DispatcherDir())
 		if err := filex.UnarchiveMakeself(script, s.DispatcherDir()); err != nil {
 			return fmt.Errorf("cannot extract SDK dispatcher tools from self-extracting script '%s': %w", script, err)
 		}
-		log.Infof("extracted SDK dispatcher tools from self-extracting script '%s' to dir '%s'", script, s.DispatcherDir())
+		log.Infof("extracted SDK dispatcher tools from Makeself script '%s' to dir '%s'", script, s.DispatcherDir())
 
 	}
 	return nil

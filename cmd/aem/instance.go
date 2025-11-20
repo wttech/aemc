@@ -24,6 +24,7 @@ func (c *CLI) instanceCmd() *cobra.Command {
 	cmd.AddCommand(c.instanceAwaitCmd())
 	cmd.AddCommand(c.instanceBackupCmd())
 	cmd.AddCommand(c.instanceImportCmd())
+	cmd.AddCommand(c.instanceUpgradeCmd())
 	return cmd
 }
 
@@ -137,6 +138,32 @@ func (c *CLI) instanceCreateCmd() *cobra.Command {
 				c.Changed(fmt.Sprintf("created instance(s) (%d)", len(createdInstances)))
 			} else {
 				c.Ok("no instance(s) to create")
+			}
+		},
+	}
+}
+
+func (c *CLI) instanceUpgradeCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:     "upgrade",
+		Short:   "Upgrades AEM instance(s) if needed",
+		Aliases: []string{"update"},
+		Run: func(cmd *cobra.Command, args []string) {
+			localInstances, err := c.aem.InstanceManager().SomeLocals()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			upgradedInstances, err := c.aem.InstanceManager().Upgrade(localInstances)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("upgraded", upgradedInstances)
+			if len(upgradedInstances) > 0 {
+				c.Changed(fmt.Sprintf("upgraded instance(s) (%d)", len(upgradedInstances)))
+			} else {
+				c.Ok("no instance(s) to upgrade")
 			}
 		},
 	}

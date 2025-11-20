@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
-	"github.com/wttech/aemc/pkg/common/execx"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
@@ -141,22 +140,22 @@ func (s SDK) unpackDispatcher() error {
 		}
 		log.Infof("unpacking SDK dispatcher tools ZIP '%s' to dir '%s'", zip, s.DispatcherDir())
 		err = filex.Unarchive(zip, s.DispatcherDir())
-		log.Infof("unpacked SDK dispatcher tools ZIP '%s' to dir '%s'", zip, s.DispatcherDir())
 		if err != nil {
 			return err
 		}
+		log.Infof("unpacked SDK dispatcher tools ZIP '%s' to dir '%s'", zip, s.DispatcherDir())
 	} else {
 		script, err := s.dispatcherToolsUnixScript()
 		if err != nil {
 			return err
 		}
-		log.Infof("unpacking SDK dispatcher tools using script '%s' to dir '%s'", script, s.DispatcherDir())
-		cmd := execx.CommandShell([]string{script, "--target", s.DispatcherDir()})
-		s.vendorManager.aem.CommandOutput(cmd)
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("cannot run SDK dispatcher tools unpacking script '%s': %w", script, err)
+
+		log.Infof("extracting SDK dispatcher tools from Makeself script '%s' to dir '%s'", script, s.DispatcherDir())
+		if err := filex.UnarchiveMakeself(script, s.DispatcherDir()); err != nil {
+			return fmt.Errorf("cannot extract SDK dispatcher tools from self-extracting script '%s': %w", script, err)
 		}
-		log.Infof("unpacked SDK dispatcher tools using script '%s' to dir '%s'", script, s.DispatcherDir())
+		log.Infof("extracted SDK dispatcher tools from Makeself script '%s' to dir '%s'", script, s.DispatcherDir())
+
 	}
 	return nil
 }

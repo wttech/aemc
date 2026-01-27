@@ -16,6 +16,97 @@ dotenv:
 
 tasks:
 
+  all:
+    desc: Run deps, test, vet, fmt, lint, install
+    cmds:
+      - task: deps
+      - task: test
+      - task: vet
+      - task: fmt
+      - task: lint
+      - task: install
+
+  deps:
+    desc: Install dependencies
+    cmds:
+      - go install github.com/mgechev/revive@v1.3.3
+      - go mod tidy
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test ./...
+
+  test:int:
+    desc: Run integration tests
+    cmds:
+      - go test -tags=int_test ./...
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  fmt:
+    desc: Format code
+    cmds:
+      - gofmt -l -w .
+
+  lint:
+    desc: Run linter
+    cmds:
+      - revive -config revive.toml -formatter friendly ./...
+
+  build:
+    desc: Build the binary
+    vars:
+      GIT_COMMIT:
+        sh: git rev-parse HEAD
+      GIT_COMMIT_DATE:
+        sh: git log -1 --date=format:'%Y-%m-%dT%H:%M:%S' --format=%cd
+      GIT_VERSION:
+        sh: git describe --tags 2>/dev/null || echo "{{.GIT_COMMIT}}"
+      LD_FLAGS: "-s -w -X main.appVersion={{.GIT_VERSION}} -X main.appCommit={{.GIT_COMMIT}} -X main.appCommitDate={{.GIT_COMMIT_DATE}}"
+      TAGS: timetzdata
+    cmds:
+      - go build -tags "{{.TAGS}}" --ldflags "{{.LD_FLAGS}}" -o bin/aem ./cmd/aem
+
+  build:other:
+    desc: Build binaries for other platforms
+    vars:
+      GIT_COMMIT:
+        sh: git rev-parse HEAD
+      GIT_COMMIT_DATE:
+        sh: git log -1 --date=format:'%Y-%m-%dT%H:%M:%S' --format=%cd
+      GIT_VERSION:
+        sh: git describe --tags 2>/dev/null || echo "{{.GIT_COMMIT}}"
+      LD_FLAGS: "-s -w -X main.appVersion={{.GIT_VERSION}} -X main.appCommit={{.GIT_COMMIT}} -X main.appCommitDate={{.GIT_COMMIT_DATE}}"
+      TAGS: timetzdata
+    cmds:
+      - GOARCH=amd64 GOOS=darwin  go build -tags "{{.TAGS}}" --ldflags "{{.LD_FLAGS}}" -o bin/aem.darwin ./cmd/aem
+      - GOARCH=amd64 GOOS=linux   go build -tags "{{.TAGS}}" --ldflags "{{.LD_FLAGS}}" -o bin/aem.linux  ./cmd/aem
+      - GOARCH=amd64 GOOS=windows go build -tags "{{.TAGS}}" --ldflags "{{.LD_FLAGS}}" -o bin/aem.exe    ./cmd/aem
+
+  install:
+    desc: Install the binary
+    vars:
+      GIT_COMMIT:
+        sh: git rev-parse HEAD
+      GIT_COMMIT_DATE:
+        sh: git log -1 --date=format:'%Y-%m-%dT%H:%M:%S' --format=%cd
+      GIT_VERSION:
+        sh: git describe --tags 2>/dev/null || echo "{{.GIT_COMMIT}}"
+      LD_FLAGS: "-s -w -X main.appVersion={{.GIT_VERSION}} -X main.appCommit={{.GIT_COMMIT}} -X main.appCommitDate={{.GIT_COMMIT_DATE}}"
+      TAGS: timetzdata
+    cmds:
+      - go install -tags "{{.TAGS}}" --ldflags "{{.LD_FLAGS}}" ./cmd/aem
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - go clean
+      - rm -fr bin
+
   release:
     desc: Release a new version
     vars:

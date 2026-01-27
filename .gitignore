@@ -236,3 +236,9 @@ dist/
 
 # Built Visual Studio Code Extensions
 *.vsix
+
+# AEM Compose
+aem/home/
+.task/
+.env
+.env.*

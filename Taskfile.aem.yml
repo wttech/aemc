@@ -1,0 +1,99 @@
+version: '3'
+
+tasks:
+  init:
+    desc: initialize project
+    cmds:
+      - sh aemw project init -V ALL
+
+  setup:
+    desc: start and provision AEM instances
+    cmds:
+      - task: start
+      - task: provision
+      - task: check
+
+  resetup:
+    desc: destroy then setup again AEM instances
+    cmds:
+      - task: destroy
+      - task: setup
+
+  start:
+    desc: start AEM instances
+    aliases: [ up ]
+    cmd: sh aemw instance launch
+
+  stop:
+    desc: stop AEM instances
+    aliases: [ down ]
+    cmd: sh aemw instance stop
+
+  restart:
+    desc: restart AEM instances
+    cmds:
+      - task: stop
+      - task: start
+
+  destroy:
+    desc: destroy AEM instances
+    prompt: This will permanently delete all configured AEM instances and their data. Continue?
+    deps: [ stop ]
+    cmd: sh aemw instance destroy
+
+  status:
+    desc: check status of AEM instances
+    env:
+      AEM_OUTPUT_VALUE: ALL
+    cmd: sh aemw instance status
+
+  tail:
+    desc: tail logs of AEM instances
+    cmd: tail -f aem/home/var/instance/*/crx-quickstart/logs/{stdout,error}.log
+
+  tail:author:
+    desc: tail logs of AEM author instance
+    cmd: tail -f aem/home/var/instance/author/crx-quickstart/logs/{stdout,error}.log
+
+  tail:publish:
+    desc: tail logs of AEM publish instance
+    cmd: tail -f aem/home/var/instance/publish/crx-quickstart/logs/{stdout,error}.log
+
+  provision:
+    desc: provision AEM instances by installing packages and applying configurations
+    aliases: [ configure ]
+    cmds:
+      - task: provision:repl-agent-publish
+      - task: provision:crx
+
+  provision:repl-agent-publish:
+    desc: configure replication agent on AEM author instance
+    internal: true
+    cmd: |
+      PROPS="
+      enabled: true
+      transportUri: {{.AEM_PUBLISH_HTTP_URL}}/bin/receive?sling:authRequestLogin=1
+      transportUser: {{.AEM_PUBLISH_USER}}  
+      transportPassword: {{.AEM_PUBLISH_PASSWORD}}  
+      userId: admin
+      "
+      echo "$PROPS" | sh aemw repl agent setup -A --location "author" --name "publish"
+
+  provision:crx:
+    desc: enable CRX/DE on AEM instances
+    internal: true
+    cmd: 'sh aemw osgi config save --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet" --input-string "alias: /crx/server"'
+
+  check:
+    deps: [ author:check, publish:check ]
+
+  author:check:
+    desc: check health of AEM author instance
+    cmds:
+      - curl -s -u "{{.AEM_AUTHOR_USER}}:{{.AEM_AUTHOR_PASSWORD}}" "{{.AEM_AUTHOR_HTTP_URL}}/libs/granite/core/content/login.html" | grep -q "QUICKSTART_HOMEPAGE"
+      - curl -s -u "{{.AEM_AUTHOR_USER}}:{{.AEM_AUTHOR_PASSWORD}}" "{{.AEM_AUTHOR_HTTP_URL}}/etc/replication/agents.author/publish.test.html" | grep -q "Replication (TEST) of /content successful"
+
+  publish:check:
+    desc: check health of AEM publish instance
+    cmd: curl -s -u "{{.AEM_PUBLISH_USER}}:{{.AEM_PUBLISH_PASSWORD}}" "{{.AEM_PUBLISH_HTTP_URL}}/libs/granite/core/content/login.html" | grep -q "QUICKSTART_HOMEPAGE"
+

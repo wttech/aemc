@@ -1,0 +1,326 @@
+# AEM instances to work with
+instance:
+
+  # Full details of local or remote instances
+  config:
+    local_author:
+      active: [[.Env.AEM_AUTHOR_ACTIVE | default true ]]
+      http_url: [[.Env.AEM_AUTHOR_HTTP_URL | default "http://127.0.0.1:4502" ]]
+      user: [[.Env.AEM_AUTHOR_USER | default "admin" ]]
+      password: [[.Env.AEM_AUTHOR_PASSWORD | default "admin" ]]
+      run_modes: [ local ]
+      jvm_opts:
+        - -server
+        - -Djava.awt.headless=true
+        - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
+        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=[[.Env.AEM_AUTHOR_DEBUG_ADDR | default "0.0.0.0:14502" ]]
+        - -Duser.language=en
+        - -Duser.country=US
+        - -Duser.timezone=UTC
+      start_opts: []
+      secret_vars:
+        - ACME_SECRET=value
+      env_vars:
+        - ACME_VAR=value
+      sling_props: []
+    local_publish:
+      active: [[.Env.AEM_PUBLISH_ACTIVE | default true ]]
+      http_url: [[.Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4503" ]]
+      user: [[.Env.AEM_PUBLISH_USER | default "admin" ]]
+      password: [[.Env.AEM_PUBLISH_PASSWORD | default "admin" ]]
+      run_modes: [ local ]
+      jvm_opts:
+        - -server
+        - -Djava.awt.headless=true
+        - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
+        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=[[.Env.AEM_PUBLISH_DEBUG_ADDR | default "0.0.0.0:14503" ]]
+        - -Duser.language=en
+        - -Duser.country=US
+        - -Duser.timezone=UTC
+      start_opts: []
+      secret_vars:
+        - ACME_SECRET=value
+      env_vars:
+        - ACME_VAR=value
+      sling_props: []
+
+  # Tuning performance & reliability
+  # 'auto'     - for more than 1 local instances - 'serial', otherwise 'parallel'
+  # 'parallel' - for working with remote instances
+  # 'serial'   - for working with local instances
+  processing_mode: auto
+
+  # HTTP client settings
+  http:
+    timeout: 10m
+    debug: false
+    disable_warn: true
+
+  # State checking
+  check:
+    # Time to wait before first state checking (to avoid false-positives)
+    warmup: 1s
+    # Time to wait for next state checking
+    interval: 6s
+    # Number of successful check attempts that indicates end of checking
+    done_threshold: 4
+    # Wait only for those instances whose state has been changed internally (unaware of external changes)
+    await_strict: true
+    # Max time to wait for the instance to be healthy after executing the start script or e.g deploying a package
+    await_started:
+      timeout: 30m
+    # Max time to wait for the instance to be stopped after executing the stop script
+    await_stopped:
+      timeout: 10m
+    # Max time in which socket connection to instance should be established
+    reachable:
+      skip: false
+      timeout: 3s
+    # Bundle state tracking
+    bundle_stable:
+      skip: false
+      symbolic_names_ignored: []
+    # OSGi events tracking
+    event_stable:
+      skip: false
+      # Topics indicating that instance is not stable
+      topics_unstable:
+        - "org/osgi/framework/ServiceEvent/*"
+        - "org/osgi/framework/FrameworkEvent/*"
+        - "org/osgi/framework/BundleEvent/*"
+      # Ignored service names to handle known issues
+      details_ignored:
+        - "*.*MBean"
+        - "org.osgi.service.component.runtime.ServiceComponentRuntime"
+        - "java.util.ResourceBundle"
+      received_max_age: 5s
+    # OSGi components state tracking
+    component_stable:
+      skip: false
+      pids:
+        include: ['com.day.crx.packaging.*', 'org.apache.sling.installer.*']
+        exclude: ['org.apache.sling.installer.hc.*', 'org.apache.sling.installer.core.impl.console.*']
+        match:
+          "disabled": []
+          "no config": []
+          "unsatisfied (reference)": []
+          "satisfied": []
+    # Sling Installer tracking
+    installer:
+      skip: false
+      # JMX state checking
+      state: true
+      # Pause Installation nodes checking
+      pause: true
+    # Specific endpoints / paths (like login page)
+    path_ready:
+      timeout: 10s
+    login_page:
+      skip: false
+      path: "/libs/granite/core/content/login.html"
+      status_code: 200
+      contained_text: QUICKSTART_HOMEPAGE
+
+  # Managed locally (set up automatically)
+  local:
+    # Current runtime dir (Sling launchpad, JCR repository)
+    unpack_dir: "aem/home/var/instance"
+    # Archived runtime dir (AEM backup files '*.aemb.zst')
+    backup_dir: "aem/home/var/backup"
+
+  # Status discovery (timezone, AEM version, etc)
+  status:
+    timeout: 500ms
+
+  # JCR Repository
+  repo:
+    property_change_ignored:
+      # AEM assigns them automatically
+      - "jcr:created"
+      - "cq:lastModified"
+      # AEM encrypts it right after changing by replication agent setup command
+      - "transportPassword"
+
+  # CRX Package Manager
+  package:
+    # Force re-uploading/installing of snapshot AEM packages (just built / unreleased)
+    snapshot_patterns: [ "**/*-SNAPSHOT.zip" ]
+    snapshot_ignored: false
+    # Use checksums to avoid re-deployments when snapshot AEM packages are unchanged
+    snapshot_deploy_skipping: true
+    # Disable following workflow launchers for a package deployment time only
+    toggled_workflows: [/libs/settings/workflow/launcher/config/asset_processing_on_sdk_*,/libs/settings/workflow/launcher/config/update_asset_*,/libs/settings/workflow/launcher/config/dam_*]
+    # Also sub-packages
+    install_recursive: true
+    # Use slower HTML endpoint for deployments but with better troubleshooting
+    install_html:
+      enabled: false
+      # Print HTML directly to console instead of writing to file
+      console: false
+      # Fail on case 'installed with errors'
+      strict: true
+    # Number of changes after which the commit to the repository is performed
+    install_save_threshold: 1024
+    # Allows to relax dependency handling if needed
+    install_dependency_handling: required
+    # Controls how 'rep:policy' nodes are handled during import
+    install_ac_handling: ''
+    # Determines whether a copy of the package is created during installation (saves disk space but prevents uninstallation)
+    install_extract_only: snapshot
+
+  # 'SSL By Default'
+  ssl:
+    setup_timeout: 30s
+
+  # OSGi Framework
+  osgi:
+    shutdown_delay: 3s
+
+    bundle:
+      install:
+        start: true
+        start_level: 20
+        refresh_packages: true
+
+      # Force re-uploading/installing of snapshot OSGi bundles (just built / unreleased)
+      snapshot_patterns: [ "**/*-SNAPSHOT.jar" ]
+      snapshot_ignored: false
+      # Use checksums to avoid re-installations when snapshot OSGi bundles are unchanged
+      snapshot_install_skipping: true
+
+  # OAK Repository
+  oak:
+    index:
+      await_not_reindexed_timeout: 60m
+
+  # Crypto Support
+  crypto:
+    key_bundle_symbolic_name: com.adobe.granite.crypto.file
+
+  # Replication
+  replication:
+    bundle_symbolic_name: com.day.cq.cq-replication
+
+  # Workflow Manager
+  workflow:
+    launcher:
+      lib_root: /libs/settings/workflow/launcher
+      config_root: /conf/global/settings/workflow/launcher
+      toggle_retry:
+        timeout: 10m
+        delay: 10s
+
+base:
+  # Location of library files (AEM SDK ZIP, Quickstart JAR & License, Crypto keys, service packs, additional packages, etc.)
+  lib_dir: aem/home/lib
+  # Location of temporary files (downloaded AEM packages, etc)
+  tmp_dir: aem/home/tmp
+  # Location of supportive tools (downloaded Java, OakRun, unpacked AEM SDK)
+  tool_dir: aem/home/opt
+
+input:
+  format: yml
+  file: STDIN
+
+output:
+  format: text
+  log:
+    # File path of logs written especially when output format is different than 'text'
+    file: aem/home/var/log/aem.log
+    # Controls where outputs and logs should be written to when format is 'text' (console|file|both)
+    mode: console
+
+vendor:
+  # AEM instance source files
+  quickstart:
+    # AEM SDK ZIP or JAR
+    dist_file: 'aem/home/lib/{aem-sdk,cq-quickstart}-*.{zip,jar}'
+    # AEM License properties file
+    license_file: "aem/home/lib/license.properties"
+
+  # AEM SDK source files
+  sdk:
+    # Controls which distribution of dispatcher is unpacked (auto|unix|windows)
+    os: auto
+
+  # JDK used to: run AEM instances, build OSGi bundles, assemble AEM packages
+  java:
+    # Require following versions before e.g running AEM instances
+    version_constraints: [">= 1.8, < 1.9", ">= 11, < 12", ">= 17, < 18", ">= 21, < 22"]
+
+    # Pre-installed local JDK dir
+    # a) keep it empty to download open source Java automatically for current OS and architecture
+    # b) set it to absolute path or to env var '[[.Env.JAVA_HOME]]' to indicate where closed source Java like Oracle is installed
+    home_dir: ""
+
+    # Auto-installed JDK options
+    download:
+      # Source URL with template vars support
+      url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.25_9.[[.ArchiveExt]]"
+      # Map source URL template vars to be compatible with Adoptium Java
+      replacements:
+        # Var 'Os' (GOOS)
+        "darwin": "mac"
+        # Var 'Arch' (GOARCH)
+        "x86_64": "x64"
+        "amd64": "x64"
+        "386": "x86-32"
+        # enforce non-ARM Java as some AEM features are not working on ARM (e.g Scene7)
+        "arm64": "x64"
+        "aarch64": "x64"
+
+  # Oak Run tool options (offline instance management)
+  oak_run:
+    download_url: "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.72.0/oak-run-1.72.0.jar"
+    store_path: "crx-quickstart/repository/segmentstore"
+
+    # Pre-installed local JAR file
+    # a) keep it empty to download it automatically
+    # b) set it to an absolute path to skip downloading
+    jar_file: ""
+
+# Content-related options
+content:
+  clean:
+    # File patterns to be deleted
+    files_deleted:
+      - patterns:
+          - "**/.vlt"
+          - "**/.vlt*.tmp"
+          - "**/install/*.jar"
+    # File patterns to be flattened
+    files_flattened:
+      - "**/_cq_design_dialog/.content.xml"
+      - "**/_cq_dialog/.content.xml"
+      - "**/_cq_htmlTag/.content.xml"
+      - "**/_cq_template/.content.xml"
+    # Property patterns to be skipped, removed from cleaned file
+    properties_skipped:
+      - patterns: "jcr:uuid"
+        excluded_paths: [ "**/home/users/*", "**/home/groups/*" ]
+      - patterns: "cq:lastModified*"
+        excluded_paths: [ "**/content/experience-fragments/*" ]
+      - patterns: [ "dam:sha1", "dam:size" ]
+        included_paths: [ "**/content/dam/*.svg/*" ]
+      - patterns:
+          - "jcr:lastModified*"
+          - "jcr:created*"
+          - "jcr:isCheckedOut"
+          - "cq:lastReplicat*"
+          - "cq:lastRolledout*"
+          - "dam:extracted"
+          - "dam:assetState"
+          - "dc:modified"
+          - "*_x0040_*"
+          - "cq:name"
+          - "cq:parentPath"
+          - "dam:copiedAt"
+          - "dam:parentAssetID"
+          - "dam:relativePath"
+    # Mixin type patterns to be skipped, removed from cleaned file
+    mixin_types_skipped:
+      - patterns:
+          - "cq:ReplicationStatus"
+          - "mix:versionable"
+    # Unused namespaces to be skipped, removed from cleaned file
+    namespaces_skipped: true

@@ -28,6 +28,11 @@
 *.so
 *.dylib
 
+# Package Files #
+*.jar
+*.war
+*.ear
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -236,3 +241,9 @@ dist/
 
 # Built Visual Studio Code Extensions
 *.vsix
+
+# AEM Compose
+aem/home/
+.task/
+.env
+.env.*

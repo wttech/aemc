@@ -2,6 +2,28 @@
 
 VERSION=${TASK_VERSION:-"3.40.0"}
 
+# Check required tools
+# ====================
+
+check_command() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo "Error! Required command '$1' is not installed"
+    exit 1
+  fi
+}
+
+check_command curl
+check_command uname
+
+check_archive_tools() {
+  if [ "$1" = "windows" ]; then
+    check_command unzip
+  else
+    check_command tar
+    check_command gzip
+  fi
+}
+
 # Define API
 # ==========
 
@@ -9,7 +31,7 @@ VERSION=${TASK_VERSION:-"3.40.0"}
 detect_os() {
   os=$(uname -s | tr '[:upper:]' '[:lower:]')
 
-  # fixed up for https://git hub.com/client9/shlib/issues/3
+  # fixed up for https://github.com/client9/shlib/issues/3
   case "$os" in
     msys*) os="windows" ;;
     mingw*) os="windows" ;;
@@ -34,7 +56,7 @@ detect_arch() {
     armv6*) arch="armv6" ;;
     armv7*) arch="armv7" ;;
   esac
-  echo ${arch}
+  echo "${arch}"
 }
 
 # https://github.com/client9/shlib/blob/master/http_download.sh
@@ -42,16 +64,30 @@ download_file() {
   local_file=$1
   source_url=$2
   header=$3
-  if [ -z "$header" ]; then
-    code=$(curl -w '%{http_code}' -sL -o "$local_file" "$source_url")
-  else
-    code=$(curl -w '%{http_code}' -sL -H "$header" -o "$local_file" "$source_url")
-  fi
-  if [ "$code" != "200" ]; then
-    echo "Error! Downloading file from URL '$source_url' received HTTP status '$code'"
-    return 1
-  fi
-  return 0
+  attempt=1
+  max_attempts=3
+  while [ $attempt -le $max_attempts ]; do
+    if [ -z "$header" ]; then
+      code=$(curl -w '%{http_code}' -skL --connect-timeout 30 --max-time 300 -o "$local_file" "$source_url")
+    else
+      code=$(curl -w '%{http_code}' -skL --connect-timeout 30 --max-time 300 -H "$header" -o "$local_file" "$source_url")
+    fi
+    if [ "$code" = "200" ]; then
+      return 0
+    fi
+    if [ "$code" = "000" ]; then
+      echo "Warning: Cannot connect to '$source_url' (SSL/network issue). Try manual download. (attempt $attempt/$max_attempts)"
+    else
+      echo "Warning: Downloading file from URL '$source_url' received HTTP status '$code' (attempt $attempt/$max_attempts)"
+    fi
+    rm -f "$local_file"
+    if [ $attempt -lt $max_attempts ]; then
+      sleep 3
+    fi
+    attempt=$((attempt + 1))
+  done
+  echo "Error! Downloading file from URL '$source_url' failed after $max_attempts attempts"
+  return 1
 }
 
 download_file_once () {
@@ -60,7 +96,10 @@ download_file_once () {
   if [ ! -f "${FILE}" ]; then
       mkdir -p "$(dirname "$FILE")"
       FILE_TMP="$2.tmp"
-      download_file "$FILE_TMP" "$URL"
+      if ! download_file "$FILE_TMP" "$URL"; then
+        rm -f "$FILE_TMP"
+        return 1
+      fi
       mv "$FILE_TMP" "$FILE"
   fi
 }
@@ -72,8 +111,16 @@ unarchive_file() {
   rm -fr "$DIR"
   mkdir -p "$DIR"
   if [ "${FILE##*.}" = "zip" ] ; then
+    if ! unzip -t "$FILE" > /dev/null 2>&1; then
+      echo "Error! Archive file '$FILE' is corrupted or not a valid zip"
+      return 1
+    fi
     unzip "$FILE" -d "$DIR"
   else
+    if ! gzip -t "$FILE" 2>/dev/null; then
+      echo "Error! Archive file '$FILE' is corrupted or not a valid gzip"
+      return 1
+    fi
     tar -xf "$FILE" -C "$DIR"
   fi
 }
@@ -84,6 +131,8 @@ unarchive_file() {
 
 OS=$(detect_os)
 ARCH=$(detect_arch)
+
+check_archive_tools "$OS"
 
 AEM_DIR="aem"
 HOME_DIR="${AEM_DIR}/home"
@@ -103,8 +152,21 @@ BIN_EXEC_FILE="${BIN_ARCHIVE_DIR}/${BIN_NAME}"
 
 if [ ! -f "${BIN_EXEC_FILE}" ]; then
   mkdir -p "${BIN_ARCHIVE_DIR}"
-  download_file_once "${BIN_DOWNLOAD_URL}" "${BIN_ARCHIVE_FILE}"
-  unarchive_file "${BIN_ARCHIVE_FILE}" "${BIN_ARCHIVE_DIR}"
+  if ! download_file_once "${BIN_DOWNLOAD_URL}" "${BIN_ARCHIVE_FILE}"; then
+    echo "Error! Cannot download Task CLI"
+    echo "Manual download: ${BIN_DOWNLOAD_URL}"
+    echo "Place the file at: ${BIN_ARCHIVE_FILE}"
+    exit 1
+  fi
+  if ! unarchive_file "${BIN_ARCHIVE_FILE}" "${BIN_ARCHIVE_DIR}"; then
+    rm -f "${BIN_ARCHIVE_FILE}"
+    echo "Error! Cannot unarchive Task CLI"
+    exit 1
+  fi
+  if [ ! -f "${BIN_EXEC_FILE}" ]; then
+    echo "Error! Task CLI binary '${BIN_EXEC_FILE}' not found after extraction"
+    exit 1
+  fi
   chmod +x "${BIN_EXEC_FILE}"
 fi
 

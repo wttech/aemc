@@ -28,6 +28,11 @@
 *.so
 *.dylib
 
+# Package Files #
+*.jar
+*.war
+*.ear
+
 # Test binary, built with `go test -c`
 *.test
 

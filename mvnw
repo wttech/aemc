@@ -46,7 +46,7 @@ if [ "${AEM_JAVA_ENABLED}" = true ]; then
     echo "AEM Compose - Vendor tools not prepared (Java). Preparing now..."
     if ! prepare_java; then
       rc=$?
-      show_prep_error $rc
+      show_prep_error "$rc"
       exit $rc
     fi
     AEM_JAVA_HOME="$(get_java_home)"

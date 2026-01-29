@@ -73,8 +73,8 @@ tasks:
       PROPS="
       enabled: true
       transportUri: {{.AEM_PUBLISH_HTTP_URL}}/bin/receive?sling:authRequestLogin=1
-      transportUser: {{.AEM_PUBLISH_USER}}  
-      transportPassword: {{.AEM_PUBLISH_PASSWORD}}  
+      transportUser: {{.AEM_PUBLISH_USER}}
+      transportPassword: {{.AEM_PUBLISH_PASSWORD}}
       userId: admin
       "
       echo "$PROPS" | sh aemw repl agent setup -A --location "author" --name "publish"

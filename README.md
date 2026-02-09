@@ -1,5 +1,11 @@
 ![AEM Compose Logo](https://github.com/wttech/aemc-ansible/raw/main/docs/logo-with-text.png)
-[![WTT Logo](https://github.com/wttech/aemc-ansible/raw/main/docs/wtt-logo.png)](https://www.wundermanthompson.com/service/technology)
+
+<a href="https://www.vml.com/expertise/enterprise-solutions" target="_blank">
+  <picture>
+    <source srcset="docs/vml-logo-white.svg" media="(prefers-color-scheme: dark)">
+    <img src="docs/vml-logo-black.svg" alt="VML Logo" height="100">
+  </picture>
+</a>
 
 [![GitHub All Releases](https://img.shields.io/github/downloads/wttech/aemc/total)](https://github.com/wttech/aemc/releases)
 [![Last Release Version](https://img.shields.io/github/v/release/wttech/aemc?color=lightblue&label=Last%20Release)](https://github.com/wttech/aemc/releases)
@@ -37,30 +43,35 @@ Its seamless integration with Terraform, Pulumi, and Ansible enhances automation
 
 # Table of Contents
 
-* [Distributions](#distributions)
-  * [CLI - Overview](#cli---overview)
-  * [CLI - Screenshots](#cli---screenshots)
-  * [CLI - AEM Project Quickstart](#cli---aem-project-quickstart)
-  * [IaaC Providers](#iaac-providers)
-  * [Ansible Collection](#ansible-collection)
-  * [Go Scripting](#go-scripting)
-* [Dependencies](#dependencies)
-* [Configuration](#configuration)
-  * [Generating default configuration](#generating-default-configuration)
-  * [Configuration precedence](#configuration-precedence)
-  * [Context-specific customization](#context-specific-customization)
-    * [Improving performance](#improving-performance)
-    * [Increasing verbosity](#increasing-verbosity)
-    * [Installing content packages](#installing-content-packages)
-    * [Installing packages with troubleshooting](#installing-packages-with-troubleshooting)
-* [Examples](#examples)
-  * [Replication agents](#replication-agents)
-  * [SSL by Default](#ssl-by-default)
-  * [Global Trust Store](#global-trust-store)
-* [Troubleshooting](#troubleshooting)
-* [Contributing](#contributing)
-* [Authors](#authors)
-* [License](#license)
+- [References](#references)
+- [Table of Contents](#table-of-contents)
+- [Distributions](#distributions)
+  - [CLI - Overview](#cli---overview)
+  - [CLI - Screenshots](#cli---screenshots)
+  - [CLI - AEM Project Quickstart](#cli---aem-project-quickstart)
+  - [IaaC Providers](#iaac-providers)
+  - [Ansible Collection](#ansible-collection)
+  - [Go Scripting](#go-scripting)
+- [Dependencies](#dependencies)
+- [Configuration](#configuration)
+  - [Defaults](#defaults)
+  - [Overriding default configuration](#overriding-default-configuration)
+  - [Configuration precedence](#configuration-precedence)
+  - [Context-specific customization](#context-specific-customization)
+    - [Improving performance](#improving-performance)
+    - [Increasing verbosity](#increasing-verbosity)
+    - [Installing content packages](#installing-content-packages)
+    - [Installing packages with troubleshooting](#installing-packages-with-troubleshooting)
+- [Examples](#examples)
+  - [Replication agents](#replication-agents)
+  - [SSL by Default](#ssl-by-default)
+  - [Global Trust Store](#global-trust-store)
+- [Troubleshooting](#troubleshooting)
+  - [Migration from Gradle plugins](#migration-from-gradle-plugins)
+  - [Exception while unpacking dispatcher on Linux](#exception-while-unpacking-dispatcher-on-linux)
+- [Contributing](#contributing)
+- [Authors](#authors)
+- [License](#license)
 
 # Distributions
 

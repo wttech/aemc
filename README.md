@@ -673,14 +673,7 @@ AEMC distinguishes between **local** and **remote** AEM instances:
 | **Local** | Instances running on developer's machine, fully managed by AEMC | Create, Start, Stop, Delete, Backup, filesystem access, JVM options, run modes |
 | **Remote** | Any AEM instance accessible via HTTP (cloud, VMs, etc.) | HTTP-based operations only: packages, OSGi, repository, replication |
 
-This distinction is reflected in the codebase and CLI:
-
-- **`aem instance`** commands work with any instance (local or remote)
-- **`aem instance local`** commands are specific to locally managed instances
-
-When configuring instances, AEMC automatically determines the type based on the `http_url`:
-- URLs with `localhost` or `127.0.0.1` → treated as **local**
-- Other URLs → treated as **remote**
+Commands like `instance create`, `start`, `stop`, `delete`, `backup` operate only on local instances. Commands like `package deploy`, `osgi config`, `repo node` work with any instance.
 
 ## Instance ID Naming Convention
 
@@ -692,9 +685,9 @@ Each instance has a unique ID following the pattern: **`{location}_{role}[_{clas
 | **role** | Yes | `author`, `publish` | AEM instance role |
 | **classifier** | No | `1`, `2`, `preview`, or custom | Distinguishes multiple instances with same location and role |
 
-> **⚠️ Important:** The `local` location prefix is **required** for local instance management commands (`aem instance local create`, `start`, `stop`, `launch`, `delete`, `backup`, etc.). 
+> **⚠️ Important:** The `local` location prefix is **required** for local instance management commands (`aem instance create`, `start`, `stop`, `launch`, `delete`, `backup`, etc.). 
 > 
-> Instances with any other location (e.g., `int_`, `stg_`, `prod_`) are treated as **remote** and will be **skipped** by local management commands, even if their `http_url` points to localhost.
+> Instances with any other location (e.g., `int_`, `stg_`, `prod_`) are treated as **remote** and will be **skipped** by these commands, even if their `http_url` points to localhost.
 
 ### Example Instance IDs
 
@@ -764,20 +757,20 @@ export AEM_INSTANCE_CONFIG_INT_AUTHOR_ACTIVE=true
 
 ```shell
 # Create and start local AEM instances
-sh aemw instance local create
-sh aemw instance local start
+sh aemw instance create
+sh aemw instance start
 
 # Or do both in one command
-sh aemw instance local launch
+sh aemw instance launch
 
 # Check instance status
 sh aemw instance status
 
 # Stop instances
-sh aemw instance local stop
+sh aemw instance stop
 
 # Delete instances (removes all data)
-sh aemw instance local delete
+sh aemw instance delete
 ```
 
 ## Deploying Packages
@@ -861,7 +854,7 @@ sh aemw instance backup perform
 # ...
 
 # 3. Something went wrong? Delete and restore from backup
-sh aemw instance local delete --kill
+sh aemw instance delete --kill
 sh aemw instance backup restore
 ```
 

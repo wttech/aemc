@@ -59,7 +59,17 @@ Its seamless integration with Terraform, Pulumi, and Ansible enhances automation
     - [Installing packages with troubleshooting](#installing-packages-with-troubleshooting)
 - [Concepts](#concepts)
   - [Local vs Remote Instances](#local-vs-remote-instances)
+  - [Instance ID Naming Convention](#instance-id-naming-convention)
+    - [Example Instance IDs](#example-instance-ids)
+    - [Using Instance IDs](#using-instance-ids)
 - [Examples](#examples)
+  - [Managing Local Instances](#managing-local-instances)
+  - [Deploying Packages](#deploying-packages)
+  - [OSGi Configuration](#osgi-configuration)
+  - [Repository Operations](#repository-operations)
+  - [Instance Backups](#instance-backups)
+    - [Basic Commands](#basic-commands)
+    - [Backup \& Restore Cycle](#backup--restore-cycle)
   - [Replication agents](#replication-agents)
   - [SSL by Default](#ssl-by-default)
   - [Global Trust Store](#global-trust-store)
@@ -672,27 +682,216 @@ When configuring instances, AEMC automatically determines the type based on the 
 - URLs with `localhost` or `127.0.0.1` → treated as **local**
 - Other URLs → treated as **remote**
 
+## Instance ID Naming Convention
+
+Each instance has a unique ID following the pattern: **`{location}_{role}[_{classifier}]`**
+
+| Component | Required | Values | Description |
+|-----------|----------|--------|-------------|
+| **location** | Yes | `local`, `int`, `stg`, `prod`, or custom | Environment where instance runs |
+| **role** | Yes | `author`, `publish` | AEM instance role |
+| **classifier** | No | `1`, `2`, `preview`, or custom | Distinguishes multiple instances with same location and role |
+
+> **⚠️ Important:** The `local` location prefix is **required** for local instance management commands (`aem instance local create`, `start`, `stop`, `launch`, `delete`, `backup`, etc.). 
+> 
+> Instances with any other location (e.g., `int_`, `stg_`, `prod_`) are treated as **remote** and will be **skipped** by local management commands, even if their `http_url` points to localhost.
+
+### Example Instance IDs
+
+| ID | Description |
+|----|-------------|
+| `local_author` | Local author instance (developer machine) |
+| `local_publish` | Local publish instance (developer machine) |
+| `int_author` | Integration environment author |
+| `int_publish` | Integration environment publish |
+| `int_publish_preview` | Integration publish preview instance |
+| `stg_author` | Staging environment author |
+| `prod_publish_1` | Production publish instance #1 |
+| `prod_publish_2` | Production publish instance #2 |
+| `prod_author_us` | Production author for US region |
+
+### Using Instance IDs
+
+Instance IDs can be used in multiple places:
+
+**1. CLI flags:**
+```shell
+# Target specific instance by ID
+sh aemw package deploy --file my-package.zip --instance-id local_author
+
+# Target by URL (ad-hoc)
+sh aemw package deploy --file my-package.zip --instance-url http://localhost:4502
+
+# Filter by role
+sh aemw instance status --instance-author   # Only author instances
+sh aemw instance status --instance-publish  # Only publish instances
+```
+
+**2. Configuration in `aem.yml`:**
+```yaml
+instance:
+  config:
+    local_author:
+      http_url: http://127.0.0.1:4502
+      user: admin
+      password: admin
+      run_modes: [ local ]
+    local_publish:
+      http_url: http://127.0.0.1:4503
+      user: admin
+      password: admin
+    int_author:
+      http_url: https://author.int.example.com
+      user: admin
+      password: ${AEM_INT_PASSWORD}
+    int_publish:
+      http_url: https://publish.int.example.com
+      user: admin
+      password: ${AEM_INT_PASSWORD}
+```
+
+**3. Environment variables** (override config):
+```shell
+# Activate/deactivate specific instances
+export AEM_INSTANCE_CONFIG_LOCAL_AUTHOR_ACTIVE=true
+export AEM_INSTANCE_CONFIG_LOCAL_PUBLISH_ACTIVE=false
+export AEM_INSTANCE_CONFIG_INT_AUTHOR_ACTIVE=true
+```
+
 # Examples
+
+## Managing Local Instances
+
+```shell
+# Create and start local AEM instances
+sh aemw instance local create
+sh aemw instance local start
+
+# Or do both in one command
+sh aemw instance local launch
+
+# Check instance status
+sh aemw instance status
+
+# Stop instances
+sh aemw instance local stop
+
+# Delete instances (removes all data)
+sh aemw instance local delete
+```
+
+## Deploying Packages
+
+```shell
+# Deploy a single package
+sh aemw package deploy --file my-package.zip
+
+# Deploy to specific instance
+sh aemw package deploy --file my-package.zip --instance-id local_author
+
+# Deploy multiple packages
+sh aemw package deploy --file pkg1.zip --file pkg2.zip
+
+# Deploy from URL
+sh aemw package deploy --url https://example.com/my-package.zip
+```
+
+## OSGi Configuration
+
+```shell
+# List all bundles
+sh aemw osgi bundle list
+
+# Check specific bundle status
+sh aemw osgi bundle read --symbolic-name com.example.core
+
+# Set OSGi configuration
+sh aemw osgi config save --pid com.example.MyService --input-string "enabled: true"
+```
+
+## Repository Operations
+
+```shell
+# Read node properties
+sh aemw repo node read --path /content/my-site
+
+# Copy content between instances
+sh aemw content copy --path /content/my-site --instance-target-id local_publish
+```
+
+## Instance Backups
+
+Backups allow you to save and restore the complete state of local AEM instances. 
+
+**Format:** Backups use [Zstandard (zstd)](https://github.com/facebook/zstd) compression developed by Facebook - optimized for excellent compression ratio with very fast decompression speed. Files are stored in `aem/home/var/backup` directory with `.aemb.tar.zst` extension.
+
+**Automatic instance handling:** All backup commands automatically stop running instances before operation and restart them afterwards. No manual stop/start is required.
+
+### Basic Commands
+
+```shell
+# List all available backups
+sh aemw instance local backup list
+
+# Create backup of a single instance
+sh aemw instance local backup make --instance-id local_author
+
+# Create backup with custom file path
+sh aemw instance local backup make --instance-id local_author --file my-backup.aemb.tar.zst
+
+# Restore instance from backup (instance must not exist)
+sh aemw instance local backup use --instance-id local_author
+
+# Restore from specific backup file
+sh aemw instance local backup use --instance-id local_author --file my-backup.aemb.tar.zst
+
+# Restore and delete existing instance first
+sh aemw instance local backup use --instance-id local_author --delete-created
+```
+
+### Backup & Restore Cycle
+
+Backups enable safe experimentation - break your instance, restore in 10-15 minutes:
+
+```shell
+# 1. Save current state before experimenting
+sh aemw instance local backup perform
+
+# 2. Experiment freely (install packages, change configs, break things...)
+# ...
+
+# 3. Something went wrong? Delete and restore from backup
+sh aemw instance local delete --kill
+sh aemw instance local backup restore
+```
+
+Use cases:
+- Safe experimentation with risky configurations or packages
+- Quick recovery from broken instances without full reinstall
+- Testing different AEM versions or configurations
+- Sharing pre-configured instances via cloud storage (S3, GCS, Azure Blob)
+
+**Backup file naming:** `{role}[-{classifier}]-{aem_version}-{timestamp}.aemb.tar.zst`  
+**Example:** `author-6.5.21-20260209-143022.aemb.tar.zst`
 
 ## Replication agents
 
 1. Configuring publish agent on AEM author:
 
     ```shell
-    PROPS="
+    sh aemw repl agent setup -A --location "author" --name "publish" --input-string "
     enabled: true
     transportUri: http://localhost:4503/bin/receive?sling:authRequestLogin=1
     transportUser: admin
     transportPassword: admin
     userId: admin
     "
-    echo "$PROPS" | sh aemw repl agent setup -A --location "author" --name "publish"
     ```
 
 2. Configuring flush agent on AEM publish:
 
     ```shell
-    PROPS="
+    sh aemw repl agent setup -P --location "publish" --name "flush" --input-string "
     enabled: true
     transportUri: http://localhost/dispatcher/invalidate.cache
     protocolHTTPHeaders:
@@ -701,7 +900,6 @@ When configuring instances, AEMC automatically determines the type based on the 
     - 'CQ-Path: {path}'
     - 'Host: flush'
     "
-    echo "$PROPS" | sh aemw repl agent setup -P --location "publish" --name "flush"
     ```
    If needed, update `localhost` to the value on which AEM dispatcher is available, e.g.`localhost:8080`.
 

@@ -816,7 +816,7 @@ sh aemw content copy --path /content/my-site --instance-target-id local_publish
 
 Backups allow you to save and restore the complete state of local AEM instances. 
 
-**Format:** Backups use [Zstandard (zstd)](https://github.com/facebook/zstd) compression developed by Facebook - optimized for excellent compression ratio with very fast decompression speed. Files are stored in `aem/home/var/backup` directory with `.aemb.tar.zst` extension.
+**Format:** Backups use [Zstandard (zstd)](https://github.com/facebook/zstd) compression - optimized for excellent compression ratio with very fast decompression speed. Files are stored in `aem/home/var/backup` directory with `.aemb.tar.zst` extension.
 
 **Automatic instance handling:** All backup commands automatically stop running instances before operation and restart them afterwards. No manual stop/start is required.
 

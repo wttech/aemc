@@ -74,3 +74,69 @@ It will:
 * bump version is source files automatically,
 * commit changes,
 * push release tag that will initiate [release workflow](.github/workflows/release-perform.yml).
+
+# Coding Conventions
+
+## File Naming
+
+| Pattern | Purpose | Example |
+|---------|---------|--------|
+| `local_*.go` | Local instance-specific functionality | `local_instance.go`, `local_instance_manager.go` |
+| `*_manager.go` | Manager classes handling collections/operations | `package_manager.go`, `osgi_bundle_manager.go` |
+| `*_test.go` | Unit tests | `instance_test.go` |
+| `*_int_test.go` | Integration tests (require running AEM) | `osgi_int_test.go` |
+
+## Architectural Patterns
+
+### Manager Hierarchy
+
+Three types of managers exist:
+
+1. **AEM-level** - owned by `AEM` facade, operate globally (`VendorManager`, `ContentManager`)
+2. **Instance-level** - owned by `Instance`, operate via HTTP (`PackageManager`, `OSGiBundleManager`)
+3. **Sub-entity** - owned by facade types (`OSGi` owns `BundleManager`, `ConfigManager`, etc.)
+
+### Entity + EntityState
+
+Domain entities have paired `*State` structs for serialization:
+
+```go
+type OSGiBundle struct { manager *OSGiBundleManager; symbolicName string }
+type OSGiBundleState struct { SymbolicName string `yaml:"symbolic_name"` }
+```
+
+### WithChanged Pattern
+
+Methods returning `(bool, error)` indicate if change was made (for idempotent operations):
+
+```go
+func (b OSGiBundle) Start() error { ... }           // Always attempts
+func (b OSGiBundle) StartWithChanged() (bool, error) // Returns false if already started
+```
+
+### Facade Pattern
+
+`OSGi`, `Sling`, `Repo`, `Auth` group related managers:
+
+```go
+type OSGi struct {
+    bundleManager    *OSGiBundleManager
+    componentManager *OSGiComponentManager
+    configManager    *OSGiConfigManager
+}
+```
+
+## Utility Packages
+
+Packages in `pkg/common/` use `*x` suffix for extended stdlib functionality:
+
+`pathx`, `fmtx`, `httpx`, `stringsx`, `timex`, `osx`, `filex`, `cryptox`, `execx`, `tplx`, `netx`
+
+## Sub-packages
+
+`pkg/{domain}/` contains pure data types without AEM dependencies:
+
+- `pkg/osgi/` - OSGi data structures
+- `pkg/instance/` - Instance constants and utilities  
+- `pkg/content/` - Content manipulation
+- `pkg/keystore/` - Keystore types

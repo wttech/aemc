@@ -1,11 +1,6 @@
 ![AEM Compose Logo](https://github.com/wttech/aemc-ansible/raw/main/docs/logo-with-text.png)
-
-<a href="https://www.vml.com/expertise/enterprise-solutions" target="_blank">
-  <picture>
-    <source srcset="docs/vml-logo-white.svg" media="(prefers-color-scheme: dark)">
-    <img src="docs/vml-logo-black.svg" alt="VML Logo" height="100">
-  </picture>
-</a>
+&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="https://www.vml.com/expertise/enterprise-solutions" target="_blank"><picture><source srcset="docs/vml-logo-white.svg" media="(prefers-color-scheme: dark)"><img src="docs/vml-logo-black.svg" alt="VML Logo" height="100"></picture></a>
 
 [![GitHub All Releases](https://img.shields.io/github/downloads/wttech/aemc/total)](https://github.com/wttech/aemc/releases)
 [![Last Release Version](https://img.shields.io/github/v/release/wttech/aemc?color=lightblue&label=Last%20Release)](https://github.com/wttech/aemc/releases)
@@ -62,6 +57,8 @@ Its seamless integration with Terraform, Pulumi, and Ansible enhances automation
     - [Increasing verbosity](#increasing-verbosity)
     - [Installing content packages](#installing-content-packages)
     - [Installing packages with troubleshooting](#installing-packages-with-troubleshooting)
+- [Concepts](#concepts)
+  - [Local vs Remote Instances](#local-vs-remote-instances)
 - [Examples](#examples)
   - [Replication agents](#replication-agents)
   - [SSL by Default](#ssl-by-default)
@@ -654,6 +651,26 @@ This new feature offers two distinct modes for leveraging its benefits:
    ```shell
    AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true AEM_INSTANCE_PACKAGE_INSTALL_HTML_CONSOLE=true sh aemw package deploy --file my-package.zip
    ```
+
+# Concepts
+
+## Local vs Remote Instances
+
+AEMC distinguishes between **local** and **remote** AEM instances:
+
+| Type | Description | Operations |
+|------|-------------|------------|
+| **Local** | Instances running on developer's machine, fully managed by AEMC | Create, Start, Stop, Delete, Backup, filesystem access, JVM options, run modes |
+| **Remote** | Any AEM instance accessible via HTTP (cloud, VMs, etc.) | HTTP-based operations only: packages, OSGi, repository, replication |
+
+This distinction is reflected in the codebase and CLI:
+
+- **`aem instance`** commands work with any instance (local or remote)
+- **`aem instance local`** commands are specific to locally managed instances
+
+When configuring instances, AEMC automatically determines the type based on the `http_url`:
+- URLs with `localhost` or `127.0.0.1` → treated as **local**
+- Other URLs → treated as **remote**
 
 # Examples
 

@@ -831,22 +831,22 @@ Backups allow you to save and restore the complete state of local AEM instances.
 
 ```shell
 # List all available backups
-sh aemw instance local backup list
+sh aemw instance backup list
 
 # Create backup of a single instance
-sh aemw instance local backup make --instance-id local_author
+sh aemw instance backup make --instance-id local_author
 
 # Create backup with custom file path
-sh aemw instance local backup make --instance-id local_author --file my-backup.aemb.tar.zst
+sh aemw instance backup make --instance-id local_author --file my-backup.aemb.tar.zst
 
 # Restore instance from backup (instance must not exist)
-sh aemw instance local backup use --instance-id local_author
+sh aemw instance backup use --instance-id local_author
 
 # Restore from specific backup file
-sh aemw instance local backup use --instance-id local_author --file my-backup.aemb.tar.zst
+sh aemw instance backup use --instance-id local_author --file my-backup.aemb.tar.zst
 
 # Restore and delete existing instance first
-sh aemw instance local backup use --instance-id local_author --delete-created
+sh aemw instance backup use --instance-id local_author --delete-created
 ```
 
 ### Backup & Restore Cycle
@@ -855,14 +855,14 @@ Backups enable safe experimentation - break your instance, restore in 10-15 minu
 
 ```shell
 # 1. Save current state before experimenting
-sh aemw instance local backup perform
+sh aemw instance backup perform
 
 # 2. Experiment freely (install packages, change configs, break things...)
 # ...
 
 # 3. Something went wrong? Delete and restore from backup
 sh aemw instance local delete --kill
-sh aemw instance local backup restore
+sh aemw instance backup restore
 ```
 
 Use cases:

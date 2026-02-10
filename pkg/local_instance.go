@@ -2,6 +2,15 @@ package pkg
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/magiconair/properties"
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/cryptox"
@@ -12,14 +21,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/instance"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"regexp"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
@@ -50,15 +51,16 @@ type LocalInstanceState struct {
 }
 
 const (
-	LocalInstanceScriptStart     = "start"
-	LocalInstanceScriptStop      = "stop"
-	LocalInstanceScriptStatus    = "status"
-	LocalInstanceBackupExtension = "aemb.tar.zst"
-	LocalInstanceUser            = "admin"
-	LocalInstanceWorkDirName     = common.AppId
-	LocalInstanceNameCommon      = "common"
-	LocalInstanceSecretsDir      = "conf/secret"
-	LocalInstanceVersionDefault  = "1"
+	LocalInstanceScriptStart      = "start"
+	LocalInstanceScriptStop       = "stop"
+	LocalInstanceScriptStatus     = "status"
+	LocalInstanceScriptQuickstart = "quickstart"
+	LocalInstanceBackupExtension  = "aemb.tar.zst"
+	LocalInstanceUser             = "admin"
+	LocalInstanceWorkDirName      = common.AppId
+	LocalInstanceNameCommon       = "common"
+	LocalInstanceSecretsDir       = "conf/secret"
+	LocalInstanceVersionDefault   = "1"
 )
 
 func (li LocalInstance) Instance() *Instance {
@@ -193,10 +195,22 @@ func (li LocalInstance) CheckRecreationNeeded() error {
 			return err
 		}
 		if !state.UpToDate {
-			return fmt.Errorf("%s > outdated and need to be recreated as distribution JAR changed from '%s' to '%s'", li.instance.IDColor(), state.Locked.JarName, state.Current.JarName)
+			return fmt.Errorf("%s > outdated and need to be upgraded as distribution JAR changed from '%s' to '%s'; consider using upgrade command", li.instance.IDColor(), state.Locked.JarName, state.Current.JarName)
 		}
 	}
 	return nil
+}
+
+func (li LocalInstance) IsUpgradeNeeded() (bool, error) {
+	createLock := li.createLock()
+	if createLock.IsLocked() {
+		state, err := createLock.State()
+		if err != nil {
+			return false, err
+		}
+		return !state.UpToDate, nil
+	}
+	return false, nil
 }
 
 func (li LocalInstance) CheckPassword() error {
@@ -238,6 +252,40 @@ func (li LocalInstance) Create() error {
 		return err
 	}
 	log.Infof("%s > created", li.instance.IDColor())
+	return nil
+}
+
+// Upgrade performs in-place upgrade of the AEM instance.
+// See: https://experienceleague.adobe.com/en/docs/experience-manager-65/content/implementing/deploying/upgrading/in-place-upgrade
+func (li LocalInstance) Upgrade() error {
+	if !li.IsCreated() {
+		return fmt.Errorf("%s > cannot upgrade as it is not created", li.instance.IDColor())
+	}
+	if li.IsRunning() {
+		return fmt.Errorf("%s > cannot upgrade as it is running", li.instance.IDColor())
+	}
+	log.Infof("%s > upgrading", li.instance.IDColor())
+
+	// Reset init lock to force re-initialization of sling.properties and other configs on next start.
+	// This is needed because unpack overwrites sling.properties with default values from the new JAR
+	if err := li.initLock().Unlock(); err != nil {
+		return err
+	}
+	// Remove old bin scripts so that unpack can replace them with new versions
+	if err := li.cleanupBinScripts(); err != nil {
+		return err
+	}
+	if err := li.unpackJarFile(); err != nil {
+		return err
+	}
+	if err := li.copyLicenseFile(); err != nil {
+		return err
+	}
+	if err := li.adapt(); err != nil {
+		return err
+	}
+
+	log.Infof("%s > upgraded", li.instance.IDColor())
 	return nil
 }
 
@@ -293,6 +341,68 @@ func (li LocalInstance) unpackJarFile() error {
 	startScript := li.binScriptUnix("start")
 	if !pathx.Exists(startScript) {
 		return fmt.Errorf("%s > unpacking files went wrong as e.g start script does not exist '%s'", li.instance.IDColor(), startScript)
+	}
+	if err := li.cleanupOutdatedAppJars(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// cleanupOutdatedAppJars removes old JAR files from crx-quickstart/app after upgrade.
+// When upgrading AEM, the new quickstart JAR unpacks a new app JAR but leaves the old one.
+// This causes conflicts, so we keep only the newest JAR file.
+func (li LocalInstance) cleanupOutdatedAppJars() error {
+	appDir := filepath.Join(li.QuickstartDir(), "app")
+	jarFiles, err := filepath.Glob(filepath.Join(appDir, "*.jar"))
+	if err != nil {
+		return fmt.Errorf("%s > error searching for JAR files in app dir: %w", li.instance.IDColor(), err)
+	}
+	if len(jarFiles) <= 1 {
+		return nil
+	}
+	type jarInfo struct {
+		path    string
+		modTime time.Time
+	}
+	var jars []jarInfo
+	for _, path := range jarFiles {
+		info, err := os.Stat(path)
+		if err == nil {
+			jars = append(jars, jarInfo{path, info.ModTime()})
+		}
+	}
+	sort.Slice(jars, func(i, j int) bool {
+		return jars[i].modTime.After(jars[j].modTime)
+	})
+	for _, ji := range jars[1:] {
+		log.Infof("%s > removing outdated JAR from app dir: %s", li.instance.IDColor(), ji.path)
+		if err := os.Remove(ji.path); err != nil {
+			return fmt.Errorf("%s > cannot remove outdated JAR '%s': %w", li.instance.IDColor(), ji.path, err)
+		}
+	}
+	return nil
+}
+
+// cleanupBinScripts removes old bin scripts before upgrade so that unpack can replace them with new versions.
+// Without this, AEM unpack detects modified files and creates .NEW_ copies instead of overwriting.
+func (li LocalInstance) cleanupBinScripts() error {
+	binDir := filepath.Join(li.QuickstartDir(), "bin")
+	if !pathx.Exists(binDir) {
+		return nil
+	}
+	scripts := []string{
+		LocalInstanceScriptStart, LocalInstanceScriptStart + ".bat",
+		LocalInstanceScriptStop, LocalInstanceScriptStop + ".bat",
+		LocalInstanceScriptStatus, LocalInstanceScriptStatus + ".bat",
+		LocalInstanceScriptQuickstart, LocalInstanceScriptQuickstart + ".bat",
+	}
+	for _, script := range scripts {
+		scriptPath := filepath.Join(binDir, script)
+		if pathx.Exists(scriptPath) {
+			if err := os.Remove(scriptPath); err != nil {
+				return fmt.Errorf("%s > cannot remove old bin script '%s': %w", li.instance.IDColor(), scriptPath, err)
+			}
+		}
 	}
 	return nil
 }

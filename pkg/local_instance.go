@@ -51,15 +51,16 @@ type LocalInstanceState struct {
 }
 
 const (
-	LocalInstanceScriptStart     = "start"
-	LocalInstanceScriptStop      = "stop"
-	LocalInstanceScriptStatus    = "status"
-	LocalInstanceBackupExtension = "aemb.tar.zst"
-	LocalInstanceUser            = "admin"
-	LocalInstanceWorkDirName     = common.AppId
-	LocalInstanceNameCommon      = "common"
-	LocalInstanceSecretsDir      = "conf/secret"
-	LocalInstanceVersionDefault  = "1"
+	LocalInstanceScriptStart      = "start"
+	LocalInstanceScriptStop       = "stop"
+	LocalInstanceScriptStatus     = "status"
+	LocalInstanceScriptQuickstart = "quickstart"
+	LocalInstanceBackupExtension  = "aemb.tar.zst"
+	LocalInstanceUser             = "admin"
+	LocalInstanceWorkDirName      = common.AppId
+	LocalInstanceNameCommon       = "common"
+	LocalInstanceSecretsDir       = "conf/secret"
+	LocalInstanceVersionDefault   = "1"
 )
 
 func (li LocalInstance) Instance() *Instance {
@@ -270,6 +271,10 @@ func (li LocalInstance) Upgrade() error {
 	if err := li.initLock().Unlock(); err != nil {
 		return err
 	}
+	// Remove old bin scripts so that unpack can replace them with new versions
+	if err := li.cleanupBinScripts(); err != nil {
+		return err
+	}
 	if err := li.unpackJarFile(); err != nil {
 		return err
 	}
@@ -373,6 +378,30 @@ func (li LocalInstance) cleanupOutdatedAppJars() error {
 		log.Infof("%s > removing outdated JAR from app dir: %s", li.instance.IDColor(), ji.path)
 		if err := os.Remove(ji.path); err != nil {
 			return fmt.Errorf("%s > cannot remove outdated JAR '%s': %w", li.instance.IDColor(), ji.path, err)
+		}
+	}
+	return nil
+}
+
+// cleanupBinScripts removes old bin scripts before upgrade so that unpack can replace them with new versions.
+// Without this, AEM unpack detects modified files and creates .NEW_ copies instead of overwriting.
+func (li LocalInstance) cleanupBinScripts() error {
+	binDir := filepath.Join(li.QuickstartDir(), "bin")
+	if !pathx.Exists(binDir) {
+		return nil
+	}
+	scripts := []string{
+		LocalInstanceScriptStart, LocalInstanceScriptStart + ".bat",
+		LocalInstanceScriptStop, LocalInstanceScriptStop + ".bat",
+		LocalInstanceScriptStatus, LocalInstanceScriptStatus + ".bat",
+		LocalInstanceScriptQuickstart, LocalInstanceScriptQuickstart + ".bat",
+	}
+	for _, script := range scripts {
+		scriptPath := filepath.Join(binDir, script)
+		if pathx.Exists(scriptPath) {
+			if err := os.Remove(scriptPath); err != nil {
+				return fmt.Errorf("%s > cannot remove old bin script '%s': %w", li.instance.IDColor(), scriptPath, err)
+			}
 		}
 	}
 	return nil

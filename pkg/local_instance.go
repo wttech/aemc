@@ -2,6 +2,15 @@ package pkg
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/magiconair/properties"
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/cryptox"
@@ -12,14 +21,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/stringsx"
 	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/instance"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"regexp"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
@@ -253,8 +254,22 @@ func (li LocalInstance) Create() error {
 	return nil
 }
 
+// Upgrade performs in-place upgrade of the AEM instance.
+// See: https://experienceleague.adobe.com/en/docs/experience-manager-65/content/implementing/deploying/upgrading/in-place-upgrade
 func (li LocalInstance) Upgrade() error {
+	if !li.IsCreated() {
+		return fmt.Errorf("%s > cannot upgrade as it is not created", li.instance.IDColor())
+	}
+	if li.IsRunning() {
+		return fmt.Errorf("%s > cannot upgrade as it is running", li.instance.IDColor())
+	}
 	log.Infof("%s > upgrading", li.instance.IDColor())
+
+	// Reset init lock to force re-initialization of sling.properties and other configs on next start.
+	// This is needed because unpack overwrites sling.properties with default values from the new JAR
+	if err := li.initLock().Unlock(); err != nil {
+		return err
+	}
 	if err := li.unpackJarFile(); err != nil {
 		return err
 	}
@@ -264,6 +279,7 @@ func (li LocalInstance) Upgrade() error {
 	if err := li.adapt(); err != nil {
 		return err
 	}
+
 	log.Infof("%s > upgraded", li.instance.IDColor())
 	return nil
 }
@@ -321,31 +337,42 @@ func (li LocalInstance) unpackJarFile() error {
 	if !pathx.Exists(startScript) {
 		return fmt.Errorf("%s > unpacking files went wrong as e.g start script does not exist '%s'", li.instance.IDColor(), startScript)
 	}
+	if err := li.cleanupOutdatedAppJars(); err != nil {
+		return err
+	}
+	return nil
+}
 
-	// Only check crx-quickstart/app for JARs
+// cleanupOutdatedAppJars removes old JAR files from crx-quickstart/app after upgrade.
+// When upgrading AEM, the new quickstart JAR unpacks a new app JAR but leaves the old one.
+// This causes conflicts, so we keep only the newest JAR file.
+func (li LocalInstance) cleanupOutdatedAppJars() error {
 	appDir := filepath.Join(li.QuickstartDir(), "app")
 	jarFiles, err := filepath.Glob(filepath.Join(appDir, "*.jar"))
 	if err != nil {
 		return fmt.Errorf("%s > error searching for JAR files in app dir: %w", li.instance.IDColor(), err)
 	}
-	if len(jarFiles) > 1 {
-		type jarInfo struct {
-			path    string
-			modTime time.Time
+	if len(jarFiles) <= 1 {
+		return nil
+	}
+	type jarInfo struct {
+		path    string
+		modTime time.Time
+	}
+	var jars []jarInfo
+	for _, path := range jarFiles {
+		info, err := os.Stat(path)
+		if err == nil {
+			jars = append(jars, jarInfo{path, info.ModTime()})
 		}
-		var jars []jarInfo
-		for _, path := range jarFiles {
-			info, err := os.Stat(path)
-			if err == nil {
-				jars = append(jars, jarInfo{path, info.ModTime()})
-			}
-		}
-		sort.Slice(jars, func(i, j int) bool {
-			return jars[i].modTime.After(jars[j].modTime)
-		})
-		for _, ji := range jars[1:] {
-			log.Infof("%s > removing outdated JAR from app dir: %s", li.instance.IDColor(), ji.path)
-			_ = os.Remove(ji.path)
+	}
+	sort.Slice(jars, func(i, j int) bool {
+		return jars[i].modTime.After(jars[j].modTime)
+	})
+	for _, ji := range jars[1:] {
+		log.Infof("%s > removing outdated JAR from app dir: %s", li.instance.IDColor(), ji.path)
+		if err := os.Remove(ji.path); err != nil {
+			return fmt.Errorf("%s > cannot remove outdated JAR '%s': %w", li.instance.IDColor(), ji.path, err)
 		}
 	}
 	return nil

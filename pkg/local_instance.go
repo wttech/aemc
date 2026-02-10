@@ -29,15 +29,14 @@ import (
 type LocalInstance struct {
 	instance *Instance
 
-	Version             string
-	JvmOpts             []string
-	StartOpts           []string
-	RunModes            []string
-	EnvVars             []string
-	SecretVars          []string
-	SlingProps          []string
-	UnpackDir           string
-	AllowInPlaceUpgrade bool
+	Version    string
+	JvmOpts    []string
+	StartOpts  []string
+	RunModes   []string
+	EnvVars    []string
+	SecretVars []string
+	SlingProps []string
+	UnpackDir  string
 }
 
 type LocalInstanceState struct {
@@ -51,16 +50,15 @@ type LocalInstanceState struct {
 }
 
 const (
-	LocalInstanceScriptStart                = "start"
-	LocalInstanceScriptStop                 = "stop"
-	LocalInstanceScriptStatus               = "status"
-	LocalInstanceBackupExtension            = "aemb.tar.zst"
-	LocalInstanceUser                       = "admin"
-	LocalInstanceWorkDirName                = common.AppId
-	LocalInstanceNameCommon                 = "common"
-	LocalInstanceSecretsDir                 = "conf/secret"
-	LocalInstanceVersionDefault             = "1"
-	LocalInstanceAllowInPlaceUpgradeDefault = false
+	LocalInstanceScriptStart     = "start"
+	LocalInstanceScriptStop      = "stop"
+	LocalInstanceScriptStatus    = "status"
+	LocalInstanceBackupExtension = "aemb.tar.zst"
+	LocalInstanceUser            = "admin"
+	LocalInstanceWorkDirName     = common.AppId
+	LocalInstanceNameCommon      = "common"
+	LocalInstanceSecretsDir      = "conf/secret"
+	LocalInstanceVersionDefault  = "1"
 )
 
 func (li LocalInstance) Instance() *Instance {
@@ -76,7 +74,6 @@ func NewLocal(i *Instance) *LocalInstance {
 	li.EnvVars = []string{}
 	li.SecretVars = []string{}
 	li.SlingProps = []string{}
-	li.AllowInPlaceUpgrade = LocalInstanceAllowInPlaceUpgradeDefault
 	return li
 }
 
@@ -188,19 +185,28 @@ var (
 	LocalInstancePasswordRegex = regexp.MustCompile("^[a-zA-Z0-9_]{5,}$")
 )
 
-func (li LocalInstance) CheckUpgradeNeeded() (bool, error) {
+func (li LocalInstance) CheckRecreationNeeded() error {
+	createLock := li.createLock()
+	if createLock.IsLocked() {
+		state, err := createLock.State()
+		if err != nil {
+			return err
+		}
+		if !state.UpToDate {
+			return fmt.Errorf("%s > outdated and need to be upgraded as distribution JAR changed from '%s' to '%s'; consider using 'aem instance upgrade' command", li.instance.IDColor(), state.Locked.JarName, state.Current.JarName)
+		}
+	}
+	return nil
+}
+
+func (li LocalInstance) IsUpgradeNeeded() (bool, error) {
 	createLock := li.createLock()
 	if createLock.IsLocked() {
 		state, err := createLock.State()
 		if err != nil {
 			return false, err
 		}
-		if !state.UpToDate {
-			if li.AllowInPlaceUpgrade {
-				return true, nil
-			}
-			return true, fmt.Errorf("%s > outdated and need to be upgraded as distribution JAR changed from '%s' to '%s'", li.instance.IDColor(), state.Locked.JarName, state.Current.JarName)
-		}
+		return !state.UpToDate, nil
 	}
 	return false, nil
 }
@@ -586,33 +592,31 @@ func (li LocalInstance) updateLock() osx.Lock[localInstanceUpdateLock] {
 			return zero, err
 		}
 		return localInstanceUpdateLock{
-			Version:             li.Version,
-			HTTPPort:            li.instance.HTTP().Port(),
-			RunModes:            strings.Join(li.RunModes, ","),
-			JVMOpts:             strings.Join(li.JvmOpts, " "),
-			JavaHome:            javaHomeDir,
-			Password:            cryptox.HashString(li.instance.password),
-			EnvVars:             strings.Join(li.EnvVars, ","),
-			SecretVars:          cryptox.HashString(strings.Join(li.SecretVars, ",")),
-			SlingProps:          strings.Join(li.SlingProps, ","),
-			Overrides:           overrides,
-			AllowInPlaceUpgrade: li.AllowInPlaceUpgrade,
+			Version:    li.Version,
+			HTTPPort:   li.instance.HTTP().Port(),
+			RunModes:   strings.Join(li.RunModes, ","),
+			JVMOpts:    strings.Join(li.JvmOpts, " "),
+			JavaHome:   javaHomeDir,
+			Password:   cryptox.HashString(li.instance.password),
+			EnvVars:    strings.Join(li.EnvVars, ","),
+			SecretVars: cryptox.HashString(strings.Join(li.SecretVars, ",")),
+			SlingProps: strings.Join(li.SlingProps, ","),
+			Overrides:  overrides,
 		}, nil
 	})
 }
 
 type localInstanceUpdateLock struct {
-	Version             string `yaml:"version"`
-	JVMOpts             string `yaml:"jvm_opts"`
-	JavaHome            string `yaml:"java_home"`
-	RunModes            string `yaml:"run_modes"`
-	HTTPPort            string `yaml:"http_port"`
-	Password            string `yaml:"password"`
-	Overrides           string `yaml:"overrides"`
-	EnvVars             string `yaml:"env_vars"`
-	SecretVars          string `yaml:"secret_vars"`
-	SlingProps          string `yaml:"sling_props"`
-	AllowInPlaceUpgrade bool   `yaml:"allow_in_place_upgrade"`
+	Version    string `yaml:"version"`
+	JVMOpts    string `yaml:"jvm_opts"`
+	JavaHome   string `yaml:"java_home"`
+	RunModes   string `yaml:"run_modes"`
+	HTTPPort   string `yaml:"http_port"`
+	Password   string `yaml:"password"`
+	Overrides  string `yaml:"overrides"`
+	EnvVars    string `yaml:"env_vars"`
+	SecretVars string `yaml:"secret_vars"`
+	SlingProps string `yaml:"sling_props"`
 }
 
 func (li LocalInstance) Stop() error {

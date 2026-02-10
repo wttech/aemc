@@ -3,15 +3,16 @@ package pkg
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/timex"
-	"os"
-	"strings"
-	"time"
 )
 
 type LocalOpts struct {
@@ -70,9 +71,12 @@ func (o *LocalOpts) Initialize() error {
 	if _, err := o.manager.aem.vendorManager.oakRun.PrepareWithChanged(); err != nil {
 		return err
 	}
-	// post-validation phase
+	return nil
+}
+
+func (o *LocalOpts) CheckRecreationNeeded() error {
 	for _, instance := range o.manager.Locals() {
-		if _, err := instance.Local().CheckUpgradeNeeded(); err != nil { // depends on SDK prepare
+		if err := instance.Local().CheckRecreationNeeded(); err != nil {
 			return err
 		}
 	}
@@ -138,6 +142,9 @@ func (im *InstanceManager) Create(instances []Instance) ([]Instance, error) {
 	if err := im.LocalOpts.Initialize(); err != nil {
 		return created, err
 	}
+	if err := im.LocalOpts.CheckRecreationNeeded(); err != nil {
+		return created, err
+	}
 	log.Info(InstancesMsg(instances, "creating"))
 	for _, i := range instances {
 		if !i.local.IsCreated() {
@@ -160,7 +167,12 @@ func (im *InstanceManager) Upgrade(instances []Instance) ([]Instance, error) {
 	for _, i := range instances {
 		if !i.local.IsCreated() {
 			return nil, fmt.Errorf("instance not yet created: %s", i.IDColor())
-		} else if upgradeNeeded, _ := i.local.CheckUpgradeNeeded(); upgradeNeeded {
+		}
+		upgradeNeeded, err := i.local.IsUpgradeNeeded()
+		if err != nil {
+			return nil, err
+		}
+		if upgradeNeeded {
 			err := i.local.Upgrade()
 			if err != nil {
 				return nil, err
@@ -231,6 +243,9 @@ func (im *InstanceManager) Start(instances []Instance) ([]Instance, error) {
 		return []Instance{}, nil
 	}
 	if err := im.LocalOpts.Initialize(); err != nil {
+		return []Instance{}, err
+	}
+	if err := im.LocalOpts.CheckRecreationNeeded(); err != nil {
 		return []Instance{}, err
 	}
 

@@ -194,7 +194,7 @@ func (li LocalInstance) CheckRecreationNeeded() error {
 			return err
 		}
 		if !state.UpToDate {
-			return fmt.Errorf("%s > outdated and need to be upgraded as distribution JAR changed from '%s' to '%s'; consider using 'aem instance upgrade' command", li.instance.IDColor(), state.Locked.JarName, state.Current.JarName)
+			return fmt.Errorf("%s > outdated and need to be upgraded as distribution JAR changed from '%s' to '%s'; consider using upgrade command", li.instance.IDColor(), state.Locked.JarName, state.Current.JarName)
 		}
 	}
 	return nil

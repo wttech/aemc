@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<workspaceFilter version="1.0">
-    <filter root="/apps/my_site">
-        <exclude pattern="/apps/my_site/cq:dialog(/.*)?"/>
-        <exclude pattern="/apps/my_site/rep:policy(/.*)?"/>
-    </filter>
-</workspaceFilter>

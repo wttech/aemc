@@ -25,7 +25,7 @@ tasks:
   test:int:
     desc: Run integration tests
     cmds:
-      - go test -tags=int_test ./...
+      - go test -count=1 -tags=int_test ./...
 
   vet:
     desc: Run go vet

@@ -83,7 +83,7 @@ func newTable(w io.Writer, showHeaderLine bool) *tablewriter.Table {
 	return tablewriter.NewTable(w,
 		tablewriter.WithRenderer(renderer.NewBlueprint(tw.Rendition{
 			Borders:  tw.BorderNone,
-			Settings: tw.Settings{Separators: tw.SeparatorsNone, Lines: lines},
+			Settings: tw.Settings{Separators: tw.Separators{BetweenColumns: tw.On}, Lines: lines},
 			Symbols:  tw.NewSymbols(tw.StyleASCII),
 		})),
 		tablewriter.WithConfig(tablewriter.Config{

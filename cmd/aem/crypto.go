@@ -13,6 +13,7 @@ func (c *CLI) cryptoCmd() *cobra.Command {
 	}
 	cmd.AddCommand(c.cryptoSetupCmd())
 	cmd.AddCommand(c.cryptoProtectCmd())
+	cmd.AddCommand(c.cryptoUnprotectCmd())
 	return cmd
 }
 
@@ -87,6 +88,34 @@ func (c *CLI) cryptoProtectCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringP("value", "v", "", "Value to protect")
+	_ = cmd.MarkFlagRequired("value")
+
+	return cmd
+}
+
+func (c *CLI) cryptoUnprotectCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "unprotect",
+		Aliases: []string{"decrypt"},
+		Short:   "Unprotect value",
+		Run: func(cmd *cobra.Command, args []string) {
+			instance, err := c.aem.InstanceManager().One()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			protectedValue, _ := cmd.Flags().GetString("value")
+			plainValue, err := instance.Crypto().Unprotect(protectedValue)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("value", plainValue)
+			c.Ok("value unprotected by Crypto")
+		},
+	}
+
+	cmd.Flags().StringP("value", "v", "", "Value to unprotect")
 	_ = cmd.MarkFlagRequired("value")
 
 	return cmd

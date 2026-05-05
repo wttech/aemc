@@ -6,10 +6,14 @@ import (
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
+	"html"
+	"io"
+	"regexp"
 )
 
 const (
-	CryptoProtectPath = "/system/console/crypto/.json"
+	CryptoProtectPath   = "/system/console/crypto/.json"
+	CryptoUnprotectPath = "/system/console/crypto"
 )
 
 type Crypto struct {
@@ -96,4 +100,46 @@ func (c Crypto) Protect(value string) (string, error) {
 	}
 
 	return result.Protected, nil
+}
+
+var unprotectPlaintextRegex = regexp.MustCompile(`<input\s[^>]*name="unprotect_plaintext"[^>]*>`)
+var inputValueRegex = regexp.MustCompile(`value="([^"]*)"`)
+
+func (c Crypto) Unprotect(value string) (string, error) {
+	log.Infof("%s > decrypting text using Crypto", c.instance.IDColor())
+	response, err := c.instance.http.RequestFormData(map[string]any{
+		"action":               "unprotect",
+		"unprotect_ciphertext": value,
+	}).Post(CryptoUnprotectPath)
+
+	if err != nil {
+		return "", fmt.Errorf("%s > cannot decrypt text using Crypto: %w", c.instance.IDColor(), err)
+	} else if response.IsError() {
+		return "", fmt.Errorf("%s > cannot decrypt text using Crypto: %s", c.instance.IDColor(), response.Status())
+	}
+
+	rawBody := response.RawBody()
+	defer rawBody.Close()
+	bodyBytes, err := io.ReadAll(rawBody)
+	if err != nil {
+		return "", fmt.Errorf("%s > cannot read Crypto unprotect response: %w", c.instance.IDColor(), err)
+	}
+
+	body := string(bodyBytes)
+	inputMatch := unprotectPlaintextRegex.FindString(body)
+	if inputMatch == "" {
+		return "", fmt.Errorf("%s > cannot parse Crypto unprotect response: plaintext not found in response; note that unprotect is only available on AEM 6.5 LTS and AEM Cloud SDK", c.instance.IDColor())
+	}
+
+	valueMatch := inputValueRegex.FindStringSubmatch(inputMatch)
+	if valueMatch == nil || len(valueMatch) < 2 {
+		return "", fmt.Errorf("%s > cannot parse Crypto unprotect response: value not found in response", c.instance.IDColor())
+	}
+
+	plaintext := html.UnescapeString(valueMatch[1])
+	if plaintext == "Exception occurred while decrypting: cannot unprotected ciphertext" {
+		return "", fmt.Errorf("%s > cannot decrypt text using Crypto: decryption failed (invalid ciphertext or wrong keys)", c.instance.IDColor())
+	}
+
+	return plaintext, nil
 }

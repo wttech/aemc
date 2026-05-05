@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg"
@@ -9,7 +11,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/mapsx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/osgi"
-	"strings"
 )
 
 func (c *CLI) osgiCmd() *cobra.Command {
@@ -35,6 +36,7 @@ func (c *CLI) osgiBundleCmd() *cobra.Command {
 	cmd.AddCommand(c.osgiBundleUninstall())
 	cmd.AddCommand(c.osgiBundleListCmd())
 	cmd.AddCommand(c.osgiBundleReadCmd())
+	cmd.AddCommand(c.osgiBundleManifestCmd())
 	cmd.AddCommand(c.osgiBundleStartCmd())
 	cmd.AddCommand(c.osgiBundleStopCmd())
 	cmd.AddCommand(c.osgiBundleRestartCmd())
@@ -202,20 +204,9 @@ func (c *CLI) osgiBundleListCmd() *cobra.Command {
 func (c *CLI) osgiBundleReadCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "read",
-		Short:   "Read OSGi bundle details",
+		Short:   "Read OSGi bundle details from AEM instance",
 		Aliases: []string{"get", "find"},
 		Run: func(cmd *cobra.Command, args []string) {
-			offline, _ := cmd.Flags().GetBool("offline")
-			if offline {
-				manifest, err := osgiBundleManifestByFlags(cmd)
-				if err != nil {
-					c.Error(err)
-					return
-				}
-				c.SetOutput("bundle", manifest)
-				c.Ok("bundle read")
-				return
-			}
 			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
 				c.Error(err)
@@ -231,7 +222,24 @@ func (c *CLI) osgiBundleReadCmd() *cobra.Command {
 		},
 	}
 	osgiBundleDefineFlags(cmd)
-	cmd.Flags().Bool("offline", false, "Read bundle manifest from local file without connecting to AEM instance")
+	return cmd
+}
+
+func (c *CLI) osgiBundleManifestCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "manifest",
+		Short: "Read OSGi bundle manifest from local JAR file (without AEM instance)",
+		Run: func(cmd *cobra.Command, args []string) {
+			manifest, err := osgiBundleManifestByFlags(cmd)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("manifest", manifest)
+			c.Ok("bundle manifest read")
+		},
+	}
+	osgiBundleDefineFileFlag(cmd)
 	return cmd
 }
 
@@ -384,9 +392,6 @@ func osgiBundleDefineFlags(cmd *cobra.Command) {
 
 func osgiBundleManifestByFlags(cmd *cobra.Command) (*osgi.BundleManifest, error) {
 	file, _ := cmd.Flags().GetString("file")
-	if len(file) == 0 {
-		return nil, fmt.Errorf("flag 'file' is required when using 'offline' mode")
-	}
 	fileGlobbed, err := pathx.GlobSome(file)
 	if err != nil {
 		return nil, err

@@ -896,6 +896,32 @@ Use cases:
     ```
    If needed, update `localhost` to the value on which AEM dispatcher is available, e.g.`localhost:8080`.
 
+## Crypto Support
+
+AEM Compose supports managing Crypto Support for encrypting/decrypting sensitive values.
+
+### Setup keys
+
+To set up Crypto keys (required for encryption/decryption to work consistently across environments):
+
+```shell
+sh aemw crypto setup --hmac-file aem/home/lib/crypto/data/hmac --master-file aem/home/lib/crypto/data/master
+```
+
+### Protect (encrypt) a value
+
+```shell
+sh aemw crypto protect --value "secret"
+```
+
+### Unprotect (decrypt) a value
+
+> **Note:** Unprotect is only available on AEM 6.5 LTS and AEM Cloud SDK.
+
+```shell
+sh aemw crypto unprotect --value "{encrypted_value}"
+```
+
 ## SSL by Default
 
 AEM Compose supports *SSL by Default* feature of AEM.

@@ -3,8 +3,9 @@
 package pkg_test
 
 import (
-	"github.com/wttech/aemc/pkg"
 	"testing"
+
+	"github.com/wttech/aemc/pkg"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -72,4 +73,15 @@ func TestCryptoUnprotectInvalidCiphertext(t *testing.T) {
 	_, err := instance.Crypto().Unprotect("{invalid_cipher_text}")
 	a.NotNil(err, "unprotecting invalid ciphertext should return an error")
 	a.Contains(err.Error(), "decryption failed", "error should indicate decryption failure")
+}
+
+func TestCryptoUnprotectEmptyValue(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+
+	aem := pkg.DefaultAEM()
+	instance := aem.InstanceManager().NewLocalAuthor()
+
+	_, err := instance.Crypto().Unprotect("")
+	a.NotNil(err, "unprotecting empty value should return an error")
 }

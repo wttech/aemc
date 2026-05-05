@@ -2,13 +2,14 @@ package pkg
 
 import (
 	"fmt"
+	"html"
+	"io"
+	"regexp"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
-	"html"
-	"io"
-	"regexp"
 )
 
 const (
@@ -103,7 +104,7 @@ func (c Crypto) Protect(value string) (string, error) {
 }
 
 var unprotectPlaintextRegex = regexp.MustCompile(`<input\s[^>]*name="unprotect_plaintext"[^>]*>`)
-var inputValueRegex = regexp.MustCompile(`value="([^"]*)"`)
+var unprotectValueRegex = regexp.MustCompile(`value="([^"]*)"`)
 
 func (c Crypto) Unprotect(value string) (string, error) {
 	log.Infof("%s > decrypting text using Crypto", c.instance.IDColor())
@@ -131,7 +132,7 @@ func (c Crypto) Unprotect(value string) (string, error) {
 		return "", fmt.Errorf("%s > cannot parse Crypto unprotect response: plaintext not found in response; note that unprotect is only available on AEM 6.5 LTS and AEM Cloud SDK", c.instance.IDColor())
 	}
 
-	valueMatch := inputValueRegex.FindStringSubmatch(inputMatch)
+	valueMatch := unprotectValueRegex.FindStringSubmatch(inputMatch)
 	if valueMatch == nil || len(valueMatch) < 2 {
 		return "", fmt.Errorf("%s > cannot parse Crypto unprotect response: value not found in response", c.instance.IDColor())
 	}

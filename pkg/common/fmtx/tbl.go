@@ -3,15 +3,17 @@ package fmtx
 import (
 	"bytes"
 	"fmt"
-	"github.com/olekukonko/tablewriter"
-	"github.com/samber/lo"
-	"golang.org/x/exp/maps"
+	"io"
 	"reflect"
 	"sort"
 	"strings"
-)
 
-// TODO upgrade to v1.x of tablewriter
+	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/renderer"
+	"github.com/olekukonko/tablewriter/tw"
+	"github.com/samber/lo"
+	"golang.org/x/exp/maps"
+)
 
 func TblProps(props map[string]any) string {
 	return TblMap("properties", "name", "value", props)
@@ -20,13 +22,12 @@ func TblProps(props map[string]any) string {
 func TblList(caption string, items [][]any) string {
 	sb := bytes.NewBufferString("\n")
 	sb.WriteString(fmt.Sprintf("%s\n", caption))
-	tbl := tablewriter.NewWriter(sb)
-	tbl.SetColWidth(TblColWidth)
-	tbl.SetHeader([]string{})
-	tbl.SetBorder(false)
-	tbl.SetAlignment(tablewriter.ALIGN_LEFT)
+	tbl := newTable(sb, false)
+	tbl.Configure(func(cfg *tablewriter.Config) {
+		cfg.Behavior.Header.Hide = tw.On
+	})
 	for _, item := range items {
-		tbl.Append([]string{TblValue(item[0]), TblValue(item[1])})
+		tbl.Append(TblValue(item[0]), TblValue(item[1]))
 	}
 	tbl.Render()
 	sb.WriteString("\n")
@@ -36,16 +37,12 @@ func TblList(caption string, items [][]any) string {
 func TblMap(caption, keyLabel, valueLabel string, props map[string]any) string {
 	sb := bytes.NewBufferString("\n")
 	sb.WriteString(fmt.Sprintf("%s\n\n", caption))
-	tbl := tablewriter.NewWriter(sb)
-	tbl.SetColWidth(TblColWidth)
-	tbl.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	tbl.SetHeader([]string{keyLabel, valueLabel})
-	tbl.SetBorder(false)
-	tbl.SetAlignment(tablewriter.ALIGN_LEFT)
+	tbl := newTable(sb, true)
+	tbl.Header(keyLabel, valueLabel)
 	keys := maps.Keys(props)
 	sort.Strings(keys)
 	for _, key := range keys {
-		tbl.Append([]string{key, TblValue(props[key])})
+		tbl.Append(key, TblValue(props[key]))
 	}
 	tbl.Render()
 	sb.WriteString("\n")
@@ -60,8 +57,8 @@ func TblRows(caption string, enum bool, header []string, rows []map[string]any) 
 		headerNormalized = append(headerNormalized, "#")
 	}
 	headerNormalized = append(headerNormalized, header...)
-	rowsNormalized := lo.Map(rows, func(row map[string]any, index int) []string {
-		rowVals := []string{}
+	rowsNormalized := lo.Map(rows, func(row map[string]any, index int) []any {
+		rowVals := []any{}
 		if enum {
 			rowVals = append(rowVals, TblValue(index+1))
 		}
@@ -70,16 +67,36 @@ func TblRows(caption string, enum bool, header []string, rows []map[string]any) 
 		}
 		return rowVals
 	})
-	tbl := tablewriter.NewWriter(sb)
-	tbl.SetColWidth(TblColWidth)
-	tbl.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	tbl.SetHeader(headerNormalized)
-	tbl.SetAlignment(tablewriter.ALIGN_LEFT)
-	tbl.SetBorder(false)
-	tbl.AppendBulk(rowsNormalized)
+	tbl := newTable(sb, true)
+	tbl.Header(lo.ToAnySlice(headerNormalized)...)
+	tbl.Bulk(rowsNormalized)
 	tbl.Render()
 	sb.WriteString("\n")
 	return sb.String()
+}
+
+func newTable(w io.Writer, showHeaderLine bool) *tablewriter.Table {
+	lines := tw.LinesNone
+	if showHeaderLine {
+		lines = tw.Lines{ShowHeaderLine: tw.On}
+	}
+	return tablewriter.NewTable(w,
+		tablewriter.WithRenderer(renderer.NewBlueprint(tw.Rendition{
+			Borders:  tw.BorderNone,
+			Settings: tw.Settings{Separators: tw.Separators{BetweenColumns: tw.On}, Lines: lines},
+			Symbols:  tw.NewSymbols(tw.StyleASCII),
+		})),
+		tablewriter.WithConfig(tablewriter.Config{
+			Header: tw.CellConfig{
+				Alignment:  tw.CellAlignment{Global: tw.AlignLeft},
+				Formatting: tw.CellFormatting{AutoFormat: tw.On},
+			},
+			Row: tw.CellConfig{
+				Alignment:    tw.CellAlignment{Global: tw.AlignLeft},
+				ColMaxWidths: tw.CellWidth{Global: TblColWidth},
+			},
+		}),
+	)
 }
 
 func TblValue(value any) string {

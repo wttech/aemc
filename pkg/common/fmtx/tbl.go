@@ -3,6 +3,7 @@ package fmtx
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"reflect"
 	"sort"
 	"strings"
@@ -21,23 +22,10 @@ func TblProps(props map[string]any) string {
 func TblList(caption string, items [][]any) string {
 	sb := bytes.NewBufferString("\n")
 	sb.WriteString(fmt.Sprintf("%s\n", caption))
-	tbl := tablewriter.NewTable(sb,
-		tablewriter.WithRenderer(renderer.NewBlueprint(tw.Rendition{
-			Borders:  tw.BorderNone,
-			Settings: tw.Settings{Separators: tw.SeparatorsNone, Lines: tw.LinesNone},
-			Symbols:  tw.NewSymbols(tw.StyleASCII),
-		})),
-		tablewriter.WithConfig(tablewriter.Config{
-			Header: tw.CellConfig{
-				Formatting: tw.CellFormatting{AutoFormat: tw.Off},
-			},
-			Row: tw.CellConfig{
-				Alignment:    tw.CellAlignment{Global: tw.AlignLeft},
-				ColMaxWidths: tw.CellWidth{Global: TblColWidth},
-			},
-			Behavior: tw.Behavior{Header: tw.Control{Hide: tw.On}},
-		}),
-	)
+	tbl := newTable(sb, false)
+	tbl.Configure(func(cfg *tablewriter.Config) {
+		cfg.Behavior.Header.Hide = tw.On
+	})
 	for _, item := range items {
 		tbl.Append(TblValue(item[0]), TblValue(item[1]))
 	}
@@ -49,23 +37,7 @@ func TblList(caption string, items [][]any) string {
 func TblMap(caption, keyLabel, valueLabel string, props map[string]any) string {
 	sb := bytes.NewBufferString("\n")
 	sb.WriteString(fmt.Sprintf("%s\n\n", caption))
-	tbl := tablewriter.NewTable(sb,
-		tablewriter.WithRenderer(renderer.NewBlueprint(tw.Rendition{
-			Borders:  tw.BorderNone,
-			Settings: tw.Settings{Separators: tw.SeparatorsNone, Lines: tw.LinesNone},
-			Symbols:  tw.NewSymbols(tw.StyleASCII),
-		})),
-		tablewriter.WithConfig(tablewriter.Config{
-			Header: tw.CellConfig{
-				Alignment:  tw.CellAlignment{Global: tw.AlignLeft},
-				Formatting: tw.CellFormatting{AutoFormat: tw.On},
-			},
-			Row: tw.CellConfig{
-				Alignment:    tw.CellAlignment{Global: tw.AlignLeft},
-				ColMaxWidths: tw.CellWidth{Global: TblColWidth},
-			},
-		}),
-	)
+	tbl := newTable(sb, true)
 	tbl.Header(keyLabel, valueLabel)
 	keys := maps.Keys(props)
 	sort.Strings(keys)
@@ -95,10 +67,23 @@ func TblRows(caption string, enum bool, header []string, rows []map[string]any) 
 		}
 		return rowVals
 	})
-	tbl := tablewriter.NewTable(sb,
+	tbl := newTable(sb, true)
+	tbl.Header(lo.ToAnySlice(headerNormalized)...)
+	tbl.Bulk(rowsNormalized)
+	tbl.Render()
+	sb.WriteString("\n")
+	return sb.String()
+}
+
+func newTable(w io.Writer, showHeaderLine bool) *tablewriter.Table {
+	lines := tw.LinesNone
+	if showHeaderLine {
+		lines = tw.Lines{ShowHeaderLine: tw.On}
+	}
+	return tablewriter.NewTable(w,
 		tablewriter.WithRenderer(renderer.NewBlueprint(tw.Rendition{
 			Borders:  tw.BorderNone,
-			Settings: tw.Settings{Separators: tw.SeparatorsNone, Lines: tw.LinesNone},
+			Settings: tw.Settings{Separators: tw.SeparatorsNone, Lines: lines},
 			Symbols:  tw.NewSymbols(tw.StyleASCII),
 		})),
 		tablewriter.WithConfig(tablewriter.Config{
@@ -112,11 +97,6 @@ func TblRows(caption string, enum bool, header []string, rows []map[string]any) 
 			},
 		}),
 	)
-	tbl.Header(lo.ToAnySlice(headerNormalized)...)
-	tbl.Bulk(rowsNormalized)
-	tbl.Render()
-	sb.WriteString("\n")
-	return sb.String()
 }
 
 func TblValue(value any) string {

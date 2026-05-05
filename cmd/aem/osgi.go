@@ -8,6 +8,7 @@ import (
 	"github.com/wttech/aemc/pkg/common/httpx"
 	"github.com/wttech/aemc/pkg/common/mapsx"
 	"github.com/wttech/aemc/pkg/common/pathx"
+	"github.com/wttech/aemc/pkg/osgi"
 	"strings"
 )
 
@@ -204,6 +205,17 @@ func (c *CLI) osgiBundleReadCmd() *cobra.Command {
 		Short:   "Read OSGi bundle details",
 		Aliases: []string{"get", "find"},
 		Run: func(cmd *cobra.Command, args []string) {
+			offline, _ := cmd.Flags().GetBool("offline")
+			if offline {
+				manifest, err := osgiBundleManifestByFlags(cmd)
+				if err != nil {
+					c.Error(err)
+					return
+				}
+				c.SetOutput("bundle", manifest)
+				c.Ok("bundle read")
+				return
+			}
 			instance, err := c.aem.InstanceManager().One()
 			if err != nil {
 				c.Error(err)
@@ -219,6 +231,7 @@ func (c *CLI) osgiBundleReadCmd() *cobra.Command {
 		},
 	}
 	osgiBundleDefineFlags(cmd)
+	cmd.Flags().Bool("offline", false, "Read bundle manifest from local file without connecting to AEM instance")
 	return cmd
 }
 
@@ -369,6 +382,18 @@ func osgiBundleDefineFlags(cmd *cobra.Command) {
 	cmd.MarkFlagsMutuallyExclusive("symbolic-name", "file")
 }
 
+func osgiBundleManifestByFlags(cmd *cobra.Command) (*osgi.BundleManifest, error) {
+	file, _ := cmd.Flags().GetString("file")
+	if len(file) == 0 {
+		return nil, fmt.Errorf("flag 'file' is required when using 'offline' mode")
+	}
+	fileGlobbed, err := pathx.GlobSome(file)
+	if err != nil {
+		return nil, err
+	}
+	return osgi.ReadBundleManifest(fileGlobbed)
+}
+
 func osgiBundleByFlags(cmd *cobra.Command, i pkg.Instance) (*pkg.OSGiBundle, error) {
 	symbolicName, _ := cmd.Flags().GetString("symbolic-name")
 	if len(symbolicName) > 0 {
@@ -377,7 +402,11 @@ func osgiBundleByFlags(cmd *cobra.Command, i pkg.Instance) (*pkg.OSGiBundle, err
 	}
 	file, _ := cmd.Flags().GetString("file")
 	if len(file) > 0 {
-		bundle, err := i.OSGI().BundleManager().ByFile(file)
+		fileGlobbed, err := pathx.GlobSome(file)
+		if err != nil {
+			return nil, err
+		}
+		bundle, err := i.OSGI().BundleManager().ByFile(fileGlobbed)
 		return bundle, err
 	}
 	return nil, fmt.Errorf("flag 'symbolic-name' or 'file' are required")

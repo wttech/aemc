@@ -27,5 +27,6 @@ warningCode = 0
 [rule.empty-block]
 [rule.superfluous-else]
 [rule.unused-parameter]
+  arguments = [{ allowRegex = "^(cmd|args|index|_)$" }]
 [rule.unreachable-code]
 [rule.redefines-builtin-id]

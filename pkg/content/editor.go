@@ -95,7 +95,7 @@ func (c Editor) Clean(path string) error {
 }
 
 func eachFiles(root string, processFileFunc func(string) error) error {
-	return filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+	return filepath.WalkDir(root, func(path string, entry fs.DirEntry, _ error) error {
 		if entry.IsDir() {
 			return nil
 		}

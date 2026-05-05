@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg"
 	"github.com/wttech/aemc/pkg/common/mapsx"
@@ -77,6 +79,11 @@ func (c *CLI) cryptoProtectCmd() *cobra.Command {
 				return
 			}
 			plainValue, _ := cmd.Flags().GetString("value")
+			allowEmpty, _ := cmd.Flags().GetBool("allow-empty")
+			if plainValue == "" && !allowEmpty {
+				c.Error(fmt.Errorf("value is empty (use --allow-empty to permit)"))
+				return
+			}
 			protectedValue, err := instance.Crypto().Protect(plainValue)
 			if err != nil {
 				c.Error(err)
@@ -89,6 +96,7 @@ func (c *CLI) cryptoProtectCmd() *cobra.Command {
 
 	cmd.Flags().StringP("value", "v", "", "Value to protect")
 	_ = cmd.MarkFlagRequired("value")
+	cmd.Flags().Bool("allow-empty", false, "Allow empty value")
 
 	return cmd
 }
@@ -105,6 +113,11 @@ func (c *CLI) cryptoUnprotectCmd() *cobra.Command {
 				return
 			}
 			protectedValue, _ := cmd.Flags().GetString("value")
+			allowEmpty, _ := cmd.Flags().GetBool("allow-empty")
+			if protectedValue == "" && !allowEmpty {
+				c.Error(fmt.Errorf("value is empty (use --allow-empty to permit)"))
+				return
+			}
 			plainValue, err := instance.Crypto().Unprotect(protectedValue)
 			if err != nil {
 				c.Error(err)
@@ -117,6 +130,7 @@ func (c *CLI) cryptoUnprotectCmd() *cobra.Command {
 
 	cmd.Flags().StringP("value", "v", "", "Value to unprotect")
 	_ = cmd.MarkFlagRequired("value")
+	cmd.Flags().Bool("allow-empty", false, "Allow empty value")
 
 	return cmd
 }

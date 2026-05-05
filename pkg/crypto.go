@@ -5,6 +5,7 @@ import (
 	"html"
 	"io"
 	"regexp"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/wttech/aemc/pkg/common/filex"
@@ -138,7 +139,7 @@ func (c Crypto) Unprotect(value string) (string, error) {
 	}
 
 	plaintext := html.UnescapeString(valueMatch[1])
-	if plaintext == "Exception occurred while decrypting: cannot unprotected ciphertext" {
+	if strings.HasPrefix(plaintext, "Exception occurred while decrypting:") {
 		return "", fmt.Errorf("%s > cannot decrypt text using Crypto: decryption failed (invalid ciphertext or wrong keys)", c.instance.IDColor())
 	}
 

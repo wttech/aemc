@@ -10,6 +10,7 @@ import (
 	"io"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -31,6 +32,10 @@ type Status struct {
 	instance *Instance
 
 	Timeout time.Duration
+
+	timeLocationOnce sync.Once
+	timeLocation     *time.Location
+	timeLocationErr  error
 }
 
 func NewStatus(i *Instance) *Status {
@@ -43,7 +48,7 @@ func NewStatus(i *Instance) *Status {
 	}
 }
 
-func (sm Status) SystemProps() (map[string]string, error) {
+func (sm *Status) SystemProps() (map[string]string, error) {
 	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SystemPropPath)
 	if err != nil {
 		return nil, fmt.Errorf("%s > cannot read system properties", sm.instance.IDColor())
@@ -55,7 +60,7 @@ func (sm Status) SystemProps() (map[string]string, error) {
 	return props, nil
 }
 
-func (sm Status) SlingProps() (map[string]string, error) {
+func (sm *Status) SlingProps() (map[string]string, error) {
 	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SlingPropPath)
 	if err != nil {
 		return nil, fmt.Errorf("%s > cannot read Sling properties", sm.instance.IDColor())
@@ -67,7 +72,7 @@ func (sm Status) SlingProps() (map[string]string, error) {
 	return props, nil
 }
 
-func (sm Status) SlingSettings() (map[string]string, error) {
+func (sm *Status) SlingSettings() (map[string]string, error) {
 	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SlingSettingsPath)
 	if err != nil {
 		return nil, fmt.Errorf("%s > cannot read Sling settings", sm.instance.IDColor())
@@ -79,7 +84,7 @@ func (sm Status) SlingSettings() (map[string]string, error) {
 	return props, nil
 }
 
-func (sm Status) parseProperties(response io.ReadCloser) (map[string]string, error) {
+func (sm *Status) parseProperties(response io.ReadCloser) (map[string]string, error) {
 	responseBytes, err := io.ReadAll(response)
 	if err != nil {
 		return nil, fmt.Errorf("%s > cannot parse properties: %w", sm.instance.IDColor(), err)
@@ -99,23 +104,34 @@ func (sm Status) parseProperties(response io.ReadCloser) (map[string]string, err
 	return resultMap, nil
 }
 
-func (sm Status) TimeLocation() (*time.Location, error) {
-	systemProps, err := sm.SystemProps()
-	if err != nil {
-		return nil, err
-	}
-	locName, ok := systemProps[SystemPropTimezone]
-	if !ok {
-		return nil, fmt.Errorf("%s > system property '%s' does not exist", sm.instance.IDColor(), SystemPropTimezone)
-	}
-	timeLocation, err := time.LoadLocation(locName)
-	if err != nil {
-		log.Warnf("%s > cannot load time location '%s': %s", sm.instance.IDColor(), locName, err)
-	}
-	return timeLocation, nil
+func (sm *Status) TimeLocation() (*time.Location, error) {
+	// Cached because it requires an HTTP request to read the instance's system
+	// properties; callers such as EventStableChecker resolve it once per OSGi
+	// event, which without caching turns a single check into hundreds/thousands
+	// of requests against SystemPropPath.
+	sm.timeLocationOnce.Do(func() {
+		systemProps, err := sm.SystemProps()
+		if err != nil {
+			sm.timeLocationErr = err
+			return
+		}
+		locName, ok := systemProps[SystemPropTimezone]
+		if !ok {
+			sm.timeLocationErr = fmt.Errorf("%s > system property '%s' does not exist", sm.instance.IDColor(), SystemPropTimezone)
+			return
+		}
+		timeLocation, err := time.LoadLocation(locName)
+		if err != nil {
+			log.Warnf("%s > cannot load time location '%s': %s", sm.instance.IDColor(), locName, err)
+			sm.timeLocationErr = err
+			return
+		}
+		sm.timeLocation = timeLocation
+	})
+	return sm.timeLocation, sm.timeLocationErr
 }
 
-func (sm Status) RunModes() ([]string, error) {
+func (sm *Status) RunModes() ([]string, error) {
 	slingSettings, err := sm.SlingSettings()
 	if err != nil {
 		return nil, err
@@ -127,7 +143,7 @@ func (sm Status) RunModes() ([]string, error) {
 	return lo.Map(strings.Split(stringsx.Between(values, "[", "]"), ","), func(rm string, _ int) string { return strings.TrimSpace(rm) }), nil
 }
 
-func (sm Status) AemVersion() (string, error) {
+func (sm *Status) AemVersion() (string, error) {
 	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SystemProductInfoPath)
 	if err != nil {
 		return instance.AemVersionUnknown, fmt.Errorf("%s > cannot read system product info", sm.instance.IDColor())

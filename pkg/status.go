@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"errors"
 	"fmt"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
@@ -25,6 +26,9 @@ const (
 
 var (
 	aemVersionRegex = regexp.MustCompile(`<td>Adobe Experience Manager \(([^)]+)\)</td>`)
+
+	// aemVersionUnknownErr marks a version that could not be determined yet so that it is not cached
+	aemVersionUnknownErr = errors.New("AEM version unknown")
 )
 
 type Status struct {
@@ -44,39 +48,45 @@ func NewStatus(i *Instance) *Status {
 }
 
 func (sm Status) SystemProps() (map[string]string, error) {
-	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SystemPropPath)
-	if err != nil {
-		return nil, fmt.Errorf("%s > cannot read system properties", sm.instance.IDColor())
-	}
-	props, err := sm.parseProperties(response.RawBody())
-	if err != nil {
-		return nil, fmt.Errorf("%s > cannot parse system properties: %w", sm.instance.IDColor(), err)
-	}
-	return props, nil
+	return InstanceCacheGet(sm.instance.cache, cacheKeyStatusSystemProps, func() (map[string]string, error) {
+		response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SystemPropPath)
+		if err != nil {
+			return nil, fmt.Errorf("%s > cannot read system properties", sm.instance.IDColor())
+		}
+		props, err := sm.parseProperties(response.RawBody())
+		if err != nil {
+			return nil, fmt.Errorf("%s > cannot parse system properties: %w", sm.instance.IDColor(), err)
+		}
+		return props, nil
+	})
 }
 
 func (sm Status) SlingProps() (map[string]string, error) {
-	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SlingPropPath)
-	if err != nil {
-		return nil, fmt.Errorf("%s > cannot read Sling properties", sm.instance.IDColor())
-	}
-	props, err := sm.parseProperties(response.RawBody())
-	if err != nil {
-		return nil, fmt.Errorf("%s > cannot parse Sling properties: %w", sm.instance.IDColor(), err)
-	}
-	return props, nil
+	return InstanceCacheGet(sm.instance.cache, cacheKeyStatusSlingProps, func() (map[string]string, error) {
+		response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SlingPropPath)
+		if err != nil {
+			return nil, fmt.Errorf("%s > cannot read Sling properties", sm.instance.IDColor())
+		}
+		props, err := sm.parseProperties(response.RawBody())
+		if err != nil {
+			return nil, fmt.Errorf("%s > cannot parse Sling properties: %w", sm.instance.IDColor(), err)
+		}
+		return props, nil
+	})
 }
 
 func (sm Status) SlingSettings() (map[string]string, error) {
-	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SlingSettingsPath)
-	if err != nil {
-		return nil, fmt.Errorf("%s > cannot read Sling settings", sm.instance.IDColor())
-	}
-	props, err := sm.parseProperties(response.RawBody())
-	if err != nil {
-		return nil, fmt.Errorf("%s > cannot parse Sling settings: %w", sm.instance.IDColor(), err)
-	}
-	return props, nil
+	return InstanceCacheGet(sm.instance.cache, cacheKeyStatusSlingSettings, func() (map[string]string, error) {
+		response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SlingSettingsPath)
+		if err != nil {
+			return nil, fmt.Errorf("%s > cannot read Sling settings", sm.instance.IDColor())
+		}
+		props, err := sm.parseProperties(response.RawBody())
+		if err != nil {
+			return nil, fmt.Errorf("%s > cannot parse Sling settings: %w", sm.instance.IDColor(), err)
+		}
+		return props, nil
+	})
 }
 
 func (sm Status) parseProperties(response io.ReadCloser) (map[string]string, error) {
@@ -111,6 +121,7 @@ func (sm Status) TimeLocation() (*time.Location, error) {
 	timeLocation, err := time.LoadLocation(locName)
 	if err != nil {
 		log.Warnf("%s > cannot load time location '%s': %s", sm.instance.IDColor(), locName, err)
+		return nil, err
 	}
 	return timeLocation, nil
 }
@@ -128,19 +139,28 @@ func (sm Status) RunModes() ([]string, error) {
 }
 
 func (sm Status) AemVersion() (string, error) {
-	response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SystemProductInfoPath)
-	if err != nil {
-		return instance.AemVersionUnknown, fmt.Errorf("%s > cannot read system product info", sm.instance.IDColor())
-	}
-	bytes, err := io.ReadAll(response.RawBody())
-	if err != nil {
-		return instance.AemVersionUnknown, fmt.Errorf("%s > cannot read system product info: %w", sm.instance.IDColor(), err)
-	}
-	html := stringsx.AfterLast(string(bytes), SystemProductInfoMarker)
-	matches := aemVersionRegex.FindStringSubmatch(html)
-	if matches != nil {
+	version, err := InstanceCacheGet(sm.instance.cache, cacheKeyStatusAemVersion, func() (string, error) {
+		response, err := sm.instance.http.RequestWithTimeout(sm.Timeout).Get(SystemProductInfoPath)
+		if err != nil {
+			return "", fmt.Errorf("%s > cannot read system product info", sm.instance.IDColor())
+		}
+		bytes, err := io.ReadAll(response.RawBody())
+		if err != nil {
+			return "", fmt.Errorf("%s > cannot read system product info: %w", sm.instance.IDColor(), err)
+		}
+		html := stringsx.AfterLast(string(bytes), SystemProductInfoMarker)
+		matches := aemVersionRegex.FindStringSubmatch(html)
+		if matches == nil {
+			// not an actual failure, but must not be cached as the instance may be still starting up
+			return "", aemVersionUnknownErr
+		}
 		return matches[1], nil
+	})
+	if err != nil {
+		if errors.Is(err, aemVersionUnknownErr) {
+			return instance.AemVersionUnknown, nil
+		}
+		return instance.AemVersionUnknown, err
 	}
-
-	return instance.AemVersionUnknown, nil
+	return version, nil
 }

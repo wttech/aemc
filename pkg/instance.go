@@ -22,6 +22,7 @@ type Instance struct {
 	password string
 
 	local           *LocalInstance
+	cache           *InstanceCache
 	http            *HTTP
 	status          *Status
 	repo            *Repo
@@ -79,6 +80,10 @@ func (i Instance) Local() *LocalInstance {
 
 func (i Instance) HTTP() *HTTP {
 	return i.http
+}
+
+func (i Instance) Cache() *InstanceCache {
+	return i.cache
 }
 
 func (i Instance) Status() *Status {

@@ -175,8 +175,9 @@ func (c EventStableChecker) Check(_ CheckContext, instance Instance) CheckResult
 	}
 
 	nowTime := instance.Now()
+	timeLocation := nowTime.Location()
 	unstableEvents := lo.Filter(events.List, func(e osgi.Event, _ int) bool {
-		receivedTime := instance.Time(e.Received)
+		receivedTime := time.UnixMilli(e.Received).In(timeLocation)
 		if !receivedTime.Add(c.ReceivedMaxAge).After(nowTime) {
 			return false
 		}

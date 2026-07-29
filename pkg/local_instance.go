@@ -514,6 +514,7 @@ func (li LocalInstance) Start() error {
 			return err
 		}
 	}
+	li.instance.cache.Clear()
 	log.Infof("%s > started", li.instance.IDColor())
 	return nil
 }
@@ -687,6 +688,7 @@ func (li LocalInstance) Stop() error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("%s > cannot execute stop script : %w", li.instance.IDColor(), err)
 	}
+	li.instance.cache.Clear()
 	log.Infof("%s > stopped", li.instance.IDColor())
 	return nil
 }

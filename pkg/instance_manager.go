@@ -259,6 +259,7 @@ func (im *InstanceManager) New(id, url, user, password string) *Instance {
 		user:     user,
 		password: password,
 	}
+	res.cache = NewInstanceCache(res)
 	res.http = NewHTTP(res, url)
 	res.status = NewStatus(res)
 	res.repo = NewRepo(res)

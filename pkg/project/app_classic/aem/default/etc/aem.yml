@@ -56,6 +56,10 @@ instance:
     debug: false
     disable_warn: true
 
+  # In-memory caching of instance values that are constant while it is running (system properties, AEM version, run modes)
+  cache:
+    enabled: true
+
   # State checking
   check:
     # Time to wait before first state checking (to avoid false-positives)

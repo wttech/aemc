@@ -773,6 +773,19 @@ sh aemw instance stop
 sh aemw instance delete
 ```
 
+### Upgrading Local Instances
+
+`instance upgrade` prepares an in-place Quickstart upgrade for stopped local
+instances. It unpacks and temporarily starts the new Quickstart distribution so
+AEM can apply its startup-resource upgrades, then stops it again.
+
+Start the instance normally after the command completes:
+
+```shell
+sh aemw instance upgrade
+sh aemw instance start
+```
+
 ## Deploying Packages
 
 ```shell

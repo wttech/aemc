@@ -1,5 +1,5 @@
 <p align="center">
-<picture><source srcset="docs/logo-with-text-white.png" media="(prefers-color-scheme: dark)"><img src="docs/logo-with-text.png" alt="AEM Compose Logo" height="80"></picture>
+<picture><source srcset="docs/logo-with-text-white.png" media="(prefers-color-scheme: dark)"><img src="docs/logo-with-text.png" alt="AEM Compose Logo" height="100"></picture>
 </p>
 
 <p align="center">

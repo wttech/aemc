@@ -1,6 +1,8 @@
-<picture><source srcset="https://github.com/wttech/aemc-ansible/raw/main/docs/logo-with-text-white.png" media="(prefers-color-scheme: dark)"><img src="https://github.com/wttech/aemc-ansible/raw/main/docs/logo-with-text.png" alt="AEM Compose Logo" height="48"></picture>
-&nbsp;&nbsp;&nbsp;&nbsp;
-<a href="https://enterprisesolutions.wpp.com/" target="_blank"><picture><source srcset="docs/wpp-es-primary-white.svg" media="(prefers-color-scheme: dark)"><img src="docs/wpp-es-primary-navy.svg" alt="WPP Enterprise Solutions" height="48"></picture></a>
+<picture><source srcset="docs/logo-with-text-white.png" media="(prefers-color-scheme: dark)"><img src="docs/logo-with-text.png" alt="AEM Compose Logo" height="64"></picture>
+<br>
+<a href="https://enterprisesolutions.wpp.com/" target="_blank"><picture><source srcset="docs/wpp-es-primary-white.svg" media="(prefers-color-scheme: dark)"><img src="docs/wpp-es-primary-navy.svg" alt="WPP Enterprise Solutions" height="40"></picture></a>
+
+<br>
 
 [![GitHub All Releases](https://img.shields.io/github/downloads/wttech/aemc/total)](https://github.com/wttech/aemc/releases)
 [![Last Release Version](https://img.shields.io/github/v/release/wttech/aemc?color=lightblue&label=Last%20Release)](https://github.com/wttech/aemc/releases)

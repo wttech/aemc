@@ -8,19 +8,19 @@ CLI Tool · CRX Packages · OSGi Configs · JCR Nodes
 </p>
 
 <p align="center">
-
-[![GitHub All Releases](https://img.shields.io/github/downloads/wttech/aemc/total)](https://github.com/wttech/aemc/releases)
-[![Last Release Version](https://img.shields.io/github/v/release/wttech/aemc?color=lightblue&label=Last%20Release)](https://github.com/wttech/aemc/releases)
-![Go Version](https://img.shields.io/github/go-mod/go-version/wttech/aemc)
-[![Apache License, Version 2.0, January 2004](https://github.com/wttech/aemc-ansible/raw/main/docs/apache-license-badge.svg)](http://www.apache.org/licenses/)
+<a href="https://github.com/wttech/aemc/releases"><img src="https://img.shields.io/github/downloads/wttech/aemc/total" alt="GitHub All Releases"></a>
+<a href="https://github.com/wttech/aemc/releases"><img src="https://img.shields.io/github/v/release/wttech/aemc?color=lightblue&label=Last%20Release" alt="Last Release Version"></a>
+<img src="https://img.shields.io/github/go-mod/go-version/wttech/aemc" alt="Go Version">
+<a href="http://www.apache.org/licenses/"><img src="https://github.com/wttech/aemc-ansible/raw/main/docs/apache-license-badge.svg" alt="Apache License, Version 2.0, January 2004"></a>
 <br>
 <sub>Proudly sponsored by:</sub>
 <br><br>
 <a href="https://enterprisesolutions.wpp.com/" target="_blank">
 <picture><source srcset="docs/wpp-es-primary-white.svg" media="(prefers-color-scheme: dark)"><img src="docs/wpp-es-primary-navy.svg" alt="WPP Enterprise Solutions" height="20"></picture>
 </a>
-
 </p>
+
+---
 
 **AEM Compose**
 

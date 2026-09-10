@@ -1,6 +1,6 @@
 ![AEM Compose Logo](https://github.com/wttech/aemc-ansible/raw/main/docs/logo-with-text.png)
 &nbsp;&nbsp;&nbsp;&nbsp;
-<a href="https://www.vml.com/expertise/enterprise-solutions" target="_blank"><picture><source srcset="docs/vml-logo-white.svg" media="(prefers-color-scheme: dark)"><img src="docs/vml-logo-black.svg" alt="VML Logo" height="100"></picture></a>
+<a href="https://enterprisesolutions.wpp.com/" target="_blank"><picture><source srcset="docs/wpp-es-primary-white.svg" media="(prefers-color-scheme: dark)"><img src="docs/wpp-es-primary-navy.svg" alt="WPP Enterprise Solutions" height="100"></picture></a>
 
 [![GitHub All Releases](https://img.shields.io/github/downloads/wttech/aemc/total)](https://github.com/wttech/aemc/releases)
 [![Last Release Version](https://img.shields.io/github/v/release/wttech/aemc?color=lightblue&label=Last%20Release)](https://github.com/wttech/aemc/releases)

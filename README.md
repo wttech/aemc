@@ -1,13 +1,26 @@
-<picture><source srcset="docs/logo-with-text-white.png" media="(prefers-color-scheme: dark)"><img src="docs/logo-with-text.png" alt="AEM Compose Logo" height="64"></picture>
-<br>
-<a href="https://enterprisesolutions.wpp.com/" target="_blank"><picture><source srcset="docs/wpp-es-primary-white.svg" media="(prefers-color-scheme: dark)"><img src="docs/wpp-es-primary-navy.svg" alt="WPP Enterprise Solutions" height="40"></picture></a>
+<p align="center">
+<picture><source srcset="docs/logo-with-text-white.png" media="(prefers-color-scheme: dark)"><img src="docs/logo-with-text.png" alt="AEM Compose Logo" height="80"></picture>
+</p>
 
-<br>
+<p align="center">
+<strong>Manage AEM instances with ease.</strong><br>
+CLI Tool · CRX Packages · OSGi Configs · JCR Nodes
+</p>
+
+<p align="center">
 
 [![GitHub All Releases](https://img.shields.io/github/downloads/wttech/aemc/total)](https://github.com/wttech/aemc/releases)
 [![Last Release Version](https://img.shields.io/github/v/release/wttech/aemc?color=lightblue&label=Last%20Release)](https://github.com/wttech/aemc/releases)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/wttech/aemc)
 [![Apache License, Version 2.0, January 2004](https://github.com/wttech/aemc-ansible/raw/main/docs/apache-license-badge.svg)](http://www.apache.org/licenses/)
+<br>
+<sub>Proudly sponsored by:</sub>
+<br><br>
+<a href="https://enterprisesolutions.wpp.com/" target="_blank">
+<picture><source srcset="docs/wpp-es-primary-white.svg" media="(prefers-color-scheme: dark)"><img src="docs/wpp-es-primary-navy.svg" alt="WPP Enterprise Solutions" height="20"></picture>
+</a>
+
+</p>
 
 **AEM Compose**
 

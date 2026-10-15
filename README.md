@@ -82,6 +82,7 @@ Its seamless integration with Terraform, Pulumi, and Ansible enhances automation
   - [Deploying Packages](#deploying-packages)
   - [OSGi Configuration](#osgi-configuration)
   - [Repository Operations](#repository-operations)
+  - [Content Synchronization](#content-synchronization)
   - [Instance Backups](#instance-backups)
     - [Basic Commands](#basic-commands)
     - [Backup \& Restore Cycle](#backup--restore-cycle)
@@ -824,8 +825,67 @@ sh aemw osgi config save --pid com.example.MyService --input-string "enabled: tr
 sh aemw repo node read --path /content/my-site
 
 # Copy content between instances
-sh aemw content copy --path /content/my-site --instance-target-id local_publish
+sh aemw content copy --filter-roots /content/my-site --instance-target-id local_publish
 ```
+
+## Content Synchronization
+
+Commands under `sh aemw content` (alias `cnt`) keep JCR content on a running instance and in the local file system (FileVault serialization under a `jcr_root` directory) in sync.
+They are the replacement for the legacy `vlt checkout` / `vlt update` / `vlt commit` workflow, and unlike VLT they need no `.vlt` metadata, checkout step or working copy.
+
+| Command                          | Alias        | Description                                                                 |
+|----------------------------------|--------------|-----------------------------------------------------------------------------|
+| `content pull`                   | `pl`, `sync` | Download content from an instance and unpack it under `jcr_root` (like `vlt checkout`/`update`) |
+| `content push`                   | `ps`         | Upload content from `jcr_root` (directory or single file) to instance(s) (like `vlt commit`)   |
+| `content clean`                  | `cln`        | Normalize local content (remove volatile properties, `.vlt` files, etc.)    |
+| `content download`               | `dl`         | Download content from an instance as a package ZIP file                     |
+| `content copy`                   | `cp`         | Copy content from one instance to other instance(s)                         |
+
+The local path passed with `--dir` / `--file` / `--path` must contain `jcr_root` (typically `ui.content/src/main/content/jcr_root/...`).
+The Vault filter root is derived automatically from that path, e.g. `.../jcr_root/content/my-site` becomes `/content/my-site`.
+
+```shell
+# Pull a directory (a "checkout"/"update"); --path accepts a directory or a file
+sh aemw content pull --dir ui.content/src/main/content/jcr_root/content/my-site
+
+# Pull and normalize the content (see 'content.clean' in the configuration)
+sh aemw content pull --dir ui.content/src/main/content/jcr_root/content/my-site --clean
+
+# Pull and remove local content that no longer exists on the instance
+sh aemw content pull --dir ui.content/src/main/content/jcr_root/content/my-site --clean --replace
+
+# Pull a single file from a specific instance
+sh aemw content pull --file ui.content/src/main/content/jcr_root/content/my-site/.content.xml --instance-id local_author
+
+# Pull using explicit Vault filter roots instead of deriving them from the path
+sh aemw content pull --dir ui.content/src/main/content/jcr_root/content --filter-roots /content/my-site
+
+# Push a directory (a "commit") to all instances
+sh aemw content push --dir ui.content/src/main/content/jcr_root/content/my-site
+
+# Push a single file to a specific instance, normalizing it first
+sh aemw content push --file ui.content/src/main/content/jcr_root/content/my-site/.content.xml --clean --instance-id local_author
+
+# Push overriding Vault filter mode (replace, merge or update)
+sh aemw content push --dir ui.content/src/main/content/jcr_root/content/my-site --filter-mode merge
+
+# Clean content already present on the file system
+sh aemw content clean --dir ui.content/src/main/content/jcr_root/content/my-site
+
+# Download content as a package ZIP
+sh aemw content download --filter-roots /content/my-site --target-file my-site.zip
+
+# Copy content to another instance (by ID or ad-hoc URL)
+sh aemw content copy --filter-roots /content/my-site --instance-target-id local_publish
+sh aemw content copy --filter-roots /content/my-site --instance-target-url http://localhost:4503
+```
+
+Notes:
+
+- `pull`, `download` and `copy` operate on one instance (selected with `--instance-id`, `--instance-url`, `--instance-author`, `--instance-publish`); `push` targets all selected instances.
+- `--dir`, `--file` and `--path` are mutually exclusive; one of them is required for `pull`, `push` and `clean`.
+- `--filter-roots` and `--filter-file` are mutually exclusive; `download` and `copy` require one of them.
+- Content is only normalized when `--clean` is given; rules are configured in the `content.clean` section.
 
 ## Instance Backups
 

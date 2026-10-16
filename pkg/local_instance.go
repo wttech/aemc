@@ -284,6 +284,9 @@ func (li LocalInstance) Upgrade() error {
 	if err := li.adapt(); err != nil {
 		return err
 	}
+	if err := li.startUpgradeJar(); err != nil {
+		return err
+	}
 
 	log.Infof("%s > upgraded", li.instance.IDColor())
 	return nil
@@ -481,17 +484,9 @@ func (li LocalInstance) Start() error {
 	if !li.IsCreated() {
 		return fmt.Errorf("%s > cannot start as it is not created", li.instance.IDColor())
 	}
-	if !li.LocalOpts().ServiceMode {
-		if err := li.update(); err != nil {
-			return err
-		}
-	}
 	log.Infof("%s > starting", li.instance.IDColor())
-	if err := li.CheckPortsOpen(); err != nil {
-		return err
-	}
 	defer func() { pathx.DeleteIfExists(li.passwordFile()) }()
-	if err := li.savePasswordFile(); err != nil {
+	if err := li.prepareStart(); err != nil {
 		return err
 	}
 	cmd, err := li.binScriptCommand(LocalInstanceScriptStart, true)
@@ -519,11 +514,81 @@ func (li LocalInstance) Start() error {
 	return nil
 }
 
+func (li LocalInstance) startUpgradeJar() error {
+	defer func() { pathx.DeleteIfExists(li.passwordFile()) }()
+	if err := li.prepareStart(); err != nil {
+		return err
+	}
+	jar, err := li.VendorManager().InstanceJar()
+	if err != nil {
+		return err
+	}
+	args := li.upgradeJarArgs(jar)
+	cmd, err := li.JavaManager().Command(args...)
+	if err != nil {
+		return err
+	}
+	cmd.Dir = li.Dir()
+	cmd.Env = append(cmd.Env, li.EnvVars...)
+	li.instance.manager.aem.CommandOutput(cmd)
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("%s > cannot execute upgrade start command: %w", li.instance.IDColor(), err)
+	}
+	defer li.stopUpgradeJar(cmd)
+	if err := li.awaitAuth(); err != nil {
+		return err
+	}
+	if err := li.instance.manager.AwaitStartedOne(*li.instance); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (li LocalInstance) stopUpgradeJar(cmd *exec.Cmd) {
+	if cmd.Process == nil || cmd.ProcessState != nil {
+		return
+	}
+	if err := cmd.Process.Signal(os.Interrupt); err != nil {
+		log.Warnf("%s > cannot stop upgrade start command: %s", li.instance.IDColor(), err)
+	}
+	if err := cmd.Wait(); err != nil {
+		if _, ok := err.(*exec.ExitError); !ok {
+			log.Warnf("%s > cannot await upgrade start command: %s", li.instance.IDColor(), err)
+		}
+	}
+}
+
+func (li LocalInstance) upgradeJarArgs(jar string) []string {
+	args := append([]string{}, li.JvmOpts...)
+	return append(args,
+		"-jar", pathx.Canonical(jar),
+		"-nofork",
+		"-nointeractive",
+		"-r", li.RunModesString(),
+		"-p", li.instance.http.Port(),
+	)
+}
+
 func (li LocalInstance) StartAndAwait() error {
 	if err := li.Start(); err != nil {
 		return err
 	}
 	if err := li.instance.manager.AwaitStartedOne(*li.instance); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (li LocalInstance) prepareStart() error {
+	if !li.LocalOpts().ServiceMode {
+		if err := li.update(); err != nil {
+			return err
+		}
+	}
+	if err := li.CheckPortsOpen(); err != nil {
+		return err
+	}
+	if err := li.savePasswordFile(); err != nil {
 		return err
 	}
 	return nil

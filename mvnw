@@ -60,6 +60,13 @@ if [ "${AEM_JAVA_ENABLED}" = true ]; then
   JAVA_HOME="$AEM_JAVA_HOME"; export JAVA_HOME
 fi
 
+if [ -n "$JAVA_HOME" ] && [ -x "$JAVA_HOME/bin/java" ]; then
+  if "$JAVA_HOME/bin/java" --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED -version >/dev/null 2>&1; then
+    MAVEN_OPTS="${MAVEN_OPTS} --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED"
+    export MAVEN_OPTS
+  fi
+fi
+
 # ----------------------------------------------------------------------------
 # Apache Maven Wrapper startup batch script, version 3.2.0
 #

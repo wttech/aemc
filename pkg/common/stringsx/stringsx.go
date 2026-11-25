@@ -5,6 +5,7 @@ import (
 	"github.com/gobwas/glob"
 	"github.com/iancoleman/strcase"
 	"github.com/samber/lo"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -106,4 +107,11 @@ func AddPrefix(str string, prefix string) string {
 		return str
 	}
 	return prefix + str
+}
+
+var slugInvalidChars = regexp.MustCompile(`[^a-z0-9]+`)
+
+// Slug converts free text to lowercase words joined with '-', e.g. 'Clean with Prereqs' to 'clean-with-prereqs'.
+func Slug(value string) string {
+	return strings.Trim(slugInvalidChars.ReplaceAllString(strings.ToLower(value), "-"), "-")
 }

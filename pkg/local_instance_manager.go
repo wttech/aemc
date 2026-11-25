@@ -1,25 +1,20 @@
 package pkg
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
-	"github.com/dustin/go-humanize"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
-	"github.com/wttech/aemc/pkg/common/fmtx"
 	"github.com/wttech/aemc/pkg/common/pathx"
-	"github.com/wttech/aemc/pkg/common/timex"
 )
 
 type LocalOpts struct {
 	manager *InstanceManager
 
 	UnpackDir   string
-	BackupDir   string
+	Backup      LocalBackupOpts
 	OverrideDir string
 	ServiceMode bool
 }
@@ -29,7 +24,7 @@ func NewLocalOpts(manager *InstanceManager) *LocalOpts {
 
 	result := &LocalOpts{manager: manager}
 	result.UnpackDir = cfg.GetString("instance.local.unpack_dir")
-	result.BackupDir = cfg.GetString("instance.local.backup_dir")
+	result.Backup = newLocalBackupOpts(cfg)
 	result.OverrideDir = cfg.GetString("instance.local.override_dir")
 	result.ServiceMode = cfg.GetBool("instance.local.service_mode")
 
@@ -409,56 +404,4 @@ func (im *InstanceManager) Clean(instances []Instance) ([]Instance, error) {
 		}
 	}
 	return cleaned, nil
-}
-
-func (im *InstanceManager) ListBackups() (*BackupList, error) {
-	dir := im.LocalOpts.BackupDir
-	files, err := pathx.GlobDir(dir, "*."+LocalInstanceBackupExtension)
-	if err != nil {
-		return nil, fmt.Errorf("cannot list instance backups in directory '%s': %w", dir, err)
-	}
-	return newBackupList(files), nil
-}
-
-func newBackupList(files []string) *BackupList {
-	items := lo.Map(files, func(file string, _ int) BackupFile {
-		stat, _ := os.Stat(file)
-		return BackupFile{
-			Path:     file,
-			Size:     uint64(stat.Size()),
-			Modified: stat.ModTime(),
-		}
-	})
-	return &BackupList{
-		Total: len(items),
-		Files: items,
-	}
-}
-
-type BackupList struct {
-	Total int          `json:"total" yaml:"total"`
-	Files []BackupFile `json:"files" yaml:"files"`
-}
-
-type BackupFile struct {
-	Path     string    `json:"path" yaml:"path"`
-	Size     uint64    `json:"size" yaml:"size"`
-	Modified time.Time `json:"modified" yaml:"modified"`
-}
-
-func (fl BackupList) MarshalText() string {
-	bs := bytes.NewBufferString("")
-	bs.WriteString(fmtx.TblMap("stats", "stat", "value", map[string]any{
-		"total": len(fl.Files),
-		"size":  humanize.Bytes(lo.SumBy(fl.Files, func(file BackupFile) uint64 { return file.Size })),
-	}))
-	bs.WriteString("\n")
-	bs.WriteString(fmtx.TblRows("list", false, []string{"path", "size", "modified"}, lo.Map(fl.Files, func(file BackupFile, _ int) map[string]any {
-		return map[string]any{
-			"path":     file.Path,
-			"size":     humanize.Bytes(file.Size),
-			"modified": timex.Human(file.Modified),
-		}
-	})))
-	return bs.String()
 }

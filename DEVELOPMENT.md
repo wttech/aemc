@@ -11,7 +11,7 @@ Universal tool to manage AEM instances everywhere!
 
 ## Prerequisites
 
-1. Install Go: <https://go.dev/doc/install>,
+1. Install Go: <https://go.dev/doc/install>, or with [mise](https://mise.jdx.dev) run `mise install` in the project root to get the version pinned in `mise.toml`,
 2. Set up shell, append lines *~/.zshrc* with content below then restart IDE/terminals,
 
     ```shell

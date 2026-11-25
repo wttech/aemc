@@ -137,17 +137,17 @@ func GlobOne(pathPattern string) (string, error) {
 	return paths[len(paths)-1], nil
 }
 
+// GlobAll matches the wildcard in the last element of the path; the directory part is taken literally.
+// The path is split with the OS separators (like 'filepath.Glob'), so on Windows a backslash separates
+// directories instead of reaching the glob, where it would be an escape character.
 func GlobAll(pathPattern string) ([]string, error) {
-	var dir string
-	if !strings.Contains(pathPattern, "/") {
+	dir, pattern := filepath.Split(pathPattern)
+	if dir == "" {
 		dir = "."
-	} else {
-		dir = stringsx.BeforeLast(pathPattern, "/")
 	}
 	if !Exists(dir) {
 		return nil, nil
 	}
-	pattern := stringsx.AfterLast(pathPattern, "/")
 	paths, err := GlobDir(dir, pattern)
 	if err != nil {
 		return nil, err

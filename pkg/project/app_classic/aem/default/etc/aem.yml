@@ -129,8 +129,23 @@ instance:
   local:
     # Current runtime dir (Sling launchpad, JCR repository)
     unpack_dir: "aem/home/var/instance"
-    # Archived runtime dir (AEM backup files '*.aemb.zst')
-    backup_dir: "aem/home/var/backup"
+    # Archived runtime dirs (AEM instance backups)
+    backup:
+      # Directory holding backup files '*.aemb.tar.zst'
+      dir: "aem/home/var/backup"
+      # Free space that must remain on the disk of 'dir' after a backup is made,
+      # as a percentage of the disk or an absolute size (e.g. '50GB'); empty = no check.
+      # 10% keeps the disk below the 90% at which AEM's DiskSpaceCheck health check turns critical.
+      min_free: "10%"
+      prune:
+        # Prune old backups right after 'backup make' / 'backup perform'
+        auto: true
+        # Newest backups kept per instance and backup name; 0 = keep all.
+        # 2 keeps one fallback in case the newest backup captured an already broken state.
+        keep_last: 2
+        # Optional cap on the total size of backups (e.g. '100GB'); empty = no cap.
+        # Oldest backups are pruned first, but never the newest one of an instance and backup name.
+        max_size: ""
 
   # Status discovery (timezone, AEM version, etc)
   status:

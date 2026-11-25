@@ -86,6 +86,8 @@ Its seamless integration with Terraform, Pulumi, and Ansible enhances automation
   - [Instance Backups](#instance-backups)
     - [Basic Commands](#basic-commands)
     - [Backup \& Restore Cycle](#backup--restore-cycle)
+    - [Named Backups](#named-backups)
+    - [Retention and Disk Space](#retention-and-disk-space)
   - [Replication agents](#replication-agents)
   - [SSL by Default](#ssl-by-default)
   - [Global Trust Store](#global-trust-store)
@@ -392,8 +394,23 @@ instance:
 
     # Current runtime dir (Sling launchpad, JCR repository)
     unpack_dir: "aem/home/var/instance"
-    # Archived runtime dir (AEM backup files '*.aemb.zst')
-    backup_dir: "aem/home/var/backup"
+    # Archived runtime dirs (AEM instance backups)
+    backup:
+      # Directory holding backup files '*.aemb.tar.zst'
+      dir: "aem/home/var/backup"
+      # Free space that must remain on the disk of 'dir' after a backup is made,
+      # as a percentage of the disk or an absolute size (e.g. '50GB'); empty = no check.
+      # 10% keeps the disk below the 90% at which AEM's DiskSpaceCheck health check turns critical.
+      min_free: "10%"
+      prune:
+        # Prune old backups right after 'backup make' / 'backup perform'
+        auto: true
+        # Newest backups kept per instance and backup name; 0 = keep all.
+        # 2 keeps one fallback in case the newest backup captured an already broken state.
+        keep_last: 2
+        # Optional cap on the total size of backups (e.g. '100GB'); empty = no cap.
+        # Oldest backups are pruned first, but never the newest one of an instance and backup name.
+        max_size: ""
 
   # Status discovery (timezone, AEM version, etc)
   status:
@@ -939,8 +956,43 @@ Use cases:
 - Testing different AEM versions or configurations
 - Sharing pre-configured instances via cloud storage (S3, GCS, Azure Blob)
 
-**Backup file naming:** `{role}[-{classifier}]-{aem_version}-{timestamp}.aemb.tar.zst`  
-**Example:** `author-6.5.21-20260209-143022.aemb.tar.zst`
+**Backup file naming:** `{instance}[-{name}][-{aem_version}]-{timestamp}.aemb.tar.zst`  
+**Example:** `author-clean-with-prereqs-6.5.21-20260209143022.aemb.tar.zst`
+
+The AEM version is included when the instance is running while the backup is made. The newest backup is picked by the timestamp; for a running instance only backups of its AEM version are considered.
+
+### Named Backups
+
+A name tells what state a backup captures, e.g. a baseline to return to:
+
+```shell
+# Make a named backup ('clean with prereqs' is stored as 'clean-with-prereqs')
+sh aemw instance backup perform --name "clean with prereqs"
+
+# Restore the newest backup of that name
+sh aemw instance backup restore --name "clean with prereqs"
+```
+
+Without `--name`, `use` and `restore` pick the newest backup of the instance, whatever its name.
+
+### Retention and Disk Space
+
+Backups take several GB each, so old ones are pruned and a backup that would fill the disk is not started. Both are set in `instance.local.backup` (see [defaults](#defaults)).
+
+- **Retention:** backups of the same instance and name form a group; `prune.keep_last` newest backups of each group are kept, so routine backups never push out a named baseline. `prune.max_size` optionally caps the total size, deleting the oldest backups first but never the newest of a group. With `prune.auto`, pruning runs right after `backup make` / `perform`, only once the new backup is complete.
+- **Free space:** before stopping the instance, `backup make` / `perform` estimate the archive size (the newest backup of the instance, or else the instance directory size) and stop when less than `min_free` would remain on the disk. The default `10%` keeps the disk below the 90% at which AEM's `DiskSpaceCheck` health check turns critical. Keeping N backups needs space for N+1 while a backup is made, as old backups are deleted only after a new one succeeds.
+- **Safety:** pruning touches only files in the backup directory that follow the naming above; other files there are never deleted. Leftover `tmp-*` files of interrupted backups are deleted once they are not modified for 15 minutes.
+
+```shell
+# Preview, then prune with the configured policy or flags
+sh aemw instance backup prune --dry-run
+sh aemw instance backup prune --keep-last 1 --max-size 100GB
+
+# Make a backup despite the free space check
+sh aemw instance backup make --instance-id local_author --skip-space-check
+```
+
+The setting `instance.local.backup_dir` is deprecated; use `instance.local.backup.dir` instead.
 
 ## Replication agents
 

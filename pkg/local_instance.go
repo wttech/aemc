@@ -19,7 +19,6 @@ import (
 	"github.com/wttech/aemc/pkg/common/netx"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"github.com/wttech/aemc/pkg/common/stringsx"
-	"github.com/wttech/aemc/pkg/common/timex"
 	"github.com/wttech/aemc/pkg/instance"
 
 	"github.com/samber/lo"
@@ -1024,15 +1023,6 @@ func (li LocalInstance) PID() (int, error) {
 	return num, nil
 }
 
-func (li LocalInstance) ProposeBackupFileToMake() string {
-	nameParts := []string{li.Name()}
-	if li.IsRunning() {
-		nameParts = append(nameParts, li.instance.AemVersion())
-	}
-	nameParts = append(nameParts, timex.FileTimestampForNow())
-	return fmt.Sprintf("%s/%s.%s", li.LocalOpts().BackupDir, strings.Join(nameParts, "-"), LocalInstanceBackupExtension)
-}
-
 func (li LocalInstance) MakeBackup(file string) error {
 	if !li.IsCreated() {
 		return fmt.Errorf("%s > cannot make backup to file '%s' as instance not created", li.instance.IDColor(), file)
@@ -1047,24 +1037,6 @@ func (li LocalInstance) MakeBackup(file string) error {
 	}
 	log.Infof("%s > made backup to file '%s'", li.instance.IDColor(), file)
 	return nil
-}
-
-func (li LocalInstance) ProposeBackupFileToUse() (string, error) {
-	var pathPattern string
-	if li.IsRunning() {
-		aemVersion, err := li.instance.status.AemVersion()
-		if err != nil {
-			return "", err
-		}
-		pathPattern = fmt.Sprintf("%s/%s-%s-*.%s", li.LocalOpts().BackupDir, li.Name(), aemVersion, LocalInstanceBackupExtension)
-	} else {
-		pathPattern = fmt.Sprintf("%s/%s-*.%s", li.LocalOpts().BackupDir, li.Name(), LocalInstanceBackupExtension)
-	}
-	file, err := pathx.GlobSome(pathPattern)
-	if err != nil {
-		return "", fmt.Errorf("%s > no backup file found to use: %w", li.instance.IDColor(), err)
-	}
-	return file, nil
 }
 
 func (li LocalInstance) UseBackup(file string, deleteCreated bool) error {

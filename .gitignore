@@ -247,3 +247,6 @@ aem/home/
 .task/
 .env
 .env.*
+
+# mise personal overrides
+mise.local.toml

@@ -11,7 +11,7 @@ Universal tool to manage AEM instances everywhere!
 
 ## Prerequisites
 
-1. Install Go: <https://go.dev/doc/install>, or with [mise](https://mise.jdx.dev) run `mise install` in the project root to get the version pinned in `mise.toml`,
+1. Install [mise](https://mise.jdx.dev/getting-started.html); it provides the pinned Go and tool versions from `mise.toml` and runs the project tasks (`mise tasks` lists them),
 2. Set up shell, append lines *~/.zshrc* with content below then restart IDE/terminals,
 
     ```shell
@@ -26,20 +26,14 @@ Universal tool to manage AEM instances everywhere!
 
 ## Building & OS-wide installation
 
-Ensure having installed [Go](https://go.dev/dl/) then:
-
 ### Manual installation (recommended)
 
 Use this method to develop comfortably the tool.
 
 1. Clone repository: `git clone git@github.com:wttech/aemc.git`
-2. Enter cloned directory and run command: `make`*
+2. Enter cloned directory and run command: `mise run all` (tidies dependencies, tests, vets, formats, lints, then installs the binary to `$GOPATH/bin`)
 
-*When using Git Bash on Windows, you will first need to add `make` to your Git Bash installation:
-1. Go to [ezwinports](https://sourceforge.net/projects/ezwinports/files/).
-2. Download `make-x.x.x-without-guile-w32-bin.zip` (get the newest version without guile).
-3. Extract zip.
-4. Copy the contents to your `Git\mingw64\` merging the folders, but do NOT overwrite/replace any existing files.
+CI runs the same tasks (see [workflows](.github/workflows)).
 
 ### Go installation
 
@@ -63,10 +57,10 @@ unset AEM_CLI_VERSION
 
 ## Releasing
 
-Simply run script:
+Simply run task:
 
 ```shell
-sh release.sh <major.minor.patch>
+mise run release <major.minor.patch>
 ```
 
 It will:

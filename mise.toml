@@ -1,2 +1,80 @@
 [tools]
 go = "1.25.14"
+"go:github.com/mgechev/revive" = "1.15.0"
+
+[env]
+# Env files of the development AEM project; later files override earlier ones (same order as AEM Compose loads them)
+AEM_ENV = "{{ get_env(name='AEM_ENV', default='local') }}"
+AEM_INSTANCE_PROCESSING_MODE = "auto"
+AEM_JAVA_ENABLED = "true"
+_.file = [
+  "{{ env.AEM_ENV }}.env",  # VCS-tracked, env-specific
+  ".env.{{ env.AEM_ENV }}", # VCS-ignored, env-specific
+  ".env",                   # VCS-ignored, user-specific
+]
+
+[vars]
+build_tags = "timetzdata"
+
+[task_config]
+includes = ["tasks/aem.toml"]
+
+[tasks.all]
+description = "Run deps, test, vet, fmt, lint, install"
+run = [
+  { task = "deps" },
+  { task = "test" },
+  { task = "vet" },
+  { task = "fmt" },
+  { task = "lint" },
+  { task = "install" },
+]
+
+[tasks.deps]
+description = "Tidy Go module dependencies"
+run = "go mod tidy"
+
+[tasks.test]
+description = "Run tests"
+run = "go test ./..."
+
+[tasks."test:int"]
+description = "Run integration tests (require running AEM)"
+run = "go test -count=1 -tags=int_test ./..."
+
+[tasks.vet]
+description = "Run go vet"
+run = "go vet ./..."
+
+[tasks.fmt]
+description = "Format code"
+run = "gofmt -l -w ."
+
+[tasks.lint]
+description = "Run linter"
+run = "revive -config revive.toml -formatter friendly ./..."
+
+[tasks.build]
+description = "Build the binary"
+run = 'go build -tags "{{ vars.build_tags }}" -ldflags "$(sh scripts/ldflags.sh)" -o bin/aem ./cmd/aem'
+
+[tasks."build:other"]
+description = "Build binaries for other platforms"
+run = [
+  'GOARCH=amd64 GOOS=darwin  go build -tags "{{ vars.build_tags }}" -ldflags "$(sh scripts/ldflags.sh)" -o bin/aem.darwin ./cmd/aem',
+  'GOARCH=amd64 GOOS=linux   go build -tags "{{ vars.build_tags }}" -ldflags "$(sh scripts/ldflags.sh)" -o bin/aem.linux  ./cmd/aem',
+  'GOARCH=amd64 GOOS=windows go build -tags "{{ vars.build_tags }}" -ldflags "$(sh scripts/ldflags.sh)" -o bin/aem.exe    ./cmd/aem',
+]
+
+[tasks.install]
+description = "Install the binary"
+run = 'go install -tags "{{ vars.build_tags }}" -ldflags "$(sh scripts/ldflags.sh)" ./cmd/aem'
+
+[tasks.clean]
+description = "Clean build artifacts"
+run = ["go clean", "rm -fr bin"]
+
+[tasks.release]
+description = "Release a new version: bump it in files, push the commit and the tag that triggers the release workflow"
+usage = 'arg "<version>" help="Version to release without the leading v, e.g. 2.0.20"'
+run = 'sh scripts/release.sh "${usage_version?}"'

@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newTestBackupManager(t *testing.T) (*LocalBackupManager, string) {
+func newTestBackupManager(t *testing.T) (*BackupManager, string) {
 	dir := t.TempDir()
 	aem := DefaultAEM()
 	im := aem.InstanceManager()
-	im.LocalOpts.Backup = LocalBackupOpts{Dir: dir}
+	im.LocalOpts.Backup = BackupOpts{Dir: dir}
 	return im.Backup, dir
 }
 
@@ -25,7 +25,7 @@ func writeTestBackup(t *testing.T, dir string, fileName string, size int, modifi
 	return path
 }
 
-func TestLocalBackupManagerPrune(t *testing.T) {
+func TestBackupManagerPrune(t *testing.T) {
 	a := assert.New(t)
 	bm, dir := newTestBackupManager(t)
 	now := time.Now()
@@ -60,7 +60,7 @@ func TestLocalBackupManagerPrune(t *testing.T) {
 	}
 }
 
-func TestLocalBackupManagerNewest(t *testing.T) {
+func TestBackupManagerNewest(t *testing.T) {
 	a := assert.New(t)
 	bm, dir := newTestBackupManager(t)
 	now := time.Now()
@@ -86,7 +86,7 @@ func TestLocalBackupManagerNewest(t *testing.T) {
 	a.Error(err)
 }
 
-func TestLocalBackupManagerCheckSpace(t *testing.T) {
+func TestBackupManagerCheckSpace(t *testing.T) {
 	a := assert.New(t)
 	bm, dir := newTestBackupManager(t)
 	author := bm.manager.NewLocalAuthor()

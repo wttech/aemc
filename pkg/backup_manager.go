@@ -26,16 +26,16 @@ const (
 	localBackupTempStaleAfter = 15 * time.Minute
 )
 
-type LocalBackupOpts struct {
+type BackupOpts struct {
 	// Dir holds the backup archives.
 	Dir string
 	// MinFree is the free space that must remain on the disk of Dir after a backup is made,
 	// as a percentage of the disk (e.g. '10%') or an absolute size (e.g. '50GB'); empty disables the check.
 	MinFree string
-	Prune   LocalBackupPruneOpts
+	Prune   BackupPruneOpts
 }
 
-type LocalBackupPruneOpts struct {
+type BackupPruneOpts struct {
 	// Auto prunes old backups right after a backup is made.
 	Auto     bool
 	KeepLast int
@@ -43,11 +43,11 @@ type LocalBackupPruneOpts struct {
 	MaxSize string
 }
 
-func newLocalBackupOpts(cfg *viper.Viper) LocalBackupOpts {
-	return LocalBackupOpts{
+func newBackupOpts(cfg *viper.Viper) BackupOpts {
+	return BackupOpts{
 		Dir:     localBackupDir(cfg),
 		MinFree: cfg.GetString("instance.local.backup.min_free"),
-		Prune: LocalBackupPruneOpts{
+		Prune: BackupPruneOpts{
 			Auto:     cfg.GetBool("instance.local.backup.prune.auto"),
 			KeepLast: cfg.GetInt("instance.local.backup.prune.keep_last"),
 			MaxSize:  cfg.GetString("instance.local.backup.prune.max_size"),
@@ -55,7 +55,7 @@ func newLocalBackupOpts(cfg *viper.Viper) LocalBackupOpts {
 	}
 }
 
-func (o LocalBackupOpts) PrunePolicy() (BackupPrunePolicy, error) {
+func (o BackupOpts) PrunePolicy() (BackupPrunePolicy, error) {
 	maxSize, err := sizex.Parse(o.Prune.MaxSize)
 	if err != nil {
 		return BackupPrunePolicy{}, fmt.Errorf("invalid backup prune max size: %w", err)
@@ -63,25 +63,25 @@ func (o LocalBackupOpts) PrunePolicy() (BackupPrunePolicy, error) {
 	return BackupPrunePolicy{KeepLast: o.Prune.KeepLast, MaxSize: maxSize}, nil
 }
 
-// LocalBackupManager makes, finds, restores and prunes local instance backups.
-type LocalBackupManager struct {
+// BackupManager makes, finds, restores and prunes local instance backups.
+type BackupManager struct {
 	manager *InstanceManager
 }
 
-func NewLocalBackupManager(manager *InstanceManager) *LocalBackupManager {
-	return &LocalBackupManager{manager: manager}
+func NewBackupManager(manager *InstanceManager) *BackupManager {
+	return &BackupManager{manager: manager}
 }
 
-func (bm *LocalBackupManager) opts() LocalBackupOpts {
+func (bm *BackupManager) opts() BackupOpts {
 	return bm.manager.LocalOpts.Backup
 }
 
-func (bm *LocalBackupManager) Dir() string {
+func (bm *BackupManager) Dir() string {
 	return bm.opts().Dir
 }
 
 // files returns all backup archives in the backup dir, including temporary ones.
-func (bm *LocalBackupManager) files() ([]BackupFile, error) {
+func (bm *BackupManager) files() ([]BackupFile, error) {
 	dir := bm.Dir()
 	paths, err := pathx.GlobDir(dir, "*."+LocalInstanceBackupExtension)
 	if err != nil {
@@ -101,7 +101,7 @@ func (bm *LocalBackupManager) files() ([]BackupFile, error) {
 	return result, nil
 }
 
-func (bm *LocalBackupManager) List() (*BackupList, error) {
+func (bm *BackupManager) List() (*BackupList, error) {
 	files, err := bm.files()
 	if err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func (bm *LocalBackupManager) List() (*BackupList, error) {
 
 // Newest finds the newest complete backup of an instance.
 // An empty name matches backups of any name; an empty AEM version matches backups of any version.
-func (bm *LocalBackupManager) Newest(instanceName, name, aemVersion string) (*BackupFile, error) {
+func (bm *BackupManager) Newest(instanceName, name, aemVersion string) (*BackupFile, error) {
 	files, err := bm.files()
 	if err != nil {
 		return nil, err
@@ -130,7 +130,7 @@ func (bm *LocalBackupManager) Newest(instanceName, name, aemVersion string) (*Ba
 }
 
 // NormalizeName turns a user-given backup name into the form used in file names.
-func (bm *LocalBackupManager) NormalizeName(name string) (string, error) {
+func (bm *BackupManager) NormalizeName(name string) (string, error) {
 	if name == "" {
 		return "", nil
 	}
@@ -141,7 +141,7 @@ func (bm *LocalBackupManager) NormalizeName(name string) (string, error) {
 	return result, nil
 }
 
-func (bm *LocalBackupManager) ProposeFile(li *LocalInstance, name string) string {
+func (bm *BackupManager) ProposeFile(li *LocalInstance, name string) string {
 	aemVersion := ""
 	if li.IsRunning() {
 		aemVersion = li.instance.AemVersion()
@@ -164,7 +164,7 @@ type BackupMakeOpts struct {
 }
 
 // Make archives a created instance, stopping it for the time of archiving, and then prunes old backups if configured.
-func (bm *LocalBackupManager) Make(li *LocalInstance, opts BackupMakeOpts) (string, error) {
+func (bm *BackupManager) Make(li *LocalInstance, opts BackupMakeOpts) (string, error) {
 	file := opts.File
 	if file == "" {
 		file = bm.ProposeFile(li, opts.Name)
@@ -198,7 +198,7 @@ type BackupUseOpts struct {
 }
 
 // Use restores an instance from a backup, stopping it for the time of restoring.
-func (bm *LocalBackupManager) Use(li *LocalInstance, opts BackupUseOpts) (string, error) {
+func (bm *BackupManager) Use(li *LocalInstance, opts BackupUseOpts) (string, error) {
 	file := opts.File
 	if file == "" {
 		proposed, err := bm.proposeFileToUse(li, opts.Name)
@@ -215,7 +215,7 @@ func (bm *LocalBackupManager) Use(li *LocalInstance, opts BackupUseOpts) (string
 }
 
 // proposeFileToUse picks the newest backup; for a running instance only the ones of its AEM version.
-func (bm *LocalBackupManager) proposeFileToUse(li *LocalInstance, name string) (string, error) {
+func (bm *BackupManager) proposeFileToUse(li *LocalInstance, name string) (string, error) {
 	aemVersion := ""
 	if li.IsRunning() {
 		version, err := li.instance.status.AemVersion()
@@ -231,7 +231,7 @@ func (bm *LocalBackupManager) proposeFileToUse(li *LocalInstance, name string) (
 	return backup.Path, nil
 }
 
-func (bm *LocalBackupManager) whileStopped(li *LocalInstance, action func() error) error {
+func (bm *BackupManager) whileStopped(li *LocalInstance, action func() error) error {
 	running := li.IsRunning()
 	if running {
 		if err := li.StopAndAwait(); err != nil {
@@ -250,7 +250,7 @@ func (bm *LocalBackupManager) whileStopped(li *LocalInstance, action func() erro
 }
 
 // CheckSpace fails when making a backup of the instance to the file would leave less than the configured free space on its disk.
-func (bm *LocalBackupManager) CheckSpace(li *LocalInstance, name string, file string) error {
+func (bm *BackupManager) CheckSpace(li *LocalInstance, name string, file string) error {
 	minFreeValue := bm.opts().MinFree
 	if minFreeValue == "" {
 		return nil
@@ -280,7 +280,7 @@ func (bm *LocalBackupManager) CheckSpace(li *LocalInstance, name string, file st
 }
 
 // estimateSize guesses the size of the next backup: the newest backup of the same name, of any name, or else the instance dir size (an upper bound).
-func (bm *LocalBackupManager) estimateSize(li *LocalInstance, name string) (uint64, error) {
+func (bm *BackupManager) estimateSize(li *LocalInstance, name string) (uint64, error) {
 	if backup, err := bm.Newest(li.Name(), name, ""); err == nil {
 		return backup.Size, nil
 	}
@@ -295,7 +295,7 @@ func (bm *LocalBackupManager) estimateSize(li *LocalInstance, name string) (uint
 }
 
 // Prune deletes the backups that the configured policy does not keep, and abandoned temporary archives.
-func (bm *LocalBackupManager) Prune(dryRun bool, protectedPath string) (*BackupPruneResult, error) {
+func (bm *BackupManager) Prune(dryRun bool, protectedPath string) (*BackupPruneResult, error) {
 	policy, err := bm.opts().PrunePolicy()
 	if err != nil {
 		return nil, err
@@ -303,7 +303,7 @@ func (bm *LocalBackupManager) Prune(dryRun bool, protectedPath string) (*BackupP
 	return bm.PruneWith(policy, dryRun, protectedPath)
 }
 
-func (bm *LocalBackupManager) PruneWith(policy BackupPrunePolicy, dryRun bool, protectedPath string) (*BackupPruneResult, error) {
+func (bm *BackupManager) PruneWith(policy BackupPrunePolicy, dryRun bool, protectedPath string) (*BackupPruneResult, error) {
 	files, err := bm.files()
 	if err != nil {
 		return nil, err

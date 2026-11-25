@@ -17,7 +17,7 @@ type InstanceManager struct {
 
 	Instances []Instance
 	LocalOpts *LocalOpts
-	Backup    *LocalBackupManager
+	Backup    *BackupManager
 	CheckOpts *CheckOpts
 
 	AdHocURLs []string
@@ -42,7 +42,7 @@ func NewInstanceManager(aem *AEM) *InstanceManager {
 	result.ProcessingMode = cv.GetString("instance.processing_mode")
 
 	result.LocalOpts = NewLocalOpts(result)
-	result.Backup = NewLocalBackupManager(result)
+	result.Backup = NewBackupManager(result)
 	result.CheckOpts = NewCheckOpts(result)
 
 	return result

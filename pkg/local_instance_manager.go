@@ -14,7 +14,7 @@ type LocalOpts struct {
 	manager *InstanceManager
 
 	UnpackDir   string
-	Backup      LocalBackupOpts
+	Backup      BackupOpts
 	OverrideDir string
 	ServiceMode bool
 }
@@ -24,7 +24,7 @@ func NewLocalOpts(manager *InstanceManager) *LocalOpts {
 
 	result := &LocalOpts{manager: manager}
 	result.UnpackDir = cfg.GetString("instance.local.unpack_dir")
-	result.Backup = newLocalBackupOpts(cfg)
+	result.Backup = newBackupOpts(cfg)
 	result.OverrideDir = cfg.GetString("instance.local.override_dir")
 	result.ServiceMode = cfg.GetBool("instance.local.service_mode")
 

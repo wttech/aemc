@@ -3,7 +3,7 @@
 # Downloads AEM Compose CLI once into 'aem/home/opt' and runs it.
 # Generated from 'pkg/project/wrapper/wrapper.sh.tmpl' in AEM Compose; do not edit.
 
-VERSION=${AEM_CLI_VERSION:-"2.0.19"}
+VERSION=${AEM_CLI_VERSION:-"3.0.0"}
 
 # Check required tools
 # ====================

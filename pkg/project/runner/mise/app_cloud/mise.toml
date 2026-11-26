@@ -8,7 +8,7 @@
 lockfile = true
 
 [tools]
-"github:wttech/aemc" = "2.0.19"
+"github:wttech/aemc" = "3.0.0"
 java = "temurin-21.0.13+9.0.LTS"
 maven = "3.9.6"
 

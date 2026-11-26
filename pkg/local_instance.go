@@ -220,17 +220,17 @@ func (li LocalInstance) CheckPassword() error {
 }
 
 func (li LocalInstance) adapt() error {
+	if err := li.adaptFiles(); err != nil {
+		return err
+	}
+	return li.createLock().Lock()
+}
+
+func (li LocalInstance) adaptFiles() error {
 	if err := li.copyCbpExecutable(); err != nil {
 		return err
 	}
-	if err := li.correctFiles(); err != nil {
-		return err
-	}
-	if err := li.createLock().Lock(); err != nil {
-		return err
-	}
-
-	return nil
+	return li.correctFiles()
 }
 
 func (li LocalInstance) Create() error {
@@ -280,10 +280,15 @@ func (li LocalInstance) Upgrade() error {
 	if err := li.copyLicenseFile(); err != nil {
 		return err
 	}
-	if err := li.adapt(); err != nil {
+	if err := li.adaptFiles(); err != nil {
 		return err
 	}
 	if err := li.startUpgradeJar(); err != nil {
+		return err
+	}
+	// Lock the new distribution only after the upgrade boot succeeded, so that after a failed one
+	// the instance stays outdated: 'start' refuses it and 'upgrade' runs again instead of skipping it
+	if err := li.createLock().Lock(); err != nil {
 		return err
 	}
 

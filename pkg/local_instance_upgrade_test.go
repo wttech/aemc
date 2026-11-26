@@ -103,3 +103,23 @@ func TestLocalInstanceUpgradeShutsBootDown(t *testing.T) {
 	require.NoError(t, li.Upgrade())
 	require.FileExists(t, filepath.Join(li.Dir(), upgradeBootShutdownMarker), "upgrade boot shut down over HTTP")
 }
+
+func TestLocalInstanceUpgradeStaysOutdatedAfterFailedBoot(t *testing.T) {
+	li, libDir, port := newTestUpgradeInstance(t)
+	setTestDistFile(t, libDir, "cq-quickstart-6.6.2.jar")
+	require.NoError(t, li.Create())
+	setTestDistFile(t, libDir, "cq-quickstart-6.6.3.jar")
+
+	occupied, err := net.Listen("tcp", "127.0.0.1:"+port)
+	require.NoError(t, err)
+	require.Error(t, li.Upgrade(), "upgrade boot cannot start on an occupied port")
+	require.NoError(t, occupied.Close())
+	upgradeNeeded, err := li.IsUpgradeNeeded()
+	require.NoError(t, err)
+	require.True(t, upgradeNeeded, "a failed upgrade boot leaves the instance outdated, so the upgrade runs again")
+
+	require.NoError(t, li.Upgrade())
+	upgradeNeeded, err = li.IsUpgradeNeeded()
+	require.NoError(t, err)
+	require.False(t, upgradeNeeded)
+}

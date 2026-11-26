@@ -146,7 +146,7 @@ func (c *CLI) instanceCreateCmd() *cobra.Command {
 func (c *CLI) instanceUpgradeCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:     "upgrade",
-		Short:   "Upgrades AEM instance(s) if needed",
+		Short:   "Upgrades AEM instance(s) using the new Quickstart JAR",
 		Aliases: []string{"update"},
 		Run: func(cmd *cobra.Command, args []string) {
 			localInstances, err := c.aem.InstanceManager().SomeLocals()

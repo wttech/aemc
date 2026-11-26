@@ -842,6 +842,18 @@ aem instance stop
 aem instance delete
 ```
 
+### Upgrading Local Instances
+
+After the distribution file (`vendor.quickstart.dist_file`) changes, e.g. to a newer AEM 6.5 LTS service pack, `instance upgrade` performs Adobe's [in-place upgrade](https://experienceleague.adobe.com/en/docs/experience-manager-65-lts/content/implementing/deploying/upgrading/in-place-upgrade) of the stopped local instances: it unpacks the new Quickstart JAR, boots AEM once from it until it is started, so that AEM applies the upgrade, and shuts it down. The boot takes minutes and needs the instance HTTP port free. Booting from the start script instead, as `instance start` does, applies the upgrade only partly.
+
+```shell
+aem instance stop
+aem instance upgrade
+aem instance start
+```
+
+If the upgrade boot fails, the instance stays outdated: `instance start` refuses it and `instance upgrade` runs again. Instances in service mode are not upgraded, as the boot would run AEM outside the service; stop the service, run the upgrade as the service user with `instance.local.service_mode` disabled, then start the service.
+
 ## Deploying Packages
 
 ```shell

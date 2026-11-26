@@ -11,6 +11,7 @@ How to move a project from one major version to the next is described in [UPGRAD
 
 - **Breaking:** dotenv files (`.env`, `.env.local`, `local.env`) no longer override variables already set in the environment, as in [Twelve-Factor App](https://12factor.net/config), Docker Compose and mise. See [UPGRADING.md](UPGRADING.md#dotenv-files).
 - `aem instance backup perform` and `restore` honour the instance processing mode like other commands instead of always running serially; disk space is checked for all instances up front and old backups are pruned once at the end ([#258](https://github.com/wttech/aemc/issues/258)).
+- The output of commands run by AEM Compose (instance scripts, Java tools) is written to its own file, `output.log.command_file` (`aem/home/var/log/command.log`), so `aem.log` holds only parsable logs ([#34](https://github.com/wttech/aemc/issues/34)).
 
 ### Added
 

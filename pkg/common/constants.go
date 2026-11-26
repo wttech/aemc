@@ -13,6 +13,7 @@ const (
 	LogDirName        = "log"
 	LogDir            = VarDir + "/" + LogDirName
 	LogFile           = LogDir + "/aem.log"
+	CommandLogFile    = LogDir + "/command.log"
 	CacheDirName      = "cache"
 	CacheDir          = VarDir + "/" + CacheDirName
 	ToolDirName       = "opt"

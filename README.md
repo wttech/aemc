@@ -284,16 +284,16 @@ instance:
   # Full details of local or remote instances
   config:
     local_author:
-      active: [[.Env.AEM_AUTHOR_ACTIVE | default true ]]
-      http_url: [[.Env.AEM_AUTHOR_HTTP_URL | default "http://127.0.0.1:4502" ]]
-      user: [[.Env.AEM_AUTHOR_USER | default "admin" ]]
-      password: [[.Env.AEM_AUTHOR_PASSWORD | default "admin" ]]
+      active: ${AEM_AUTHOR_ACTIVE:-true}
+      http_url: ${AEM_AUTHOR_HTTP_URL:-http://127.0.0.1:4502}
+      user: ${AEM_AUTHOR_USER:-admin}
+      password: ${AEM_AUTHOR_PASSWORD:-admin}
       run_modes: [ local ]
       jvm_opts:
         - -server
         - -Djava.awt.headless=true
-        - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
-        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=[[.Env.AEM_AUTHOR_DEBUG_ADDR | default "0.0.0.0:14502" ]]
+        - -Djava.io.tmpdir=${AEM_PROJECT_DIR}/aem/home/tmp
+        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${AEM_AUTHOR_DEBUG_ADDR:-0.0.0.0:14502}
         - -Duser.language=en
         - -Duser.country=US
         - -Duser.timezone=UTC
@@ -304,16 +304,16 @@ instance:
         - ACME_VAR=value
       sling_props: []
     local_publish:
-      active: [[.Env.AEM_PUBLISH_ACTIVE | default true ]]
-      http_url: [[.Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4503" ]]
-      user: [[.Env.AEM_PUBLISH_USER | default "admin" ]]
-      password: [[.Env.AEM_PUBLISH_PASSWORD | default "admin" ]]
+      active: ${AEM_PUBLISH_ACTIVE:-true}
+      http_url: ${AEM_PUBLISH_HTTP_URL:-http://127.0.0.1:4503}
+      user: ${AEM_PUBLISH_USER:-admin}
+      password: ${AEM_PUBLISH_PASSWORD:-admin}
       run_modes: [ local ]
       jvm_opts:
         - -server
         - -Djava.awt.headless=true
-        - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
-        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=[[.Env.AEM_PUBLISH_DEBUG_ADDR | default "0.0.0.0:14503" ]]
+        - -Djava.io.tmpdir=${AEM_PROJECT_DIR}/aem/home/tmp
+        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${AEM_PUBLISH_DEBUG_ADDR:-0.0.0.0:14503}
         - -Duser.language=en
         - -Duser.country=US
         - -Duser.timezone=UTC
@@ -476,18 +476,18 @@ java:
 
   # Pre-installed local JDK dir
   # a) keep it empty to download open source Java automatically for current OS and architecture
-  # b) set it to absolute path or to env var '[[.Env.JAVA_HOME]]' to indicate where closed source Java like Oracle is installed
+  # b) set it to absolute path or to env var '${JAVA_HOME}' to indicate where closed source Java like Oracle is installed
   home_dir: ""
 
   # Auto-installed JDK options
   download:
-    # Source URL with template vars support
-    url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.25_9.[[.ArchiveExt]]"
-    # Map source URL template vars to be compatible with Adoptium Java
+    # Source URL, may use built-in variables like '${AEM_OS}'
+    url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_${AEM_ARCH}_${AEM_OS}_hotspot_11.0.25_9.${AEM_ARCHIVE_EXT}"
+    # Map values of built-in variables in source URL to be compatible with Adoptium Java
     replacements:
-      # Var 'Os' (GOOS)
+      # Variable 'AEM_OS' (GOOS)
       "darwin": "mac"
-      # Var 'Arch' (GOARCH)
+      # Variable 'AEM_ARCH' (GOARCH)
       "x86_64": "x64"
       "amd64": "x64"
       "386": "x86-32"
@@ -498,8 +498,9 @@ java:
 base:
   # Location of temporary files (downloaded AEM packages, etc)
   tmp_dir: aem/home/tmp
-  # Location of supportive tools (downloaded Java, OakRun, unpacked AEM SDK)
-  tool_dir: aem/home/opt
+  # Location of supportive tools (downloaded Java, OakRun, unpacked AEM SDK), deleted by 'aem vendor clean'
+  # A subdirectory of 'aem/home/opt', so the binaries downloaded there by the wrapper scripts are kept
+  tool_dir: aem/home/opt/vendor
 
 log:
   level: info
@@ -533,18 +534,18 @@ vendor:
 
     # Pre-installed local JDK dir
     # a) keep it empty to download open source Java automatically for current OS and architecture
-    # b) set it to absolute path or to env var '[[.Env.JAVA_HOME]]' to indicate where closed source Java like Oracle is installed
+    # b) set it to absolute path or to env var '${JAVA_HOME}' to indicate where closed source Java like Oracle is installed
     home_dir: ""
 
     # Auto-installed JDK options
     download:
-      # Source URL with template vars support
-      url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.25_9.[[.ArchiveExt]]"
-      # Map source URL template vars to be compatible with Adoptium Java
+      # Source URL, may use built-in variables like '${AEM_OS}'
+      url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_${AEM_ARCH}_${AEM_OS}_hotspot_11.0.25_9.${AEM_ARCHIVE_EXT}"
+      # Map values of built-in variables in source URL to be compatible with Adoptium Java
       replacements:
-        # Var 'Os' (GOOS)
+        # Variable 'AEM_OS' (GOOS)
         "darwin": "mac"
-        # Var 'Arch' (GOARCH)
+        # Variable 'AEM_ARCH' (GOARCH)
         "x86_64": "x64"
         "amd64": "x64"
         "386": "x86-32"
@@ -611,18 +612,49 @@ content:
     namespaces_skipped: true
 ```
 
-Note that environment variables may be injected in any part of config file. 
-Environment variables could be defined in one or many [dotenv files](https://github.com/wttech/aemc/blob/main/pkg/common/osx/osx.go#L32).
+## Variables in config file
+
+Values in the config file may reference environment variables, using the [Compose Specification interpolation](https://github.com/compose-spec/compose-spec/blob/main/12-interpolation.md) syntax known from Docker Compose and shells:
+
+| Syntax                | Result                                                    |
+|-----------------------|-----------------------------------------------------------|
+| `${VAR}`              | value of `VAR`, empty when not set                        |
+| `${VAR:-default}`     | `default` when `VAR` is not set or empty                  |
+| `${VAR-default}`      | `default` when `VAR` is not set                           |
+| `${VAR:?message}`     | error with `message` when `VAR` is not set or empty       |
+| `${VAR:+replacement}` | `replacement` when `VAR` is set and not empty, else empty |
+| `$$`                  | a literal `$`                                             |
+
+Variables are replaced in values only, after the file is parsed, so the file stays valid YAML for IDEs and a variable value cannot break its structure. 
+An unquoted value is typed after the replacement (`active: ${AEM_AUTHOR_ACTIVE:-true}` is a boolean), a quoted one stays a string. 
+A literal `$` in a value must be written as `$$`.
+
+Environment variables could be defined in one or many [dotenv files](https://github.com/wttech/aemc/blob/main/pkg/common/osx/osx.go#L32): `.env` (personal, VCS-ignored), `.env.local` (VCS-ignored) and `local.env` (VCS-tracked), where `local` is the default value of `AEM_ENV`; the first file defining a variable wins. A variable already set in the environment is never overridden by a file.
+These built-in variables are also available (reserved, not overridable):
+
+| Variable           | Value                                               |
+|--------------------|-----------------------------------------------------|
+| `AEM_PROJECT_DIR` | absolute path of the project (working directory)    |
+| `AEM_OS`          | operating system, e.g. `linux`, `darwin`, `windows` |
+| `AEM_ARCH`        | CPU architecture, e.g. `amd64`, `arm64`             |
+| `AEM_ARCHIVE_EXT` | `zip` on Windows, `tar.gz` elsewhere                |
 
 ## Overriding default configuration
 
-By default, the VCS-tracked file is loaded (*aem/default/etc*).
+By default, the VCS-tracked file is loaded: *aem.yml* in the project root or, when there is none, *aem/default/etc/aem.yml*.
 However, occasionally developers might want to override the default config file and load a VCS-ignored file instead (*aem/home/etc/aem.yml*).
 
 To do so, run the command:
 
 ```shell
 sh aemw config init
+```
+
+To run AEM Compose for a project in another directory, or with another config file, use the global flags:
+
+```shell
+aem --cd /opt/aem instance status       # like 'git -C' or 'mise -C': env files, config and relative paths are resolved there
+aem --config ci/aem.yml instance status # takes precedence over env var 'AEM_CONFIG_FILE'
 ```
 
 ## Configuration precedence
@@ -992,8 +1024,6 @@ sh aemw instance backup prune --keep-last 1 --max-size 100GB
 sh aemw instance backup make --instance-id local_author --skip-space-check
 ```
 
-The setting `instance.local.backup_dir` is deprecated; use `instance.local.backup.dir` instead.
-
 ## Replication agents
 
 1. Configuring publish agent on AEM author:
@@ -1148,11 +1178,11 @@ If you're setting up your instance for the first time on a Linux OS (i.e. Ubuntu
 
 ```
 INFO[2025-02-27 13:17:09] preparing new SDK 'aem/home/lib/aem-sdk-2025.2.19687.20250225T164325Z-250100.zip'
-INFO[2025-02-27 13:17:09] unpacking SDK ZIP 'aem/home/lib/aem-sdk-2025.2.19687.20250225T164325Z-250100.zip' to dir 'aem/home/opt/sdk'
-INFO[2025-02-27 13:17:09] unpacked SDK ZIP 'aem/home/lib/aem-sdk-2025.2.19687.20250225T164325Z-250100.zip' to dir 'aem/home/opt/sdk'
-INFO[2025-02-27 13:17:09] unpacking SDK dispatcher tools using script 'aem/home/opt/sdk/aem-sdk-dispatcher-tools-2.0.235-unix.sh' to dir 'aem/home/opt/sdk/dispatcher'
+INFO[2025-02-27 13:17:09] unpacking SDK ZIP 'aem/home/lib/aem-sdk-2025.2.19687.20250225T164325Z-250100.zip' to dir 'aem/home/opt/vendor/sdk'
+INFO[2025-02-27 13:17:09] unpacked SDK ZIP 'aem/home/lib/aem-sdk-2025.2.19687.20250225T164325Z-250100.zip' to dir 'aem/home/opt/vendor/sdk'
+INFO[2025-02-27 13:17:09] unpacking SDK dispatcher tools using script 'aem/home/opt/vendor/sdk/aem-sdk-dispatcher-tools-2.0.235-unix.sh' to dir 'aem/home/opt/vendor/sdk/dispatcher'
 # Failed to parse arguments: Unknown option -title
-ERRO[2025-02-27 13:17:10] cannot run SDK dispatcher tools unpacking script 'aem/home/opt/sdk/aem-sdk-dispatcher-tools-2.0.235-unix.sh': exit status 1
+ERRO[2025-02-27 13:17:10] cannot run SDK dispatcher tools unpacking script 'aem/home/opt/vendor/sdk/aem-sdk-dispatcher-tools-2.0.235-unix.sh': exit status 1
 getting started
   AEM Compose project is not yet ready to use!
 

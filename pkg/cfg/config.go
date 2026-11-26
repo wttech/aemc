@@ -1,19 +1,15 @@
 package cfg
 
 import (
-	"bytes"
 	"fmt"
+	"github.com/compose-spec/compose-go/v2/template"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/filex"
 	"github.com/wttech/aemc/pkg/common/fmtx"
-	"github.com/wttech/aemc/pkg/common/osx"
 	"github.com/wttech/aemc/pkg/common/pathx"
-	"github.com/wttech/aemc/pkg/common/tplx"
 	"os"
-	"path/filepath"
-	"runtime"
 	"strings"
 )
 
@@ -21,13 +17,15 @@ const (
 	EnvPrefix           = "AEM"
 	FileDefault         = common.ConfigDir + "/aem.yml"
 	FileEnvVar          = "AEM_CONFIG_FILE"
+	TemplateFileRoot    = "aem.yml"
 	TemplateFileDefault = common.DefaultDir + "/" + common.ConfigDirName + "/aem.yml"
 	TemplateFileEnvVar  = "AEM_CONFIG_TEMPLATE"
 )
 
 // Config defines a place for managing input configuration from various sources (YML file, env vars, etc)
 type Config struct {
-	viper *viper.Viper
+	viper      *viper.Viper
+	legacyFile string
 }
 
 func (c *Config) Values() *viper.Viper {
@@ -37,7 +35,7 @@ func (c *Config) Values() *viper.Viper {
 func NewConfig() *Config {
 	result := new(Config)
 	result.setDefaults()
-	result.readFromFile(FileEffective(), true)
+	result.readFromFile(FileEffective())
 	result.readFromEnv()
 	return result
 }
@@ -48,7 +46,7 @@ func (c *Config) readFromEnv() {
 	c.viper.AutomaticEnv()
 }
 
-func (c *Config) readFromFile(file string, templating bool) {
+func (c *Config) readFromFile(file string) {
 	if file == "" {
 		log.Debugf("skipping reading AEM config file as it is not provided")
 		return
@@ -62,56 +60,34 @@ func (c *Config) readFromFile(file string, templating bool) {
 		log.Debugf("skipping reading AEM config file as it does not exist '%s'", file)
 		return
 	}
-	var config []byte
-	if templating {
-		tpl, err := tplx.New(filepath.Base(file)).Delims("[[", "]]").ParseFiles(file)
-		if err != nil {
-			log.Fatalf("cannot parse AEM config file '%s': %s", file, err)
-			return
-		}
-		var tplOut bytes.Buffer
-		if err = tpl.Execute(&tplOut, c.tplData()); err != nil {
-			log.Fatalf("cannot render AEM config template properly '%s': %s", file, err)
-			return
-		}
-		config = tplOut.Bytes()
-	} else {
-		config, err = filex.Read(file)
-		if err != nil {
-			log.Fatalf("cannot read AEM config file '%s': %s", file, err)
-			return
-		}
+	content, err := filex.Read(file)
+	if err != nil {
+		log.Fatalf("cannot read AEM config file '%s': %s", file, err)
+		return
 	}
-	c.viper.SetConfigType(filepath.Ext(file)[1:])
-	if err = c.viper.MergeConfig(bytes.NewReader(config)); err != nil {
-		log.Fatalf("cannot load AEM config file properly '%s': %s", file, err)
+	if legacyTemplateUsed(content) {
+		log.Debugf("skipping reading AEM config file as it uses the 2.x template syntax '%s'", file)
+		c.legacyFile = file
+		return
+	}
+	values, err := interpolateYAML(content, variables())
+	if err != nil {
+		log.Fatalf("cannot load AEM config file '%s': %s", file, err)
+		return
+	}
+	if err = c.viper.MergeConfigMap(values); err != nil {
+		log.Fatalf("cannot merge AEM config file '%s': %s", file, err)
 		return
 	}
 }
 
-func (c *Config) tplString(text string) string {
-	result, err := tplx.RenderString(text, c.tplData())
+// interpolateString replaces variables in a config value the same way as in the config file.
+func (c *Config) interpolateString(text string) string {
+	result, err := template.Substitute(text, variables())
 	if err != nil {
-		log.Fatalf("cannot render AEM config string\nerror: %s\nvalue:\n%s", err, text)
+		log.Fatalf("cannot interpolate AEM config value\nerror: %s\nvalue:\n%s", err, text)
 	}
 	return result
-}
-
-func (c *Config) tplData() map[string]any {
-	var ext string
-	if osx.IsWindows() {
-		ext = "zip"
-	} else {
-		ext = "tar.gz"
-	}
-	data := map[string]any{
-		"Env":        osx.EnvVarsMap(),
-		"Path":       pathx.Normalize("."),
-		"Os":         runtime.GOOS,
-		"Arch":       runtime.GOARCH,
-		"ArchiveExt": ext,
-	}
-	return data
 }
 
 func FileEffective() string {
@@ -136,12 +112,15 @@ func (c *Config) FileExists() bool {
 	return pathx.Exists(File())
 }
 
+// TemplateFile is the VCS-tracked config file: 'aem.yml' in the project root, else 'aem/default/etc/aem.yml'.
 func TemplateFile() string {
-	path := os.Getenv(TemplateFileEnvVar)
-	if path == "" {
-		path = TemplateFileDefault
+	if path := os.Getenv(TemplateFileEnvVar); path != "" {
+		return path
 	}
-	return path
+	if pathx.Exists(TemplateFileRoot) {
+		return TemplateFileRoot
+	}
+	return TemplateFileDefault
 }
 
 func (c *Config) TemplateFileExists() bool {

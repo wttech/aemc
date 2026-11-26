@@ -1,6 +1,7 @@
 package main
 
 import (
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg/cfg"
 	"github.com/wttech/aemc/pkg/instance"
@@ -12,6 +13,7 @@ func (c *CLI) rootCmd() *cobra.Command {
 		Use: "aem",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			c.onStart()
+			c.checkLegacyConfig(cmd)
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 			c.onEnd()
@@ -42,6 +44,9 @@ func (c *CLI) rootCmd() *cobra.Command {
 
 func (c *CLI) rootFlags(cmd *cobra.Command) {
 	cv := c.config.Values()
+
+	cmd.PersistentFlags().StringP(flagCd, "C", "", "Run as if started in this directory (project root)")
+	cmd.PersistentFlags().String(flagConfig, "", "Config file path (overrides env var '"+cfg.FileEnvVar+"')")
 
 	cmd.PersistentFlags().String("input-format", cv.GetString("input.format"), "Controls input format ("+strings.Join(cfg.InputFormats(), "|")+")")
 	_ = cv.BindPFlag("input.format", cmd.PersistentFlags().Lookup("input-format"))
@@ -84,4 +89,15 @@ func (c *CLI) rootFlags(cmd *cobra.Command) {
 
 	cmd.PersistentFlags().String("instance-processing", cv.GetString("instance.processing_mode"), "Controls processing mode for instances ("+(strings.Join(instance.ProcessingModes(), "|")+")"))
 	_ = cv.BindPFlag("instance.processing_mode", cmd.PersistentFlags().Lookup("instance-processing"))
+}
+
+// checkLegacyConfig stops with a hint when the config file uses the AEM Compose 2.x template syntax.
+// Temporary bridge; remove in the next major version together with 'aem config migrate'.
+func (c *CLI) checkLegacyConfig(cmd *cobra.Command) {
+	file := c.config.LegacyFile()
+	if file == "" || cmd.CommandPath() == "aem config migrate" {
+		return
+	}
+	log.Fatalf("config file '%s' uses the AEM Compose 2.x template syntax '[[ ]]'; convert it to variables '${}' with 'aem config migrate', "+
+		"see https://github.com/wttech/aemc/blob/main/UPGRADING.md", file)
 }

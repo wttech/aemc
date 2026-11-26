@@ -30,18 +30,20 @@ func IsLinux() bool {
 	return !IsWindows() && !IsDarwin()
 }
 
+// EnvVarsLoad loads dotenv files: '.env' (personal, VCS-ignored), '.env.<AEM_ENV>' (VCS-ignored) and '<AEM_ENV>.env' (VCS-tracked).
+// The first file defining a variable wins, and no file overrides a variable already set in the environment (Twelve-Factor App, III Config).
 func EnvVarsLoad() {
 	name := os.Getenv(EnvVar)
 	if name == "" {
 		name = EnvLocal
 	}
 	for _, file := range []string{
-		name + "." + EnvFileExt,
-		"." + EnvFileExt + "." + name,
 		"." + EnvFileExt,
+		"." + EnvFileExt + "." + name,
+		name + "." + EnvFileExt,
 	} {
 		if pathx.Exists(file) {
-			if err := godotenv.Overload(file); err != nil {
+			if err := godotenv.Load(file); err != nil {
 				log.Fatalf("cannot load env file '%s': %s", file, err)
 			}
 		}

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -45,7 +46,7 @@ type BackupPruneOpts struct {
 
 func newBackupOpts(cfg *viper.Viper) BackupOpts {
 	return BackupOpts{
-		Dir:     localBackupDir(cfg),
+		Dir:     cfg.GetString("instance.local.backup.dir"),
 		MinFree: cfg.GetString("instance.local.backup.min_free"),
 		Prune: BackupPruneOpts{
 			Auto:     cfg.GetBool("instance.local.backup.prune.auto"),
@@ -197,6 +198,77 @@ type BackupUseOpts struct {
 	DeleteCreated bool
 }
 
+// BackupResult is a backup made or used for an instance.
+type BackupResult struct {
+	Instance Instance `yaml:"instance" json:"instance"`
+	File     string   `yaml:"file" json:"file"`
+}
+
+// Perform makes backups of the created instances like 'instance stop', then archiving, then 'instance start':
+// the running ones are stopped together, archived honouring the instance processing mode, and started together again,
+// so they wait for one startup instead of one per instance. Disk space is checked for all of them before any is stopped,
+// and old backups are pruned once at the end.
+func (bm *BackupManager) Perform(instances []Instance, opts BackupMakeOpts) ([]BackupResult, error) {
+	created := lo.Filter(instances, func(i Instance, _ int) bool {
+		if !i.Local().IsCreated() {
+			log.Infof("%s > skipping making backup as it is not created", i.IDColor())
+			return false
+		}
+		return true
+	})
+	if len(created) == 0 {
+		return []BackupResult{}, nil
+	}
+	if !opts.SkipSpaceCheck {
+		locals := lo.Map(created, func(i Instance, _ int) *LocalInstance { return i.Local() })
+		if err := bm.checkSpace(locals, opts.Name, bm.Dir()); err != nil {
+			return nil, err
+		}
+	}
+	running := lo.Filter(created, func(i Instance, _ int) bool { return i.Local().IsRunning() })
+	if _, err := bm.manager.Stop(running); err != nil {
+		return nil, err
+	}
+	results, err := InstanceProcess(bm.manager.aem, created, func(i Instance) (BackupResult, error) {
+		file := bm.ProposeFile(i.Local(), opts.Name)
+		return BackupResult{Instance: i, File: file}, i.Local().MakeBackup(file)
+	})
+	if err != nil {
+		return nil, err
+	}
+	if _, err := bm.manager.Start(running); err != nil {
+		return results, err
+	}
+	if bm.opts().Prune.Auto {
+		if _, err := bm.Prune(false, ""); err != nil {
+			return results, fmt.Errorf("backups made but pruning old backups failed: %w", err)
+		}
+	}
+	return results, nil
+}
+
+// Restore restores the not created instances from their newest backups, honouring the instance processing mode.
+func (bm *BackupManager) Restore(instances []Instance, name string) ([]BackupResult, error) {
+	restorable := lo.Filter(instances, func(i Instance, _ int) bool {
+		if i.Local().IsCreated() {
+			log.Infof("%s > skipping using backup as it is already created", i.IDColor())
+			return false
+		}
+		if _, err := bm.Newest(i.Local().Name(), name, ""); err != nil {
+			log.Warnf("%s > skipping using backup as cannot find any: %s", i.IDColor(), err)
+			return false
+		}
+		return true
+	})
+	if len(restorable) == 0 {
+		return []BackupResult{}, nil
+	}
+	return InstanceProcess(bm.manager.aem, restorable, func(i Instance) (BackupResult, error) {
+		file, err := bm.Use(i.Local(), BackupUseOpts{Name: name})
+		return BackupResult{Instance: i, File: file}, err
+	})
+}
+
 // Use restores an instance from a backup, stopping it for the time of restoring.
 func (bm *BackupManager) Use(li *LocalInstance, opts BackupUseOpts) (string, error) {
 	file := opts.File
@@ -251,11 +323,15 @@ func (bm *BackupManager) whileStopped(li *LocalInstance, action func() error) er
 
 // CheckSpace fails when making a backup of the instance to the file would leave less than the configured free space on its disk.
 func (bm *BackupManager) CheckSpace(li *LocalInstance, name string, file string) error {
+	return bm.checkSpace([]*LocalInstance{li}, name, filepath.Dir(file))
+}
+
+// checkSpace checks that the disk of dir has room for the next backups of all given instances together.
+func (bm *BackupManager) checkSpace(lis []*LocalInstance, name string, dir string) error {
 	minFreeValue := bm.opts().MinFree
 	if minFreeValue == "" {
 		return nil
 	}
-	dir := filepath.Dir(file)
 	if err := pathx.Ensure(dir); err != nil {
 		return err
 	}
@@ -267,14 +343,19 @@ func (bm *BackupManager) CheckSpace(li *LocalInstance, name string, file string)
 	if err != nil {
 		return fmt.Errorf("invalid backup min free space: %w", err)
 	}
-	expected, err := bm.estimateSize(li, name)
-	if err != nil {
-		return err
+	var expected uint64
+	for _, li := range lis {
+		size, err := bm.estimateSize(li, name)
+		if err != nil {
+			return err
+		}
+		expected += size
 	}
 	if usage.Free < expected+minFree {
+		ids := strings.Join(lo.Map(lis, func(li *LocalInstance, _ int) string { return li.instance.IDColor() }), ",")
 		return fmt.Errorf("%s > not enough disk space to make backup in directory '%s': expected backup size %s, free %s, to stay free %s ('%s'); "+
 			"free up space, e.g. with 'aem instance backup prune', or skip this check with '--skip-space-check'",
-			li.instance.IDColor(), dir, humanize.Bytes(expected), humanize.Bytes(usage.Free), humanize.Bytes(minFree), minFreeValue)
+			ids, dir, humanize.Bytes(expected), humanize.Bytes(usage.Free), humanize.Bytes(minFree), minFreeValue)
 	}
 	return nil
 }

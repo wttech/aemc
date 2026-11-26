@@ -17,6 +17,7 @@ const (
 	EnvPrefix           = "AEM"
 	FileDefault         = common.ConfigDir + "/aem.yml"
 	FileEnvVar          = "AEM_CONFIG_FILE"
+	TemplateFileRoot    = "aem.yml"
 	TemplateFileDefault = common.DefaultDir + "/" + common.ConfigDirName + "/aem.yml"
 	TemplateFileEnvVar  = "AEM_CONFIG_TEMPLATE"
 )
@@ -105,12 +106,15 @@ func (c *Config) FileExists() bool {
 	return pathx.Exists(File())
 }
 
+// TemplateFile is the VCS-tracked config file: 'aem.yml' in the project root, else 'aem/default/etc/aem.yml'.
 func TemplateFile() string {
-	path := os.Getenv(TemplateFileEnvVar)
-	if path == "" {
-		path = TemplateFileDefault
+	if path := os.Getenv(TemplateFileEnvVar); path != "" {
+		return path
 	}
-	return path
+	if pathx.Exists(TemplateFileRoot) {
+		return TemplateFileRoot
+	}
+	return TemplateFileDefault
 }
 
 func (c *Config) TemplateFileExists() bool {

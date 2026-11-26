@@ -43,6 +43,9 @@ func (c *CLI) rootCmd() *cobra.Command {
 func (c *CLI) rootFlags(cmd *cobra.Command) {
 	cv := c.config.Values()
 
+	cmd.PersistentFlags().StringP(flagCd, "C", "", "Run as if started in this directory (project root)")
+	cmd.PersistentFlags().String(flagConfig, "", "Config file path (overrides env var '"+cfg.FileEnvVar+"')")
+
 	cmd.PersistentFlags().String("input-format", cv.GetString("input.format"), "Controls input format ("+strings.Join(cfg.InputFormats(), "|")+")")
 	_ = cv.BindPFlag("input.format", cmd.PersistentFlags().Lookup("input-format"))
 

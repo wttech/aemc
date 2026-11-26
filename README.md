@@ -640,13 +640,20 @@ These built-in variables are also available (reserved, not overridable):
 
 ## Overriding default configuration
 
-By default, the VCS-tracked file is loaded (*aem/default/etc*).
+By default, the VCS-tracked file is loaded: *aem.yml* in the project root or, when there is none, *aem/default/etc/aem.yml*.
 However, occasionally developers might want to override the default config file and load a VCS-ignored file instead (*aem/home/etc/aem.yml*).
 
 To do so, run the command:
 
 ```shell
 sh aemw config init
+```
+
+To run AEM Compose for a project in another directory, or with another config file, use the global flags:
+
+```shell
+aem --cd /opt/aem instance status       # like 'git -C' or 'mise -C': env files, config and relative paths are resolved there
+aem --config ci/aem.yml instance status # takes precedence over env var 'AEM_CONFIG_FILE'
 ```
 
 ## Configuration precedence

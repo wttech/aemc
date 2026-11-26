@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"archive/zip"
 	"fmt"
 	"net"
 	"net/http"
@@ -150,4 +151,45 @@ func TestLocalInstanceUpgradeRefusedInServiceMode(t *testing.T) {
 	upgradeNeeded, err := li.IsUpgradeNeeded()
 	require.NoError(t, err)
 	require.True(t, upgradeNeeded)
+}
+
+func writeTestAppJar(t *testing.T, li LocalInstance, manifest string) {
+	dir := filepath.Join(li.QuickstartDir(), "app")
+	require.NoError(t, os.MkdirAll(dir, 0755))
+	file, err := os.Create(filepath.Join(dir, "cq-quickstart-6.6.2-standalone-quickstart.jar"))
+	require.NoError(t, err)
+	defer file.Close()
+	archive := zip.NewWriter(file)
+	entry, err := archive.Create("META-INF/MANIFEST.MF")
+	require.NoError(t, err)
+	_, err = entry.Write([]byte(manifest))
+	require.NoError(t, err)
+	require.NoError(t, archive.Close())
+}
+
+func TestLocalInstanceUpgradeRecordsInstalledBuild(t *testing.T) {
+	li, libDir, _ := newTestUpgradeInstance(t)
+	setTestDistFile(t, libDir, "cq-quickstart-6.6.2.jar")
+	require.NoError(t, li.Create())
+	writeTestAppJar(t, li, "Manifest-Version: 1.0\r\nProduct-Version: 6.6.2\r\nProduct-Build: 20260216\r\n\r\n")
+	setTestDistFile(t, libDir, "cq-quickstart-6.6.3.jar")
+
+	require.NoError(t, li.Upgrade())
+	props, err := os.ReadFile(li.QuickstartPropsFile())
+	require.NoError(t, err)
+	require.Equal(t, "quickstart.build=6.6.2.20260216\n", string(props), "Quickstart upgrades from the build it finds there")
+}
+
+func TestLocalInstanceUpgradeKeepsQuickstartProps(t *testing.T) {
+	li, libDir, _ := newTestUpgradeInstance(t)
+	setTestDistFile(t, libDir, "cq-quickstart-6.6.2.jar")
+	require.NoError(t, li.Create())
+	writeTestAppJar(t, li, "Manifest-Version: 1.0\r\nProduct-Version: 6.6.2\r\nProduct-Build: 20260216\r\n\r\n")
+	require.NoError(t, os.WriteFile(li.QuickstartPropsFile(), []byte("quickstart.build=6.6.1.20251101\n"), 0644))
+	setTestDistFile(t, libDir, "cq-quickstart-6.6.3.jar")
+
+	require.NoError(t, li.Upgrade())
+	props, err := os.ReadFile(li.QuickstartPropsFile())
+	require.NoError(t, err)
+	require.Equal(t, "quickstart.build=6.6.1.20251101\n", string(props), "the build Quickstart recorded itself is kept")
 }

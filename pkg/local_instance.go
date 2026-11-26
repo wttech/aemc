@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/essentialkaos/go-jar"
 	"github.com/magiconair/properties"
 	"github.com/wttech/aemc/pkg/common"
 	"github.com/wttech/aemc/pkg/common/cryptox"
@@ -160,6 +161,10 @@ func (li LocalInstance) SlingPropsFile() string {
 	return pathx.Canonical(fmt.Sprintf("%s/conf/sling.properties", li.QuickstartDir()))
 }
 
+func (li LocalInstance) QuickstartPropsFile() string {
+	return pathx.Canonical(fmt.Sprintf("%s/conf/quickstart.properties", li.QuickstartDir()))
+}
+
 func (li LocalInstance) BundleDir(id int) string {
 	return pathx.Canonical(fmt.Sprintf("%s/launchpad/felix/bundle%d", li.QuickstartDir(), id))
 }
@@ -272,6 +277,9 @@ func (li LocalInstance) Upgrade() error {
 	// Reset init lock to force re-initialization of sling.properties and other configs on next start.
 	// This is needed because unpack overwrites sling.properties with default values from the new JAR
 	if err := li.initLock().Unlock(); err != nil {
+		return err
+	}
+	if err := li.recordInstalledBuild(); err != nil {
 		return err
 	}
 	// Remove old bin scripts so that unpack can replace them with new versions
@@ -390,6 +398,38 @@ func (li LocalInstance) cleanupOutdatedAppJars() error {
 		if err := os.Remove(ji.path); err != nil {
 			return fmt.Errorf("%s > cannot remove outdated JAR '%s': %w", li.instance.IDColor(), ji.path, err)
 		}
+	}
+	return nil
+}
+
+// recordInstalledBuild writes the build of the installed distribution to 'conf/quickstart.properties' if it is missing,
+// as Quickstart does when booted from its JAR. Quickstart compares it with the build of the new JAR to run in upgrade mode,
+// in which AEM runs its upgrade tasks (e.g. content migration); instances only ever booted by the start script lack it,
+// so they would be upgraded in install mode. The build is the one of the app JAR, which unpacking replaces.
+func (li LocalInstance) recordInstalledBuild() error {
+	file := li.QuickstartPropsFile()
+	if pathx.Exists(file) {
+		return nil
+	}
+	appJars, err := filepath.Glob(filepath.Join(li.QuickstartDir(), "app", "*.jar"))
+	if err != nil || len(appJars) != 1 {
+		log.Warnf("%s > cannot determine installed build as app dir does not hold exactly one JAR, upgrading in install mode", li.instance.IDColor())
+		return nil
+	}
+	manifest, err := jar.ReadFile(appJars[0])
+	if err != nil {
+		log.Warnf("%s > cannot read installed build from JAR '%s', upgrading in install mode: %s", li.instance.IDColor(), appJars[0], err)
+		return nil
+	}
+	productVersion, productBuild := manifest["Product-Version"], manifest["Product-Build"]
+	if productVersion == "" || productBuild == "" {
+		log.Warnf("%s > JAR '%s' does not declare its build, upgrading in install mode", li.instance.IDColor(), appJars[0])
+		return nil
+	}
+	build := productVersion + "." + productBuild
+	log.Infof("%s > recording installed build '%s' in file '%s'", li.instance.IDColor(), build, file)
+	if err := filex.WriteString(file, "quickstart.build="+build+"\n"); err != nil {
+		return fmt.Errorf("%s > cannot record installed build in file '%s': %w", li.instance.IDColor(), file, err)
 	}
 	return nil
 }

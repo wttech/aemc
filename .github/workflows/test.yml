@@ -2,6 +2,7 @@ name: Test
 
 # End-to-end test: the binary built in this run sets up real AEM instances in a scaffolded project, once per task runner and AEM version, each on the newest Java it supports.
 # Too heavy for every push: run on demand from any branch, and before every release (called by release-perform.yml).
+# AEM is proprietary: its distributions, license and logs never leave the runner (this repository and its workflow artifacts are public); only AEM Compose output is shown.
 # AEM distributions come from S3, read through the GitHub OIDC role in the repository variables AWS_ROLE_ARN, AWS_REGION and AWS_S3_BUCKET_NAME.
 on:
   workflow_dispatch:
@@ -165,12 +166,3 @@ jobs:
 
       - name: Stop
         run: ${{ matrix.runner.task }} stop
-
-      - name: Upload AEM logs
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          name: aem-logs-${{ matrix.runner.name }}-aem-${{ matrix.target.aem }}-java-${{ matrix.target.java }}
-          path: aem/home/var/instance/*/crx-quickstart/logs/
-          if-no-files-found: ignore
-          retention-days: 7

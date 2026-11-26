@@ -132,7 +132,7 @@ func TestLocalInstanceUpgradeJarArgs(t *testing.T) {
 	require.Equal(t, []string{
 		"-Xmx4g",
 		"-jar", pathx.Canonical("/lib/cq-quickstart-6.6.3.jar"),
-		"-nofork", "-nointeractive", "-use-control-port",
+		"-nofork", "-nointeractive", "-nobrowser", "-use-control-port",
 		"-r", "author,local",
 		"-p", "4502",
 		"-Dfoo=bar",

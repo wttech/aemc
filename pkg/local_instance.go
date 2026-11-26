@@ -578,7 +578,7 @@ func (li LocalInstance) stopUpgradeJar(cmd *exec.Cmd) {
 // for an in-place upgrade, with the run modes, port and start options the start script passes.
 // Quickstart uses 'crx-quickstart' in the working dir; unlike in the start script, '-c' of this JAR sets the HTTP context path,
 // and setting the dir explicitly with '-b' makes the boot hang before the repository starts (AEM 6.5 LTS 6.6.3).
-// The control port lets the stop script stop it.
+// The control port lets the stop script stop it; no browser is opened.
 // See: https://experienceleague.adobe.com/en/docs/experience-manager-65-lts/content/implementing/deploying/upgrading/in-place-upgrade
 func (li LocalInstance) upgradeJarArgs(jar string) []string {
 	args := append([]string{}, li.JvmOpts...)
@@ -586,6 +586,7 @@ func (li LocalInstance) upgradeJarArgs(jar string) []string {
 		"-jar", pathx.Canonical(jar),
 		"-nofork",
 		"-nointeractive",
+		"-nobrowser",
 		"-use-control-port",
 		"-r", li.RunModesString(),
 		"-p", li.instance.http.Port(),

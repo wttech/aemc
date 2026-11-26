@@ -60,3 +60,16 @@ Existing projects keep working with their wrapper scripts and `Taskfile.yml`; se
 
 - Stay on Task: replace `aemw`, `taskw`, `mvnw` and `.mvn/wrapper/maven-wrapper.properties` with the ones from [`pkg/project/runner/task/common`](pkg/project/runner/task/common), and delete `.mvn/wrapper/maven-wrapper.jar`.
 - Move to mise: scaffold a project of the same kind with `--runner mise` in an empty directory, copy its `mise.toml`, `bin/` and `.mvn/jvm.config` into the project, move custom tasks from `Taskfile.yml` to `mise.toml`, then delete `Taskfile.yml`, `aemw`, `taskw`, `mvnw` and `.mvn/wrapper`, and run `mise trust` and `mise install`. Commit the created `mise.lock`. In the tasks, `sh aemw` becomes `aem`, `sh mvnw` becomes `mvn`, and Task variables (`{{.VAR}}`) become shell variables (`${VAR}`).
+
+### Dispatcher domains
+
+The local dispatcher is reached at names under `.localhost`, which resolve to the machine itself without editing the hosts file ([RFC 6761](https://www.rfc-editor.org/rfc/rfc6761)); browsers and curl resolve them on every system.
+
+| 2.x                                          | 3.x                 |
+|----------------------------------------------|---------------------|
+| `AEM_DISPATCHER_DOMAIN=publish` (cloud)      | `publish.localhost` |
+| `AEM_DISPATCHER_DOMAIN=publish.aem.local` (classic) | `publish.localhost` |
+| `author.aem.local` (classic)                 | `author.localhost`  |
+| `AEM_DISPATCHER_DOMAINS`, task `dispatcher:hosts` | removed        |
+
+In classic projects, change the host names in `dispatcher/docker/src/conf.d/variables/default.vars` too. The lines added to the hosts file by 2.x can be deleted.

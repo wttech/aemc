@@ -246,26 +246,8 @@ description = "destroy AEM dispatcher"
 dir = "dispatcher"
 run = ["${CONTAINER_COMPOSE_COMMAND} down -v --remove-orphans", "rm -fr home"]
 
-[tasks."dispatcher:hosts"]
-description = "add AEM dispatcher domains to hosts file"
-run = """
-LINE="${AEM_DISPATCHER_IP} ${AEM_DISPATCHER_DOMAINS}"
-case "$(uname -s)" in
-  Darwin)
-    grep -qxF "$LINE" /etc/hosts || osascript -e "do shell script \\"echo '$LINE' >> /etc/hosts\\" with prompt \\"AEM - Add domains to host file\\" with administrator privileges"
-    ;;
-  Linux)
-    grep -qxF "$LINE" /etc/hosts || echo "$LINE" | sudo tee -a /etc/hosts > /dev/null
-    ;;
-  MINGW*|MSYS*|CYGWIN*)
-    grep -qF "$LINE" C:/Windows/System32/drivers/etc/hosts || powershell -command "Start-Process cmd -ArgumentList \\"/C echo $LINE >> C:\\Windows\\System32\\drivers\\etc\\hosts\\" -Verb runas"
-    ;;
-esac
-"""
-
 [tasks."dispatcher:check"]
 description = "check health of AEM dispatcher"
-depends = ["dispatcher:hosts"]
 run = [
   'curl "http://${AEM_DISPATCHER_DOMAIN}" -s -o /dev/null || true',
   "sleep 3",

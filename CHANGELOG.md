@@ -24,6 +24,8 @@ How to move a project from one major version to the next is described in [UPGRAD
 
 - Project files for AEM as a Cloud Service and instance projects use Java 21 (Temurin 21.0.13), as current AEM SDKs do not start on Java 11; classic projects keep Java 11.
 
+- **Breaking:** the dispatcher of app projects is reached at `publish.localhost` (and `author.localhost` on classic projects) instead of `publish`, `publish.aem.local` and `author.aem.local`. Names under `.localhost` resolve to the machine itself ([RFC 6761](https://www.rfc-editor.org/rfc/rfc6761)), so the `dispatcher:hosts` task, which edited the hosts file with administrator rights, is removed. See [UPGRADING.md](UPGRADING.md#dispatcher-domains).
+
 ### Removed
 
 - Template functions in the config file (Sprig functions and `canonicalPath`).

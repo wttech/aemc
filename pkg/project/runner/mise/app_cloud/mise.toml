@@ -248,5 +248,5 @@ run = ["${CONTAINER_COMPOSE_COMMAND} down -v --remove-orphans", "rm -fr home"]
 
 [tasks."dispatcher:check"]
 description = "check health of AEM dispatcher"
-# Retried while the dispatcher warms up (the first request fills its cache); redirects, e.g. to the home page, are followed
-run = 'curl -fsSL -o /dev/null --connect-timeout 5 --max-time 30 --retry 20 --retry-delay 3 --retry-all-errors "http://${AEM_DISPATCHER_DOMAIN}"'
+# Retried for up to 5 minutes while the dispatcher warms up (a cold first request may take a minute); redirects, e.g. to the home page, are followed
+run = 'curl -fsSL -o /dev/null --connect-timeout 5 --max-time 60 --retry 100 --retry-delay 3 --retry-max-time 300 --retry-all-errors "http://${AEM_DISPATCHER_DOMAIN}"'

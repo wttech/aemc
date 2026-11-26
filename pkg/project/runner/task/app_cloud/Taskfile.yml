@@ -284,7 +284,5 @@ tasks:
 
   dispatcher:check:
     desc: check health of AEM dispatcher
-    cmds:
-      - curl "http://{{.AEM_DISPATCHER_DOMAIN}}" -s -o /dev/null || true # warmup
-      - sleep 3
-      - curl "http://{{.AEM_DISPATCHER_DOMAIN}}" -s -o /dev/null -w "%{http_code}" | grep -q 200
+    # Retried while the dispatcher warms up (the first request fills its cache); redirects, e.g. to the home page, are followed
+    cmd: curl -fsSL -o /dev/null --connect-timeout 5 --max-time 30 --retry 20 --retry-delay 3 --retry-all-errors "http://{{.AEM_DISPATCHER_DOMAIN}}"

@@ -26,6 +26,8 @@ How to move a project from one major version to the next is described in [UPGRAD
 
 - **Breaking:** the dispatcher of app projects is reached at `publish.localhost` (and `author.localhost` on classic projects) instead of `publish`, `publish.aem.local` and `author.aem.local`. Names under `.localhost` resolve to the machine itself ([RFC 6761](https://www.rfc-editor.org/rfc/rfc6761)), so the `dispatcher:hosts` task, which edited the hosts file with administrator rights, is removed. See [UPGRADING.md](UPGRADING.md#dispatcher-domains).
 
+- The `dispatcher:check` task of app projects retries for up to 5 minutes while the dispatcher warms up and follows redirects, e.g. to the home page, instead of one request after a fixed 3-second wait, which failed on cold starts, especially on Windows ([#353](https://github.com/wttech/aemc/issues/353)).
+
 ### Removed
 
 - Template functions in the config file (Sprig functions and `canonicalPath`).

@@ -1,4 +1,4 @@
-name: Test
+name: Check
 
 on:
   push:
@@ -8,8 +8,8 @@ on:
 
 jobs:
 
-  test:
-    name: Test
+  check:
+    name: Check
     runs-on: ubuntu-latest
 #    env:
 #      GOFLAGS: -mod=vendor

@@ -82,6 +82,8 @@ It will:
 * commit changes,
 * push release tag that will initiate [release workflow](.github/workflows/release-perform.yml).
 
+The release workflow first runs the [end-to-end test](.github/workflows/test.yml) and publishes nothing if it fails. The test sets up real AEM instances with the binary built in the same run, in a project scaffolded for each task runner, AEM version and Java version. It takes over 15 minutes, so it does not run for pull requests: run it on demand from any branch with the *Run workflow* button. AEM distributions and the license come from S3, read through a GitHub OIDC role named by the repository variables `AWS_ROLE_ARN`, `AWS_REGION` and `AWS_S3_BUCKET_NAME`; without them the test fails at its first step.
+
 # Coding Conventions
 
 ## File Naming

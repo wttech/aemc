@@ -162,8 +162,6 @@ type BackupMakeOpts struct {
 	// Name is the backup name (normalized); backups of the same instance and name replace each other when pruning.
 	Name           string
 	SkipSpaceCheck bool
-	// SkipPrune skips pruning old backups after making this one, even if configured.
-	SkipPrune bool
 }
 
 // Make archives a created instance, stopping it for the time of archiving, and then prunes old backups if configured.
@@ -184,7 +182,7 @@ func (bm *BackupManager) Make(li *LocalInstance, opts BackupMakeOpts) (string, e
 	if err != nil {
 		return "", err
 	}
-	if bm.opts().Prune.Auto && !opts.SkipPrune {
+	if bm.opts().Prune.Auto {
 		if _, err := bm.Prune(false, file); err != nil {
 			return file, fmt.Errorf("%s > backup made to file '%s' but pruning old backups failed: %w", li.instance.IDColor(), file, err)
 		}
@@ -206,9 +204,10 @@ type BackupResult struct {
 	File     string   `yaml:"file" json:"file"`
 }
 
-// Perform makes backups of the created instances, honouring the instance processing mode.
-// Disk space is checked for all of them before any is stopped, and old backups are pruned once at the end,
-// so backups made in parallel do not race on the shared backup directory.
+// Perform makes backups of the created instances like 'instance stop', then archiving, then 'instance start':
+// the running ones are stopped together, archived honouring the instance processing mode, and started together again,
+// so they wait for one startup instead of one per instance. Disk space is checked for all of them before any is stopped,
+// and old backups are pruned once at the end.
 func (bm *BackupManager) Perform(instances []Instance, opts BackupMakeOpts) ([]BackupResult, error) {
 	created := lo.Filter(instances, func(i Instance, _ int) bool {
 		if !i.Local().IsCreated() {
@@ -226,15 +225,19 @@ func (bm *BackupManager) Perform(instances []Instance, opts BackupMakeOpts) ([]B
 			return nil, err
 		}
 	}
-	makeOpts := opts
-	makeOpts.SkipSpaceCheck = true
-	makeOpts.SkipPrune = true
+	running := lo.Filter(created, func(i Instance, _ int) bool { return i.Local().IsRunning() })
+	if _, err := bm.manager.Stop(running); err != nil {
+		return nil, err
+	}
 	results, err := InstanceProcess(bm.manager.aem, created, func(i Instance) (BackupResult, error) {
-		file, err := bm.Make(i.Local(), makeOpts)
-		return BackupResult{Instance: i, File: file}, err
+		file := bm.ProposeFile(i.Local(), opts.Name)
+		return BackupResult{Instance: i, File: file}, i.Local().MakeBackup(file)
 	})
 	if err != nil {
 		return nil, err
+	}
+	if _, err := bm.manager.Start(running); err != nil {
+		return results, err
 	}
 	if bm.opts().Prune.Auto {
 		if _, err := bm.Prune(false, ""); err != nil {

@@ -24,7 +24,8 @@ const (
 
 // Config defines a place for managing input configuration from various sources (YML file, env vars, etc)
 type Config struct {
-	viper *viper.Viper
+	viper      *viper.Viper
+	legacyFile string
 }
 
 func (c *Config) Values() *viper.Viper {
@@ -62,6 +63,11 @@ func (c *Config) readFromFile(file string) {
 	content, err := filex.Read(file)
 	if err != nil {
 		log.Fatalf("cannot read AEM config file '%s': %s", file, err)
+		return
+	}
+	if legacyTemplateUsed(content) {
+		log.Debugf("skipping reading AEM config file as it uses the 2.x template syntax '%s'", file)
+		c.legacyFile = file
 		return
 	}
 	values, err := interpolateYAML(content, variables())

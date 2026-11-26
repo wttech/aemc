@@ -126,7 +126,7 @@ Main features:
   - advanced snapshot handling - avoiding redeploying the same package by checksum verification
   - customizable instance health checking
 - building AEM packages with:
-  - source code change detection - avoiding rebuilding application when it is not needed (handled by [Taskfile](https://taskfile.dev/usage/#prevent-unnecessary-work))
+  - source code change detection - avoiding rebuilding application when it is not needed (task `sources` of [mise](https://mise.jdx.dev/tasks/task-configuration.html#sources) or [Task](https://taskfile.dev/usage/#prevent-unnecessary-work))
 - making AEM instance backups (with restoring)
   - advanced archive format to speed up performance and storage efficiency ([ZSTD](https://github.com/facebook/zstd) used by default)
   - instance state aware - stopping, archiving then starting again AEM instances automatically (if needed)
@@ -168,7 +168,7 @@ Supported project types:
   |-------------|------------------------|
   | >= 1.2.0    | 41, 42, 43, 47, 48, 51 |
 
-- with any type of structure, however afterwards only a little customizations in *Taskfile.yml* need to be done to reflect configuration related to built AEM application artifact path and AEM dispatcher files location,
+- with any type of structure, however afterwards only a little customizations in *mise.toml* (or *Taskfile.yml*) need to be done to reflect configuration related to built AEM application artifact path and AEM dispatcher files location,
 - empty folder; the project kind will be needed to be specified explicitly during scaffolding.
 
 ---
@@ -179,36 +179,40 @@ Run command below to install the AEM Compose tool in your project:
 curl https://raw.githubusercontent.com/wttech/aemc/main/project-install.sh | sh
 ```
 
-After successful installation, remember to always use the tool via wrapper script in the following way:
+Then scaffold the AEM Compose files in the project, as the installation prints. Scaffolding:
 
-```shell
-sh aemw [command]
-```
-
-Next scaffold the AEM Compose files in the project:
-
-```shell
-sh aemw project scaffold
-```
-
-Project scaffolding:
-
-- sets up ready-to-use tasks powered by [Task tool](https://taskfile.dev/), which aggregate one or many AEM Compose CLI commands into useful procedures.
-- provides configuration for provisioning AEM instances (installing service pack, setting replication agents, etc.).
+- sets up ready-to-use tasks, which aggregate one or many AEM Compose CLI commands into useful procedures,
+- provides configuration for provisioning AEM instances (installing service pack, setting replication agents, etc.),
 - provides configuration for running AEM Dispatcher on [Podman](https://podman-desktop.io/) (by default) or [Docker](https://www.docker.com/products/docker-desktop/) (remember to install one of these tools before running the setup task).
-
-To list all available tasks, run:
-
-```shell
-sh taskw --list
-```
 
 Usually, the first steps to take are:
 
 ```shell
-sh taskw init
-sh taskw setup
+mise trust      # once per clone
+mise run init
+mise run setup
 ```
+
+Examples in this document run AEM Compose as `aem`: in a project run by mise it is on the `PATH` when mise is [activated](https://mise.jdx.dev/getting-started.html#activate-mise) in the shell, otherwise use `mise exec -- aem`. In a project run by Task, use `sh aemw` instead.
+
+### Choosing a task runner
+
+The project tasks and tools are run by [mise](https://mise.jdx.dev) (default) or [Task](https://taskfile.dev), chosen when scaffolding: `aem project scaffold --runner mise|task` (or `curl ... | AEM_RUNNER=task sh` when installing). Both share the same `aem.yml`, dotenv files and tasks; only the way tools and tasks are run differs.
+
+|                         | mise (recommended)                                                                 | Task                                                                    |
+|-------------------------|------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| Run a task              | `mise run setup`, list them with `mise tasks`                                      | `sh taskw setup`, list them with `sh taskw --list`                      |
+| Run AEM Compose         | `aem instance status`                                                              | `aem instance status`                                               |
+| First use of a clone    | `mise trust`                                                                       | nothing                                                                 |
+| Fresh machine or CI     | nothing to install: `./bin/mise` downloads the pinned mise; on CI set `MISE_TRUSTED_CONFIG_PATHS` to the checkout | nothing to install: `taskw` and `aemw` download Task and AEM Compose |
+| Tools                   | AEM Compose, Java and Maven, pinned in `mise.toml`; any other tool is one line more | AEM Compose (`aemw`), Task (`taskw`), Maven (`mvnw`); Java downloaded by AEM Compose |
+| Java                    | installed by mise, shared by AEM, Maven and the IDE                                | downloaded by AEM Compose, used by AEM and `mvnw`                       |
+| Download verification   | checksums of every tool for every platform in `mise.lock`                          | checksums of AEM Compose and Task published with their releases         |
+| Behind a TLS-inspecting proxy | the company certificate in the system trust store                            | `CURL_CA_BUNDLE`, or the opt-out `AEM_INSECURE_DOWNLOAD=true`           |
+| Variables from the shell vs dotenv files | dotenv files win (mise semantics); override in `.env`              | shell wins over dotenv files in AEM Compose; Taskfile `env` wins over the shell |
+| Windows                 | tasks need Git Bash: set `windows_default_inline_shell_args = "bash -c"` in the global mise config | wrappers need `sh` (e.g. Git Bash); tasks run in Task's own shell |
+| Offline                 | a mirror or a prefilled mise cache; or `aem` on the `PATH` with tools set by paths in `aem.yml` | archives placed by hand where the wrappers say; tools set by paths in `aem.yml` |
+| Choose it when          | starting a project, or one tool for all the tools of a project is wanted           | the team or CI already relies on Task and the wrapper scripts           |
 
 ## IaaC Providers
 
@@ -647,7 +651,7 @@ However, occasionally developers might want to override the default config file 
 To do so, run the command:
 
 ```shell
-sh aemw config init
+aem config init
 ```
 
 To run AEM Compose for a project in another directory, or with another config file, use the global flags:
@@ -685,7 +689,7 @@ By default, fail-safe options are in use. However, consider using the configurat
   ```
 
   Setting this environment variable will instruct the tool to request from the AEM instance descriptive information about the recently executed command subject.
-  For example, if a recently executed command was `sh aemw package deploy my-package.zip -A` the AEM Compose tool after doing the actual package deployment will request from CRX Package Manager the exact information about just deployed package.
+  For example, if a recently executed command was `aem package deploy my-package.zip -A` the AEM Compose tool after doing the actual package deployment will request from CRX Package Manager the exact information about just deployed package.
   This feature is beneficial for clarity and debugging purposes.
 
 ### Installing content packages
@@ -696,7 +700,7 @@ By default, the timeout is set to `10m`, but you have the option to increase it 
 To set the timeout for a single AEMC command, use the following syntax:
 
 ```shell
-AEM_INSTANCE_HTTP_TIMEOUT=0 sh aemw package deploy --file my-package.zip
+AEM_INSTANCE_HTTP_TIMEOUT=0 aem package deploy --file my-package.zip
 ```
 
 It's important to be aware that AEMaaCS also has its own timeout for requests made to the Package Manager UI. For detailed information, please refer to the [documentation](https://experienceleague.adobe.com/docs/experience-manager-cloud-service/content/implementing/developer-tools/package-manager.html?lang=en#aemaacs-packages).
@@ -706,7 +710,7 @@ To skip the instance health check after running a command that would normally tr
 To skip the instance health check for a single AEMC command, use the following syntax:
 
 ```shell
-AEM_INSTANCE_CHECK_SKIP=true sh aemw package deploy --file my-package.zip
+AEM_INSTANCE_CHECK_SKIP=true aem package deploy --file my-package.zip
 ```
 
 ### Installing packages with troubleshooting
@@ -718,13 +722,13 @@ This new feature offers two distinct modes for leveraging its benefits:
 1. Saving HTML report to file:
 
    ```shell
-   AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true sh aemw package deploy --file my-package.zip
+   AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true aem package deploy --file my-package.zip
    ```
 
 2. Direct console output of HTML report:
 
    ```shell
-   AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true AEM_INSTANCE_PACKAGE_INSTALL_HTML_CONSOLE=true sh aemw package deploy --file my-package.zip
+   AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true AEM_INSTANCE_PACKAGE_INSTALL_HTML_CONSOLE=true aem package deploy --file my-package.zip
    ```
 
 # Concepts
@@ -775,14 +779,14 @@ Instance IDs can be used in multiple places:
 **1. CLI flags:**
 ```shell
 # Target specific instance by ID
-sh aemw package deploy --file my-package.zip --instance-id local_author
+aem package deploy --file my-package.zip --instance-id local_author
 
 # Target by URL (ad-hoc)
-sh aemw package deploy --file my-package.zip --instance-url http://localhost:4502
+aem package deploy --file my-package.zip --instance-url http://localhost:4502
 
 # Filter by role
-sh aemw instance status --instance-author   # Only author instances
-sh aemw instance status --instance-publish  # Only publish instances
+aem instance status --instance-author   # Only author instances
+aem instance status --instance-publish  # Only publish instances
 ```
 
 **2. Configuration in `aem.yml`:**
@@ -822,64 +826,64 @@ export AEM_INSTANCE_CONFIG_INT_AUTHOR_ACTIVE=true
 
 ```shell
 # Create and start local AEM instances
-sh aemw instance create
-sh aemw instance start
+aem instance create
+aem instance start
 
 # Or do both in one command
-sh aemw instance launch
+aem instance launch
 
 # Check instance status
-sh aemw instance status
+aem instance status
 
 # Stop instances
-sh aemw instance stop
+aem instance stop
 
 # Delete instances (removes all data)
-sh aemw instance delete
+aem instance delete
 ```
 
 ## Deploying Packages
 
 ```shell
 # Deploy a single package
-sh aemw package deploy --file my-package.zip
+aem package deploy --file my-package.zip
 
 # Deploy to specific instance
-sh aemw package deploy --file my-package.zip --instance-id local_author
+aem package deploy --file my-package.zip --instance-id local_author
 
 # Deploy multiple packages
-sh aemw package deploy --file pkg1.zip --file pkg2.zip
+aem package deploy --file pkg1.zip --file pkg2.zip
 
 # Deploy from URL
-sh aemw package deploy --url https://example.com/my-package.zip
+aem package deploy --url https://example.com/my-package.zip
 ```
 
 ## OSGi Configuration
 
 ```shell
 # List all bundles
-sh aemw osgi bundle list
+aem osgi bundle list
 
 # Check specific bundle status
-sh aemw osgi bundle read --symbolic-name com.example.core
+aem osgi bundle read --symbolic-name com.example.core
 
 # Set OSGi configuration
-sh aemw osgi config save --pid com.example.MyService --input-string "enabled: true"
+aem osgi config save --pid com.example.MyService --input-string "enabled: true"
 ```
 
 ## Repository Operations
 
 ```shell
 # Read node properties
-sh aemw repo node read --path /content/my-site
+aem repo node read --path /content/my-site
 
 # Copy content between instances
-sh aemw content copy --filter-roots /content/my-site --instance-target-id local_publish
+aem content copy --filter-roots /content/my-site --instance-target-id local_publish
 ```
 
 ## Content Synchronization
 
-Commands under `sh aemw content` (alias `cnt`) keep JCR content on a running instance and in the local file system (FileVault serialization under a `jcr_root` directory) in sync.
+Commands under `aem content` (alias `cnt`) keep JCR content on a running instance and in the local file system (FileVault serialization under a `jcr_root` directory) in sync.
 They are the replacement for the legacy `vlt checkout` / `vlt update` / `vlt commit` workflow, and unlike VLT they need no `.vlt` metadata, checkout step or working copy.
 
 | Command                          | Alias        | Description                                                                 |
@@ -895,38 +899,38 @@ The Vault filter root is derived automatically from that path, e.g. `.../jcr_roo
 
 ```shell
 # Pull a directory (a "checkout"/"update"); --path accepts a directory or a file
-sh aemw content pull --dir ui.content/src/main/content/jcr_root/content/my-site
+aem content pull --dir ui.content/src/main/content/jcr_root/content/my-site
 
 # Pull and normalize the content (see 'content.clean' in the configuration)
-sh aemw content pull --dir ui.content/src/main/content/jcr_root/content/my-site --clean
+aem content pull --dir ui.content/src/main/content/jcr_root/content/my-site --clean
 
 # Pull and remove local content that no longer exists on the instance
-sh aemw content pull --dir ui.content/src/main/content/jcr_root/content/my-site --clean --replace
+aem content pull --dir ui.content/src/main/content/jcr_root/content/my-site --clean --replace
 
 # Pull a single file from a specific instance
-sh aemw content pull --file ui.content/src/main/content/jcr_root/content/my-site/.content.xml --instance-id local_author
+aem content pull --file ui.content/src/main/content/jcr_root/content/my-site/.content.xml --instance-id local_author
 
 # Pull using explicit Vault filter roots instead of deriving them from the path
-sh aemw content pull --dir ui.content/src/main/content/jcr_root/content --filter-roots /content/my-site
+aem content pull --dir ui.content/src/main/content/jcr_root/content --filter-roots /content/my-site
 
 # Push a directory (a "commit") to all instances
-sh aemw content push --dir ui.content/src/main/content/jcr_root/content/my-site
+aem content push --dir ui.content/src/main/content/jcr_root/content/my-site
 
 # Push a single file to a specific instance, normalizing it first
-sh aemw content push --file ui.content/src/main/content/jcr_root/content/my-site/.content.xml --clean --instance-id local_author
+aem content push --file ui.content/src/main/content/jcr_root/content/my-site/.content.xml --clean --instance-id local_author
 
 # Push overriding Vault filter mode (replace, merge or update)
-sh aemw content push --dir ui.content/src/main/content/jcr_root/content/my-site --filter-mode merge
+aem content push --dir ui.content/src/main/content/jcr_root/content/my-site --filter-mode merge
 
 # Clean content already present on the file system
-sh aemw content clean --dir ui.content/src/main/content/jcr_root/content/my-site
+aem content clean --dir ui.content/src/main/content/jcr_root/content/my-site
 
 # Download content as a package ZIP
-sh aemw content download --filter-roots /content/my-site --target-file my-site.zip
+aem content download --filter-roots /content/my-site --target-file my-site.zip
 
 # Copy content to another instance (by ID or ad-hoc URL)
-sh aemw content copy --filter-roots /content/my-site --instance-target-id local_publish
-sh aemw content copy --filter-roots /content/my-site --instance-target-url http://localhost:4503
+aem content copy --filter-roots /content/my-site --instance-target-id local_publish
+aem content copy --filter-roots /content/my-site --instance-target-url http://localhost:4503
 ```
 
 Notes:
@@ -948,22 +952,22 @@ Backups allow you to save and restore the complete state of local AEM instances.
 
 ```shell
 # List all available backups
-sh aemw instance backup list
+aem instance backup list
 
 # Create backup of a single instance
-sh aemw instance backup make --instance-id local_author
+aem instance backup make --instance-id local_author
 
 # Create backup with custom file path
-sh aemw instance backup make --instance-id local_author --file my-backup.aemb.tar.zst
+aem instance backup make --instance-id local_author --file my-backup.aemb.tar.zst
 
 # Restore instance from backup (instance must not exist)
-sh aemw instance backup use --instance-id local_author
+aem instance backup use --instance-id local_author
 
 # Restore from specific backup file
-sh aemw instance backup use --instance-id local_author --file my-backup.aemb.tar.zst
+aem instance backup use --instance-id local_author --file my-backup.aemb.tar.zst
 
 # Restore and delete existing instance first
-sh aemw instance backup use --instance-id local_author --delete-created
+aem instance backup use --instance-id local_author --delete-created
 ```
 
 ### Backup & Restore Cycle
@@ -972,14 +976,14 @@ Backups enable safe experimentation - break your instance, restore in 10-15 minu
 
 ```shell
 # 1. Save current state before experimenting
-sh aemw instance backup perform
+aem instance backup perform
 
 # 2. Experiment freely (install packages, change configs, break things...)
 # ...
 
 # 3. Something went wrong? Delete and restore from backup
-sh aemw instance delete --kill
-sh aemw instance backup restore
+aem instance delete --kill
+aem instance backup restore
 ```
 
 Use cases:
@@ -999,10 +1003,10 @@ A name tells what state a backup captures, e.g. a baseline to return to:
 
 ```shell
 # Make a named backup ('clean with prereqs' is stored as 'clean-with-prereqs')
-sh aemw instance backup perform --name "clean with prereqs"
+aem instance backup perform --name "clean with prereqs"
 
 # Restore the newest backup of that name
-sh aemw instance backup restore --name "clean with prereqs"
+aem instance backup restore --name "clean with prereqs"
 ```
 
 Without `--name`, `use` and `restore` pick the newest backup of the instance, whatever its name.
@@ -1017,11 +1021,11 @@ Backups take several GB each, so old ones are pruned and a backup that would fil
 
 ```shell
 # Preview, then prune with the configured policy or flags
-sh aemw instance backup prune --dry-run
-sh aemw instance backup prune --keep-last 1 --max-size 100GB
+aem instance backup prune --dry-run
+aem instance backup prune --keep-last 1 --max-size 100GB
 
 # Make a backup despite the free space check
-sh aemw instance backup make --instance-id local_author --skip-space-check
+aem instance backup make --instance-id local_author --skip-space-check
 ```
 
 ## Replication agents
@@ -1029,7 +1033,7 @@ sh aemw instance backup make --instance-id local_author --skip-space-check
 1. Configuring publish agent on AEM author:
 
     ```shell
-    sh aemw repl agent setup -A --location "author" --name "publish" --input-string "
+    aem repl agent setup -A --location "author" --name "publish" --input-string "
     enabled: true
     transportUri: http://localhost:4503/bin/receive?sling:authRequestLogin=1
     transportUser: admin
@@ -1041,7 +1045,7 @@ sh aemw instance backup make --instance-id local_author --skip-space-check
 2. Configuring flush agent on AEM publish:
 
     ```shell
-    sh aemw repl agent setup -P --location "publish" --name "flush" --input-string "
+    aem repl agent setup -P --location "publish" --name "flush" --input-string "
     enabled: true
     transportUri: http://localhost/dispatcher/invalidate.cache
     protocolHTTPHeaders:
@@ -1062,13 +1066,13 @@ AEM Compose supports managing Crypto Support for encrypting/decrypting sensitive
 To set up Crypto keys (required for encryption/decryption to work consistently across environments):
 
 ```shell
-sh aemw crypto setup --hmac-file aem/home/lib/crypto/data/hmac --master-file aem/home/lib/crypto/data/master
+aem crypto setup --hmac-file aem/home/lib/crypto/data/hmac --master-file aem/home/lib/crypto/data/master
 ```
 
 ### Protect (encrypt) a value
 
 ```shell
-sh aemw crypto protect --value "secret"
+aem crypto protect --value "secret"
 ```
 
 ### Unprotect (decrypt) a value
@@ -1076,7 +1080,7 @@ sh aemw crypto protect --value "secret"
 > **Note:** Unprotect is only available on AEM 6.5 LTS and AEM Cloud SDK.
 
 ```shell
-sh aemw crypto unprotect --value "{encrypted_value}"
+aem crypto unprotect --value "{encrypted_value}"
 ```
 
 ## SSL by Default
@@ -1094,7 +1098,7 @@ This feature requires:
 To set up *SSL by Default*, run:
 
 ```shell
-sh aemw ssl setup \
+aem ssl setup \
    --instance-author
    --keystore-password password \
    --truststore-password password1 \
@@ -1103,7 +1107,7 @@ sh aemw ssl setup \
    --https-hostname localhost \
    --https-port 8443
 
-sh aemw ssl setup \
+aem ssl setup \
    --instance-publish
    --keystore-password password \
    --truststore-password password1 \
@@ -1127,17 +1131,17 @@ This feature supports:
 
 - creation of the general trust store if it does not exist
     ```shell
-    sh aemw gts create --password PASSWORD_HERE -A
+    aem gts create --password PASSWORD_HERE -A
     ```
 
 - getting the general trust store status
     ```shell
-    sh aemw gts status -A
+    aem gts status -A
     ```
 
 - adding a certificate to the general trust store
     ```shell
-    sh aemw gts certificate add --path <path> -A
+    aem gts certificate add --path <path> -A
     ```
   
 This command will add a certificate to the general trust store only if not exists in trust store and will return the alias of the certificate.
@@ -1145,12 +1149,12 @@ Command `certificate add` supports certificates in PEM and DER formats.
 
 - reading a certificate from the general trust store (by alias)
     ```shell
-    sh aemw gts certificate read --alias <alias> -A
+    aem gts certificate read --alias <alias> -A
     ```
 
 - removing a certificate from the general trust store (by alias)
     ```shell
-    sh aemw gts certificate remove --alias <alias> -A
+    aem gts certificate remove --alias <alias> -A
     ```
 
 

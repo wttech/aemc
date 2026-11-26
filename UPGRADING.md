@@ -53,3 +53,10 @@ Supportive tools (Java, Oak Run, Vault, unpacked AEM SDK) are downloaded to `aem
 
 - If your `aem.yml` sets `base.tool_dir: aem/home/opt`, change it to `aem/home/opt/vendor`.
 - Before upgrading, run `aem vendor clean` with 2.x, or delete `aem/home/opt/{java,oak-run,sdk,vault}` afterwards; the tools are downloaded again on first use.
+
+### Project runner
+
+Existing projects keep working with their wrapper scripts and `Taskfile.yml`; set `AEM_CLI_VERSION` in `aemw` to the 3.x version. To pick up the 3.x project files, choose one of the runners described in the [README](README.md#choosing-a-task-runner):
+
+- Stay on Task: replace `aemw`, `taskw`, `mvnw` and `.mvn/wrapper/maven-wrapper.properties` with the ones from [`pkg/project/runner/task/common`](pkg/project/runner/task/common), and delete `.mvn/wrapper/maven-wrapper.jar`.
+- Move to mise: scaffold a project of the same kind with `--runner mise` in an empty directory, copy its `mise.toml`, `bin/` and `.mvn/jvm.config` into the project, move custom tasks from `Taskfile.yml` to `mise.toml`, then delete `Taskfile.yml`, `aemw`, `taskw`, `mvnw` and `.mvn/wrapper`, and run `mise trust` and `mise install`. Commit the created `mise.lock`. In the tasks, `sh aemw` becomes `aem`, `sh mvnw` becomes `mvn`, and Task variables (`{{.VAR}}`) become shell variables (`${VAR}`).

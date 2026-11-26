@@ -29,9 +29,9 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: jdx/mise-action@v5.3.0
+      - uses: jdx/mise-action@v5.2.7
         with:
-          version: 2026.11.10
+          version: 2026.11.6
 
       - uses: goreleaser/goreleaser-action@v2
         with:

@@ -26,9 +26,9 @@ jobs:
           git config user.email "<>" 
 
       - name: Set up tools
-        uses: jdx/mise-action@v5.3.0
+        uses: jdx/mise-action@v5.2.7
         with:
-          version: 2026.11.10
+          version: 2026.11.6
 
       # TODO this should bypass branch protection rule and trigger workflow but it does not
       - name: Bump release version then push tag

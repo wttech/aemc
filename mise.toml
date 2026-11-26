@@ -30,9 +30,24 @@ run = [
   { task = "install" },
 ]
 
+[tasks.check]
+description = "The gate before every merge, the same locally and in CI: tidy dependencies, tests, vet, formatting, lint and build"
+run = [
+  { task = "deps:check" },
+  { task = "test" },
+  { task = "vet" },
+  { task = "fmt:check" },
+  { task = "lint" },
+  { task = "build" },
+]
+
 [tasks.deps]
 description = "Tidy Go module dependencies"
 run = "go mod tidy"
+
+[tasks."deps:check"]
+description = "Check that Go module dependencies are tidy"
+run = "go mod tidy -diff"
 
 [tasks.test]
 description = "Run tests"
@@ -49,6 +64,10 @@ run = "go vet ./..."
 [tasks.fmt]
 description = "Format code"
 run = "gofmt -l -w ."
+
+[tasks."fmt:check"]
+description = "Check that code is formatted"
+run = 'files=$(gofmt -l .); if [ -n "$files" ]; then echo "Not formatted, run mise run fmt:"; echo "$files"; exit 1; fi'
 
 [tasks.lint]
 description = "Run linter"

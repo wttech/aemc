@@ -33,7 +33,7 @@ Use this method to develop comfortably the tool.
 1. Clone repository: `git clone git@github.com:wttech/aemc.git`
 2. Enter cloned directory and run command: `mise run all` (tidies dependencies, tests, vets, formats, lints, then installs the binary to `$GOPATH/bin`)
 
-CI runs the same tasks (see [workflows](.github/workflows)).
+Before pushing, run `mise run check`: the gate CI runs for every pull request (tidy dependencies, tests, vet, formatting, lint, build), which only checks and never changes files (see [workflows](.github/workflows)).
 
 ### Go installation
 

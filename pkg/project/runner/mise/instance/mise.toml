@@ -9,7 +9,7 @@ lockfile = true
 
 [tools]
 "github:wttech/aemc" = "2.0.19"
-java = "temurin-11.0.29+7"
+java = "temurin-21.0.13+9.0.LTS"
 
 [env]
 AEM_ENV = "{{ env.AEM_ENV | default(value='local') }}"

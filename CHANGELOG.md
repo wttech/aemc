@@ -22,6 +22,8 @@ How to move a project from one major version to the next is described in [UPGRAD
 
 - The wrapper scripts of projects run by Task (`aemw`, `taskw`) verify TLS, with a clear error and the `AEM_INSECURE_DOWNLOAD=true` opt-out behind TLS-inspecting proxies, and the checksums of the downloaded archives; they refuse unsupported platforms. Task 3.54.0; Maven Wrapper 3.3.4 without the binary `maven-wrapper.jar`.
 
+- Project files for AEM as a Cloud Service and instance projects use Java 21 (Temurin 21.0.13), as current AEM SDKs do not start on Java 11; classic projects keep Java 11.
+
 ### Removed
 
 - Template functions in the config file (Sprig functions and `canonicalPath`).

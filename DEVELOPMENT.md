@@ -52,6 +52,10 @@ Use this method to check particular commit/version of the tool.
 After installing AEM CLI by one of above methods, a project run by mise uses it with a personal, VCS-ignored `mise.local.toml` pointing to the directory whose `bin` holds `aem`:
 
 ```toml
+[settings]
+# a local path cannot be locked for other platforms
+lockfile = false
+
 [tools]
 "github:wttech/aemc" = "path:/Users/me/go"
 ```

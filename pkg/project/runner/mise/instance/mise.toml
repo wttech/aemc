@@ -1,0 +1,108 @@
+# mise: tools, environment and tasks of the project (https://mise.jdx.dev)
+# Once per clone: 'mise trust'. Then 'mise run <task>'; list tasks with 'mise tasks'.
+# Without mise installed (e.g. on CI), use './bin/mise' instead of 'mise'.
+# Tasks are POSIX shell scripts: on Windows, set 'windows_default_inline_shell_args = "bash -c"' in the global mise config (Git Bash).
+
+[settings]
+# Record exact downloads and checksums of the tools in 'mise.lock' (commit it).
+lockfile = true
+
+[tools]
+"github:wttech/aemc" = "2.0.19"
+java = "temurin-11.0.29+7"
+
+[env]
+AEM_ENV = "{{ env.AEM_ENV | default(value='local') }}"
+# Later files win: '.env' (personal, VCS-ignored) over '.env.<AEM_ENV>' (VCS-ignored) over '<AEM_ENV>.env' (VCS-tracked).
+_.file = ["{{ env.AEM_ENV | default(value='local') }}.env", ".env.{{ env.AEM_ENV | default(value='local') }}", ".env"]
+AEM_INSTANCE_PROCESSING_MODE = "auto"
+AEM_OUTPUT_VALUE = "NONE"
+# AEM runs on the Java installed by mise.
+AEM_VENDOR_JAVA_HOME_DIR = { value = "{{ env.JAVA_HOME | default(value='') }}", tools = true }
+
+[tasks.init]
+description = "initialize project"
+run = "aem project init -V ALL"
+
+[tasks.setup]
+description = "start and provision AEM instances"
+run = [{ task = "start" }, { task = "provision" }, { task = "check" }]
+
+[tasks.resetup]
+description = "destroy then setup again AEM instances"
+run = [{ task = "destroy" }, { task = "setup" }]
+
+[tasks.start]
+description = "start AEM instances"
+alias = "up"
+run = "aem instance launch"
+
+[tasks.stop]
+description = "stop AEM instances"
+alias = "down"
+run = "aem instance stop"
+
+[tasks.restart]
+description = "restart AEM instances"
+run = [{ task = "stop" }, { task = "start" }]
+
+[tasks.destroy]
+description = "destroy AEM instances"
+confirm = "This will permanently delete all configured AEM instances and their data. Continue?"
+depends = ["stop"]
+run = "aem instance destroy"
+
+[tasks.status]
+description = "check status of AEM instances"
+env = { AEM_OUTPUT_VALUE = "ALL" }
+run = "aem instance status"
+
+[tasks.tail]
+description = "tail logs of AEM instances"
+run = "tail -f aem/home/var/instance/*/crx-quickstart/logs/stdout.log aem/home/var/instance/*/crx-quickstart/logs/error.log"
+
+[tasks."tail:author"]
+description = "tail logs of AEM author instance"
+run = "tail -f aem/home/var/instance/author/crx-quickstart/logs/stdout.log aem/home/var/instance/author/crx-quickstart/logs/error.log"
+
+[tasks."tail:publish"]
+description = "tail logs of AEM publish instance"
+run = "tail -f aem/home/var/instance/publish/crx-quickstart/logs/stdout.log aem/home/var/instance/publish/crx-quickstart/logs/error.log"
+
+[tasks.provision]
+description = "provision AEM instances by installing packages and applying configurations"
+alias = "configure"
+run = [{ task = "provision:repl-agent-publish" }, { task = "provision:crx" }]
+
+[tasks."provision:repl-agent-publish"]
+description = "configure replication agent on AEM author instance"
+hide = true
+run = '''
+printf '%s\n' \
+  "enabled: true" \
+  "transportUri: ${AEM_PUBLISH_HTTP_URL}/bin/receive?sling:authRequestLogin=1" \
+  "transportUser: ${AEM_PUBLISH_USER}" \
+  "transportPassword: ${AEM_PUBLISH_PASSWORD}" \
+  "userId: admin" \
+  | aem repl agent setup -A --location "author" --name "publish"
+'''
+
+[tasks."provision:crx"]
+description = "enable CRX/DE on AEM instances"
+hide = true
+run = 'aem osgi config save --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet" --input-string "alias: /crx/server"'
+
+[tasks.check]
+description = "check health of AEM instances"
+depends = ["author:check", "publish:check"]
+
+[tasks."author:check"]
+description = "check health of AEM author instance"
+run = [
+  'curl -s -u "${AEM_AUTHOR_USER}:${AEM_AUTHOR_PASSWORD}" "${AEM_AUTHOR_HTTP_URL}/libs/granite/core/content/login.html" | grep -q "QUICKSTART_HOMEPAGE"',
+  'curl -s -u "${AEM_AUTHOR_USER}:${AEM_AUTHOR_PASSWORD}" "${AEM_AUTHOR_HTTP_URL}/etc/replication/agents.author/publish.test.html" | grep -q "Replication (TEST) of /content successful"',
+]
+
+[tasks."publish:check"]
+description = "check health of AEM publish instance"
+run = 'curl -s -u "${AEM_PUBLISH_USER}:${AEM_PUBLISH_PASSWORD}" "${AEM_PUBLISH_HTTP_URL}/libs/granite/core/content/login.html" | grep -q "QUICKSTART_HOMEPAGE"'

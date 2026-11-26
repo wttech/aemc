@@ -137,11 +137,18 @@ tasks:
             fi
         }
         bump_version "README.MD"
-        if [ "$(uname)" = "Darwin" ]; then
-            sed -i '' 's/AemcVersion = "[^\"]*"/AemcVersion = "'"$VERSION"'"/' pkg/project/wrapper/main.go
-        else
-            sed -i 's/AemcVersion = "[^\"]*"/AemcVersion = "'"$VERSION"'"/' pkg/project/wrapper/main.go
-        fi
+        bump_project_version() {
+            local file="$1" pattern="$2" replacement="$3"
+            if [ "$(uname)" = "Darwin" ]; then
+                sed -i '' "s/$pattern/$replacement/" "$file"
+            else
+                sed -i "s/$pattern/$replacement/" "$file"
+            fi
+        }
+        bump_project_version pkg/project/versions.go 'AemcVersion = "[^"]*"' "AemcVersion = \"$VERSION\""
+        for file in pkg/project/runner/mise/*/mise.toml; do
+            bump_project_version "$file" '"github:wttech\/aemc" = "[^"]*"' "\"github:wttech\/aemc\" = \"$VERSION\""
+        done
         go generate ./pkg/project
 
         echo "Pushing version bump"

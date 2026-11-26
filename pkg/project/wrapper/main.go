@@ -1,6 +1,6 @@
 // Command wrapper generates the wrapper scripts of the Task runner ('aemw', 'taskw') from one template,
 // so their shared logic (platform detection, verified download, unarchiving) is written once.
-// Run it with 'go generate ./pkg/project'; the release bumps AemcVersion, then regenerates.
+// Run it with 'go generate ./pkg/project' after changing the versions in 'pkg/project/versions.go'.
 package main
 
 import (
@@ -10,13 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/wttech/aemc/pkg/project"
 )
-
-// AemcVersion is the AEM Compose version used by 'aemw'; bumped by the release.
-const AemcVersion = "2.0.19"
-
-// TaskVersion is the Task version used by 'taskw'.
-const TaskVersion = "3.54.0"
 
 // OutputDir is where the generated wrappers are placed, relative to 'pkg/project'.
 const OutputDir = "runner/task/common"
@@ -45,7 +41,7 @@ func Wrappers() []Wrapper {
 			File:             "aemw",
 			Title:            "AEM Compose CLI",
 			VersionEnvVar:    "AEM_CLI_VERSION",
-			Version:          AemcVersion,
+			Version:          project.AemcVersion,
 			InstalledVersion: "installed",
 			ReleaseURL:       "https://github.com/wttech/aemc/releases/download",
 			ArchiveName:      "aemc-cli",
@@ -58,7 +54,7 @@ func Wrappers() []Wrapper {
 			File:          "taskw",
 			Title:         "Task CLI",
 			VersionEnvVar: "TASK_VERSION",
-			Version:       TaskVersion,
+			Version:       project.TaskVersion,
 			ReleaseURL:    "https://github.com/go-task/task/releases/download",
 			ArchiveName:   "task",
 			ChecksumsFile: "task_checksums.txt",

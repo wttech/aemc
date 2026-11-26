@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
-# Releases a new version: bumps it in files, pushes the commit and then the tag that triggers the 'Release Perform' workflow.
-# Usage: sh scripts/release.sh <version>   (without the leading 'v', e.g. 2.0.20)
+#MISE description="Release a new version: bump it in files, push the commit and the tag that triggers the release workflow"
+#USAGE arg "<version>" help="Version to release without the leading v, e.g. 2.0.20"
 
 set -e
 

@@ -44,3 +44,10 @@ So `AEM_AUTHOR_HTTP_URL=http://localhost:4512 aem instance status` now uses that
 | `instance.local.backup_dir`                  | `instance.local.backup.dir`                                     |
 | `aem config value --template '[[.log.level]]'` | `aem config value --key log.level`                            |
 | `aem config value --template '...'` (other)  | `aem config values --output-format yml --output-query '<JMESPath>'` |
+
+### Tool directory
+
+Supportive tools (Java, Oak Run, Vault, unpacked AEM SDK) are downloaded to `aem/home/opt/vendor` instead of `aem/home/opt`.
+
+- If your `aem.yml` sets `base.tool_dir: aem/home/opt`, change it to `aem/home/opt/vendor`.
+- Before upgrading, run `aem vendor clean` with 2.x, or delete `aem/home/opt/{java,oak-run,sdk,vault}` afterwards; the tools are downloaded again on first use.

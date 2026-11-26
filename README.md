@@ -498,8 +498,9 @@ java:
 base:
   # Location of temporary files (downloaded AEM packages, etc)
   tmp_dir: aem/home/tmp
-  # Location of supportive tools (downloaded Java, OakRun, unpacked AEM SDK)
-  tool_dir: aem/home/opt
+  # Location of supportive tools (downloaded Java, OakRun, unpacked AEM SDK), deleted by 'aem vendor clean'
+  # A subdirectory of 'aem/home/opt', so the binaries downloaded there by the wrapper scripts are kept
+  tool_dir: aem/home/opt/vendor
 
 log:
   level: info
@@ -1179,11 +1180,11 @@ If you're setting up your instance for the first time on a Linux OS (i.e. Ubuntu
 
 ```
 INFO[2025-02-27 13:17:09] preparing new SDK 'aem/home/lib/aem-sdk-2025.2.19687.20250225T164325Z-250100.zip'
-INFO[2025-02-27 13:17:09] unpacking SDK ZIP 'aem/home/lib/aem-sdk-2025.2.19687.20250225T164325Z-250100.zip' to dir 'aem/home/opt/sdk'
-INFO[2025-02-27 13:17:09] unpacked SDK ZIP 'aem/home/lib/aem-sdk-2025.2.19687.20250225T164325Z-250100.zip' to dir 'aem/home/opt/sdk'
-INFO[2025-02-27 13:17:09] unpacking SDK dispatcher tools using script 'aem/home/opt/sdk/aem-sdk-dispatcher-tools-2.0.235-unix.sh' to dir 'aem/home/opt/sdk/dispatcher'
+INFO[2025-02-27 13:17:09] unpacking SDK ZIP 'aem/home/lib/aem-sdk-2025.2.19687.20250225T164325Z-250100.zip' to dir 'aem/home/opt/vendor/sdk'
+INFO[2025-02-27 13:17:09] unpacked SDK ZIP 'aem/home/lib/aem-sdk-2025.2.19687.20250225T164325Z-250100.zip' to dir 'aem/home/opt/vendor/sdk'
+INFO[2025-02-27 13:17:09] unpacking SDK dispatcher tools using script 'aem/home/opt/vendor/sdk/aem-sdk-dispatcher-tools-2.0.235-unix.sh' to dir 'aem/home/opt/vendor/sdk/dispatcher'
 # Failed to parse arguments: Unknown option -title
-ERRO[2025-02-27 13:17:10] cannot run SDK dispatcher tools unpacking script 'aem/home/opt/sdk/aem-sdk-dispatcher-tools-2.0.235-unix.sh': exit status 1
+ERRO[2025-02-27 13:17:10] cannot run SDK dispatcher tools unpacking script 'aem/home/opt/vendor/sdk/aem-sdk-dispatcher-tools-2.0.235-unix.sh': exit status 1
 getting started
   AEM Compose project is not yet ready to use!
 

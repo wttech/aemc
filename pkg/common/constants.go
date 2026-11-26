@@ -18,6 +18,8 @@ const (
 	CacheDir          = VarDir + "/" + CacheDirName
 	ToolDirName       = "opt"
 	ToolDir           = HomeDir + "/" + ToolDirName
+	VendorDirName     = "vendor"
+	VendorDir         = ToolDir + "/" + VendorDirName
 	LibDirName        = "lib"
 	LibDir            = HomeDir + "/" + LibDirName
 	TmpDirName        = "tmp"

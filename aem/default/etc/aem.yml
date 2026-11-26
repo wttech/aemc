@@ -234,8 +234,9 @@ base:
   lib_dir: aem/home/lib
   # Location of temporary files (downloaded AEM packages, etc)
   tmp_dir: aem/home/tmp
-  # Location of supportive tools (downloaded Java, OakRun, unpacked AEM SDK)
-  tool_dir: aem/home/opt
+  # Location of supportive tools (downloaded Java, OakRun, unpacked AEM SDK), deleted by 'aem vendor clean'
+  # A subdirectory of 'aem/home/opt', so the binaries downloaded there by the wrapper scripts are kept
+  tool_dir: aem/home/opt/vendor
 
 input:
   format: yml

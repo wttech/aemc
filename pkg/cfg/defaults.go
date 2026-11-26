@@ -21,7 +21,7 @@ func (c *Config) setDefaults() {
 
 	v.SetDefault("base.lib_dir", common.LibDir)
 	v.SetDefault("base.tmp_dir", common.TmpDir)
-	v.SetDefault("base.tool_dir", common.ToolDir)
+	v.SetDefault("base.tool_dir", common.VendorDir)
 	v.SetDefault("base.cache_dir", common.CacheDir)
 
 	v.SetDefault("input.format", fmtx.YML)
@@ -95,7 +95,6 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.check.login_page.status_code", 200)
 	v.SetDefault("instance.check.login_page.contained_text", "QUICKSTART_HOMEPAGE")
 
-	v.SetDefault("instance.local.tool_dir", common.ToolDir)
 	v.SetDefault("instance.local.unpack_dir", common.VarDir+"/instance")
 	v.SetDefault("instance.local.override_dir", common.DefaultDir+"/"+common.VarDirName+"/instance")
 	v.SetDefault("instance.local.await_strict", true)

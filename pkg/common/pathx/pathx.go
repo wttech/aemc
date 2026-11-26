@@ -137,17 +137,17 @@ func GlobOne(pathPattern string) (string, error) {
 	return paths[len(paths)-1], nil
 }
 
+// GlobAll matches the wildcard in the last element of the path; the directory part is taken literally.
+// The path is split with the OS separators (like 'filepath.Glob'), so on Windows a backslash separates
+// directories instead of reaching the glob, where it would be an escape character.
 func GlobAll(pathPattern string) ([]string, error) {
-	var dir string
-	if !strings.Contains(pathPattern, "/") {
+	dir, pattern := filepath.Split(pathPattern)
+	if dir == "" {
 		dir = "."
-	} else {
-		dir = stringsx.BeforeLast(pathPattern, "/")
 	}
 	if !Exists(dir) {
 		return nil, nil
 	}
-	pattern := stringsx.AfterLast(pathPattern, "/")
 	paths, err := GlobDir(dir, pattern)
 	if err != nil {
 		return nil, err
@@ -223,4 +223,27 @@ func RandomDir(tmpDir string, prefix string) string {
 func RandomFileName(tmpDir string, prefix string, extension string) string {
 	suffix, _ := goutils.RandomNumeric(8)
 	return filepath.Join(tmpDir, prefix+"_"+suffix+extension)
+}
+
+// Size returns the total size of the regular files under a path (or of the file itself).
+func Size(path string) (uint64, error) {
+	var total uint64
+	err := filepath.WalkDir(path, func(_ string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !entry.Type().IsRegular() {
+			return nil
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		total += uint64(info.Size())
+		return nil
+	})
+	if err != nil {
+		return 0, fmt.Errorf("cannot compute size of path '%s': %w", path, err)
+	}
+	return total, nil
 }

@@ -12,9 +12,17 @@ permissions:
   # issues: write
 
 jobs:
+  test:
+    name: Test
+    uses: ./.github/workflows/test.yml
+    permissions:
+      contents: read
+      id-token: write
+
   release:
     name: Release
     runs-on: ubuntu-latest
+    needs: test
     steps:
       - uses: actions/checkout@v3
         with:
@@ -29,10 +37,9 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/setup-go@v3
+      - uses: jdx/mise-action@v5.2.7
         with:
-          go-version: '1.25'
-          cache: true
+          version: 2026.11.6
 
       - uses: goreleaser/goreleaser-action@v2
         with:

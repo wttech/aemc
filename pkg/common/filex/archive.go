@@ -38,11 +38,14 @@ func Archive(sourcePath, targetFile string) error {
 	return nil
 }
 
+// ArchiveTempPrefix marks an archive file that is still being written; it is renamed to its target name when complete.
+const ArchiveTempPrefix = "tmp-"
+
 func ArchiveWithChanged(sourceDir, targetFile string) (bool, error) {
 	if pathx.Exists(targetFile) {
 		return false, nil
 	}
-	targetTmpFile := filepath.Dir(targetFile) + "/tmp-" + filepath.Base(targetFile)
+	targetTmpFile := filepath.Dir(targetFile) + "/" + ArchiveTempPrefix + filepath.Base(targetFile)
 	if err := pathx.DeleteIfExists(targetTmpFile); err != nil {
 		return false, fmt.Errorf("cannot delete temporary archive file '%s': %w", targetTmpFile, err)
 	}

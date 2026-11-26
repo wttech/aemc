@@ -1,0 +1,38 @@
+name: Check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+#    env:
+#      GOFLAGS: -mod=vendor
+#      GOPROXY: "off"
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Set up tools
+        uses: jdx/mise-action@v5.2.7
+        with:
+          version: 2026.11.6
+
+      - name: Check
+        run: mise run check

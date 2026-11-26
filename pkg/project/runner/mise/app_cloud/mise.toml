@@ -1,0 +1,252 @@
+# mise: tools, environment and tasks of the project (https://mise.jdx.dev)
+# Once per clone: 'mise trust'. Then 'mise run <task>'; list tasks with 'mise tasks'.
+# Without mise installed (e.g. on CI), use './bin/mise' instead of 'mise'.
+# Tasks are POSIX shell scripts: on Windows, set 'windows_default_inline_shell_args = "bash -c"' in the global mise config (Git Bash).
+
+[settings]
+# Record exact downloads and checksums of the tools in 'mise.lock' (commit it).
+lockfile = true
+
+[tools]
+"github:wttech/aemc" = "2.0.19"
+java = "temurin-21.0.13+9.0.LTS"
+maven = "3.9.6"
+
+[env]
+AEM_ENV = "{{ env.AEM_ENV | default(value='local') }}"
+# Later files win: '.env' (personal, VCS-ignored) over '.env.<AEM_ENV>' (VCS-ignored) over '<AEM_ENV>.env' (VCS-tracked).
+_.file = ["{{ env.AEM_ENV | default(value='local') }}.env", ".env.{{ env.AEM_ENV | default(value='local') }}", ".env"]
+AEM_INSTANCE_PROCESSING_MODE = "auto"
+AEM_OUTPUT_VALUE = "NONE"
+# AEM and Maven run on the Java installed by mise.
+AEM_VENDOR_JAVA_HOME_DIR = { value = "{{ env.JAVA_HOME | default(value='') }}", tools = true }
+
+[tasks.init]
+description = "initialize project"
+run = "aem project init -V ALL"
+
+[tasks.status]
+description = "check status of AEM instances and dispatcher"
+run = [{ task = "aem:status" }, { task = "dispatcher:status" }]
+
+[tasks.check]
+description = "check health of AEM instances and dispatcher"
+run = [{ task = "aem:check" }, { task = "dispatcher:check" }]
+
+[tasks.setup]
+description = "setup AEM instances and dispatcher"
+run = [{ task = "aem:setup" }, { task = "dispatcher:setup" }, { task = "aem:check" }, { task = "dispatcher:check" }]
+
+[tasks.resetup]
+description = "destroy then setup again AEM instances and dispatcher"
+run = [{ task = "destroy" }, { task = "setup" }]
+
+[tasks.start]
+description = "start AEM instances and dispatcher"
+alias = "up"
+run = [{ task = "aem:start" }, { task = "dispatcher:start" }]
+
+[tasks.stop]
+description = "stop AEM instances and dispatcher"
+alias = "down"
+run = [{ task = "dispatcher:stop" }, { task = "aem:stop" }]
+
+[tasks.restart]
+description = "restart AEM instances and dispatcher"
+run = [{ task = "aem:stop" }, { task = "aem:start" }, { task = "dispatcher:stop" }, { task = "dispatcher:start" }]
+
+[tasks.destroy]
+description = "destroy AEM instances and dispatcher"
+confirm = "This will permanently delete all configured AEM instances and their data. Continue?"
+run = [{ task = "stop" }, { task = "aem:destroy" }, { task = "dispatcher:destroy" }]
+
+[tasks."aem:setup"]
+description = "start and provision AEM instances then build and deploy AEM application"
+run = [{ task = "aem:start" }, { task = "aem:provision" }, { task = "aem:deploy" }]
+
+[tasks."aem:start"]
+description = "start AEM instances"
+alias = "aem:up"
+run = "aem instance launch"
+
+[tasks."aem:stop"]
+description = "stop AEM instances"
+alias = "aem:down"
+run = "aem instance stop"
+
+[tasks."aem:status"]
+description = "check status of AEM instances"
+env = { AEM_OUTPUT_VALUE = "ALL" }
+run = "aem instance status"
+
+[tasks."aem:tail"]
+description = "tail logs of AEM instances"
+run = "tail -f aem/home/var/instance/*/crx-quickstart/logs/stdout.log aem/home/var/instance/*/crx-quickstart/logs/error.log"
+
+[tasks."aem:tail:author"]
+description = "tail logs of AEM author instance"
+run = "tail -f aem/home/var/instance/author/crx-quickstart/logs/stdout.log aem/home/var/instance/author/crx-quickstart/logs/error.log"
+
+[tasks."aem:tail:publish"]
+description = "tail logs of AEM publish instance"
+run = "tail -f aem/home/var/instance/publish/crx-quickstart/logs/stdout.log aem/home/var/instance/publish/crx-quickstart/logs/error.log"
+
+[tasks."aem:provision"]
+description = "provision AEM instances by installing packages and applying configurations"
+alias = "aem:configure"
+run = [{ task = "aem:provision:repl-agent-publish" }, { task = "aem:provision:repl-agent-flush" }, { task = "aem:provision:crx" }]
+
+[tasks."aem:provision:repl-agent-publish"]
+description = "configure replication agent on AEM author instance"
+hide = true
+run = """
+printf '%s\\n' \\
+  "enabled: true" \\
+  "transportUri: ${AEM_PUBLISH_HTTP_URL}/bin/receive?sling:authRequestLogin=1" \\
+  "transportUser: ${AEM_PUBLISH_USER}" \\
+  "transportPassword: ${AEM_PUBLISH_PASSWORD}" \\
+  "userId: admin" \\
+  | aem repl agent setup -A --location "author" --name "publish"
+"""
+
+[tasks."aem:provision:repl-agent-flush"]
+description = "configure replication agent on AEM publish instance"
+hide = true
+run = """
+printf '%s\\n' \\
+  "enabled: true" \\
+  "transportUri: ${AEM_DISPATCHER_HTTP_URL}/dispatcher/invalidate.cache" \\
+  "protocolHTTPHeaders:" \\
+  "  - 'CQ-Action: {action}'" \\
+  "  - 'CQ-Handle: {path}'" \\
+  "  - 'CQ-Path: {path}'" \\
+  "  - 'Host: publish'" \\
+  | aem repl agent setup -P --location "publish" --name "flush"
+"""
+
+[tasks."aem:provision:crx"]
+description = "enable CRX/DE on AEM instances"
+hide = true
+run = 'aem osgi config save --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet" --input-string "alias: /crx/server"'
+
+[tasks."aem:destroy"]
+description = "destroy AEM instances"
+depends = ["aem:stop"]
+run = "aem instance destroy"
+
+[tasks."aem:build"]
+description = "build AEM application using Maven"
+# Generated clientlibs under 'ui.apps' are excluded, so building the front-end does not mark the application as changed.
+sources = [
+  "pom.xml",
+  "all/pom.xml", "all/src/**/*",
+  "core/pom.xml", "core/src/**/*",
+  "ui.apps/pom.xml", "ui.apps/src/**/*",
+  "!ui.apps/src/main/content/jcr_root/apps/*/clientlibs/clientlib-site/**/*",
+  "!ui.apps/src/main/content/jcr_root/apps/*/clientlibs/clientlib-dependencies/**/*",
+  "!ui.apps/src/main/content/jcr_root/apps/*/clientlibs/clientlib-angular/**/*",
+  "!ui.apps/src/main/content/jcr_root/apps/*/clientlibs/clientlib-react/**/*",
+  "ui.apps.structure/pom.xml", "ui.apps.structure/src/**/*",
+  "ui.config/pom.xml", "ui.config/src/**/*",
+  "ui.content/pom.xml", "ui.content/src/**/*",
+  "ui.frontend/pom.xml", "ui.frontend/*.js", "ui.frontend/package.json", "ui.frontend/src/**/*",
+]
+outputs = ["all/target/*.all-*.zip"]
+run = "mvn clean package -PfedDev ${AEM_BUILD_ARGS:-}"
+
+[tasks."aem:build:version"]
+description = "check build tool versions"
+run = "mvn --version"
+
+[tasks."aem:deploy"]
+description = "deploy AEM application"
+depends = ["aem:build"]
+run = 'aem package deploy --file "all/target/*.all-*.zip"'
+
+[tasks."aem:check"]
+description = "check health of AEM instances"
+depends = ["aem:author:check", "aem:publish:check"]
+
+[tasks."aem:author:check"]
+description = "check health of AEM author instance"
+run = [
+  "sleep 3",
+  'curl -s -u "${AEM_AUTHOR_USER}:${AEM_AUTHOR_PASSWORD}" "${AEM_AUTHOR_HTTP_URL}/libs/granite/core/content/login.html" | grep -q "QUICKSTART_HOMEPAGE"',
+  'curl -s -u "${AEM_AUTHOR_USER}:${AEM_AUTHOR_PASSWORD}" "${AEM_AUTHOR_HTTP_URL}/etc/replication/agents.author/publish.test.html" | grep -q "Replication (TEST) of /content successful"',
+]
+
+[tasks."aem:publish:check"]
+description = "check health of AEM publish instance"
+run = [
+  "sleep 3",
+  'curl -s -u "${AEM_PUBLISH_USER}:${AEM_PUBLISH_PASSWORD}" "${AEM_PUBLISH_HTTP_URL}/libs/granite/core/content/login.html" | grep -q "QUICKSTART_HOMEPAGE"',
+  'curl -s -u "${AEM_PUBLISH_USER}:${AEM_PUBLISH_PASSWORD}" "${AEM_PUBLISH_HTTP_URL}/etc/replication/agents.publish/flush.test.html" | grep -q "Replication (TEST) of /content successful"',
+]
+
+[tasks."dispatcher:setup"]
+description = "setup AEM dispatcher"
+run = [{ task = "dispatcher:start" }, { task = "dispatcher:status" }]
+
+[tasks."dispatcher:resetup"]
+description = "destroy then setup again AEM dispatcher"
+run = [{ task = "dispatcher:destroy" }, { task = "dispatcher:setup" }]
+
+[tasks."dispatcher:start"]
+description = "start AEM dispatcher using SDK image"
+alias = "dispatcher:up"
+dir = "dispatcher"
+run = """
+command -v "${CONTAINER_COMMAND%% *}" > /dev/null || { echo "Container engine '${CONTAINER_COMMAND}' is not installed!"; exit 1; }
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) WINDOWS=true ;;
+  *) WINDOWS=false ;;
+esac
+if [ "$WINDOWS" = "true" ] && [ "${CONTAINER_COMMAND}" = "podman" ]; then
+  HOST_IP=$(powershell -command "Get-NetIpAddress | where { \\$_.InterfaceAlias -Like '*WSL*' -and \\$_.AddressFamily -EQ 'IPv4' } | select -ExpandProperty IPAddress")
+  if [ -z "$HOST_IP" ]; then
+    echo "Host IP cannot be determined! WSL cannot run in mirrored networking mode."
+    exit 1
+  fi
+  echo "EXTRA_HOST=host.docker.internal:$HOST_IP" > .env
+else
+  echo "EXTRA_HOST=localhost.dummy:127.0.0.1" > .env
+fi
+test -d ../aem/home/opt/vendor/sdk/dispatcher || { echo "Dispatcher SDK is not available. Try providing AEM SDK ZIP instead of JAR to directory: aem/home/lib"; exit 1; }
+test -d home/sdk || (rm -fr home/sdk && mkdir -p home && cp -rL ../aem/home/opt/vendor/sdk/dispatcher home/sdk)
+case "$(uname -m)" in
+  x86_64|amd64) ARCH=amd64 ;;
+  *) ARCH=arm64 ;;
+esac
+${CONTAINER_COMMAND} tag "$(${CONTAINER_COMMAND} load --input "home/sdk/lib/dispatcher-publish-${ARCH}.tar.gz" | tail -n 1 | awk -v 'FS= ' '{print $3}')" "adobe/aem-ethos/dispatcher-publish:latest"
+mkdir -p home/sdk/logs home/sdk/cache
+${CONTAINER_COMPOSE_COMMAND} up -d
+"""
+
+[tasks."dispatcher:stop"]
+description = "stop AEM dispatcher"
+alias = "dispatcher:down"
+dir = "dispatcher"
+run = "${CONTAINER_COMPOSE_COMMAND} down"
+
+[tasks."dispatcher:restart"]
+description = "restart AEM dispatcher"
+run = [{ task = "dispatcher:stop" }, { task = "dispatcher:start" }]
+
+[tasks."dispatcher:status"]
+description = "check status of AEM dispatcher"
+dir = "dispatcher"
+run = ["${CONTAINER_COMPOSE_COMMAND} ps", "${CONTAINER_COMPOSE_COMMAND} logs --tail 20"]
+
+[tasks."dispatcher:login"]
+description = "login to AEM dispatcher shell"
+run = "${CONTAINER_COMMAND} exec -it dispatcher bash || true"
+
+[tasks."dispatcher:destroy"]
+description = "destroy AEM dispatcher"
+dir = "dispatcher"
+run = ["${CONTAINER_COMPOSE_COMMAND} down -v --remove-orphans", "rm -fr home"]
+
+[tasks."dispatcher:check"]
+description = "check health of AEM dispatcher"
+# Retried for up to 5 minutes while the dispatcher warms up (a cold first request may take a minute); redirects, e.g. to the home page, are followed
+run = 'curl -fsSL -o /dev/null --connect-timeout 5 --max-time 60 --retry 100 --retry-delay 3 --retry-max-time 300 --retry-all-errors "http://${AEM_DISPATCHER_DOMAIN}"'

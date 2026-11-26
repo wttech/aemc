@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg/cfg"
-	"github.com/wttech/aemc/pkg/common/tplx"
 )
 
 func (c *CLI) configCmd() *cobra.Command {
@@ -17,6 +17,7 @@ func (c *CLI) configCmd() *cobra.Command {
 	cmd.AddCommand(c.configExportCmd())
 	cmd.AddCommand(c.configValueCmd())
 	cmd.AddCommand(c.configValuesCmd())
+	cmd.AddCommand(c.configMigrateCmd())
 	return cmd
 }
 
@@ -83,34 +84,42 @@ func (c *CLI) configValueCmd() *cobra.Command {
 		Aliases: []string{"get"},
 		Run: func(cmd *cobra.Command, args []string) {
 			key, _ := cmd.Flags().GetString("key")
-			template, _ := cmd.Flags().GetString("template")
-			if key == "" && template == "" {
-				c.Fail("flag 'key' or 'template' need to be specified")
+			values := c.aem.Config().Values()
+			if !values.IsSet(key) {
+				c.Error(fmt.Errorf("config value not found using key '%s'", key))
 				return
 			}
-			var (
-				value string
-				err   error
-			)
-			if key != "" {
-				value, err = tplx.RenderKey(key, c.aem.Config().Values().AllSettings())
-				if err != nil {
-					c.Error(fmt.Errorf("cannot read config value using key '%s': %w", key, err))
-					return
-				}
-			} else {
-				value, err = tplx.RenderString(template, c.aem.Config().Values().AllSettings())
-				if err != nil {
-					c.Error(fmt.Errorf("cannot read config value using template '%s': %w", template, err))
-					return
-				}
-			}
-			c.SetOutput("value", value)
+			c.SetOutput("value", fmt.Sprint(values.Get(key)))
 			c.Ok("config value read")
 		},
 	}
 	cmd.Flags().StringP("key", "k", "", "Value key")
-	cmd.Flags().StringP("template", "t", "", "Value template")
-	cmd.MarkFlagsMutuallyExclusive("key", "template")
+	_ = cmd.MarkFlagRequired("key")
+	return cmd
+}
+
+// configMigrateCmd is a temporary bridge for config files of AEM Compose 2.x; remove in the next major version.
+func (c *CLI) configMigrateCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "migrate",
+		Short: "Migrate config files from AEM Compose 2.x template syntax '[[ ]]' to variables '${}'",
+		Run: func(cmd *cobra.Command, args []string) {
+			migrations, err := cfg.MigrateLegacyFiles()
+			if err != nil {
+				c.Error(err)
+				return
+			}
+			c.SetOutput("migrations", migrations)
+			changed := lo.SomeBy(migrations, func(m cfg.LegacyFileMigration) bool { return m.Changed })
+			unresolved := lo.SomeBy(migrations, func(m cfg.LegacyFileMigration) bool { return len(m.Unresolved) > 0 })
+			if unresolved {
+				c.Fail("config files migrated but some lines need a manual change, see 'unresolved'")
+			} else if changed {
+				c.Changed("config files migrated")
+			} else {
+				c.Ok("config files already migrated")
+			}
+		},
+	}
 	return cmd
 }

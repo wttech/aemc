@@ -3,37 +3,18 @@ package tplx
 import (
 	"bytes"
 	"fmt"
-	"github.com/Masterminds/sprig"
 	"github.com/wttech/aemc/pkg/common/filex"
-	"github.com/wttech/aemc/pkg/common/pathx"
-	"strings"
 	"text/template"
 )
 
+// Delimiters of the templates embedded in AEM Compose (package and script resources).
 var (
 	DelimLeft  = "[["
 	DelimRight = "]]"
 )
 
 func New(name string) *template.Template {
-	return template.New(name).Funcs(funcMap)
-}
-
-var funcMap = sprig.TxtFuncMap()
-
-func init() {
-	funcMap["canonicalPath"] = func(pathSegments ...string) string {
-		defer recovery()
-		return pathx.Canonical(strings.Join(pathSegments, "/"))
-	}
-}
-
-func recovery() {
-	recover()
-}
-
-func RenderKey(key string, data any) (string, error) {
-	return RenderString(DelimLeft+"."+key+DelimRight, data)
+	return template.New(name)
 }
 
 func RenderString(tplContent string, data any) (string, error) {

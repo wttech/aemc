@@ -1,11 +1,26 @@
-![AEM Compose Logo](https://github.com/wttech/aemc-ansible/raw/main/docs/logo-with-text.png)
-&nbsp;&nbsp;&nbsp;&nbsp;
-<a href="https://www.vml.com/expertise/enterprise-solutions" target="_blank"><picture><source srcset="docs/vml-logo-white.svg" media="(prefers-color-scheme: dark)"><img src="docs/vml-logo-black.svg" alt="VML Logo" height="100"></picture></a>
+<p align="center">
+<picture><source srcset="docs/logo-with-text-white.png" media="(prefers-color-scheme: dark)"><img src="docs/logo-with-text.png" alt="AEM Compose Logo" height="100"></picture>
+</p>
 
-[![GitHub All Releases](https://img.shields.io/github/downloads/wttech/aemc/total)](https://github.com/wttech/aemc/releases)
-[![Last Release Version](https://img.shields.io/github/v/release/wttech/aemc?color=lightblue&label=Last%20Release)](https://github.com/wttech/aemc/releases)
-![Go Version](https://img.shields.io/github/go-mod/go-version/wttech/aemc)
-[![Apache License, Version 2.0, January 2004](https://github.com/wttech/aemc-ansible/raw/main/docs/apache-license-badge.svg)](http://www.apache.org/licenses/)
+<p align="center">
+<strong>Manage AEM instances with ease.</strong><br>
+CLI Tool · CRX Packages · OSGi Configs · JCR Nodes
+</p>
+
+<p align="center">
+<a href="https://github.com/wttech/aemc/releases"><img src="https://img.shields.io/github/downloads/wttech/aemc/total" alt="GitHub All Releases"></a>
+<a href="https://github.com/wttech/aemc/releases"><img src="https://img.shields.io/github/v/release/wttech/aemc?color=lightblue&label=Last%20Release" alt="Last Release Version"></a>
+<img src="https://img.shields.io/github/go-mod/go-version/wttech/aemc" alt="Go Version">
+<a href="http://www.apache.org/licenses/"><img src="https://github.com/wttech/aemc-ansible/raw/main/docs/apache-license-badge.svg" alt="Apache License, Version 2.0, January 2004"></a>
+<br>
+<sub>Proudly sponsored by:</sub>
+<br><br>
+<a href="https://enterprisesolutions.wpp.com/" target="_blank">
+<picture><source srcset="docs/wpp-es-primary-white.svg" media="(prefers-color-scheme: dark)"><img src="docs/wpp-es-primary-navy.svg" alt="WPP Enterprise Solutions" height="20"></picture>
+</a>
+</p>
+
+---
 
 **AEM Compose**
 
@@ -67,9 +82,12 @@ Its seamless integration with Terraform, Pulumi, and Ansible enhances automation
   - [Deploying Packages](#deploying-packages)
   - [OSGi Configuration](#osgi-configuration)
   - [Repository Operations](#repository-operations)
+  - [Content Synchronization](#content-synchronization)
   - [Instance Backups](#instance-backups)
     - [Basic Commands](#basic-commands)
     - [Backup \& Restore Cycle](#backup--restore-cycle)
+    - [Named Backups](#named-backups)
+    - [Retention and Disk Space](#retention-and-disk-space)
   - [Replication agents](#replication-agents)
   - [SSL by Default](#ssl-by-default)
   - [Global Trust Store](#global-trust-store)
@@ -108,7 +126,7 @@ Main features:
   - advanced snapshot handling - avoiding redeploying the same package by checksum verification
   - customizable instance health checking
 - building AEM packages with:
-  - source code change detection - avoiding rebuilding application when it is not needed (handled by [Taskfile](https://taskfile.dev/usage/#prevent-unnecessary-work))
+  - source code change detection - avoiding rebuilding application when it is not needed (task `sources` of [mise](https://mise.jdx.dev/tasks/task-configuration.html#sources) or [Task](https://taskfile.dev/usage/#prevent-unnecessary-work))
 - making AEM instance backups (with restoring)
   - advanced archive format to speed up performance and storage efficiency ([ZSTD](https://github.com/facebook/zstd) used by default)
   - instance state aware - stopping, archiving then starting again AEM instances automatically (if needed)
@@ -150,7 +168,7 @@ Supported project types:
   |-------------|------------------------|
   | >= 1.2.0    | 41, 42, 43, 47, 48, 51 |
 
-- with any type of structure, however afterwards only a little customizations in *Taskfile.yml* need to be done to reflect configuration related to built AEM application artifact path and AEM dispatcher files location,
+- with any type of structure, however afterwards only a little customizations in *mise.toml* (or *Taskfile.yml*) need to be done to reflect configuration related to built AEM application artifact path and AEM dispatcher files location,
 - empty folder; the project kind will be needed to be specified explicitly during scaffolding.
 
 ---
@@ -161,36 +179,40 @@ Run command below to install the AEM Compose tool in your project:
 curl https://raw.githubusercontent.com/wttech/aemc/main/project-install.sh | sh
 ```
 
-After successful installation, remember to always use the tool via wrapper script in the following way:
+Then scaffold the AEM Compose files in the project, as the installation prints. Scaffolding:
 
-```shell
-sh aemw [command]
-```
-
-Next scaffold the AEM Compose files in the project:
-
-```shell
-sh aemw project scaffold
-```
-
-Project scaffolding:
-
-- sets up ready-to-use tasks powered by [Task tool](https://taskfile.dev/), which aggregate one or many AEM Compose CLI commands into useful procedures.
-- provides configuration for provisioning AEM instances (installing service pack, setting replication agents, etc.).
+- sets up ready-to-use tasks, which aggregate one or many AEM Compose CLI commands into useful procedures,
+- provides configuration for provisioning AEM instances (installing service pack, setting replication agents, etc.),
 - provides configuration for running AEM Dispatcher on [Podman](https://podman-desktop.io/) (by default) or [Docker](https://www.docker.com/products/docker-desktop/) (remember to install one of these tools before running the setup task).
-
-To list all available tasks, run:
-
-```shell
-sh taskw --list
-```
 
 Usually, the first steps to take are:
 
 ```shell
-sh taskw init
-sh taskw setup
+mise trust      # once per clone
+mise run init
+mise run setup
 ```
+
+Examples in this document run AEM Compose as `aem`: in a project run by mise it is on the `PATH` when mise is [activated](https://mise.jdx.dev/getting-started.html#activate-mise) in the shell, otherwise use `mise exec -- aem`. In a project run by Task, use `sh aemw` instead.
+
+### Choosing a task runner
+
+The project tasks and tools are run by [mise](https://mise.jdx.dev) (default) or [Task](https://taskfile.dev), chosen when scaffolding: `aem project scaffold --runner mise|task` (or `curl ... | AEM_RUNNER=task sh` when installing). Both share the same `aem.yml`, dotenv files and tasks; only the way tools and tasks are run differs.
+
+|                         | mise (recommended)                                                                 | Task                                                                    |
+|-------------------------|------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| Run a task              | `mise run setup`, list them with `mise tasks`                                      | `sh taskw setup`, list them with `sh taskw --list`                      |
+| Run AEM Compose         | `aem instance status`                                                              | `aem instance status`                                               |
+| First use of a clone    | `mise trust`                                                                       | nothing                                                                 |
+| Fresh machine or CI     | nothing to install: `./bin/mise` downloads the pinned mise; on CI set `MISE_TRUSTED_CONFIG_PATHS` to the checkout | nothing to install: `taskw` and `aemw` download Task and AEM Compose |
+| Tools                   | AEM Compose, Java and Maven, pinned in `mise.toml`; any other tool is one line more | AEM Compose (`aemw`), Task (`taskw`), Maven (`mvnw`); Java downloaded by AEM Compose |
+| Java                    | installed by mise, shared by AEM, Maven and the IDE                                | downloaded by AEM Compose, used by AEM and `mvnw`                       |
+| Download verification   | checksums of every tool for every platform in `mise.lock`                          | checksums of AEM Compose and Task published with their releases         |
+| Behind a TLS-inspecting proxy | the company certificate in the system trust store                            | `CURL_CA_BUNDLE`, or the opt-out `AEM_INSECURE_DOWNLOAD=true`           |
+| Variables from the shell vs dotenv files | dotenv files win (mise semantics); override in `.env`              | shell wins over dotenv files in AEM Compose; Taskfile `env` wins over the shell |
+| Windows                 | tasks need Git Bash: set `windows_default_inline_shell_args = "bash -c"` in the global mise config | wrappers need `sh` (e.g. Git Bash); tasks run in Task's own shell |
+| Offline                 | a mirror or a prefilled mise cache; or `aem` on the `PATH` with tools set by paths in `aem.yml` | archives placed by hand where the wrappers say; tools set by paths in `aem.yml` |
+| Choose it when          | starting a project, or one tool for all the tools of a project is wanted           | the team or CI already relies on Task and the wrapper scripts           |
 
 ## IaaC Providers
 
@@ -266,16 +288,16 @@ instance:
   # Full details of local or remote instances
   config:
     local_author:
-      active: [[.Env.AEM_AUTHOR_ACTIVE | default true ]]
-      http_url: [[.Env.AEM_AUTHOR_HTTP_URL | default "http://127.0.0.1:4502" ]]
-      user: [[.Env.AEM_AUTHOR_USER | default "admin" ]]
-      password: [[.Env.AEM_AUTHOR_PASSWORD | default "admin" ]]
+      active: ${AEM_AUTHOR_ACTIVE:-true}
+      http_url: ${AEM_AUTHOR_HTTP_URL:-http://127.0.0.1:4502}
+      user: ${AEM_AUTHOR_USER:-admin}
+      password: ${AEM_AUTHOR_PASSWORD:-admin}
       run_modes: [ local ]
       jvm_opts:
         - -server
         - -Djava.awt.headless=true
-        - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
-        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=[[.Env.AEM_AUTHOR_DEBUG_ADDR | default "0.0.0.0:14502" ]]
+        - -Djava.io.tmpdir=${AEM_PROJECT_DIR}/aem/home/tmp
+        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${AEM_AUTHOR_DEBUG_ADDR:-0.0.0.0:14502}
         - -Duser.language=en
         - -Duser.country=US
         - -Duser.timezone=UTC
@@ -286,16 +308,16 @@ instance:
         - ACME_VAR=value
       sling_props: []
     local_publish:
-      active: [[.Env.AEM_PUBLISH_ACTIVE | default true ]]
-      http_url: [[.Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4503" ]]
-      user: [[.Env.AEM_PUBLISH_USER | default "admin" ]]
-      password: [[.Env.AEM_PUBLISH_PASSWORD | default "admin" ]]
+      active: ${AEM_PUBLISH_ACTIVE:-true}
+      http_url: ${AEM_PUBLISH_HTTP_URL:-http://127.0.0.1:4503}
+      user: ${AEM_PUBLISH_USER:-admin}
+      password: ${AEM_PUBLISH_PASSWORD:-admin}
       run_modes: [ local ]
       jvm_opts:
         - -server
         - -Djava.awt.headless=true
-        - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
-        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=[[.Env.AEM_PUBLISH_DEBUG_ADDR | default "0.0.0.0:14503" ]]
+        - -Djava.io.tmpdir=${AEM_PROJECT_DIR}/aem/home/tmp
+        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${AEM_PUBLISH_DEBUG_ADDR:-0.0.0.0:14503}
         - -Duser.language=en
         - -Duser.country=US
         - -Duser.timezone=UTC
@@ -376,8 +398,23 @@ instance:
 
     # Current runtime dir (Sling launchpad, JCR repository)
     unpack_dir: "aem/home/var/instance"
-    # Archived runtime dir (AEM backup files '*.aemb.zst')
-    backup_dir: "aem/home/var/backup"
+    # Archived runtime dirs (AEM instance backups)
+    backup:
+      # Directory holding backup files '*.aemb.tar.zst'
+      dir: "aem/home/var/backup"
+      # Free space that must remain on the disk of 'dir' after a backup is made,
+      # as a percentage of the disk or an absolute size (e.g. '50GB'); empty = no check.
+      # 10% keeps the disk below the 90% at which AEM's DiskSpaceCheck health check turns critical.
+      min_free: "10%"
+      prune:
+        # Prune old backups right after 'backup make' / 'backup perform'
+        auto: true
+        # Newest backups kept per instance and backup name; 0 = keep all.
+        # 2 keeps one fallback in case the newest backup captured an already broken state.
+        keep_last: 2
+        # Optional cap on the total size of backups (e.g. '100GB'); empty = no cap.
+        # Oldest backups are pruned first, but never the newest one of an instance and backup name.
+        max_size: ""
 
   # Status discovery (timezone, AEM version, etc)
   status:
@@ -439,22 +476,22 @@ instance:
 
 java:
   # Require following versions before e.g running AEM instances
-  version_constraints: [">= 1.8, < 1.9", ">= 11, < 12", ">= 17, < 18", ">= 21, < 22"]
+  version_constraints: [">= 1.8, < 1.9", ">= 11, < 12", ">= 17, < 18", ">= 21, < 22", ">= 25, < 26"]
 
   # Pre-installed local JDK dir
   # a) keep it empty to download open source Java automatically for current OS and architecture
-  # b) set it to absolute path or to env var '[[.Env.JAVA_HOME]]' to indicate where closed source Java like Oracle is installed
+  # b) set it to absolute path or to env var '${JAVA_HOME}' to indicate where closed source Java like Oracle is installed
   home_dir: ""
 
   # Auto-installed JDK options
   download:
-    # Source URL with template vars support
-    url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.25_9.[[.ArchiveExt]]"
-    # Map source URL template vars to be compatible with Adoptium Java
+    # Source URL, may use built-in variables like '${AEM_OS}'
+    url: "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk_${AEM_ARCH}_${AEM_OS}_hotspot_21.0.13_9.${AEM_ARCHIVE_EXT}"
+    # Map values of built-in variables in source URL to be compatible with Adoptium Java
     replacements:
-      # Var 'Os' (GOOS)
+      # Variable 'AEM_OS' (GOOS)
       "darwin": "mac"
-      # Var 'Arch' (GOARCH)
+      # Variable 'AEM_ARCH' (GOARCH)
       "x86_64": "x64"
       "amd64": "x64"
       "386": "x86-32"
@@ -465,8 +502,9 @@ java:
 base:
   # Location of temporary files (downloaded AEM packages, etc)
   tmp_dir: aem/home/tmp
-  # Location of supportive tools (downloaded Java, OakRun, unpacked AEM SDK)
-  tool_dir: aem/home/opt
+  # Location of supportive tools (downloaded Java, OakRun, unpacked AEM SDK), deleted by 'aem vendor clean'
+  # A subdirectory of 'aem/home/opt', so the binaries downloaded there by the wrapper scripts are kept
+  tool_dir: aem/home/opt/vendor
 
 log:
   level: info
@@ -496,22 +534,22 @@ vendor:
   # JDK used to: run AEM instances, build OSGi bundles, assemble AEM packages
   java:
     # Require following versions before e.g running AEM instances
-    version_constraints: [">= 1.8, < 1.9", ">= 11, < 12", ">= 17, < 18", ">= 21, < 22"]
+    version_constraints: [">= 1.8, < 1.9", ">= 11, < 12", ">= 17, < 18", ">= 21, < 22", ">= 25, < 26"]
 
     # Pre-installed local JDK dir
     # a) keep it empty to download open source Java automatically for current OS and architecture
-    # b) set it to absolute path or to env var '[[.Env.JAVA_HOME]]' to indicate where closed source Java like Oracle is installed
+    # b) set it to absolute path or to env var '${JAVA_HOME}' to indicate where closed source Java like Oracle is installed
     home_dir: ""
 
     # Auto-installed JDK options
     download:
-      # Source URL with template vars support
-      url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.25_9.[[.ArchiveExt]]"
-      # Map source URL template vars to be compatible with Adoptium Java
+      # Source URL, may use built-in variables like '${AEM_OS}'
+      url: "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk_${AEM_ARCH}_${AEM_OS}_hotspot_21.0.13_9.${AEM_ARCHIVE_EXT}"
+      # Map values of built-in variables in source URL to be compatible with Adoptium Java
       replacements:
-        # Var 'Os' (GOOS)
+        # Variable 'AEM_OS' (GOOS)
         "darwin": "mac"
-        # Var 'Arch' (GOARCH)
+        # Variable 'AEM_ARCH' (GOARCH)
         "x86_64": "x64"
         "amd64": "x64"
         "386": "x86-32"
@@ -578,18 +616,49 @@ content:
     namespaces_skipped: true
 ```
 
-Note that environment variables may be injected in any part of config file. 
-Environment variables could be defined in one or many [dotenv files](https://github.com/wttech/aemc/blob/main/pkg/common/osx/osx.go#L32).
+## Variables in config file
+
+Values in the config file may reference environment variables, using the [Compose Specification interpolation](https://github.com/compose-spec/compose-spec/blob/main/12-interpolation.md) syntax known from Docker Compose and shells:
+
+| Syntax                | Result                                                    |
+|-----------------------|-----------------------------------------------------------|
+| `${VAR}`              | value of `VAR`, empty when not set                        |
+| `${VAR:-default}`     | `default` when `VAR` is not set or empty                  |
+| `${VAR-default}`      | `default` when `VAR` is not set                           |
+| `${VAR:?message}`     | error with `message` when `VAR` is not set or empty       |
+| `${VAR:+replacement}` | `replacement` when `VAR` is set and not empty, else empty |
+| `$$`                  | a literal `$`                                             |
+
+Variables are replaced in values only, after the file is parsed, so the file stays valid YAML for IDEs and a variable value cannot break its structure. 
+An unquoted value is typed after the replacement (`active: ${AEM_AUTHOR_ACTIVE:-true}` is a boolean), a quoted one stays a string. 
+A literal `$` in a value must be written as `$$`.
+
+Environment variables could be defined in one or many [dotenv files](https://github.com/wttech/aemc/blob/main/pkg/common/osx/osx.go#L32): `.env` (personal, VCS-ignored), `.env.local` (VCS-ignored) and `local.env` (VCS-tracked), where `local` is the default value of `AEM_ENV`; the first file defining a variable wins. A variable already set in the environment is never overridden by a file.
+These built-in variables are also available (reserved, not overridable):
+
+| Variable           | Value                                               |
+|--------------------|-----------------------------------------------------|
+| `AEM_PROJECT_DIR` | absolute path of the project (working directory)    |
+| `AEM_OS`          | operating system, e.g. `linux`, `darwin`, `windows` |
+| `AEM_ARCH`        | CPU architecture, e.g. `amd64`, `arm64`             |
+| `AEM_ARCHIVE_EXT` | `zip` on Windows, `tar.gz` elsewhere                |
 
 ## Overriding default configuration
 
-By default, the VCS-tracked file is loaded (*aem/default/etc*).
+By default, the VCS-tracked file is loaded: *aem.yml* in the project root or, when there is none, *aem/default/etc/aem.yml*.
 However, occasionally developers might want to override the default config file and load a VCS-ignored file instead (*aem/home/etc/aem.yml*).
 
 To do so, run the command:
 
 ```shell
-sh aemw config init
+aem config init
+```
+
+To run AEM Compose for a project in another directory, or with another config file, use the global flags:
+
+```shell
+aem --cd /opt/aem instance status       # like 'git -C' or 'mise -C': env files, config and relative paths are resolved there
+aem --config ci/aem.yml instance status # takes precedence over env var 'AEM_CONFIG_FILE'
 ```
 
 ## Configuration precedence
@@ -620,7 +689,7 @@ By default, fail-safe options are in use. However, consider using the configurat
   ```
 
   Setting this environment variable will instruct the tool to request from the AEM instance descriptive information about the recently executed command subject.
-  For example, if a recently executed command was `sh aemw package deploy my-package.zip -A` the AEM Compose tool after doing the actual package deployment will request from CRX Package Manager the exact information about just deployed package.
+  For example, if a recently executed command was `aem package deploy my-package.zip -A` the AEM Compose tool after doing the actual package deployment will request from CRX Package Manager the exact information about just deployed package.
   This feature is beneficial for clarity and debugging purposes.
 
 ### Installing content packages
@@ -631,7 +700,7 @@ By default, the timeout is set to `10m`, but you have the option to increase it 
 To set the timeout for a single AEMC command, use the following syntax:
 
 ```shell
-AEM_INSTANCE_HTTP_TIMEOUT=0 sh aemw package deploy --file my-package.zip
+AEM_INSTANCE_HTTP_TIMEOUT=0 aem package deploy --file my-package.zip
 ```
 
 It's important to be aware that AEMaaCS also has its own timeout for requests made to the Package Manager UI. For detailed information, please refer to the [documentation](https://experienceleague.adobe.com/docs/experience-manager-cloud-service/content/implementing/developer-tools/package-manager.html?lang=en#aemaacs-packages).
@@ -641,7 +710,7 @@ To skip the instance health check after running a command that would normally tr
 To skip the instance health check for a single AEMC command, use the following syntax:
 
 ```shell
-AEM_INSTANCE_CHECK_SKIP=true sh aemw package deploy --file my-package.zip
+AEM_INSTANCE_CHECK_SKIP=true aem package deploy --file my-package.zip
 ```
 
 ### Installing packages with troubleshooting
@@ -653,13 +722,13 @@ This new feature offers two distinct modes for leveraging its benefits:
 1. Saving HTML report to file:
 
    ```shell
-   AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true sh aemw package deploy --file my-package.zip
+   AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true aem package deploy --file my-package.zip
    ```
 
 2. Direct console output of HTML report:
 
    ```shell
-   AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true AEM_INSTANCE_PACKAGE_INSTALL_HTML_CONSOLE=true sh aemw package deploy --file my-package.zip
+   AEM_INSTANCE_PACKAGE_INSTALL_HTML_ENABLED=true AEM_INSTANCE_PACKAGE_INSTALL_HTML_CONSOLE=true aem package deploy --file my-package.zip
    ```
 
 # Concepts
@@ -710,14 +779,14 @@ Instance IDs can be used in multiple places:
 **1. CLI flags:**
 ```shell
 # Target specific instance by ID
-sh aemw package deploy --file my-package.zip --instance-id local_author
+aem package deploy --file my-package.zip --instance-id local_author
 
 # Target by URL (ad-hoc)
-sh aemw package deploy --file my-package.zip --instance-url http://localhost:4502
+aem package deploy --file my-package.zip --instance-url http://localhost:4502
 
 # Filter by role
-sh aemw instance status --instance-author   # Only author instances
-sh aemw instance status --instance-publish  # Only publish instances
+aem instance status --instance-author   # Only author instances
+aem instance status --instance-publish  # Only publish instances
 ```
 
 **2. Configuration in `aem.yml`:**
@@ -757,20 +826,20 @@ export AEM_INSTANCE_CONFIG_INT_AUTHOR_ACTIVE=true
 
 ```shell
 # Create and start local AEM instances
-sh aemw instance create
-sh aemw instance start
+aem instance create
+aem instance start
 
 # Or do both in one command
-sh aemw instance launch
+aem instance launch
 
 # Check instance status
-sh aemw instance status
+aem instance status
 
 # Stop instances
-sh aemw instance stop
+aem instance stop
 
 # Delete instances (removes all data)
-sh aemw instance delete
+aem instance delete
 ```
 
 ### Upgrading Local Instances
@@ -790,40 +859,99 @@ sh aemw instance start
 
 ```shell
 # Deploy a single package
-sh aemw package deploy --file my-package.zip
+aem package deploy --file my-package.zip
 
 # Deploy to specific instance
-sh aemw package deploy --file my-package.zip --instance-id local_author
+aem package deploy --file my-package.zip --instance-id local_author
 
 # Deploy multiple packages
-sh aemw package deploy --file pkg1.zip --file pkg2.zip
+aem package deploy --file pkg1.zip --file pkg2.zip
 
 # Deploy from URL
-sh aemw package deploy --url https://example.com/my-package.zip
+aem package deploy --url https://example.com/my-package.zip
 ```
 
 ## OSGi Configuration
 
 ```shell
 # List all bundles
-sh aemw osgi bundle list
+aem osgi bundle list
 
 # Check specific bundle status
-sh aemw osgi bundle read --symbolic-name com.example.core
+aem osgi bundle read --symbolic-name com.example.core
 
 # Set OSGi configuration
-sh aemw osgi config save --pid com.example.MyService --input-string "enabled: true"
+aem osgi config save --pid com.example.MyService --input-string "enabled: true"
 ```
 
 ## Repository Operations
 
 ```shell
 # Read node properties
-sh aemw repo node read --path /content/my-site
+aem repo node read --path /content/my-site
 
 # Copy content between instances
-sh aemw content copy --path /content/my-site --instance-target-id local_publish
+aem content copy --filter-roots /content/my-site --instance-target-id local_publish
 ```
+
+## Content Synchronization
+
+Commands under `aem content` (alias `cnt`) keep JCR content on a running instance and in the local file system (FileVault serialization under a `jcr_root` directory) in sync.
+They are the replacement for the legacy `vlt checkout` / `vlt update` / `vlt commit` workflow, and unlike VLT they need no `.vlt` metadata, checkout step or working copy.
+
+| Command                          | Alias        | Description                                                                 |
+|----------------------------------|--------------|-----------------------------------------------------------------------------|
+| `content pull`                   | `pl`, `sync` | Download content from an instance and unpack it under `jcr_root` (like `vlt checkout`/`update`) |
+| `content push`                   | `ps`         | Upload content from `jcr_root` (directory or single file) to instance(s) (like `vlt commit`)   |
+| `content clean`                  | `cln`        | Normalize local content (remove volatile properties, `.vlt` files, etc.)    |
+| `content download`               | `dl`         | Download content from an instance as a package ZIP file                     |
+| `content copy`                   | `cp`         | Copy content from one instance to other instance(s)                         |
+
+The local path passed with `--dir` / `--file` / `--path` must contain `jcr_root` (typically `ui.content/src/main/content/jcr_root/...`).
+The Vault filter root is derived automatically from that path, e.g. `.../jcr_root/content/my-site` becomes `/content/my-site`.
+
+```shell
+# Pull a directory (a "checkout"/"update"); --path accepts a directory or a file
+aem content pull --dir ui.content/src/main/content/jcr_root/content/my-site
+
+# Pull and normalize the content (see 'content.clean' in the configuration)
+aem content pull --dir ui.content/src/main/content/jcr_root/content/my-site --clean
+
+# Pull and remove local content that no longer exists on the instance
+aem content pull --dir ui.content/src/main/content/jcr_root/content/my-site --clean --replace
+
+# Pull a single file from a specific instance
+aem content pull --file ui.content/src/main/content/jcr_root/content/my-site/.content.xml --instance-id local_author
+
+# Pull using explicit Vault filter roots instead of deriving them from the path
+aem content pull --dir ui.content/src/main/content/jcr_root/content --filter-roots /content/my-site
+
+# Push a directory (a "commit") to all instances
+aem content push --dir ui.content/src/main/content/jcr_root/content/my-site
+
+# Push a single file to a specific instance, normalizing it first
+aem content push --file ui.content/src/main/content/jcr_root/content/my-site/.content.xml --clean --instance-id local_author
+
+# Push overriding Vault filter mode (replace, merge or update)
+aem content push --dir ui.content/src/main/content/jcr_root/content/my-site --filter-mode merge
+
+# Clean content already present on the file system
+aem content clean --dir ui.content/src/main/content/jcr_root/content/my-site
+
+# Download content as a package ZIP
+aem content download --filter-roots /content/my-site --target-file my-site.zip
+
+# Copy content to another instance (by ID or ad-hoc URL)
+aem content copy --filter-roots /content/my-site --instance-target-id local_publish
+aem content copy --filter-roots /content/my-site --instance-target-url http://localhost:4503
+```
+
+Notes:
+
+- `pull`, `download` and `copy` operate on one instance (selected with `--instance-id`, `--instance-url`, `--instance-author`, `--instance-publish`); `push` targets all selected instances.
+- `--dir`, `--file` and `--path` are mutually exclusive; one of them is required for `pull`, `push` and `clean`.
+- `--filter-roots` and `--filter-file` are mutually exclusive; `download` and `copy` require one of them.
+- Content is only normalized when `--clean` is given; rules are configured in the `content.clean` section.
 
 ## Instance Backups
 
@@ -837,22 +965,22 @@ Backups allow you to save and restore the complete state of local AEM instances.
 
 ```shell
 # List all available backups
-sh aemw instance backup list
+aem instance backup list
 
 # Create backup of a single instance
-sh aemw instance backup make --instance-id local_author
+aem instance backup make --instance-id local_author
 
 # Create backup with custom file path
-sh aemw instance backup make --instance-id local_author --file my-backup.aemb.tar.zst
+aem instance backup make --instance-id local_author --file my-backup.aemb.tar.zst
 
 # Restore instance from backup (instance must not exist)
-sh aemw instance backup use --instance-id local_author
+aem instance backup use --instance-id local_author
 
 # Restore from specific backup file
-sh aemw instance backup use --instance-id local_author --file my-backup.aemb.tar.zst
+aem instance backup use --instance-id local_author --file my-backup.aemb.tar.zst
 
 # Restore and delete existing instance first
-sh aemw instance backup use --instance-id local_author --delete-created
+aem instance backup use --instance-id local_author --delete-created
 ```
 
 ### Backup & Restore Cycle
@@ -861,14 +989,14 @@ Backups enable safe experimentation - break your instance, restore in 10-15 minu
 
 ```shell
 # 1. Save current state before experimenting
-sh aemw instance backup perform
+aem instance backup perform
 
 # 2. Experiment freely (install packages, change configs, break things...)
 # ...
 
 # 3. Something went wrong? Delete and restore from backup
-sh aemw instance delete --kill
-sh aemw instance backup restore
+aem instance delete --kill
+aem instance backup restore
 ```
 
 Use cases:
@@ -877,15 +1005,48 @@ Use cases:
 - Testing different AEM versions or configurations
 - Sharing pre-configured instances via cloud storage (S3, GCS, Azure Blob)
 
-**Backup file naming:** `{role}[-{classifier}]-{aem_version}-{timestamp}.aemb.tar.zst`  
-**Example:** `author-6.5.21-20260209-143022.aemb.tar.zst`
+**Backup file naming:** `{instance}[-{name}][-{aem_version}]-{timestamp}.aemb.tar.zst`  
+**Example:** `author-clean-with-prereqs-6.5.21-20260209143022.aemb.tar.zst`
+
+The AEM version is included when the instance is running while the backup is made. The newest backup is picked by the timestamp; for a running instance only backups of its AEM version are considered.
+
+### Named Backups
+
+A name tells what state a backup captures, e.g. a baseline to return to:
+
+```shell
+# Make a named backup ('clean with prereqs' is stored as 'clean-with-prereqs')
+aem instance backup perform --name "clean with prereqs"
+
+# Restore the newest backup of that name
+aem instance backup restore --name "clean with prereqs"
+```
+
+Without `--name`, `use` and `restore` pick the newest backup of the instance, whatever its name.
+
+### Retention and Disk Space
+
+Backups take several GB each, so old ones are pruned and a backup that would fill the disk is not started. Both are set in `instance.local.backup` (see [defaults](#defaults)).
+
+- **Retention:** backups of the same instance and name form a group; `prune.keep_last` newest backups of each group are kept, so routine backups never push out a named baseline. `prune.max_size` optionally caps the total size, deleting the oldest backups first but never the newest of a group. With `prune.auto`, pruning runs right after `backup make` / `perform`, only once the new backup is complete.
+- **Free space:** before stopping the instance, `backup make` / `perform` estimate the archive size (the newest backup of the instance, or else the instance directory size) and stop when less than `min_free` would remain on the disk. The default `10%` keeps the disk below the 90% at which AEM's `DiskSpaceCheck` health check turns critical. Keeping N backups needs space for N+1 while a backup is made, as old backups are deleted only after a new one succeeds.
+- **Safety:** pruning touches only files in the backup directory that follow the naming above; other files there are never deleted. Leftover `tmp-*` files of interrupted backups are deleted once they are not modified for 15 minutes.
+
+```shell
+# Preview, then prune with the configured policy or flags
+aem instance backup prune --dry-run
+aem instance backup prune --keep-last 1 --max-size 100GB
+
+# Make a backup despite the free space check
+aem instance backup make --instance-id local_author --skip-space-check
+```
 
 ## Replication agents
 
 1. Configuring publish agent on AEM author:
 
     ```shell
-    sh aemw repl agent setup -A --location "author" --name "publish" --input-string "
+    aem repl agent setup -A --location "author" --name "publish" --input-string "
     enabled: true
     transportUri: http://localhost:4503/bin/receive?sling:authRequestLogin=1
     transportUser: admin
@@ -897,7 +1058,7 @@ Use cases:
 2. Configuring flush agent on AEM publish:
 
     ```shell
-    sh aemw repl agent setup -P --location "publish" --name "flush" --input-string "
+    aem repl agent setup -P --location "publish" --name "flush" --input-string "
     enabled: true
     transportUri: http://localhost/dispatcher/invalidate.cache
     protocolHTTPHeaders:
@@ -918,13 +1079,13 @@ AEM Compose supports managing Crypto Support for encrypting/decrypting sensitive
 To set up Crypto keys (required for encryption/decryption to work consistently across environments):
 
 ```shell
-sh aemw crypto setup --hmac-file aem/home/lib/crypto/data/hmac --master-file aem/home/lib/crypto/data/master
+aem crypto setup --hmac-file aem/home/lib/crypto/data/hmac --master-file aem/home/lib/crypto/data/master
 ```
 
 ### Protect (encrypt) a value
 
 ```shell
-sh aemw crypto protect --value "secret"
+aem crypto protect --value "secret"
 ```
 
 ### Unprotect (decrypt) a value
@@ -932,7 +1093,7 @@ sh aemw crypto protect --value "secret"
 > **Note:** Unprotect is only available on AEM 6.5 LTS and AEM Cloud SDK.
 
 ```shell
-sh aemw crypto unprotect --value "{encrypted_value}"
+aem crypto unprotect --value "{encrypted_value}"
 ```
 
 ## SSL by Default
@@ -950,7 +1111,7 @@ This feature requires:
 To set up *SSL by Default*, run:
 
 ```shell
-sh aemw ssl setup \
+aem ssl setup \
    --instance-author
    --keystore-password password \
    --truststore-password password1 \
@@ -959,7 +1120,7 @@ sh aemw ssl setup \
    --https-hostname localhost \
    --https-port 8443
 
-sh aemw ssl setup \
+aem ssl setup \
    --instance-publish
    --keystore-password password \
    --truststore-password password1 \
@@ -983,17 +1144,17 @@ This feature supports:
 
 - creation of the general trust store if it does not exist
     ```shell
-    sh aemw gts create --password PASSWORD_HERE -A
+    aem gts create --password PASSWORD_HERE -A
     ```
 
 - getting the general trust store status
     ```shell
-    sh aemw gts status -A
+    aem gts status -A
     ```
 
 - adding a certificate to the general trust store
     ```shell
-    sh aemw gts certificate add --path <path> -A
+    aem gts certificate add --path <path> -A
     ```
   
 This command will add a certificate to the general trust store only if not exists in trust store and will return the alias of the certificate.
@@ -1001,12 +1162,12 @@ Command `certificate add` supports certificates in PEM and DER formats.
 
 - reading a certificate from the general trust store (by alias)
     ```shell
-    sh aemw gts certificate read --alias <alias> -A
+    aem gts certificate read --alias <alias> -A
     ```
 
 - removing a certificate from the general trust store (by alias)
     ```shell
-    sh aemw gts certificate remove --alias <alias> -A
+    aem gts certificate remove --alias <alias> -A
     ```
 
 
@@ -1034,11 +1195,11 @@ If you're setting up your instance for the first time on a Linux OS (i.e. Ubuntu
 
 ```
 INFO[2025-02-27 13:17:09] preparing new SDK 'aem/home/lib/aem-sdk-2025.2.19687.20250225T164325Z-250100.zip'
-INFO[2025-02-27 13:17:09] unpacking SDK ZIP 'aem/home/lib/aem-sdk-2025.2.19687.20250225T164325Z-250100.zip' to dir 'aem/home/opt/sdk'
-INFO[2025-02-27 13:17:09] unpacked SDK ZIP 'aem/home/lib/aem-sdk-2025.2.19687.20250225T164325Z-250100.zip' to dir 'aem/home/opt/sdk'
-INFO[2025-02-27 13:17:09] unpacking SDK dispatcher tools using script 'aem/home/opt/sdk/aem-sdk-dispatcher-tools-2.0.235-unix.sh' to dir 'aem/home/opt/sdk/dispatcher'
+INFO[2025-02-27 13:17:09] unpacking SDK ZIP 'aem/home/lib/aem-sdk-2025.2.19687.20250225T164325Z-250100.zip' to dir 'aem/home/opt/vendor/sdk'
+INFO[2025-02-27 13:17:09] unpacked SDK ZIP 'aem/home/lib/aem-sdk-2025.2.19687.20250225T164325Z-250100.zip' to dir 'aem/home/opt/vendor/sdk'
+INFO[2025-02-27 13:17:09] unpacking SDK dispatcher tools using script 'aem/home/opt/vendor/sdk/aem-sdk-dispatcher-tools-2.0.235-unix.sh' to dir 'aem/home/opt/vendor/sdk/dispatcher'
 # Failed to parse arguments: Unknown option -title
-ERRO[2025-02-27 13:17:10] cannot run SDK dispatcher tools unpacking script 'aem/home/opt/sdk/aem-sdk-dispatcher-tools-2.0.235-unix.sh': exit status 1
+ERRO[2025-02-27 13:17:10] cannot run SDK dispatcher tools unpacking script 'aem/home/opt/vendor/sdk/aem-sdk-dispatcher-tools-2.0.235-unix.sh': exit status 1
 getting started
   AEM Compose project is not yet ready to use!
 

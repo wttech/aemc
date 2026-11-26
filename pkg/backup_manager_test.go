@@ -103,3 +103,19 @@ func TestBackupManagerCheckSpace(t *testing.T) {
 	err := bm.CheckSpace(author.Local(), "", file)
 	a.ErrorContains(err, "not enough disk space")
 }
+
+func TestBackupManagerCheckSpaceOfMany(t *testing.T) {
+	a := assert.New(t)
+	bm, dir := newTestBackupManager(t)
+	author := bm.manager.NewLocalAuthor()
+	publish := bm.manager.NewLocalPublish()
+	writeTestBackup(t, dir, "author-20260101000000.aemb.tar.zst", 10, time.Now())
+	writeTestBackup(t, dir, "publish-20260101000000.aemb.tar.zst", 10, time.Now())
+
+	bm.manager.LocalOpts.Backup.MinFree = "0%"
+	a.NoError(bm.checkSpace([]*LocalInstance{author.Local(), publish.Local()}, "", dir))
+
+	bm.manager.LocalOpts.Backup.MinFree = "100%"
+	err := bm.checkSpace([]*LocalInstance{author.Local(), publish.Local()}, "", dir)
+	a.ErrorContains(err, "expected backup size 20 B")
+}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg"
 	"github.com/wttech/aemc/pkg/common/sizex"
@@ -147,22 +146,10 @@ func (c *CLI) instanceBackupPerformCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			performed := []map[string]any{}
-			for _, instance := range instances {
-				local := instance.Local()
-				if !local.IsCreated() {
-					log.Infof("%s > skipping making backup as it is not created", instance.IDColor())
-					continue
-				}
-				file, err := instanceManager.Backup.Make(local, opts)
-				if err != nil {
-					c.Error(err)
-					return
-				}
-				performed = append(performed, map[string]any{
-					"instance": instance,
-					"file":     file,
-				})
+			performed, err := instanceManager.Backup.Perform(instances, opts)
+			if err != nil {
+				c.Error(err)
+				return
 			}
 			c.SetOutput("performed", performed)
 			if len(performed) > 0 {
@@ -192,26 +179,10 @@ func (c *CLI) instanceBackupRestoreCmd() *cobra.Command {
 				c.Error(err)
 				return
 			}
-			restored := []map[string]any{}
-			for _, instance := range instances {
-				local := instance.Local()
-				if local.IsCreated() {
-					log.Infof("%s > skipping using backup as it is already created", instance.IDColor())
-					continue
-				}
-				if _, err := instanceManager.Backup.Newest(local.Name(), name, ""); err != nil {
-					log.Warnf("%s > skipping using backup as cannot find any: %s", instance.IDColor(), err)
-					continue
-				}
-				file, err := instanceManager.Backup.Use(local, pkg.BackupUseOpts{Name: name})
-				if err != nil {
-					c.Error(err)
-					return
-				}
-				restored = append(restored, map[string]any{
-					"instance": instance,
-					"file":     file,
-				})
+			restored, err := instanceManager.Backup.Restore(instances, name)
+			if err != nil {
+				c.Error(err)
+				return
 			}
 			c.SetOutput("restored", restored)
 			if len(restored) > 0 {

@@ -137,7 +137,19 @@ tasks:
             fi
         }
         bump_version "README.MD"
-        bump_version "pkg/project/common/aemw"
+        bump_project_version() {
+            local file="$1" pattern="$2" replacement="$3"
+            if [ "$(uname)" = "Darwin" ]; then
+                sed -i '' "s/$pattern/$replacement/" "$file"
+            else
+                sed -i "s/$pattern/$replacement/" "$file"
+            fi
+        }
+        bump_project_version pkg/project/versions.go 'AemcVersion = "[^"]*"' "AemcVersion = \"$VERSION\""
+        for file in pkg/project/runner/mise/*/mise.toml; do
+            bump_project_version "$file" '"github:wttech\/aemc" = "[^"]*"' "\"github:wttech\/aemc\" = \"$VERSION\""
+        done
+        go generate ./pkg/project
 
         echo "Pushing version bump"
         git commit -a -m "Release $VERSION_TAG" || echo "No changes to commit"

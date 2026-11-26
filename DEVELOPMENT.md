@@ -49,7 +49,20 @@ Use this method to check particular commit/version of the tool.
 - specific released version: `go install github.com/wttech/aemc/cmd/aem@v1.1.9`,
 - recently committed version: `go install github.com/wttech/aemc/cmd/aem@main`,
 
-After installing AEM CLI by one of above methods now instruct the [wrapper script](pkg/project/common/aemw) to use it by running the following command:
+After installing AEM CLI by one of above methods, a project run by mise uses it with a personal, VCS-ignored `mise.local.toml` pointing to the directory whose `bin` holds `aem`:
+
+```toml
+[settings]
+# a local path cannot be locked for other platforms
+lockfile = false
+
+[tools]
+"github:wttech/aemc" = "path:/Users/me/go"
+```
+
+Delete the file to use again the version defined in `mise.toml`.
+
+A project run by Task instructs its [wrapper script](pkg/project/runner/task/common/aemw) to use it by running the following command:
 
 ```shell
 export AEM_CLI_VERSION=installed

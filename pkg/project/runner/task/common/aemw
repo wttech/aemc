@@ -1,0 +1,235 @@
+#!/usr/bin/env sh
+
+# Downloads AEM Compose CLI once into 'aem/home/opt' and runs it.
+# Generated from 'pkg/project/wrapper/wrapper.sh.tmpl' in AEM Compose; do not edit.
+
+VERSION=${AEM_CLI_VERSION:-"2.0.19"}
+
+# Check required tools
+# ====================
+
+check_command() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo "Error! Required command '$1' is not installed"
+    exit 1
+  fi
+}
+
+check_command curl
+check_command uname
+
+check_archive_tools() {
+  if [ "$1" = "windows" ]; then
+    check_command unzip
+  else
+    check_command tar
+    check_command gzip
+  fi
+}
+
+# Define API
+# ==========
+
+# https://github.com/client9/shlib/blob/master/uname_os.sh
+detect_os() {
+  os=$(uname -s | tr '[:upper:]' '[:lower:]')
+  case "$os" in
+    msys*) os="windows" ;;
+    mingw*) os="windows" ;;
+    cygwin*) os="windows" ;;
+    win*) os="windows" ;;
+  esac
+  echo "$os"
+}
+
+# https://github.com/client9/shlib/blob/master/uname_arch.sh
+detect_arch() {
+  arch=$(uname -m)
+  case $arch in
+    x86_64) arch="amd64" ;;
+    x86) arch="386" ;;
+    i686) arch="386" ;;
+    i386) arch="386" ;;
+    aarch64) arch="arm64" ;;
+  esac
+  echo "${arch}"
+}
+
+check_platform() {
+  case "$1_$2" in
+    darwin_amd64|darwin_arm64|linux_386|linux_amd64|linux_arm64|windows_386|windows_amd64|windows_arm64) ;;
+    *)
+      echo "Error! AEM Compose CLI is not available for operating system '$1' and architecture '$2'"
+      exit 1
+      ;;
+  esac
+}
+
+sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  else
+    echo "Error! Required command 'sha256sum' or 'shasum' is not installed" >&2
+    return 1
+  fi
+}
+
+print_tls_error() {
+  echo "Error! Cannot verify the TLS certificate of '$1'."
+  echo "This usually means a company proxy inspects HTTPS traffic with its own certificate."
+  echo ""
+  echo "Fix it in one of these ways:"
+  echo "  1. Trust the company certificate (recommended):"
+  echo "       export CURL_CA_BUNDLE=/path/to/company-ca.pem"
+  echo "     or add it to the system trust store."
+  echo "  2. Skip the verification (not recommended, the download can be tampered with):"
+  echo "       export AEM_INSECURE_DOWNLOAD=true"
+}
+
+# Prints the HTTP status, or returns 2 when the TLS certificate cannot be verified
+download_file() {
+  local_file=$1
+  source_url=$2
+  insecure=""
+  if [ "${AEM_INSECURE_DOWNLOAD}" = "true" ]; then
+    echo "Warning! Downloading '$source_url' without verifying its TLS certificate (AEM_INSECURE_DOWNLOAD=true)"
+    insecure="-k"
+  fi
+  attempt=1
+  max_attempts=3
+  while [ $attempt -le $max_attempts ]; do
+    code=$(curl -w '%{http_code}' -sL $insecure --connect-timeout 30 --max-time 300 -o "$local_file" "$source_url")
+    status=$?
+    case $status in
+      35|51|58|60|77|83)
+        rm -f "$local_file"
+        print_tls_error "$source_url"
+        return 2
+        ;;
+    esac
+    if [ "$code" = "200" ]; then
+      return 0
+    fi
+    if [ "$code" = "000" ]; then
+      echo "Warning: Cannot connect to '$source_url' (network issue, curl exit code $status) (attempt $attempt/$max_attempts)"
+    else
+      echo "Warning: Downloading file from URL '$source_url' received HTTP status '$code' (attempt $attempt/$max_attempts)"
+    fi
+    rm -f "$local_file"
+    if [ $attempt -lt $max_attempts ]; then
+      sleep 3
+    fi
+    attempt=$((attempt + 1))
+  done
+  echo "Error! Downloading file from URL '$source_url' failed after $max_attempts attempts"
+  return 1
+}
+
+# Downloads the archive to a temporary file and keeps it only when its checksum is the published one
+download_verified() {
+  url=$1
+  checksums_url=$2
+  file=$3
+  file_tmp="$file.tmp"
+  checksums_tmp="$file.checksums.tmp"
+  mkdir -p "$(dirname "$file")"
+  if ! download_file "$checksums_tmp" "$checksums_url"; then
+    rm -f "$checksums_tmp"
+    return 1
+  fi
+  if ! download_file "$file_tmp" "$url"; then
+    rm -f "$checksums_tmp" "$file_tmp"
+    return 1
+  fi
+  expected=$(grep " $(basename "$url")\$" "$checksums_tmp" | awk '{print $1}')
+  actual=$(sha256_of "$file_tmp")
+  rm -f "$checksums_tmp"
+  if [ -z "$expected" ] || [ "$expected" != "$actual" ]; then
+    rm -f "$file_tmp"
+    echo "Error! Checksum of '$url' is '$actual' but the published one is '$expected'"
+    return 1
+  fi
+  mv "$file_tmp" "$file"
+}
+
+unarchive_file() {
+  FILE=$1
+  DIR=$2
+  rm -fr "$DIR"
+  mkdir -p "$DIR"
+  if [ "${FILE##*.}" = "zip" ] ; then
+    if ! unzip -t "$FILE" > /dev/null 2>&1; then
+      echo "Error! Archive file '$FILE' is corrupted or not a valid zip"
+      return 1
+    fi
+    unzip -q "$FILE" -d "$DIR"
+  else
+    if ! gzip -t "$FILE" 2>/dev/null; then
+      echo "Error! Archive file '$FILE' is corrupted or not a valid gzip"
+      return 1
+    fi
+    tar -xf "$FILE" -C "$DIR"
+  fi
+}
+
+# Download tool
+# =============
+
+OS=$(detect_os)
+ARCH=$(detect_arch)
+
+if [ "${VERSION}" != "installed" ] ; then
+check_platform "$OS" "$ARCH"
+check_archive_tools "$OS"
+
+ARCHIVE_EXT="tar.gz"
+if [ "$OS" = "windows" ] ; then
+  ARCHIVE_EXT="zip"
+fi
+ARCHIVE_NAME="aemc-cli_${OS}_${ARCH}.${ARCHIVE_EXT}"
+RELEASE_URL="https://github.com/wttech/aemc/releases/download/v${VERSION}"
+TOOL_DIR="aem/home/opt/aemc-cli/${VERSION}"
+ARCHIVE_FILE="${TOOL_DIR}/${ARCHIVE_NAME}"
+ARCHIVE_DIR="${TOOL_DIR}/aemc-cli"
+EXEC_FILE="${ARCHIVE_DIR}/aem"
+
+if [ ! -f "${EXEC_FILE}" ]; then
+  if [ ! -f "${ARCHIVE_FILE}" ]; then
+    if ! download_verified "${RELEASE_URL}/${ARCHIVE_NAME}" "${RELEASE_URL}/checksums.txt" "${ARCHIVE_FILE}"; then
+      echo "Error! Cannot download AEM Compose CLI"
+      echo "Manual download: ${RELEASE_URL}/${ARCHIVE_NAME}"
+      echo "Place the file at: ${ARCHIVE_FILE}"
+      exit 1
+    fi
+  fi
+  if ! unarchive_file "${ARCHIVE_FILE}" "${ARCHIVE_DIR}"; then
+    rm -f "${ARCHIVE_FILE}"
+    echo "Error! Cannot unarchive AEM Compose CLI"
+    exit 1
+  fi
+  if [ ! -f "${EXEC_FILE}" ]; then
+    echo "Error! AEM Compose CLI binary '${EXEC_FILE}' not found after extraction"
+    exit 1
+  fi
+  chmod +x "${EXEC_FILE}"
+fi
+fi
+
+# Prevent OS or shell-specific glitches
+# =====================================
+
+# https://stackoverflow.com/questions/7250130/how-to-stop-mingw-and-msys-from-mangling-path-names-given-at-the-command-line
+export MSYS_NO_PATHCONV=1
+export MSYS2_ARG_CONV_EXCL="*"
+export MSYS2_ENV_CONV_EXCL="*"
+
+# Run tool
+# ========
+
+if [ "${VERSION}" = "installed" ] ; then
+  aem "$@"
+else
+  "./${EXEC_FILE}" "$@"
+fi

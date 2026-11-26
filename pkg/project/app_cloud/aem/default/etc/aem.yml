@@ -281,7 +281,7 @@ vendor:
     # Auto-installed JDK options
     download:
       # Source URL, may use built-in variables like '${AEM_OS}'
-      url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_${AEM_ARCH}_${AEM_OS}_hotspot_11.0.25_9.${AEM_ARCHIVE_EXT}"
+      url: "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk_${AEM_ARCH}_${AEM_OS}_hotspot_21.0.13_9.${AEM_ARCHIVE_EXT}"
       # Map values of built-in variables in source URL to be compatible with Adoptium Java
       replacements:
         # Variable 'AEM_OS' (GOOS)

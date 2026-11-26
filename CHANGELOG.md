@@ -14,10 +14,17 @@ How to move a project from one major version to the next is described in [UPGRAD
 
 ### Added
 
+- Projects run by [mise](https://mise.jdx.dev), the default of `aem project scaffold --runner mise|task`: `mise.toml` with the project tasks and pinned tools (AEM Compose, Java, Maven) locked with checksums in `mise.lock`, AEM Compose and Maven on the Java installed by mise, and `bin/mise` to run it where mise is not installed, e.g. on CI. No wrapper scripts. See [README](README.md#choosing-a-task-runner) for a comparison with Task.
 - Command `aem config migrate` converting 2.x config files to the 3.x syntax; reading a 2.x config file stops with a hint to run it. Removed in 4.0.
 - Config file *aem.yml* in the project root, looked up before *aem/default/etc/aem.yml* ([#309](https://github.com/wttech/aemc/issues/309)).
 - Global flags `-C, --cd` to run for a project in another directory and `--config` to choose the config file ([#98](https://github.com/wttech/aemc/issues/98)).
 - Built-in variables `AEM_PROJECT_DIR`, `AEM_OS`, `AEM_ARCH` and `AEM_ARCHIVE_EXT` in the config file.
+
+- The wrapper scripts of projects run by Task (`aemw`, `taskw`) verify TLS, with a clear error and the `AEM_INSECURE_DOWNLOAD=true` opt-out behind TLS-inspecting proxies, and the checksums of the downloaded archives; they refuse unsupported platforms. Task 3.54.0; Maven Wrapper 3.3.4 without the binary `maven-wrapper.jar`.
+
+- Project files for AEM as a Cloud Service and instance projects use Java 21 (Temurin 21.0.13), as current AEM SDKs do not start on Java 11; classic projects keep Java 11.
+
+- **Breaking:** the dispatcher of app projects is reached at `publish.localhost` (and `author.localhost` on classic projects) instead of `publish`, `publish.aem.local` and `author.aem.local`. Names under `.localhost` resolve to the machine itself ([RFC 6761](https://www.rfc-editor.org/rfc/rfc6761)), so the `dispatcher:hosts` task, which edited the hosts file with administrator rights, is removed. See [UPGRADING.md](UPGRADING.md#dispatcher-domains).
 
 ### Removed
 

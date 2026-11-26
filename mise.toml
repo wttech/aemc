@@ -15,9 +15,11 @@ _.file = [
 
 [vars]
 build_tags = "timetzdata"
+# Stamp the binary with its Git version, commit and commit date
+ldflags = "-s -w -X main.appVersion={{ exec(command='git describe --tags 2>/dev/null || git rev-parse HEAD') }} -X main.appCommit={{ exec(command='git rev-parse HEAD') }} -X main.appCommitDate={{ exec(command=\"git log -1 --date=format:'%Y-%m-%dT%H:%M:%S' --format=%cd\") }}"
 
 [task_config]
-includes = ["tasks/aem.toml"]
+includes = ["tasks/aem.toml", "tasks"]
 
 [tasks.all]
 description = "Run deps, test, vet, fmt, lint, install"
@@ -75,25 +77,20 @@ run = "revive -config revive.toml -formatter friendly ./..."
 
 [tasks.build]
 description = "Build the binary"
-run = 'go build -tags "{{ vars.build_tags }}" -ldflags "$(sh scripts/ldflags.sh)" -o bin/aem ./cmd/aem'
+run = 'go build -tags "{{ vars.build_tags }}" -ldflags "{{ vars.ldflags }}" -o bin/aem ./cmd/aem'
 
 [tasks."build:other"]
 description = "Build binaries for other platforms"
 run = [
-  'GOARCH=amd64 GOOS=darwin  go build -tags "{{ vars.build_tags }}" -ldflags "$(sh scripts/ldflags.sh)" -o bin/aem.darwin ./cmd/aem',
-  'GOARCH=amd64 GOOS=linux   go build -tags "{{ vars.build_tags }}" -ldflags "$(sh scripts/ldflags.sh)" -o bin/aem.linux  ./cmd/aem',
-  'GOARCH=amd64 GOOS=windows go build -tags "{{ vars.build_tags }}" -ldflags "$(sh scripts/ldflags.sh)" -o bin/aem.exe    ./cmd/aem',
+  'GOARCH=amd64 GOOS=darwin  go build -tags "{{ vars.build_tags }}" -ldflags "{{ vars.ldflags }}" -o bin/aem.darwin ./cmd/aem',
+  'GOARCH=amd64 GOOS=linux   go build -tags "{{ vars.build_tags }}" -ldflags "{{ vars.ldflags }}" -o bin/aem.linux  ./cmd/aem',
+  'GOARCH=amd64 GOOS=windows go build -tags "{{ vars.build_tags }}" -ldflags "{{ vars.ldflags }}" -o bin/aem.exe    ./cmd/aem',
 ]
 
 [tasks.install]
 description = "Install the binary"
-run = 'go install -tags "{{ vars.build_tags }}" -ldflags "$(sh scripts/ldflags.sh)" ./cmd/aem'
+run = 'go install -tags "{{ vars.build_tags }}" -ldflags "{{ vars.ldflags }}" ./cmd/aem'
 
 [tasks.clean]
 description = "Clean build artifacts"
 run = ["go clean", "rm -fr bin"]
-
-[tasks.release]
-description = "Release a new version: bump it in files, push the commit and the tag that triggers the release workflow"
-usage = 'arg "<version>" help="Version to release without the leading v, e.g. 2.0.20"'
-run = 'sh scripts/release.sh "${usage_version?}"'

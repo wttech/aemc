@@ -28,9 +28,15 @@ How to move a project from one major version to the next is described in [UPGRAD
 
 - The `dispatcher:check` task of app projects retries for up to 5 minutes while the dispatcher warms up and follows redirects, e.g. to the home page, instead of one request after a fixed 3-second wait, which failed on cold starts, especially on Windows ([#353](https://github.com/wttech/aemc/issues/353)).
 
+- Java 25 accepted for running AEM (`vendor.java.version_constraints`), as AEM as a Cloud Service supports it; the Java used by default stays the same.
+
 ### Removed
 
 - Template functions in the config file (Sprig functions and `canonicalPath`).
 - Unused setting `instance.local.tool_dir`.
 - **Breaking:** setting `instance.local.backup_dir`, replaced by `instance.local.backup.dir`.
 - **Breaking:** flag `--template` of `aem config value`; read a value with `--key` or filter all values with `aem config values --output-query`.
+
+### Fixed
+
+- The built-in Java version constraints, used when the config file does not set `vendor.java.version_constraints`, were malformed (`=>` instead of `>=`) so checking the Java version failed.

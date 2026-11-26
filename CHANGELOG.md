@@ -5,6 +5,8 @@ How to move a project from one major version to the next is described in [UPGRAD
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-11-26
+
 ### Changed
 
 - **Breaking:** `aem instance upgrade` refuses instances in service mode (`instance.local.service_mode`), as the upgrade boots AEM outside the service. See [UPGRADING.md](UPGRADING.md#instance-upgrade-in-service-mode).

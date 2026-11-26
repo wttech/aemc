@@ -61,6 +61,10 @@ Existing projects keep working with their wrapper scripts and `Taskfile.yml`; se
 - Stay on Task: replace `aemw`, `taskw`, `mvnw` and `.mvn/wrapper/maven-wrapper.properties` with the ones from [`pkg/project/runner/task/common`](pkg/project/runner/task/common), and delete `.mvn/wrapper/maven-wrapper.jar`.
 - Move to mise: scaffold a project of the same kind with `--runner mise` in an empty directory, copy its `mise.toml`, `bin/` and `.mvn/jvm.config` into the project, move custom tasks from `Taskfile.yml` to `mise.toml`, then delete `Taskfile.yml`, `aemw`, `taskw`, `mvnw` and `.mvn/wrapper`, and run `mise trust` and `mise install`. Commit the created `mise.lock`. In the tasks, `sh aemw` becomes `aem`, `sh mvnw` becomes `mvn`, and Task variables (`{{.VAR}}`) become shell variables (`${VAR}`).
 
+### Instance upgrade in service mode
+
+`aem instance upgrade` boots AEM once from the new Quickstart JAR, so it refuses instances in service mode, where AEM runs as a system service. Stop the service, run `aem instance upgrade` as the service user with `instance.local.service_mode` disabled, then start the service.
+
 ### Dispatcher domains
 
 The local dispatcher is reached at names under `.localhost`, which resolve to the machine itself without editing the hosts file ([RFC 6761](https://www.rfc-editor.org/rfc/rfc6761)); browsers and curl resolve them on every system.

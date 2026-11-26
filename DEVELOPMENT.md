@@ -11,7 +11,7 @@ Universal tool to manage AEM instances everywhere!
 
 ## Prerequisites
 
-1. Install Go: <https://go.dev/doc/install>, or with [mise](https://mise.jdx.dev) run `mise install` in the project root to get the version pinned in `mise.toml`,
+1. Install [mise](https://mise.jdx.dev/getting-started.html); it provides the pinned Go and tool versions from `mise.toml` and runs the project tasks (`mise tasks` lists them),
 2. Set up shell, append lines *~/.zshrc* with content below then restart IDE/terminals,
 
     ```shell
@@ -26,20 +26,14 @@ Universal tool to manage AEM instances everywhere!
 
 ## Building & OS-wide installation
 
-Ensure having installed [Go](https://go.dev/dl/) then:
-
 ### Manual installation (recommended)
 
 Use this method to develop comfortably the tool.
 
 1. Clone repository: `git clone git@github.com:wttech/aemc.git`
-2. Enter cloned directory and run command: `make`*
+2. Enter cloned directory and run command: `mise run all` (tidies dependencies, tests, vets, formats, lints, then installs the binary to `$GOPATH/bin`)
 
-*When using Git Bash on Windows, you will first need to add `make` to your Git Bash installation:
-1. Go to [ezwinports](https://sourceforge.net/projects/ezwinports/files/).
-2. Download `make-x.x.x-without-guile-w32-bin.zip` (get the newest version without guile).
-3. Extract zip.
-4. Copy the contents to your `Git\mingw64\` merging the folders, but do NOT overwrite/replace any existing files.
+Before pushing, run `mise run check`: the gate CI runs for every pull request (tidy dependencies, tests, vet, formatting, lint, build), which only checks and never changes files (see [workflows](.github/workflows)).
 
 ### Go installation
 
@@ -49,7 +43,20 @@ Use this method to check particular commit/version of the tool.
 - specific released version: `go install github.com/wttech/aemc/cmd/aem@v1.1.9`,
 - recently committed version: `go install github.com/wttech/aemc/cmd/aem@main`,
 
-After installing AEM CLI by one of above methods now instruct the [wrapper script](pkg/project/common/aemw) to use it by running the following command:
+After installing AEM CLI by one of above methods, a project run by mise uses it with a personal, VCS-ignored `mise.local.toml` pointing to the directory whose `bin` holds `aem`:
+
+```toml
+[settings]
+# a local path cannot be locked for other platforms
+lockfile = false
+
+[tools]
+"github:wttech/aemc" = "path:/Users/me/go"
+```
+
+Delete the file to use again the version defined in `mise.toml`.
+
+A project run by Task instructs its [wrapper script](pkg/project/runner/task/common/aemw) to use it by running the following command:
 
 ```shell
 export AEM_CLI_VERSION=installed
@@ -63,10 +70,10 @@ unset AEM_CLI_VERSION
 
 ## Releasing
 
-Simply run script:
+Simply run task:
 
 ```shell
-sh release.sh <major.minor.patch>
+mise run release <major.minor.patch>
 ```
 
 It will:

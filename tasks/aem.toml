@@ -1,0 +1,91 @@
+# Tasks of the development AEM project in this repository; values like AEM_AUTHOR_HTTP_URL come from the env files loaded in 'mise.toml'
+
+["aem:init"]
+description = "Initialize project"
+run = "sh aemw project init -V ALL"
+
+["aem:setup"]
+description = "Start and provision AEM instances"
+run = [{ task = "aem:start" }, { task = "aem:provision" }, { task = "aem:check" }]
+
+["aem:resetup"]
+description = "Destroy then setup again AEM instances"
+run = [{ task = "aem:destroy" }, { task = "aem:setup" }]
+
+["aem:start"]
+description = "Start AEM instances"
+alias = "aem:up"
+run = "sh aemw instance launch -V NONE"
+
+["aem:stop"]
+description = "Stop AEM instances"
+alias = "aem:down"
+run = "sh aemw instance stop -V NONE"
+
+["aem:restart"]
+description = "Restart AEM instances"
+run = [{ task = "aem:stop" }, { task = "aem:start" }]
+
+["aem:destroy"]
+description = "Destroy AEM instances"
+confirm = "This will permanently delete all configured AEM instances and their data. Continue?"
+depends = ["aem:stop"]
+run = "sh aemw instance destroy -V NONE"
+
+["aem:status"]
+description = "Check status of AEM instances"
+run = "sh aemw instance status -V ALL"
+
+["aem:tail"]
+description = "Tail logs of AEM instances"
+shell = "bash -c" # brace expansion
+run = "tail -f aem/home/var/instance/*/crx-quickstart/logs/{stdout,error}.log"
+
+["aem:tail:author"]
+description = "Tail logs of AEM author instance"
+shell = "bash -c" # brace expansion
+run = "tail -f aem/home/var/instance/author/crx-quickstart/logs/{stdout,error}.log"
+
+["aem:tail:publish"]
+description = "Tail logs of AEM publish instance"
+shell = "bash -c" # brace expansion
+run = "tail -f aem/home/var/instance/publish/crx-quickstart/logs/{stdout,error}.log"
+
+["aem:provision"]
+description = "Provision AEM instances by installing packages and applying configurations"
+alias = "aem:configure"
+run = [{ task = "aem:provision:repl-agent-publish" }, { task = "aem:provision:crx" }]
+
+["aem:provision:repl-agent-publish"]
+description = "Configure replication agent on AEM author instance"
+hide = true
+run = '''
+PROPS="
+enabled: true
+transportUri: ${AEM_PUBLISH_HTTP_URL}/bin/receive?sling:authRequestLogin=1
+transportUser: ${AEM_PUBLISH_USER}
+transportPassword: ${AEM_PUBLISH_PASSWORD}
+userId: admin
+"
+echo "$PROPS" | sh aemw repl agent setup -A --location "author" --name "publish" -V NONE
+'''
+
+["aem:provision:crx"]
+description = "Enable CRX/DE on AEM instances"
+hide = true
+run = 'sh aemw osgi config save --pid "org.apache.sling.jcr.davex.impl.servlets.SlingDavExServlet" --input-string "alias: /crx/server" -V NONE'
+
+["aem:check"]
+description = "Check health of AEM instances"
+depends = ["aem:author:check", "aem:publish:check"]
+
+["aem:author:check"]
+description = "Check health of AEM author instance"
+run = [
+  'curl -s -u "${AEM_AUTHOR_USER}:${AEM_AUTHOR_PASSWORD}" "${AEM_AUTHOR_HTTP_URL}/libs/granite/core/content/login.html" | grep -q "QUICKSTART_HOMEPAGE"',
+  'curl -s -u "${AEM_AUTHOR_USER}:${AEM_AUTHOR_PASSWORD}" "${AEM_AUTHOR_HTTP_URL}/etc/replication/agents.author/publish.test.html" | grep -q "Replication (TEST) of /content successful"',
+]
+
+["aem:publish:check"]
+description = "Check health of AEM publish instance"
+run = 'curl -s -u "${AEM_PUBLISH_USER}:${AEM_PUBLISH_PASSWORD}" "${AEM_PUBLISH_HTTP_URL}/libs/granite/core/content/login.html" | grep -q "QUICKSTART_HOMEPAGE"'

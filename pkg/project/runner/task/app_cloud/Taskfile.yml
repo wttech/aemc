@@ -244,8 +244,8 @@ tasks:
         else
           echo "EXTRA_HOST=localhost.dummy:127.0.0.1" > .env
         fi
-      - 'test -d ../aem/home/opt/sdk/dispatcher || { echo "Dispatcher SDK is not available. Try providing AEM SDK ZIP instead of JAR to directory: aem/home/lib"; exit 1; }'
-      - test -d home/sdk || (rm -fr home/sdk && mkdir -p home && cp -rL ../aem/home/opt/sdk/dispatcher home/sdk)
+      - 'test -d ../aem/home/opt/vendor/sdk/dispatcher || { echo "Dispatcher SDK is not available. Try providing AEM SDK ZIP instead of JAR to directory: aem/home/lib"; exit 1; }'
+      - test -d home/sdk || (rm -fr home/sdk && mkdir -p home && cp -rL ../aem/home/opt/vendor/sdk/dispatcher home/sdk)
       # - sh home/sdk/bin/validate.sh src > ../aem/home/var/log/dispatcher-validate.log
       - "{{.CONTAINER_COMMAND}} tag \"$({{.CONTAINER_COMMAND}} load --input 'home/sdk/lib/dispatcher-publish-{{ARCH}}.tar.gz' | tail -n 1 | awk -v 'FS= ' '{print $3}')\" \"adobe/aem-ethos/dispatcher-publish:latest\""
       - mkdir -p home/sdk/logs home/sdk/cache
@@ -282,35 +282,7 @@ tasks:
       - '{{.CONTAINER_COMPOSE_COMMAND}} down -v --remove-orphans'
       - rm -fr home
 
-  dispatcher:hosts:
-    desc: add AEM dispatcher domains to hosts file
-    cmds:
-      - task: dispatcher:hosts:windows
-      - task: dispatcher:hosts:darwin
-      - task: dispatcher:hosts:linux
-
-  dispatcher:hosts:windows:
-    platforms: [ windows ]
-    status:
-      - cat C:/Windows/System32/drivers/etc/hosts | grep -qxF '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}  '
-    cmd: powershell -command "Start-Process cmd -ArgumentList \"/C echo "{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}" >> C:\Windows\System32\drivers\etc\hosts\" -Verb runas"
-
-  dispatcher:hosts:darwin:
-    platforms: [ darwin ]
-    status:
-      - cat /etc/hosts | grep -qxF '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}'
-    cmd: osascript -e "do shell script \"echo '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}' >> /etc/hosts\" with prompt \"AEM - Add domains to host file\" with administrator privileges"
-
-  dispatcher:hosts:linux:
-    platforms: [ linux ]
-    status:
-      - cat /etc/hosts | grep -qxF '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}'
-    cmd: sudo echo '{{.AEM_DISPATCHER_IP}} {{.AEM_DISPATCHER_DOMAINS}}' >> /etc/hosts
-
   dispatcher:check:
     desc: check health of AEM dispatcher
-    deps: [ dispatcher:hosts ]
-    cmds:
-      - curl "http://{{.AEM_DISPATCHER_DOMAIN}}" -s -o /dev/null || true # warmup
-      - sleep 3
-      - curl "http://{{.AEM_DISPATCHER_DOMAIN}}" -s -o /dev/null -w "%{http_code}" | grep -q 200
+    # Retried for up to 5 minutes while the dispatcher warms up (a cold first request may take a minute); redirects, e.g. to the home page, are followed
+    cmd: curl -fsSL -o /dev/null --connect-timeout 5 --max-time 60 --retry 100 --retry-delay 3 --retry-max-time 300 --retry-all-errors "http://{{.AEM_DISPATCHER_DOMAIN}}"

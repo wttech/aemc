@@ -19,7 +19,10 @@ func (c *CLI) projectCmd() *cobra.Command {
 	return cmd
 }
 
-const projectKindFlag = "project-kind"
+const (
+	projectKindFlag   = "project-kind"
+	projectRunnerFlag = "runner"
+)
 
 func (c *CLI) projectScaffoldCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -38,13 +41,20 @@ func (c *CLI) projectScaffoldCmd() *cobra.Command {
 				return
 			}
 
-			changed, err := c.aem.Project().ScaffoldWithChanged(kind)
+			runnerName, _ := cmd.Flags().GetString(projectRunnerFlag)
+			runner, err := project.RunnerOf(runnerName)
 			if err != nil {
 				c.Error(err)
 				return
 			}
 
-			c.SetOutput("gettingStarted", c.aem.Project().ScaffoldGettingStarted())
+			changed, err := c.aem.Project().ScaffoldWithChanged(kind, runner)
+			if err != nil {
+				c.Error(err)
+				return
+			}
+
+			c.SetOutput("gettingStarted", c.aem.Project().ScaffoldGettingStarted(runner))
 
 			if changed {
 				c.Changed("project files scaffolded")
@@ -54,6 +64,7 @@ func (c *CLI) projectScaffoldCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().String(projectKindFlag, project.KindAuto, fmt.Sprintf("Type of AEM to work with (%s)", strings.Join(project.KindStrings(), "|")))
+	cmd.Flags().String(projectRunnerFlag, string(project.RunnerDefault), fmt.Sprintf("Tool running the project tasks and installing its tools (%s); see README for a comparison", strings.Join(project.RunnerStrings(), "|")))
 	return cmd
 }
 

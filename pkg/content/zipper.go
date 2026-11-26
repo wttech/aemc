@@ -116,7 +116,10 @@ func unzip(src string, dest string) error {
 	defer zipReader.Close()
 
 	for _, file := range zipReader.File {
-		filePath := filepath.Join(dest, file.Name)
+		filePath, err := pathx.JoinWithin(dest, file.Name)
+		if err != nil {
+			return err
+		}
 
 		if file.FileInfo().IsDir() {
 			os.MkdirAll(filePath, 0755)

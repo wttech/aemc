@@ -247,3 +247,23 @@ func Size(path string) (uint64, error) {
 	}
 	return total, nil
 }
+
+// JoinWithin joins an archive entry name to the dir it is extracted to and refuses names that would leave that dir,
+// e.g. '../x' or '/etc/x' ("zip slip"). Backslashes count as separators, as in archives made on Windows.
+func JoinWithin(dir string, name string) (string, error) {
+	rel := filepath.FromSlash(Normalize(name))
+	if filepath.IsAbs(rel) || filepath.VolumeName(rel) != "" || strings.HasPrefix(Normalize(name), "/") {
+		return "", fmt.Errorf("path '%s' is absolute, so it would leave dir '%s'", name, dir)
+	}
+	joined := filepath.Join(dir, rel)
+	if !IsWithin(dir, joined) {
+		return "", fmt.Errorf("path '%s' would leave dir '%s'", name, dir)
+	}
+	return joined, nil
+}
+
+// IsWithin tells whether path is dir itself or lies under it; both are cleaned, symlinks are not resolved.
+func IsWithin(dir string, path string) bool {
+	rel, err := filepath.Rel(filepath.Clean(dir), filepath.Clean(path))
+	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
+}

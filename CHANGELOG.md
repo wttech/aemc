@@ -36,6 +36,7 @@ How to move a project from one major version to the next is described in [UPGRAD
 ### Security
 
 - Dependencies with known vulnerabilities updated: `golang.org/x/crypto` 0.52.0, `golang.org/x/net` 0.55.0, `github.com/klauspost/compress` 1.18.7.
+- Archives (instance backups, downloaded Java, AEM SDK, `aem file`) are handled with [`github.com/mholt/archives`](https://github.com/mholt/archives), the successor of the abandoned `github.com/mholt/archiver/v3`, which has unfixed path traversal vulnerabilities ([CVE-2025-3445](https://github.com/advisories/GHSA-7vpp-9cxj-q8gv), [CVE-2024-0406](https://github.com/advisories/GHSA-rhh4-rh7c-7r5v)). Entries that would land outside the target dir or be written through a symlink are refused, as they are when unpacking content packages. File modes and symlinks are kept; backups stay compatible both ways.
 
 ### Removed
 

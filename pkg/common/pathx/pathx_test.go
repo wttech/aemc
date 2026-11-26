@@ -41,3 +41,17 @@ func TestGlobAllInCurrentDir(t *testing.T) {
 		t.Errorf("GlobAll() = %q, want [\"app.zip\"]", paths)
 	}
 }
+
+func TestJoinWithin(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "target")
+	for _, name := range []string{"a.txt", "sub/a.txt", "sub\\a.txt", "sub/../a.txt", "./a.txt"} {
+		if _, err := JoinWithin(dir, name); err != nil {
+			t.Errorf("JoinWithin(%q) = %v, want no error", name, err)
+		}
+	}
+	for _, name := range []string{"../a.txt", "sub/../../a.txt", "..\\a.txt", "/etc/passwd", "\\etc\\passwd"} {
+		if _, err := JoinWithin(dir, name); err == nil {
+			t.Errorf("JoinWithin(%q) = no error, want one as it leaves the dir", name)
+		}
+	}
+}

@@ -575,15 +575,21 @@ func (li LocalInstance) stopUpgradeJar(cmd *exec.Cmd) {
 	}
 }
 
+// upgradeJarArgs builds the upgrade start command: the new JAR without the 'start' command, as Adobe documents it
+// for an in-place upgrade, with the run modes, port and start options the start script passes.
+// Quickstart resolves its home dir to 'crx-quickstart' in the working dir by default, as the documented '-c crx-quickstart' does;
+// passing '-c' explicitly makes the upgrade boot hang before the repository starts.
+// See: https://experienceleague.adobe.com/en/docs/experience-manager-65-lts/content/implementing/deploying/upgrading/in-place-upgrade
 func (li LocalInstance) upgradeJarArgs(jar string) []string {
 	args := append([]string{}, li.JvmOpts...)
-	return append(args,
+	args = append(args,
 		"-jar", pathx.Canonical(jar),
 		"-nofork",
 		"-nointeractive",
 		"-r", li.RunModesString(),
 		"-p", li.instance.http.Port(),
 	)
+	return append(args, li.StartOpts...)
 }
 
 func (li LocalInstance) StartAndAwait() error {

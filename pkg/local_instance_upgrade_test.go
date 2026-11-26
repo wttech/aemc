@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/wttech/aemc/pkg/common/pathx"
 )
 
 // fakeJava stands in for the JVM running the Quickstart JAR: '-unpack' lays out the scripts of 'crx-quickstart/bin',
@@ -122,4 +123,22 @@ func TestLocalInstanceUpgradeStaysOutdatedAfterFailedBoot(t *testing.T) {
 	upgradeNeeded, err = li.IsUpgradeNeeded()
 	require.NoError(t, err)
 	require.False(t, upgradeNeeded)
+}
+
+func TestLocalInstanceUpgradeJarArgs(t *testing.T) {
+	aem := DefaultAEM()
+	i := aem.InstanceManager().New("local_author", "http://127.0.0.1:4502", "admin", "admin")
+	li := *i.Local()
+	li.JvmOpts = []string{"-Xmx4g"}
+	li.RunModes = []string{"local"}
+	li.StartOpts = []string{"-Dfoo=bar"}
+
+	require.Equal(t, []string{
+		"-Xmx4g",
+		"-jar", pathx.Canonical("/lib/cq-quickstart-6.6.3.jar"),
+		"-nofork", "-nointeractive",
+		"-r", "author,local",
+		"-p", "4502",
+		"-Dfoo=bar",
+	}, li.upgradeJarArgs("/lib/cq-quickstart-6.6.3.jar"))
 }

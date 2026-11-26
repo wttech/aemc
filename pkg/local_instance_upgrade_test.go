@@ -142,3 +142,16 @@ func TestLocalInstanceUpgradeJarArgs(t *testing.T) {
 		"-Dfoo=bar",
 	}, li.upgradeJarArgs("/lib/cq-quickstart-6.6.3.jar"))
 }
+
+func TestLocalInstanceUpgradeRefusedInServiceMode(t *testing.T) {
+	li, libDir, _ := newTestUpgradeInstance(t)
+	setTestDistFile(t, libDir, "cq-quickstart-6.6.2.jar")
+	require.NoError(t, li.Create())
+	setTestDistFile(t, libDir, "cq-quickstart-6.6.3.jar")
+	li.LocalOpts().ServiceMode = true
+
+	require.ErrorContains(t, li.Upgrade(), "service mode")
+	upgradeNeeded, err := li.IsUpgradeNeeded()
+	require.NoError(t, err)
+	require.True(t, upgradeNeeded)
+}

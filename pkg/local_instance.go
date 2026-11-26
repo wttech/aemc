@@ -263,6 +263,10 @@ func (li LocalInstance) Upgrade() error {
 	if li.IsRunning() {
 		return fmt.Errorf("%s > cannot upgrade as it is running", li.instance.IDColor())
 	}
+	// The upgrade boots AEM once from this process, i.e. outside the service and as another user than the service runs it
+	if li.LocalOpts().ServiceMode {
+		return fmt.Errorf("%s > cannot upgrade in service mode, as the upgrade boots AEM outside the service; stop the service, run the upgrade as the service user with 'instance.local.service_mode' disabled, then start the service", li.instance.IDColor())
+	}
 	log.Infof("%s > upgrading", li.instance.IDColor())
 
 	// Reset init lock to force re-initialization of sling.properties and other configs on next start.

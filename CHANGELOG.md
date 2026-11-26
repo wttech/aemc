@@ -31,6 +31,10 @@ How to move a project from one major version to the next is described in [UPGRAD
 
 - Java 25 accepted for running AEM (`vendor.java.version_constraints`), as AEM as a Cloud Service supports it; the Java used by default stays the same.
 
+### Security
+
+- Dependencies with known vulnerabilities updated: `golang.org/x/crypto` 0.52.0, `golang.org/x/net` 0.55.0, `github.com/klauspost/compress` 1.18.7.
+
 ### Removed
 
 - Template functions in the config file (Sprig functions and `canonicalPath`).

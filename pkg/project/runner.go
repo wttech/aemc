@@ -63,5 +63,5 @@ func (r Runner) GitIgnored() []string {
 	if r == RunnerTask {
 		return []string{".task/"}
 	}
-	return []string{}
+	return []string{"mise.local.toml"}
 }

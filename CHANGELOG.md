@@ -9,7 +9,6 @@ How to move a project from one major version to the next is described in [UPGRAD
 
 ### Changed
 
-- **Breaking:** `aem file archive` and `aem file unarchive` support zip, tar, tar.gz (tgz), tar.zst (tzst) and, for unarchiving, tar.bz2 (tbz2); rar, tar.xz, tar.lz4, tar.br and tar.sz are no longer supported.
 - **Breaking:** `aem instance upgrade` refuses instances in service mode (`instance.local.service_mode`), as the upgrade boots AEM outside the service. See [UPGRADING.md](UPGRADING.md#instance-upgrade-in-service-mode).
 - **Breaking:** variables in the config file use the [Compose Specification interpolation](https://github.com/compose-spec/compose-spec/blob/main/12-interpolation.md) syntax (`${VAR:-default}`) instead of Go templates with `[[ ]]` delimiters, which IDEs could not parse or format as YAML ([#157](https://github.com/wttech/aemc/issues/157)). Variables are replaced after the file is parsed, in values only. See [UPGRADING.md](UPGRADING.md#variables-in-config-file).
 - **Breaking:** dotenv files (`.env`, `.env.local`, `local.env`) no longer override variables already set in the environment, as in [Twelve-Factor App](https://12factor.net/config), Docker Compose and mise. See [UPGRADING.md](UPGRADING.md#dotenv-files).
@@ -37,7 +36,7 @@ How to move a project from one major version to the next is described in [UPGRAD
 ### Security
 
 - Dependencies with known vulnerabilities updated: `golang.org/x/crypto` 0.52.0, `golang.org/x/net` 0.55.0, `github.com/klauspost/compress` 1.18.7.
-- Archives (instance backups, downloaded Java, AEM SDK, `aem file`) are handled with the Go standard library and zstd instead of the abandoned `github.com/mholt/archiver/v3`, which has unfixed path traversal vulnerabilities ([CVE-2025-3445](https://github.com/advisories/GHSA-7vpp-9cxj-q8gv), [CVE-2024-0406](https://github.com/advisories/GHSA-rhh4-rh7c-7r5v)). Entries that would land outside the target dir, also through symlinks, are refused, as they are when unpacking content packages. File modes and symlinks are kept; backups stay compatible both ways.
+- Archives (instance backups, downloaded Java, AEM SDK, `aem file`) are handled with [`github.com/mholt/archives`](https://github.com/mholt/archives), the successor of the abandoned `github.com/mholt/archiver/v3`, which has unfixed path traversal vulnerabilities ([CVE-2025-3445](https://github.com/advisories/GHSA-7vpp-9cxj-q8gv), [CVE-2024-0406](https://github.com/advisories/GHSA-rhh4-rh7c-7r5v)). Entries that would land outside the target dir or be written through a symlink are refused, as they are when unpacking content packages. File modes and symlinks are kept; backups stay compatible both ways.
 
 ### Removed
 

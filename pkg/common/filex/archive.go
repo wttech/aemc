@@ -1,75 +1,75 @@
 package filex
 
 import (
+	"bufio"
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
-	"github.com/samber/lo"
+	"github.com/mholt/archives"
 	"github.com/wttech/aemc/pkg/common/pathx"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-// archiveFormat is chosen by the file extension: zip, tar, tar.gz (tgz), tar.zst (tzst) and, for unarchiving only, tar.bz2 (tbz2).
-type archiveFormat struct {
-	zip         bool
-	compression string // for tar: "", "gz", "zst" or "bz2"
-}
-
-func archiveFormatOf(file string) (archiveFormat, error) {
-	name := strings.ToLower(filepath.Base(file))
-	switch {
-	case strings.HasSuffix(name, ".zip"):
-		return archiveFormat{zip: true}, nil
-	case strings.HasSuffix(name, ".tar"):
-		return archiveFormat{}, nil
-	case strings.HasSuffix(name, ".tar.gz"), strings.HasSuffix(name, ".tgz"):
-		return archiveFormat{compression: "gz"}, nil
-	case strings.HasSuffix(name, ".tar.zst"), strings.HasSuffix(name, ".tzst"):
-		return archiveFormat{compression: "zst"}, nil
-	case strings.HasSuffix(name, ".tar.bz2"), strings.HasSuffix(name, ".tbz2"):
-		return archiveFormat{compression: "bz2"}, nil
-	}
-	return archiveFormat{}, fmt.Errorf("archive format of file '%s' is not supported (zip, tar, tar.gz, tgz, tar.zst, tzst, tar.bz2, tbz2)", file)
-}
-
 // Archive writes the dir contents (or the file) to the archive, with the entries at its root, keeping file modes and symlinks.
+// The format follows the file extension, e.g. 'zip', 'tar.gz' or 'tar.zst'.
 func Archive(sourcePath, targetFile string) error {
 	if !pathx.Exists(sourcePath) {
 		return fmt.Errorf("cannot archive path '%s' to file '%s' as source path does not exist", sourcePath, targetFile)
 	}
-	format, err := archiveFormatOf(targetFile)
+	ctx := context.Background()
+	format, _, err := archives.Identify(ctx, archiveNameForFormat(targetFile), nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot archive path '%s' to file '%s' as its format is not supported: %w", sourcePath, targetFile, err)
 	}
-	if format.compression == "bz2" {
-		return fmt.Errorf("cannot archive path '%s' to file '%s' as bzip2 is supported for unarchiving only", sourcePath, targetFile)
+	archiver, ok := format.(archives.Archiver)
+	if !ok {
+		return fmt.Errorf("cannot archive path '%s' to file '%s' as its format supports extracting only", sourcePath, targetFile)
 	}
 	if err := pathx.Ensure(filepath.Dir(targetFile)); err != nil {
 		return err
 	}
-	var sourcePaths []string
+	root := pathx.Canonical(sourcePath) // the archive library names entries by trimming this prefix, so it must be clean
 	if pathx.IsDir(sourcePath) {
-		sourceDirEntries, err := os.ReadDir(sourcePath)
-		if err != nil {
-			return fmt.Errorf("cannot read dir '%s' to be archived to file '%s': %w", sourcePath, targetFile, err)
-		}
-		sourcePaths = lo.Map(sourceDirEntries, func(e os.DirEntry, _ int) string {
-			return pathx.Canonical(fmt.Sprintf("%s/%s", sourcePath, e.Name()))
-		})
-	} else {
-		sourcePaths = []string{sourcePath}
+		root += string(filepath.Separator) // the dir contents go to the archive root, not the dir itself
 	}
-	if format.zip {
-		err = writeZip(sourcePaths, targetFile)
-	} else {
-		err = writeTar(sourcePaths, targetFile, format.compression)
-	}
+	files, err := archives.FilesFromDisk(ctx, nil, map[string]string{root: ""})
 	if err != nil {
+		return fmt.Errorf("cannot read path '%s' to be archived to file '%s': %w", sourcePath, targetFile, err)
+	}
+	if err := writeArchive(ctx, archiver, files, targetFile); err != nil {
 		return fmt.Errorf("cannot archive path '%s' to file '%s': %w", sourcePath, targetFile, err)
 	}
 	return nil
+}
+
+// archiveShortExtensions maps the short extensions of compressed tars, which the archive library identifies by content only,
+// to the long ones it identifies by name too, so that archives can be written to them.
+var archiveShortExtensions = map[string]string{".tgz": ".tar.gz", ".tbz2": ".tar.bz2", ".txz": ".tar.xz", ".tlz4": ".tar.lz4", ".tsz": ".tar.sz", ".tbr": ".tar.br"}
+
+func archiveNameForFormat(file string) string {
+	ext := strings.ToLower(filepath.Ext(file))
+	if long, ok := archiveShortExtensions[ext]; ok {
+		return strings.TrimSuffix(file, filepath.Ext(file)) + long
+	}
+	return file
+}
+
+func writeArchive(ctx context.Context, archiver archives.Archiver, files []archives.FileInfo, targetFile string) (err error) {
+	file, err := os.Create(targetFile)
+	if err != nil {
+		return err
+	}
+	defer func() { err = errors.Join(err, file.Close()) }()
+	buffered := bufio.NewWriterSize(file, 1<<20)
+	if err := archiver.Archive(ctx, buffered, files); err != nil {
+		return err
+	}
+	return buffered.Flush()
 }
 
 // ArchiveTempPrefix marks an archive file that is still being written; it is renamed to its target name when complete.
@@ -93,28 +93,43 @@ func ArchiveWithChanged(sourceDir, targetFile string) (bool, error) {
 }
 
 // Unarchive extracts the archive to the dir, keeping file modes and symlinks. Directories get mode 0755.
-// Entries that would end up outside the dir, write through a symlink or link outside it are refused ("zip slip").
+// Entries that would end up outside the dir or be written through a symlink are refused ("zip slip"), which the
+// archive library leaves to its callers.
 func Unarchive(sourceFile string, targetDir string) error {
 	if !pathx.Exists(sourceFile) {
 		return fmt.Errorf("cannot unarchive file '%s' to dir '%s' as source file does not exist", sourceFile, targetDir)
 	}
-	format, err := archiveFormatOf(sourceFile)
-	if err != nil {
-		return err
-	}
 	if err := pathx.Ensure(targetDir); err != nil {
 		return err
 	}
-	extractor := newArchiveExtractor(targetDir)
-	if format.zip {
-		err = readZip(sourceFile, extractor)
-	} else {
-		err = readTar(sourceFile, format.compression, extractor)
-	}
-	if err != nil {
+	if err := extractArchive(sourceFile, newArchiveExtractor(targetDir)); err != nil {
 		return fmt.Errorf("cannot unarchive file '%s' to dir '%s': %w", sourceFile, targetDir, err)
 	}
 	return nil
+}
+
+func extractArchive(sourceFile string, extractor *archiveExtractor) error {
+	file, err := os.Open(sourceFile)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	ctx := context.Background()
+	format, stream, err := archives.Identify(ctx, sourceFile, file)
+	if err != nil {
+		return fmt.Errorf("format is not supported: %w", err)
+	}
+	ex, ok := format.(archives.Extractor)
+	if !ok {
+		return fmt.Errorf("format '%s' is not an archive", format.Extension())
+	}
+	if _, isZip := format.(archives.Zip); isZip {
+		if _, err := file.Seek(0, io.SeekStart); err != nil { // zip is read from its end, so it needs the file itself
+			return err
+		}
+		stream = file
+	}
+	return ex.Extract(ctx, stream, extractor.handle)
 }
 
 func UnarchiveWithChanged(sourceFile, targetDir string) (bool, error) {
@@ -144,6 +159,27 @@ type archiveExtractor struct {
 func newArchiveExtractor(dir string) *archiveExtractor {
 	dir = filepath.Clean(dir)
 	return &archiveExtractor{dir: dir, safeDirs: map[string]bool{dir: true}}
+}
+
+// handle writes one archive entry; devices and pipes are skipped as they cannot be restored meaningfully.
+func (e *archiveExtractor) handle(_ context.Context, f archives.FileInfo) error {
+	switch {
+	case f.IsDir():
+		return e.dirEntry(f.NameInArchive)
+	case f.Mode()&fs.ModeSymlink != 0:
+		return e.symlinkEntry(f.NameInArchive, f.LinkTarget)
+	case f.LinkTarget != "": // hard link in a tar
+		return e.hardLinkEntry(f.NameInArchive, f.LinkTarget)
+	case f.Mode().IsRegular():
+		content, err := f.Open()
+		if err != nil {
+			return err
+		}
+		defer content.Close()
+		return e.fileEntry(f.NameInArchive, f.Mode(), content)
+	default:
+		return nil
+	}
 }
 
 func (e *archiveExtractor) ensureDir(dir string) error {
@@ -221,17 +257,14 @@ func (e *archiveExtractor) fileEntry(name string, mode os.FileMode, content io.R
 	return file.Close()
 }
 
-// symlinkEntry creates a symlink whose target, relative to the symlink, stays within the dir.
+// symlinkEntry creates a symlink as archived, also an absolute one or one pointing outside the dir (e.g. an instance dir
+// linked to another disk); nothing is ever extracted through it, as ensureDir refuses to go through symlinks.
 func (e *archiveExtractor) symlinkEntry(name string, target string) error {
 	path, err := e.entryPath(name)
 	if err != nil {
 		return err
 	}
-	target = filepath.FromSlash(pathx.Normalize(target))
-	if filepath.IsAbs(target) || filepath.VolumeName(target) != "" || !pathx.IsWithin(e.dir, filepath.Join(filepath.Dir(path), target)) {
-		return fmt.Errorf("symlink '%s' points to '%s' outside of dir '%s'", name, target, e.dir)
-	}
-	return os.Symlink(target, path)
+	return os.Symlink(filepath.FromSlash(target), path)
 }
 
 func (e *archiveExtractor) hardLinkEntry(name string, target string) error {

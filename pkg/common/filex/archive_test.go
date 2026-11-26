@@ -80,10 +80,12 @@ func TestUnarchiveRefusesEntriesLeavingTargetDir(t *testing.T) {
 		t.Skip("symlinks need privileges on Windows")
 	}
 	cases := map[string][]*tar.Header{
-		"parent path":      {{Name: "../evil.txt", Typeflag: tar.TypeReg, Mode: 0644}},
-		"absolute path":    {{Name: "/tmp/evil.txt", Typeflag: tar.TypeReg, Mode: 0644}},
-		"symlink outside":  {{Name: "link", Typeflag: tar.TypeSymlink, Linkname: "../.."}},
-		"absolute symlink": {{Name: "link", Typeflag: tar.TypeSymlink, Linkname: "/tmp"}},
+		"parent path":   {{Name: "../evil.txt", Typeflag: tar.TypeReg, Mode: 0644}},
+		"absolute path": {{Name: "/tmp/evil.txt", Typeflag: tar.TypeReg, Mode: 0644}},
+		"write through symlink outside": {
+			{Name: "link", Typeflag: tar.TypeSymlink, Linkname: ".."},
+			{Name: "link/evil.txt", Typeflag: tar.TypeReg, Mode: 0644},
+		},
 		"write through symlink": {
 			{Name: "self", Typeflag: tar.TypeSymlink, Linkname: "."},
 			{Name: "self/evil.txt", Typeflag: tar.TypeReg, Mode: 0644},
@@ -125,4 +127,29 @@ func TestUnarchiveDirsWithoutPermissions(t *testing.T) {
 	target := filepath.Join(t.TempDir(), "target")
 	require.NoError(t, Unarchive(file, target))
 	require.FileExists(t, filepath.Join(target, "dir", "file.txt"), "dirs get 0755 whatever the archive says")
+}
+
+func TestUnarchiveKeepsSymlinksPointingOutside(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlinks need privileges on Windows")
+	}
+	file := writeTestTar(t, &tar.Header{Name: "datastore", Typeflag: tar.TypeSymlink, Linkname: "/mnt/datastore"})
+	target := filepath.Join(t.TempDir(), "target")
+	require.NoError(t, Unarchive(file, target), "e.g. a repository dir linked to another disk is restored as such")
+	link, err := os.Readlink(filepath.Join(target, "datastore"))
+	require.NoError(t, err)
+	require.Equal(t, "/mnt/datastore", link)
+}
+
+func TestArchiveSourcePathWithParentSegments(t *testing.T) {
+	parent := t.TempDir()
+	writeTestTree(t, filepath.Join(parent, "source"))
+	file := filepath.Join(t.TempDir(), "archive.tar.zst")
+	require.NoError(t, os.MkdirAll(filepath.Join(parent, "other"), 0755))
+	unclean := parent + string(filepath.Separator) + "other" + string(filepath.Separator) + ".." + string(filepath.Separator) + "source"
+	require.NoError(t, Archive(unclean, file))
+
+	target := filepath.Join(t.TempDir(), "target")
+	require.NoError(t, Unarchive(file, target))
+	require.FileExists(t, filepath.Join(target, "license.properties"), "entries are relative to the source dir")
 }

@@ -42,16 +42,15 @@ type CLI struct {
 	inputString string
 	inputFile   string
 
-	outputFormat         string
-	outputValue          string
-	outputBuffer         *bytes.Buffer
-	outputLogFile        string
-	outputCommandLogFile string
-	outputLogMode        string
-	outputResponse       *OutputResponse
-	outputQuery          string
-	outputWriter         io.Writer
-	outputNoColor        bool
+	outputFormat   string
+	outputValue    string
+	outputBuffer   *bytes.Buffer
+	outputLogFile  string
+	outputLogMode  string
+	outputResponse *OutputResponse
+	outputQuery    string
+	outputWriter   io.Writer
+	outputNoColor  bool
 
 	config *cfg.Config
 	aem    *pkg.AEM
@@ -112,7 +111,6 @@ func (c *CLI) onStart() {
 	c.outputFormat = strings.ReplaceAll(cv.GetString("output.format"), "yaml", "yml")
 	c.outputQuery = cv.GetString("output.query")
 	c.outputLogFile = cv.GetString("output.log.file")
-	c.outputCommandLogFile = cv.GetString("output.log.command_file")
 	c.outputLogMode = cv.GetString("output.log.mode")
 
 	if c.outputValue != common.OutputValueNone && c.outputValue != common.OutputValueAll {
@@ -150,23 +148,30 @@ func (c *CLI) onStart() {
 		outputWriterLogDefault := log.StandardLogger().Out
 		switch c.outputLogMode {
 		case cfg.OutputLogNone:
-			log.SetOutput(io.Discard)
-			c.aem.SetOutput(io.Discard)
+			outputWriter := io.Discard
+			log.SetOutput(outputWriter)
+			c.aem.SetOutput(outputWriter)
+			break
 		case cfg.OutputLogFile:
-			log.SetOutput(c.openOutputFile(c.outputLogFile))
-			c.aem.SetOutput(c.openOutputFile(c.outputCommandLogFile))
+			outputWriter := c.openOutputLogFile()
+			log.SetOutput(outputWriter)
+			c.aem.SetOutput(outputWriter)
+			break
 		case cfg.OutputLogBoth:
-			log.SetOutput(io.MultiWriter(outputWriterLogDefault, c.openOutputFile(c.outputLogFile)))
-			c.aem.SetOutput(io.MultiWriter(os.Stdout, c.openOutputFile(c.outputCommandLogFile)))
+			log.SetOutput(io.MultiWriter(outputWriterLogDefault, c.openOutputLogFile()))
+			c.aem.SetOutput(io.MultiWriter(os.Stdout, c.openOutputLogFile()))
+			break
 		case cfg.OutputLogConsole:
 			log.SetOutput(outputWriterLogDefault)
 			c.aem.SetOutput(os.Stdout)
+			break
 		default:
 			log.Fatalf("unsupported CLI output log mode specified: '%s'", c.outputLogMode)
 		}
 	} else {
-		log.SetOutput(io.MultiWriter(c.outputBuffer, c.openOutputFile(c.outputLogFile)))
-		c.aem.SetOutput(io.MultiWriter(c.outputBuffer, c.openOutputFile(c.outputCommandLogFile)))
+		outputWriter := io.MultiWriter(c.outputBuffer, c.openOutputLogFile())
+		c.aem.SetOutput(outputWriter)
+		log.SetOutput(outputWriter)
 	}
 
 	c.started = time.Now()
@@ -195,15 +200,16 @@ func (c *CLI) elapsed() time.Duration {
 	return c.ended.Sub(c.started)
 }
 
-func (c *CLI) openOutputFile(file string) *os.File {
-	if err := pathx.Ensure(path.Dir(file)); err != nil {
-		log.Fatalf("cannot create directory of CLI output file '%s': %s", file, err)
-	}
-	result, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+func (c *CLI) openOutputLogFile() *os.File {
+	err := pathx.Ensure(path.Dir(c.outputLogFile))
 	if err != nil {
-		log.Fatalf("cannot open/create CLI output file '%s': %s", file, err)
+		return nil
 	}
-	return result
+	file, err := os.OpenFile(c.outputLogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("cannot open/create CLI output file '%s': %s", c.outputLogFile, err)
+	}
+	return file
 }
 
 func (c *CLI) printOutputText() {

@@ -514,10 +514,8 @@ input:
 output:
   format: text
   log:
-    # File path of AEM Compose logs (logfmt) written especially when output format is different than 'text'
+    # File path of logs written especially when output format is different than 'text'
     file: aem/home/var/log/aem.log
-    # File path of the output of commands run by AEM Compose (instance scripts, Java tools), kept apart so the logs stay parsable
-    command_file: aem/home/var/log/command.log
     # Controls where outputs and logs should be written to when format is 'text' (console|file|both)
     mode: console
 

@@ -31,7 +31,6 @@ func (c *Config) setDefaults() {
 	v.SetDefault("output.no_color", color.NoColor)
 	v.SetDefault("output.value", common.OutputValueAll)
 	v.SetDefault("output.log.file", common.LogFile)
-	v.SetDefault("output.log.command_file", common.CommandLogFile)
 	v.SetDefault("output.log.mode", OutputLogConsole)
 	v.SetDefault("output.query", "")
 

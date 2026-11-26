@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -20,7 +21,8 @@ const fakeJava = `#!/bin/sh
 case " $* " in
   *" -unpack "*)
     mkdir -p crx-quickstart/bin crx-quickstart/conf crx-quickstart/logs
-    for script in start stop quickstart; do printf '#!/bin/sh\nexit 0\n' > crx-quickstart/bin/$script; done
+    for script in start quickstart; do printf '#!/bin/sh\nexit 0\n' > crx-quickstart/bin/$script; done
+    printf '#!/bin/sh\ncd "$(dirname "$0")/.."\n[ -f boot.pid ] || exit 4\ntouch stopped\nkill "$(cat boot.pid)"\n' > crx-quickstart/bin/stop
     printf '#!/bin/sh\nexit 3\n' > crx-quickstart/bin/status
     chmod +x crx-quickstart/bin/*
     ;;
@@ -30,22 +32,16 @@ case " $* " in
 esac
 `
 
-const upgradeBootShutdownMarker = "crx-quickstart/shutdown"
+const upgradeBootStoppedMarker = "crx-quickstart/stopped"
 
 // TestLocalInstanceUpgradeBootHelper is not a test but the upgrade boot run by fakeJava (the helper process pattern
-// of the Go 'os/exec' tests): it answers any request like a started instance and exits on an OSGi shutdown.
+// of the Go 'os/exec' tests): it answers any request like a started instance until the stop script kills it.
 func TestLocalInstanceUpgradeBootHelper(t *testing.T) {
 	if os.Getenv("AEMC_TEST_UPGRADE_BOOT") != "1" {
 		t.Skip("run only as the upgrade boot")
 	}
 	port := os.Args[slices.Index(os.Args, "-p")+1]
-	http.HandleFunc(VMStatPath, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.FormValue("shutdown_type") == "Stop" {
-			_ = os.WriteFile(upgradeBootShutdownMarker, []byte{}, 0644)
-			w.WriteHeader(http.StatusOK)
-			go os.Exit(0)
-		}
-	})
+	_ = os.WriteFile("crx-quickstart/boot.pid", []byte(strconv.Itoa(os.Getpid())), 0644)
 	http.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("{}"))
 	})
@@ -95,14 +91,14 @@ func setTestDistFile(t *testing.T, libDir string, name string) {
 	require.NoError(t, os.WriteFile(filepath.Join(libDir, name), []byte{}, 0644))
 }
 
-func TestLocalInstanceUpgradeShutsBootDown(t *testing.T) {
+func TestLocalInstanceUpgradeStopsBootWithStopScript(t *testing.T) {
 	li, libDir, _ := newTestUpgradeInstance(t)
 	setTestDistFile(t, libDir, "cq-quickstart-6.6.2.jar")
 	require.NoError(t, li.Create())
 	setTestDistFile(t, libDir, "cq-quickstart-6.6.3.jar")
 
 	require.NoError(t, li.Upgrade())
-	require.FileExists(t, filepath.Join(li.Dir(), upgradeBootShutdownMarker), "upgrade boot shut down over HTTP")
+	require.FileExists(t, filepath.Join(li.Dir(), upgradeBootStoppedMarker), "upgrade boot stopped with the stop script")
 }
 
 func TestLocalInstanceUpgradeStaysOutdatedAfterFailedBoot(t *testing.T) {
@@ -136,7 +132,7 @@ func TestLocalInstanceUpgradeJarArgs(t *testing.T) {
 	require.Equal(t, []string{
 		"-Xmx4g",
 		"-jar", pathx.Canonical("/lib/cq-quickstart-6.6.3.jar"),
-		"-nofork", "-nointeractive",
+		"-nofork", "-nointeractive", "-use-control-port",
 		"-r", "author,local",
 		"-p", "4502",
 		"-Dfoo=bar",

@@ -552,20 +552,15 @@ func (li LocalInstance) startUpgradeJar() error {
 	return nil
 }
 
-// stopUpgradeJar shuts the upgrade boot down gracefully over HTTP, as the Felix Web Console does. The stop script
-// cannot do it, as the boot runs without the Sling control socket, and sending an interrupt is not implemented on Windows.
-// If the shutdown request fails, the boot is interrupted where supported; if it does not exit in time, it is killed.
+// stopUpgradeJar stops the upgrade boot with the stop script, as 'instance stop' does, and kills it if it does not exit in time.
 func (li LocalInstance) stopUpgradeJar(cmd *exec.Cmd) {
 	exited := make(chan struct{})
 	go func() {
 		_ = cmd.Wait() // a non-zero exit code is expected when stopped
 		close(exited)
 	}()
-	if err := li.instance.OSGI().Shutdown(); err != nil {
-		log.Warnf("%s > cannot shut down upgrade boot, interrupting it: %s", li.instance.IDColor(), err)
-		if err := cmd.Process.Signal(os.Interrupt); err != nil {
-			log.Warnf("%s > cannot interrupt upgrade boot: %s", li.instance.IDColor(), err)
-		}
+	if err := li.Stop(); err != nil {
+		log.Warnf("%s > cannot stop upgrade boot: %s", li.instance.IDColor(), err)
 	}
 	timeout := li.instance.manager.CheckOpts.AwaitStopped.Timeout
 	select {
@@ -581,8 +576,9 @@ func (li LocalInstance) stopUpgradeJar(cmd *exec.Cmd) {
 
 // upgradeJarArgs builds the upgrade start command: the new JAR without the 'start' command, as Adobe documents it
 // for an in-place upgrade, with the run modes, port and start options the start script passes.
-// Quickstart resolves its home dir to 'crx-quickstart' in the working dir by default, as the documented '-c crx-quickstart' does;
-// passing '-c' explicitly makes the upgrade boot hang before the repository starts.
+// Quickstart uses 'crx-quickstart' in the working dir; unlike in the start script, '-c' of this JAR sets the HTTP context path,
+// and setting the dir explicitly with '-b' makes the boot hang before the repository starts (AEM 6.5 LTS 6.6.3).
+// The control port lets the stop script stop it.
 // See: https://experienceleague.adobe.com/en/docs/experience-manager-65-lts/content/implementing/deploying/upgrading/in-place-upgrade
 func (li LocalInstance) upgradeJarArgs(jar string) []string {
 	args := append([]string{}, li.JvmOpts...)
@@ -590,6 +586,7 @@ func (li LocalInstance) upgradeJarArgs(jar string) []string {
 		"-jar", pathx.Canonical(jar),
 		"-nofork",
 		"-nointeractive",
+		"-use-control-port",
 		"-r", li.RunModesString(),
 		"-p", li.instance.http.Port(),
 	)

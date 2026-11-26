@@ -1023,8 +1023,6 @@ sh aemw instance backup prune --keep-last 1 --max-size 100GB
 sh aemw instance backup make --instance-id local_author --skip-space-check
 ```
 
-The setting `instance.local.backup_dir` is deprecated; use `instance.local.backup.dir` instead.
-
 ## Replication agents
 
 1. Configuring publish agent on AEM author:

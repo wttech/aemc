@@ -20,3 +20,5 @@ How to move a project from one major version to the next is described in [UPGRAD
 ### Removed
 
 - Template functions in the config file (Sprig functions and `canonicalPath`).
+- **Breaking:** setting `instance.local.backup_dir`, replaced by `instance.local.backup.dir`.
+- **Breaking:** flag `--template` of `aem config value`; read a value with `--key` or filter all values with `aem config values --output-query`.

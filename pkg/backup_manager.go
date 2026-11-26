@@ -45,7 +45,7 @@ type BackupPruneOpts struct {
 
 func newBackupOpts(cfg *viper.Viper) BackupOpts {
 	return BackupOpts{
-		Dir:     localBackupDir(cfg),
+		Dir:     cfg.GetString("instance.local.backup.dir"),
 		MinFree: cfg.GetString("instance.local.backup.min_free"),
 		Prune: BackupPruneOpts{
 			Auto:     cfg.GetBool("instance.local.backup.prune.auto"),

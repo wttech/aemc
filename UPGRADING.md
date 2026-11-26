@@ -36,3 +36,11 @@ Variables set in the environment (by a shell, CI or mise) now win over the doten
 | `.env` and `local.env`             | `.env`       | `.env`      |
 
 So `AEM_AUTHOR_HTTP_URL=http://localhost:4512 aem instance status` now uses that URL even when `local.env` sets another one.
+
+### Removed settings and flags
+
+| 2.x                                          | 3.x                                                             |
+|----------------------------------------------|-----------------------------------------------------------------|
+| `instance.local.backup_dir`                  | `instance.local.backup.dir`                                     |
+| `aem config value --template '[[.log.level]]'` | `aem config value --key log.level`                            |
+| `aem config value --template '...'` (other)  | `aem config values --output-format yml --output-query '<JMESPath>'` |

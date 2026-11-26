@@ -99,6 +99,7 @@ func (c *Config) setDefaults() {
 	v.SetDefault("instance.local.override_dir", common.DefaultDir+"/"+common.VarDirName+"/instance")
 	v.SetDefault("instance.local.await_strict", true)
 	v.SetDefault("instance.local.service_mode", false)
+	v.SetDefault("instance.local.backup.dir", common.VarDir+"/backup")
 	v.SetDefault("instance.local.backup.min_free", "")
 	v.SetDefault("instance.local.backup.prune.auto", false)
 	v.SetDefault("instance.local.backup.prune.keep_last", 0)

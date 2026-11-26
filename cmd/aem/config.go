@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/wttech/aemc/pkg/cfg"
-	"github.com/wttech/aemc/pkg/common/tplx"
 )
 
 func (c *CLI) configCmd() *cobra.Command {
@@ -83,34 +82,16 @@ func (c *CLI) configValueCmd() *cobra.Command {
 		Aliases: []string{"get"},
 		Run: func(cmd *cobra.Command, args []string) {
 			key, _ := cmd.Flags().GetString("key")
-			template, _ := cmd.Flags().GetString("template")
-			if key == "" && template == "" {
-				c.Fail("flag 'key' or 'template' need to be specified")
+			values := c.aem.Config().Values()
+			if !values.IsSet(key) {
+				c.Error(fmt.Errorf("config value not found using key '%s'", key))
 				return
 			}
-			var (
-				value string
-				err   error
-			)
-			if key != "" {
-				value, err = tplx.RenderKey(key, c.aem.Config().Values().AllSettings())
-				if err != nil {
-					c.Error(fmt.Errorf("cannot read config value using key '%s': %w", key, err))
-					return
-				}
-			} else {
-				value, err = tplx.RenderString(template, c.aem.Config().Values().AllSettings())
-				if err != nil {
-					c.Error(fmt.Errorf("cannot read config value using template '%s': %w", template, err))
-					return
-				}
-			}
-			c.SetOutput("value", value)
+			c.SetOutput("value", fmt.Sprint(values.Get(key)))
 			c.Ok("config value read")
 		},
 	}
 	cmd.Flags().StringP("key", "k", "", "Value key")
-	cmd.Flags().StringP("template", "t", "", "Value template")
-	cmd.MarkFlagsMutuallyExclusive("key", "template")
+	_ = cmd.MarkFlagRequired("key")
 	return cmd
 }

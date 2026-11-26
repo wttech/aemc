@@ -137,7 +137,12 @@ tasks:
             fi
         }
         bump_version "README.MD"
-        bump_version "pkg/project/common/aemw"
+        if [ "$(uname)" = "Darwin" ]; then
+            sed -i '' 's/AemcVersion = "[^\"]*"/AemcVersion = "'"$VERSION"'"/' pkg/project/wrapper/main.go
+        else
+            sed -i 's/AemcVersion = "[^\"]*"/AemcVersion = "'"$VERSION"'"/' pkg/project/wrapper/main.go
+        fi
+        go generate ./pkg/project
 
         echo "Pushing version bump"
         git commit -a -m "Release $VERSION_TAG" || echo "No changes to commit"

@@ -19,6 +19,7 @@ const (
 	KindPropClassicPrefix = "6."
 
 	GitIgnoreFile   = ".gitignore"
+	TaskFile        = "Taskfile.yml"
 	PropFile        = "archetype.properties"
 	PackagePropName = "package"
 )

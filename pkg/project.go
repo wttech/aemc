@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"io/fs"
 	"strings"
@@ -31,21 +32,21 @@ func (p Project) IsScaffolded() bool {
 	return p.aem.config.TemplateFileExists()
 }
 
-func (p Project) ScaffoldWithChanged(kind project.Kind) (bool, error) {
+func (p Project) ScaffoldWithChanged(kind project.Kind, runner project.Runner) (bool, error) {
 	if p.IsScaffolded() {
 		return false, nil
 	}
-	if err := p.Scaffold(kind); err != nil {
+	if err := p.Scaffold(kind, runner); err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-func (p Project) Scaffold(kind project.Kind) error {
-	if err := p.scaffoldDefaultFiles(kind); err != nil {
+func (p Project) Scaffold(kind project.Kind, runner project.Runner) error {
+	if err := p.scaffoldDefaultFiles(kind, runner); err != nil {
 		return err
 	}
-	if err := p.scaffoldGitIgnore(kind); err != nil {
+	if err := p.scaffoldGitIgnore(kind, runner); err != nil {
 		return err
 	}
 	if err := p.scaffoldLocalEnvFile(kind); err != nil {
@@ -54,77 +55,67 @@ func (p Project) Scaffold(kind project.Kind) error {
 	return nil
 }
 
-func (p Project) scaffoldDefaultFiles(kind project.Kind) error {
-	log.Infof("preparing default files for project of kind '%s'", kind)
+func (p Project) scaffoldDefaultFiles(kind project.Kind, runner project.Runner) error {
+	log.Infof("preparing default files for project of kind '%s' run by '%s'", kind, runner)
+	var kindFiles embed.FS
 	switch kind {
 	case project.KindInstance:
-		if err := copyEmbedFiles(&project.CommonFiles, "common/"); err != nil {
-			return err
-		}
-		if err := copyEmbedFiles(&project.InstanceFiles, "instance/"); err != nil {
-			return err
-		}
+		kindFiles = project.InstanceFiles
 	case project.KindAppClassic:
-		if err := copyEmbedFiles(&project.CommonFiles, "common/"); err != nil {
-			return err
-		}
-		if err := copyEmbedFiles(&project.AppClassicFiles, "app_classic/"); err != nil {
-			return err
-		}
+		kindFiles = project.AppClassicFiles
 	case project.KindAppCloud:
-		if err := copyEmbedFiles(&project.CommonFiles, "common/"); err != nil {
-			return err
-		}
-		if err := copyEmbedFiles(&project.AppCloudFiles, "app_cloud/"); err != nil {
-			return err
-		}
+		kindFiles = project.AppCloudFiles
 	default:
 		return fmt.Errorf("project kind '%s' cannot be initialized", kind)
+	}
+	for _, dir := range []struct {
+		files embed.FS
+		path  string
+	}{
+		{kindFiles, string(kind)},
+		{project.RunnerFiles, "runner/" + string(runner) + "/common"},
+		{project.RunnerFiles, "runner/" + string(runner) + "/" + string(kind)},
+	} {
+		if err := copyEmbedFiles(dir.files, dir.path); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func copyEmbedFiles(efs *embed.FS, dirPrefix string) error {
-	return fs.WalkDir(efs, ".", func(path string, d fs.DirEntry, err error) error {
+// copyEmbedFiles copies the files under dir to the project; '$' in a path is dropped, so '$.mvn' becomes '.mvn' (embed skips dot files).
+func copyEmbedFiles(efs embed.FS, dir string) error {
+	sub, err := fs.Sub(efs, dir)
+	if err != nil {
+		return err
+	}
+	return fs.WalkDir(sub, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) && path == "." {
+				return nil
+			}
+			return err
+		}
 		if d.IsDir() {
 			return nil
 		}
-		bytes, err := efs.ReadFile(path)
+		bytes, err := fs.ReadFile(sub, path)
 		if err != nil {
 			return err
 		}
-		if err := filex.Write(strings.TrimPrefix(strings.ReplaceAll(path, "$", ""), dirPrefix), bytes); err != nil {
-			return err
-		}
-		return nil
+		return filex.Write(strings.ReplaceAll(path, "$", ""), bytes)
 	})
 }
 
 // need to be in sync with osx.EnvVarsLoad()
-func (p Project) scaffoldGitIgnore(kind project.Kind) error {
-	switch kind {
-	case project.KindAppClassic, project.KindAppCloud:
-		return filex.AppendString(project.GitIgnoreFile, osx.LineSep()+strings.Join([]string{
-			"",
-			"# " + common.AppName,
-			common.HomeDir + "/",
-			common.DispatcherHomeDir + "/",
-			".task/",
-			"." + osx.EnvFileExt,
-			"." + osx.EnvFileExt + ".*",
-			"",
-		}, osx.LineSep()))
-	default:
-		return filex.AppendString(project.GitIgnoreFile, osx.LineSep()+strings.Join([]string{
-			"",
-			"# " + common.AppName,
-			common.HomeDir + "/",
-			".task/",
-			"." + osx.EnvFileExt,
-			"." + osx.EnvFileExt + ".*",
-			"",
-		}, osx.LineSep()))
+func (p Project) scaffoldGitIgnore(kind project.Kind, runner project.Runner) error {
+	lines := []string{"", "# " + common.AppName, common.HomeDir + "/"}
+	if p.IsAppKind(kind) {
+		lines = append(lines, common.DispatcherHomeDir+"/")
 	}
+	lines = append(lines, runner.GitIgnored()...)
+	lines = append(lines, "."+osx.EnvFileExt, "."+osx.EnvFileExt+".*", "")
+	return filex.AppendString(project.GitIgnoreFile, osx.LineSep()+strings.Join(lines, osx.LineSep()))
 }
 
 func (p Project) scaffoldLocalEnvFile(kind project.Kind) error {
@@ -210,45 +201,55 @@ func (p Project) DirsIgnored() []string {
 	return []string{common.HomeDir, common.DispatcherHomeDir}
 }
 
-func (p Project) ScaffoldGettingStarted() string {
-	text := fmt.Sprint(strings.Join([]string{
+// RunnerDetected is the runner of a scaffolded project, recognised by its task file.
+func (p Project) RunnerDetected() project.Runner {
+	if pathx.Exists(project.TaskFile) {
+		return project.RunnerTask
+	}
+	return project.RunnerMise
+}
+
+func (p Project) ScaffoldGettingStarted(runner project.Runner) string {
+	lines := []string{
 		"AEM Compose project now contains required files.",
 		"",
 		"Consider saving the project to VCS repository.",
 		"The next step is to initialize the project by running:",
 		"",
-		"sh taskw init",
-	}, "\n"))
-	return text
+		runner.TaskCommand("init"),
+	}
+	if runner == project.RunnerMise {
+		lines = append(lines, "", "Without mise installed, run './bin/mise' instead of 'mise', e.g. on CI.")
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (p Project) InitGettingStartedError() string {
-	text := fmt.Sprint(strings.Join([]string{
+	return strings.Join([]string{
 		"AEM Compose project is not yet ready to use!",
 		"",
 		"Be sure to provide AEM files (SDK ZIP or Quickstart JAR + License + Service Packs) to directory '" + p.aem.BaseOpts().LibDir + "'.",
-	}, "\n"))
-	return text
+	}, "\n")
 }
 
 func (p Project) InitGettingStartedSuccess() string {
-	text := fmt.Sprint(strings.Join([]string{
+	runner := p.RunnerDetected()
+	return strings.Join([]string{
 		"AEM Compose project is ready to use!",
 		"",
 		fmt.Sprintf("Consider excluding the directories from VCS versioning and IDE indexing: %s", strings.Join(p.DirsIgnored(), ", ")),
 		"Discover available commands by running:",
 		"",
-		"sh aemw --help",
+		runner.AemCommand("--help"),
 		"",
 		"Multiple commands are usually organized into tasks. Discover them by running:",
 		"",
-		"sh taskw --list",
+		runner.TaskListCommand(),
 		"",
 		"Now it is a time to setup AEM environment then build and deploy the AEM application. Typically it is done by running:",
 		"",
-		"sh taskw setup",
-	}, "\n"))
-	return text
+		runner.TaskCommand("setup"),
+	}, "\n")
 }
 
 func (p Project) InitWithChanged() (bool, error) {

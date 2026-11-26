@@ -628,7 +628,7 @@ Variables are replaced in values only, after the file is parsed, so the file sta
 An unquoted value is typed after the replacement (`active: ${AEM_AUTHOR_ACTIVE:-true}` is a boolean), a quoted one stays a string. 
 A literal `$` in a value must be written as `$$`.
 
-Environment variables could be defined in one or many [dotenv files](https://github.com/wttech/aemc/blob/main/pkg/common/osx/osx.go#L32).
+Environment variables could be defined in one or many [dotenv files](https://github.com/wttech/aemc/blob/main/pkg/common/osx/osx.go#L32): `.env` (personal, VCS-ignored), `.env.local` (VCS-ignored) and `local.env` (VCS-tracked), where `local` is the default value of `AEM_ENV`; the first file defining a variable wins. A variable already set in the environment is never overridden by a file.
 These built-in variables are also available (reserved, not overridable):
 
 | Variable           | Value                                               |

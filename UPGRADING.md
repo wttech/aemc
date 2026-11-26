@@ -25,3 +25,14 @@ Traps:
 - A literal `$` in a value, e.g. in a password, must now be written as `$$`.
 - An unquoted value is typed after the replacement (`${VAR:-true}` is a boolean, `${VAR:-4502}` a number); quote it to keep a string.
 - Variables in comments are not replaced.
+
+### Dotenv files
+
+Variables set in the environment (by a shell, CI or mise) now win over the dotenv files. The order of the files is kept: `.env` over `.env.local` over `local.env`.
+
+| Variable set in                    | 2.x winner   | 3.x winner  |
+|------------------------------------|--------------|-------------|
+| environment and any dotenv file    | dotenv file  | environment |
+| `.env` and `local.env`             | `.env`       | `.env`      |
+
+So `AEM_AUTHOR_HTTP_URL=http://localhost:4512 aem instance status` now uses that URL even when `local.env` sets another one.

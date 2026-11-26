@@ -39,4 +39,5 @@ How to move a project from one major version to the next is described in [UPGRAD
 
 ### Fixed
 
+- `aem instance upgrade` boots the instance once from the new Quickstart JAR and shuts it down again, as Adobe's [in-place upgrade](https://experienceleague.adobe.com/en/docs/experience-manager-65-lts/content/implementing/deploying/upgrading/in-place-upgrade) requires; starting it from the unpacked app JAR applied the upgrade only partly, e.g. AEM 6.5 LTS 6.6.2 to 6.6.3 left over a third of the bundles unresolved ([#355](https://github.com/wttech/aemc/issues/355)). If that boot fails, the instance stays outdated: `instance start` refuses it and `instance upgrade` runs again.
 - The built-in Java version constraints, used when the config file does not set `vendor.java.version_constraints`, were malformed (`=>` instead of `>=`) so checking the Java version failed.

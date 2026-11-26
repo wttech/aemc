@@ -476,7 +476,7 @@ instance:
 
 java:
   # Require following versions before e.g running AEM instances
-  version_constraints: [">= 1.8, < 1.9", ">= 11, < 12", ">= 17, < 18", ">= 21, < 22"]
+  version_constraints: [">= 1.8, < 1.9", ">= 11, < 12", ">= 17, < 18", ">= 21, < 22", ">= 25, < 26"]
 
   # Pre-installed local JDK dir
   # a) keep it empty to download open source Java automatically for current OS and architecture
@@ -534,7 +534,7 @@ vendor:
   # JDK used to: run AEM instances, build OSGi bundles, assemble AEM packages
   java:
     # Require following versions before e.g running AEM instances
-    version_constraints: [">= 1.8, < 1.9", ">= 11, < 12", ">= 17, < 18", ">= 21, < 22"]
+    version_constraints: [">= 1.8, < 1.9", ">= 11, < 12", ">= 17, < 18", ">= 21, < 22", ">= 25, < 26"]
 
     # Pre-installed local JDK dir
     # a) keep it empty to download open source Java automatically for current OS and architecture

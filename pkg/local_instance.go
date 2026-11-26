@@ -543,17 +543,30 @@ func (li LocalInstance) startUpgradeJar() error {
 	return nil
 }
 
+// stopUpgradeJar shuts the upgrade boot down gracefully over HTTP, as the Felix Web Console does. The stop script
+// cannot do it, as the boot runs without the Sling control socket, and sending an interrupt is not implemented on Windows.
+// If the shutdown request fails, the boot is interrupted where supported; if it does not exit in time, it is killed.
 func (li LocalInstance) stopUpgradeJar(cmd *exec.Cmd) {
-	if cmd.Process == nil || cmd.ProcessState != nil {
-		return
-	}
-	if err := cmd.Process.Signal(os.Interrupt); err != nil {
-		log.Warnf("%s > cannot stop upgrade start command: %s", li.instance.IDColor(), err)
-	}
-	if err := cmd.Wait(); err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
-			log.Warnf("%s > cannot await upgrade start command: %s", li.instance.IDColor(), err)
+	exited := make(chan struct{})
+	go func() {
+		_ = cmd.Wait() // a non-zero exit code is expected when stopped
+		close(exited)
+	}()
+	if err := li.instance.OSGI().Shutdown(); err != nil {
+		log.Warnf("%s > cannot shut down upgrade boot, interrupting it: %s", li.instance.IDColor(), err)
+		if err := cmd.Process.Signal(os.Interrupt); err != nil {
+			log.Warnf("%s > cannot interrupt upgrade boot: %s", li.instance.IDColor(), err)
 		}
+	}
+	timeout := li.instance.manager.CheckOpts.AwaitStopped.Timeout
+	select {
+	case <-exited:
+	case <-time.After(timeout):
+		log.Warnf("%s > upgrade boot not stopped after %s, killing it", li.instance.IDColor(), timeout)
+		if err := cmd.Process.Kill(); err != nil {
+			log.Warnf("%s > cannot kill upgrade boot: %s", li.instance.IDColor(), err)
+		}
+		<-exited
 	}
 }
 

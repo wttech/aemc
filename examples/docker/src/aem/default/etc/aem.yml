@@ -4,16 +4,16 @@ instance:
   # Full details of local or remote instances
   config:
     local_author:
-      active: [[.Env.AEM_AUTHOR_ACTIVE | default true ]]
-      http_url: [[.Env.AEM_AUTHOR_HTTP_URL | default "http://127.0.0.1:4502" ]]
-      user: [[.Env.AEM_AUTHOR_USER | default "admin" ]]
-      password: [[.Env.AEM_AUTHOR_PASSWORD | default "admin" ]]
+      active: ${AEM_AUTHOR_ACTIVE:-true}
+      http_url: ${AEM_AUTHOR_HTTP_URL:-http://127.0.0.1:4502}
+      user: ${AEM_AUTHOR_USER:-admin}
+      password: ${AEM_AUTHOR_PASSWORD:-admin}
       run_modes: [ local ]
       jvm_opts:
         - -server
         - -Djava.awt.headless=true
-        - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
-        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=[[.Env.AEM_AUTHOR_DEBUG_ADDR | default "0.0.0.0:14502" ]]
+        - -Djava.io.tmpdir=${AEM_PROJECT_DIR}/aem/home/tmp
+        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${AEM_AUTHOR_DEBUG_ADDR:-0.0.0.0:14502}
         - -Duser.language=en
         - -Duser.country=US
         - -Duser.timezone=UTC
@@ -24,16 +24,16 @@ instance:
         - ACME_VAR=value
       sling_props: []
     local_publish:
-      active: [[.Env.AEM_PUBLISH_ACTIVE | default true ]]
-      http_url: [[.Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4503" ]]
-      user: [[.Env.AEM_PUBLISH_USER | default "admin" ]]
-      password: [[.Env.AEM_PUBLISH_PASSWORD | default "admin" ]]
+      active: ${AEM_PUBLISH_ACTIVE:-true}
+      http_url: ${AEM_PUBLISH_HTTP_URL:-http://127.0.0.1:4503}
+      user: ${AEM_PUBLISH_USER:-admin}
+      password: ${AEM_PUBLISH_PASSWORD:-admin}
       run_modes: [ local ]
       jvm_opts:
         - -server
         - -Djava.awt.headless=true
-        - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
-        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=[[.Env.AEM_PUBLISH_DEBUG_ADDR | default "0.0.0.0:14503" ]]
+        - -Djava.io.tmpdir=${AEM_PROJECT_DIR}/aem/home/tmp
+        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${AEM_PUBLISH_DEBUG_ADDR:-0.0.0.0:14503}
         - -Duser.language=en
         - -Duser.country=US
         - -Duser.timezone=UTC
@@ -272,18 +272,18 @@ vendor:
 
     # Pre-installed local JDK dir
     # a) keep it empty to download open source Java automatically for current OS and architecture
-    # b) set it to absolute path or to env var '[[.Env.JAVA_HOME]]' to indicate where closed source Java like Oracle is installed
+    # b) set it to absolute path or to env var '${JAVA_HOME}' to indicate where closed source Java like Oracle is installed
     home_dir: ""
 
     # Auto-installed JDK options
     download:
-      # Source URL with template vars support
-      url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.25_9.[[.ArchiveExt]]"
-      # Map source URL template vars to be compatible with Adoptium Java
+      # Source URL, may use built-in variables like '${AEM_OS}'
+      url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_${AEM_ARCH}_${AEM_OS}_hotspot_11.0.25_9.${AEM_ARCHIVE_EXT}"
+      # Map values of built-in variables in source URL to be compatible with Adoptium Java
       replacements:
-        # Var 'Os' (GOOS)
+        # Variable 'AEM_OS' (GOOS)
         "darwin": "mac"
-        # Var 'Arch' (GOARCH)
+        # Variable 'AEM_ARCH' (GOARCH)
         "x86_64": "x64"
         "amd64": "x64"
         "386": "x86-32"

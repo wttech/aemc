@@ -41,7 +41,7 @@ func (c *Config) setDefaults() {
 
 	v.SetDefault("vendor.java.home_dir", "")
 	v.SetDefault("vendor.java.version_constraints", []string{"=> 1.8, < 1.9", "=> 11, < 12", ">= 17, < 18", "=> 21, < 22"})
-	v.SetDefault("vendor.java.download.url", c.tplString("https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.25_9.[[.ArchiveExt]]"))
+	v.SetDefault("vendor.java.download.url", c.interpolateString("https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_${AEM_ARCH}_${AEM_OS}_hotspot_11.0.25_9.${AEM_ARCHIVE_EXT}"))
 	v.SetDefault("vendor.java.download.replacements", map[string]string{"darwin": "mac", "x86_64": "x64", "amd64": "x64", "386": "x86-32", "arm64": "x64", "aarch64": "x64"})
 
 	v.SetDefault("vendor.oak_run.download_url", "https://repo1.maven.org/maven2/org/apache/jackrabbit/oak-run/1.72.0/oak-run-1.72.0.jar")

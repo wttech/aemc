@@ -284,16 +284,16 @@ instance:
   # Full details of local or remote instances
   config:
     local_author:
-      active: [[.Env.AEM_AUTHOR_ACTIVE | default true ]]
-      http_url: [[.Env.AEM_AUTHOR_HTTP_URL | default "http://127.0.0.1:4502" ]]
-      user: [[.Env.AEM_AUTHOR_USER | default "admin" ]]
-      password: [[.Env.AEM_AUTHOR_PASSWORD | default "admin" ]]
+      active: ${AEM_AUTHOR_ACTIVE:-true}
+      http_url: ${AEM_AUTHOR_HTTP_URL:-http://127.0.0.1:4502}
+      user: ${AEM_AUTHOR_USER:-admin}
+      password: ${AEM_AUTHOR_PASSWORD:-admin}
       run_modes: [ local ]
       jvm_opts:
         - -server
         - -Djava.awt.headless=true
-        - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
-        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=[[.Env.AEM_AUTHOR_DEBUG_ADDR | default "0.0.0.0:14502" ]]
+        - -Djava.io.tmpdir=${AEM_PROJECT_DIR}/aem/home/tmp
+        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${AEM_AUTHOR_DEBUG_ADDR:-0.0.0.0:14502}
         - -Duser.language=en
         - -Duser.country=US
         - -Duser.timezone=UTC
@@ -304,16 +304,16 @@ instance:
         - ACME_VAR=value
       sling_props: []
     local_publish:
-      active: [[.Env.AEM_PUBLISH_ACTIVE | default true ]]
-      http_url: [[.Env.AEM_PUBLISH_HTTP_URL | default "http://127.0.0.1:4503" ]]
-      user: [[.Env.AEM_PUBLISH_USER | default "admin" ]]
-      password: [[.Env.AEM_PUBLISH_PASSWORD | default "admin" ]]
+      active: ${AEM_PUBLISH_ACTIVE:-true}
+      http_url: ${AEM_PUBLISH_HTTP_URL:-http://127.0.0.1:4503}
+      user: ${AEM_PUBLISH_USER:-admin}
+      password: ${AEM_PUBLISH_PASSWORD:-admin}
       run_modes: [ local ]
       jvm_opts:
         - -server
         - -Djava.awt.headless=true
-        - -Djava.io.tmpdir=[[canonicalPath .Path "aem/home/tmp"]]
-        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=[[.Env.AEM_PUBLISH_DEBUG_ADDR | default "0.0.0.0:14503" ]]
+        - -Djava.io.tmpdir=${AEM_PROJECT_DIR}/aem/home/tmp
+        - -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${AEM_PUBLISH_DEBUG_ADDR:-0.0.0.0:14503}
         - -Duser.language=en
         - -Duser.country=US
         - -Duser.timezone=UTC
@@ -476,18 +476,18 @@ java:
 
   # Pre-installed local JDK dir
   # a) keep it empty to download open source Java automatically for current OS and architecture
-  # b) set it to absolute path or to env var '[[.Env.JAVA_HOME]]' to indicate where closed source Java like Oracle is installed
+  # b) set it to absolute path or to env var '${JAVA_HOME}' to indicate where closed source Java like Oracle is installed
   home_dir: ""
 
   # Auto-installed JDK options
   download:
-    # Source URL with template vars support
-    url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.25_9.[[.ArchiveExt]]"
-    # Map source URL template vars to be compatible with Adoptium Java
+    # Source URL, may use built-in variables like '${AEM_OS}'
+    url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_${AEM_ARCH}_${AEM_OS}_hotspot_11.0.25_9.${AEM_ARCHIVE_EXT}"
+    # Map values of built-in variables in source URL to be compatible with Adoptium Java
     replacements:
-      # Var 'Os' (GOOS)
+      # Variable 'AEM_OS' (GOOS)
       "darwin": "mac"
-      # Var 'Arch' (GOARCH)
+      # Variable 'AEM_ARCH' (GOARCH)
       "x86_64": "x64"
       "amd64": "x64"
       "386": "x86-32"
@@ -533,18 +533,18 @@ vendor:
 
     # Pre-installed local JDK dir
     # a) keep it empty to download open source Java automatically for current OS and architecture
-    # b) set it to absolute path or to env var '[[.Env.JAVA_HOME]]' to indicate where closed source Java like Oracle is installed
+    # b) set it to absolute path or to env var '${JAVA_HOME}' to indicate where closed source Java like Oracle is installed
     home_dir: ""
 
     # Auto-installed JDK options
     download:
-      # Source URL with template vars support
-      url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_[[.Arch]]_[[.Os]]_hotspot_11.0.25_9.[[.ArchiveExt]]"
-      # Map source URL template vars to be compatible with Adoptium Java
+      # Source URL, may use built-in variables like '${AEM_OS}'
+      url: "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_${AEM_ARCH}_${AEM_OS}_hotspot_11.0.25_9.${AEM_ARCHIVE_EXT}"
+      # Map values of built-in variables in source URL to be compatible with Adoptium Java
       replacements:
-        # Var 'Os' (GOOS)
+        # Variable 'AEM_OS' (GOOS)
         "darwin": "mac"
-        # Var 'Arch' (GOARCH)
+        # Variable 'AEM_ARCH' (GOARCH)
         "x86_64": "x64"
         "amd64": "x64"
         "386": "x86-32"
@@ -611,8 +611,32 @@ content:
     namespaces_skipped: true
 ```
 
-Note that environment variables may be injected in any part of config file. 
+## Variables in config file
+
+Values in the config file may reference environment variables, using the [Compose Specification interpolation](https://github.com/compose-spec/compose-spec/blob/main/12-interpolation.md) syntax known from Docker Compose and shells:
+
+| Syntax                | Result                                                    |
+|-----------------------|-----------------------------------------------------------|
+| `${VAR}`              | value of `VAR`, empty when not set                        |
+| `${VAR:-default}`     | `default` when `VAR` is not set or empty                  |
+| `${VAR-default}`      | `default` when `VAR` is not set                           |
+| `${VAR:?message}`     | error with `message` when `VAR` is not set or empty       |
+| `${VAR:+replacement}` | `replacement` when `VAR` is set and not empty, else empty |
+| `$$`                  | a literal `$`                                             |
+
+Variables are replaced in values only, after the file is parsed, so the file stays valid YAML for IDEs and a variable value cannot break its structure. 
+An unquoted value is typed after the replacement (`active: ${AEM_AUTHOR_ACTIVE:-true}` is a boolean), a quoted one stays a string. 
+A literal `$` in a value must be written as `$$`.
+
 Environment variables could be defined in one or many [dotenv files](https://github.com/wttech/aemc/blob/main/pkg/common/osx/osx.go#L32).
+These built-in variables are also available (reserved, not overridable):
+
+| Variable           | Value                                               |
+|--------------------|-----------------------------------------------------|
+| `AEM_PROJECT_DIR` | absolute path of the project (working directory)    |
+| `AEM_OS`          | operating system, e.g. `linux`, `darwin`, `windows` |
+| `AEM_ARCH`        | CPU architecture, e.g. `amd64`, `arm64`             |
+| `AEM_ARCHIVE_EXT` | `zip` on Windows, `tar.gz` elsewhere                |
 
 ## Overriding default configuration
 
